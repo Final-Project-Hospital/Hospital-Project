@@ -71,11 +71,11 @@ func SetupDatabase() {
 
    User := &entity.Users{
 
-       FirstName: "Software",
+       FirstName: "Tawunchai",
 
-       LastName:  "Analysis",
+       LastName:  "Burakhon",
 
-       Email:     "sa@gmail.com",
+       Email:     "tawunchaien@gmail.com",
 
        Age:       80,
 
@@ -89,9 +89,11 @@ func SetupDatabase() {
 
    db.FirstOrCreate(User, &entity.Users{
 
-       Email: "sa@gmail.com",
+       Email: "tawunchaien@gmail.com",
 
    })
+
+
 
 
 }

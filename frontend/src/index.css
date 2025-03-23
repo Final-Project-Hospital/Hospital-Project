@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.MuiBadge-badge {
+    background-color: red !important;
+}

@@ -1,8 +1,12 @@
 import React from "react";
+import Header from "../../component/header/index";
 
 const Dashboard: React.FC = () => {
-  console.log("Dashboard Page Loaded");
-  return <center style={{color:"black"}}>Dashboard Page</center>;
+  return (
+    <div>
+      <Header />
+    </div>
+  );
 };
 
-export default Dashboard;  
+export default Dashboard;
