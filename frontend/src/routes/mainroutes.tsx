@@ -30,7 +30,8 @@ const AdminRoutes = (): RouteObject[] => [
     path: "/admin",
     element: <MainLayout />,
     children: [
-      { index: true, element: <Admin /> },
+      { path: "/", element: <Admin /> },
+      { index: true, element: <Admin /> },  
       { path: "Dashboard", element: <Admin /> },
     ],
   },
