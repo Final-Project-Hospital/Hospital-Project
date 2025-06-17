@@ -10,14 +10,14 @@ import (
 )
 
 func AddLogin(c *gin.Context) {
-	var loginData entity.Users
+	var loginData entity.User
 	if err := c.ShouldBindJSON(&loginData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
 		return
 	}
 	db := config.DB()
 
-	var user entity.Users
+	var user entity.User
 	if err := db.Preload("UserRole").Where("username = ? AND password = ?", loginData.Username, loginData.Password).First(&user).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return
@@ -38,6 +38,7 @@ func AddLogin(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"token_type":    "Bearer",
 		"token":         signedToken,
+		"UserRole":      user.UserRole,
 		"UserID":        user.ID,
 		"FirstNameUser": user.FirstName,
 		"LastNameUser":  user.LastName,
