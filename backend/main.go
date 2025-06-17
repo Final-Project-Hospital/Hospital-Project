@@ -7,8 +7,6 @@ import (
 
 	"github.com/Tawunchai/hospital-project/config"
 
-	"github.com/Tawunchai/hospital-project/controller/genders"
-
 	"github.com/Tawunchai/hospital-project/controller/logins"
 
 	"github.com/Tawunchai/hospital-project/controller/users"
@@ -20,10 +18,8 @@ const PORT = "8000"
 
 func main() {
 
-	// open connection database
 	config.ConnectionDB()
 
-	// Generate databases
 	config.SetupDatabase()
 
 	r := gin.Default()
@@ -35,17 +31,14 @@ func main() {
 	authorized := r.Group("")
 	authorized.Use(middlewares.Authorizes())
 	{
-		// ยังไม่ได้ใช่ช่อง Athentication นะ
+		
 	}
 
 	public := r.Group("")
 	{
-		public.PUT("/user/:id", users.Update)
-		public.GET("/users", users.GetAll)
-		public.GET("/user/:id", users.Get)
-		public.DELETE("/user/:id", users.Delete)
-
-		r.GET("/genders", genders.GetAll)
+		public.GET("/users", user.ListUsers)
+		public.GET("/uploads/*filename", user.ServeImage)
+		public.GET("/user-data/:userID", user.GetDataByUserID) 
 	}
 
 	r.GET("/", func(c *gin.Context) {

@@ -1,97 +1,113 @@
 package config
 
-
 import (
+	"fmt"
 
-   "fmt"
+	"github.com/Tawunchai/hospital-project/entity"
 
-   "time"
+	"gorm.io/driver/sqlite"
 
-   "github.com/Tawunchai/hospital-project/entity"
-
-   "gorm.io/driver/sqlite"
-
-   "gorm.io/gorm"
-
+	"gorm.io/gorm"
 )
-
 
 var db *gorm.DB
 
-
 func DB() *gorm.DB {
 
-   return db
+	return db
 
 }
-
 
 func ConnectionDB() {
 
-   database, err := gorm.Open(sqlite.Open("hospital.db?cache=shared"), &gorm.Config{})
+	database, err := gorm.Open(sqlite.Open("hospital.db?cache=shared"), &gorm.Config{})
 
-   if err != nil {
+	if err != nil {
 
-       panic("failed to connect database")
+		panic("failed to connect database")
 
-   }
+	}
 
-   fmt.Println("connected database")
+	fmt.Println("connected database")
 
-   db = database
+	db = database
 
 }
 
-
 func SetupDatabase() {
 
+	db.AutoMigrate(
 
-   db.AutoMigrate(
+		&entity.User{},
+		&entity.UserRoles{},
+        &entity.Position{},
+	)
 
-       &entity.Users{},
+	AdminRole := entity.UserRoles{RoleName: "Admin"}
+	UserRole := entity.UserRoles{RoleName: "User"}
 
-       &entity.Genders{},
+	db.FirstOrCreate(&AdminRole, &entity.UserRoles{RoleName: "Admin"})
+	db.FirstOrCreate(&UserRole, &entity.UserRoles{RoleName: "User"})
 
-   )
+    Position1 := entity.Position{Position: "Engineer"}
+	Position2 := entity.Position{Position: "Doctor"}
+    Position3 := entity.Position{Position: "unknown"}
 
-
-   GenderMale := entity.Genders{Gender: "Male"}
-
-   GenderFemale := entity.Genders{Gender: "Female"}
-
-
-   db.FirstOrCreate(&GenderMale, &entity.Genders{Gender: "Male"})
-
-   db.FirstOrCreate(&GenderFemale, &entity.Genders{Gender: "Female"})
+	db.FirstOrCreate(&Position1, &entity.Position{Position: "Engineer"})
+	db.FirstOrCreate(&Position2, &entity.Position{Position: "Doctor"})
+    db.FirstOrCreate(&Position3, &entity.Position{Position: "unknown"})
 
 
-   hashedPassword, _ := HashPassword("123456")
+	User1 := entity.User{
+		Username:   "user1",
+		FirstName:  "Janis",
+		LastName:   "Green",
+		Email:      "janis.green@example.com",
+		Password:   "123",
+		Profile:    "uploads/profile/profile6.jpg",
+        PhoneNumber: "0945096372",
+        PositionID: 3,
+		UserRoleID: 2,
+	}
+	db.FirstOrCreate(&User1, entity.User{Username: "user1"})
 
-   BirthDay, _ := time.Parse("2006-01-02", "1988-11-12")
+	User2 := entity.User{
+		Username:   "user2",
+		FirstName:  "Chris",
+		LastName:   "Taylor",
+		Email:      "chris.taylor@example.com",
+		Password:   "123",
+		Profile:    "uploads/profile/profile5.jpeg",
+        PhoneNumber: "0945096372",
+        PositionID: 3,
+		UserRoleID: 2,
+	}
+	db.FirstOrCreate(&User2, entity.User{Username: "user2"})
 
-   User := &entity.Users{
+	User3 := entity.User{
+		Username:   "user3",
+		FirstName:  "Alex",
+		LastName:   "Smith",
+		Email:      "alex.smith@example.com",
+		Password:   "123",
+		Profile:    "uploads/profile/profile4.jpeg",
+        PhoneNumber: "0945096372",
+        PositionID: 3,
+		UserRoleID: 2,
+	}
+	db.FirstOrCreate(&User3, entity.User{Username: "user3"})
 
-       FirstName: "Software",
-
-       LastName:  "Analysis",
-
-       Email:     "sa@gmail.com",
-
-       Age:       80,
-
-       Password:  hashedPassword,
-
-       BirthDay:  BirthDay,
-
-       GenderID:  1,
-
-   }
-
-   db.FirstOrCreate(User, &entity.Users{
-
-       Email: "sa@gmail.com",
-
-   })
-
+	Admin := entity.User{
+		Username:   "admin",
+		FirstName:  "Kanyapron",
+		LastName:   "KD",
+		Email:      "Kanyapron@gmail.com",
+		Password:   "123",
+		Profile:    "uploads/profile/profile1.jpg",
+        PhoneNumber: "0945096372",
+        PositionID: 1,
+		UserRoleID: 1,
+	}
+	db.FirstOrCreate(&Admin, entity.User{Username: "admin"})
 
 }

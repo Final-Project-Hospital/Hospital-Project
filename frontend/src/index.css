@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+  scroll-behavior: smooth;
+}
+
+@layer base {
+  .login-input {
+    @apply border border-gray-400 w-full rounded-full py-[3px] outline-none px-4 focus:ring-1 focus:ring-inset focus:ring-blue-200;
+  }
+
+  .login-input-label {
+    @apply text-gray-700 block pb-1;
+  }
+
+  .login-transition-200 {
+    @apply transition duration-200 ease-in-out;
+  }
+}
+
+.disable-scrolling {
+  height: 100%;
+  overflow: hidden;
+}
