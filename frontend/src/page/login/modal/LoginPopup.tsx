@@ -3,7 +3,6 @@ import Signin from "./Signin";
 import Login from "./Login";
 import Logo from "../../../assets/enviromentlogo.jpg"
 
-
 const LoginPopup = ({ loginPopup, handleLoginPopup } : any) => {
   const [showSignIn, setShowSignIn] = useState(false);
 
