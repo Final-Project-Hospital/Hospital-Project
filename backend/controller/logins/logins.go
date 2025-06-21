@@ -2,7 +2,6 @@ package logins
 
 import (
 	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
