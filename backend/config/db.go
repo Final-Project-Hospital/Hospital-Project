@@ -147,6 +147,18 @@ func SetupDatabase() {
 		&entity.User{},
 		&entity.UserRoles{},
 		&entity.Position{},
+
+		&entity.BeforeAfterTreatment{},
+		&entity.Building{},
+		&entity.Environment{},
+		&entity.EnvironmentalRecord{},
+		&entity.Hardware{},
+		&entity.Parameter{},
+		&entity.Room{},
+		&entity.SensorDataParameter{},
+		&entity.SensorData{},
+		&entity.Standard{},
+		&entity.Unit{},
 	)
 
 	// Roles
