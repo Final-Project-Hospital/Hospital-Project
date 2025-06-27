@@ -34,7 +34,7 @@ func ServeImage(c *gin.Context) {
 }
 
 func ListUsers(c *gin.Context) {
-	var users []entity.User
+	var users []entity.Employee
 
 	db := config.DB()
 
@@ -45,25 +45,25 @@ func ListUsers(c *gin.Context) {
 
 func GetDataByUserID(c *gin.Context) {
 	db := config.DB()
-	idStr := c.Param("userID")
+	idStr := c.Param("EmployeeID")
 
 	if idStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาระบุ UserID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาระบุ EmployeeID"})
 		return
 	}
 
-	userID, err := strconv.ParseUint(idStr, 10, 32)
+	EmployeeID, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "UserID ต้องเป็นตัวเลข"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "EmployeeID ต้องเป็นตัวเลข"})
 		return
 	}
 
-	var user entity.User
-	err = db.Preload("UserRole").Preload("Position").First(&user, uint(userID)).Error
+	var user entity.Employee
+	err = db.Preload("Role").Preload("Position").First(&user, uint(EmployeeID)).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
-				"error":   "ไม่พบผู้ใช้ที่มี UserID ดังกล่าว",
+				"error":   "ไม่พบผู้ใช้ที่มี EmployeeID ดังกล่าว",
 				"details": "record not found",
 				"id":      idStr,
 			})
@@ -81,4 +81,3 @@ func GetDataByUserID(c *gin.Context) {
 		"user":    user,
 	})
 }
-

@@ -1,13 +1,12 @@
 package entity
 
 import (
-	
 	"gorm.io/gorm"
 )
 
 type Position struct {
 	gorm.Model
-	Position string
+	Position	string
 	
-	Users []User `gorm:"foreignKey:PositionID"`
+	Employee []Employee `gorm:"foreignKey: PositionID"`
 }
