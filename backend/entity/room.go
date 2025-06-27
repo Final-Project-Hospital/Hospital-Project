@@ -12,8 +12,8 @@ type Room struct {
 	BuildingID	uint
 	Building	*Building `gorm:"foreignKey: BuildingID"`
 
-	UserID	uint
-	User	*User `gorm:"foreignKey: UserID"`
+	EmployeeID	uint
+	Employee	*Employee `gorm:"foreignKey: EmployeeID"`
 
 	Hardware []Hardware `gorm:"foreignKey: RoomID"`
 }

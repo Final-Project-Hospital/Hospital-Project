@@ -8,5 +8,5 @@ type Position struct {
 	gorm.Model
 	Position	string
 	
-	Users []User `gorm:"foreignKey: PositionID"`
+	Employee []Employee `gorm:"foreignKey: PositionID"`
 }

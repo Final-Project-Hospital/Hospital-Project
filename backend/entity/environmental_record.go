@@ -25,6 +25,6 @@ type EnvironmentalRecord struct {
 	UnitID	uint
 	Unit	*Unit `gorm:"foreignKey: UnitID"`
 
-	UserID	uint
-	User	*User `gorm:"foreignKey: UserID"`
+	EmployeeID	uint
+	Employee	*Employee `gorm:"foreignKey: EmployeeID"`
 }

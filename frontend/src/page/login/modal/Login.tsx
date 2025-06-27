@@ -7,7 +7,7 @@ import { LoginInterface } from "../../../interface/Login";
 
 const Login = ({ handleSignIn }: any) => {
   const [showPassword, setShowPassword] = useState(false);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [messageApi, contextHolder] = message.useMessage();
 
@@ -18,13 +18,13 @@ const Login = ({ handleSignIn }: any) => {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("token_type", res.data.token_type);
       localStorage.setItem("isLogin", "true");
-      localStorage.setItem("roleName", res.data.UserRole.RoleName);
-      localStorage.setItem("userid", res.data.UserID);
+      localStorage.setItem("roleName", res.data.Role.RoleName);
+      localStorage.setItem("userid", res.data.EmployeeID);
       localStorage.setItem("firstnameuser", res.data.FirstNameUser);
       localStorage.setItem("lastnameuser", res.data.LastNameUser);
 
-      const RoleName = res.data.UserRole.RoleName;
-      const userID = res.data.UserID;
+      const RoleName = res.data.Role.RoleName;
+      const userID = res.data.EmployeeID;
 
       if (userID && RoleName !== "User") {
         try {
@@ -46,20 +46,20 @@ const Login = ({ handleSignIn }: any) => {
         }
       }, 500);
     } else {
-      messageApi.error("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง!");
+      messageApi.error("อีเมลหรือรหัสผ่านไม่ถูกต้อง!");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!username || !password) {
+    if (!email || !password) {
       messageApi.warning("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
       return;
     }
 
     const datalogin: LoginInterface = {
-      username: username.trim(),
+      email: email.trim(),
       password: password,
     };
 
@@ -76,15 +76,15 @@ const Login = ({ handleSignIn }: any) => {
 
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="username" className="login-input-label">
-              Username
+            <label htmlFor="email" className="login-input-label">
+              Email
             </label>
             <input
-              id="username"
+              id="email"
               type="text"
               className="login-input"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
