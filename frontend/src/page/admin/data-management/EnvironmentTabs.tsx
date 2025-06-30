@@ -33,10 +33,10 @@ const EnvironmentLayout: React.FC = () => {
       }}
     >
       <Button
-        type={isActive('/admin/people/ph') ? 'primary' : 'text'}
-        onClick={() => navigate('/admin/people/ph')}
+        type={isActive('/admin/data-management/ph') ? 'primary' : 'text'}
+        onClick={() => navigate('/admin/data-management/ph')}
         style={
-          isActive('/admin/people/ph')
+          isActive('/admin/data-management/ph')
             ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
             : {}
         }
@@ -44,10 +44,10 @@ const EnvironmentLayout: React.FC = () => {
         pH-Central
       </Button>
       <Button
-        type={isActive('/admin/people/bod') ? 'primary' : 'text'}
-        onClick={() => navigate('/admin/people/bod')}
+        type={isActive('/admin/data-management/bod') ? 'primary' : 'text'}
+        onClick={() => navigate('/admin/data-management/bod')}
         style={
-          isActive('/admin/people/bod')
+          isActive('/admin/data-management/bod')
             ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
             : {}
         }
@@ -55,10 +55,10 @@ const EnvironmentLayout: React.FC = () => {
         BOD-Central
       </Button>
       <Button
-        type={isActive('/admin/people/ts') ? 'primary' : 'text'}
-        onClick={() => navigate('/admin/people/ts')}
+        type={isActive('/admin/data-management/ts') ? 'primary' : 'text'}
+        onClick={() => navigate('/admin/data-management/ts')}
         style={
-          isActive('/admin/people/ts')
+          isActive('/admin/data-management/ts')
             ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
             : {}
         }
@@ -66,10 +66,10 @@ const EnvironmentLayout: React.FC = () => {
         TS-Central
       </Button>
       <Button
-        type={isActive('/admin/people/tds') ? 'primary' : 'text'}
-        onClick={() => navigate('/admin/people/tds')}
+        type={isActive('/admin/data-management/tds') ? 'primary' : 'text'}
+        onClick={() => navigate('/admin/data-management/tds')}
         style={
-          isActive('/admin/people/tds')
+          isActive('/admin/data-management/tds')
             ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
             : {}
         }
