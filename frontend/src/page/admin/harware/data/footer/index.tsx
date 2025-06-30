@@ -18,10 +18,10 @@ const TopProducts = () => {
       const res = await ListDataHardware();
       if (res?.status === 200) {
         const data = res.data;
-  
+
         if (data.length > 0) {
           const total = data.reduce(
-            (acc : any, item : any) => {
+            (acc: any, item: any) => {
               acc.formaldehyde += item.Formaldehyde;
               acc.humidity += item.Humidity;
               acc.temperature += item.Tempreture;
@@ -29,13 +29,13 @@ const TopProducts = () => {
             },
             { formaldehyde: 0, humidity: 0, temperature: 0 }
           );
-  
+
           const count = data.length;
-  
+
           const avgFormaldehyde = total.formaldehyde / count;
           const avgHumidity = total.humidity / count;
           const avgTemperature = total.temperature / count;
-  
+
           const formattedData: HardwareStat[] = [
             {
               id: 1,
@@ -56,14 +56,14 @@ const TopProducts = () => {
               Percent: avgFormaldehyde.toFixed(2),
             },
           ];
-  
+
           setHardwareStats(formattedData);
         }
       }
     };
-  
+
     fetchHardwareData();
-  }, []);  
+  }, []);
 
   return (
     <TopProductsWrap>
@@ -72,14 +72,14 @@ const TopProducts = () => {
           <h3>Total Hardware Data</h3>
         </BlockTitle>
       </div>
-      <div className="tbl-products">
-        <table>
+      <div className="tbl-products overflow-auto">
+        <table className="w-full table-auto text-sm">
           <thead>
             <tr>
-              <th>No.</th>
-              <th>Name</th>
-              <th>Average</th>
-              <th>Percent</th>
+              <th className="text-left">No.</th>
+              <th className="text-left">Name</th>
+              <th className="hidden md:table-cell text-left">Average</th>
+              <th className="text-left">Percent</th>
             </tr>
           </thead>
           <tbody>
@@ -87,7 +87,7 @@ const TopProducts = () => {
               <tr key={progressItem.id}>
                 <td>{index + 1}</td>
                 <td>{progressItem.name}</td>
-                <td>
+                <td className="hidden md:table-cell">
                   <div className="tbl-progress-bar">
                     <div
                       className="bar-fill"

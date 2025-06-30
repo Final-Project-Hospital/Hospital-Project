@@ -1,8 +1,8 @@
 import picture1 from "../../../../../assets/ESP32.png";
 import Boxsdata from "../box/index";
-import TableData from "../table/index"
+import TableData from "../table/index";
 import Avergare from "../footer/index";
-import LineChart from "../chart/index"
+import LineChart from "../chart/index";
 
 const Index = () => {
   return (
@@ -36,14 +36,21 @@ const Index = () => {
         <TableData />
       </div>
 
-      <div>
-        <LineChart />
+      {/* บรรจุ 2 กราฟให้อยู่ข้างกัน */}
+      <div className="flex flex-col md:flex-row gap-6 max-w-full overflow-x-auto p-1">
+        <div className="flex-1 bg-white p-4 rounded shadow min-w-[320px]">
+          <LineChart />
+        </div>
+        <div className="flex-1 bg-white p-4 rounded shadow min-w-[320px]">
+          <LineChart />
+        </div>
       </div>
+
       <br />
+
       <div>
         <Avergare />
       </div>
-
     </>
   );
 };

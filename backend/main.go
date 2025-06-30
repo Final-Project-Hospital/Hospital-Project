@@ -11,6 +11,7 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/calendar"
 	"github.com/Tawunchai/hospital-project/controller/hardware"
 	"github.com/Tawunchai/hospital-project/controller/logins"
+	"github.com/Tawunchai/hospital-project/controller/room"
 	"github.com/Tawunchai/hospital-project/controller/sensordata"
 
 	"github.com/Tawunchai/hospital-project/controller/users"
@@ -45,8 +46,10 @@ func main() {
 		public.GET("/user-data/:userID", user.GetDataByUserID)
 
 		//Room
-		public.GET("/rooms", hardware.ListRoom)
-		public.POST("/create-rooms", hardware.CreateRoom)
+		public.GET("/rooms", room.ListRoom)
+		public.POST("/create-rooms", room.CreateRoom)
+		public.PATCH("/update-room/:id", room.UpdateRoom) 
+		public.DELETE("/delete-room/:id", room.DeleteRoomById)
 
 		//Hardware
 		public.GET("/hardwares", hardware.ListHardware)
