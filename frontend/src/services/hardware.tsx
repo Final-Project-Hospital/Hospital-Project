@@ -1,7 +1,7 @@
 import axios from "axios";
-import {RoomInterface} from "../interface/IRoom"
-import {BuildingInterface} from "../interface/IBuilding"
-import {HardwareInterface} from "../interface/IHardware"
+import { RoomInterface } from "../interface/IRoom"
+import { BuildingInterface } from "../interface/IBuilding"
+import { HardwareInterface } from "../interface/IHardware"
 const apiUrl = "http://localhost:8000";
 
 const getAuthHeader = () => {
@@ -10,6 +10,22 @@ const getAuthHeader = () => {
   return { Authorization: `${tokenType} ${token}` };
 };
 
+
+const Authorization = localStorage.getItem("token");
+
+const Bearer = localStorage.getItem("token_type");
+
+const requestOptions = {
+
+  headers: {
+
+    "Content-Type": "application/json",
+
+    Authorization: `${Bearer} ${Authorization}`,
+
+  },
+
+};
 
 export const ListRoom = async (): Promise<RoomInterface[] | null> => {
   try {
@@ -102,3 +118,20 @@ export const ListBuilding = async (): Promise<BuildingInterface[] | null> => {
     return null;
   }
 };
+
+
+async function ListDataHardware() {
+
+  return await axios
+
+    .get(`${apiUrl}/data-sensorparameter`, requestOptions)
+
+    .then((res) => res)
+
+    .catch((e) => e.response);
+
+}
+
+export {
+  ListDataHardware,
+}

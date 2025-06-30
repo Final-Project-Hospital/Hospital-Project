@@ -11,6 +11,7 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/calendar"
 	"github.com/Tawunchai/hospital-project/controller/hardware"
 	"github.com/Tawunchai/hospital-project/controller/logins"
+	"github.com/Tawunchai/hospital-project/controller/sensordata"
 
 	"github.com/Tawunchai/hospital-project/controller/users"
 
@@ -52,6 +53,9 @@ func main() {
 
 		//Building
 		public.GET("/buildings", building.ListBuilding)
+
+		//
+		public.GET("/data-sensorparameter", sensordata.ListDataSensorParameter)
 
 		//Calendar
 		public.GET("/calendars", calendar.ListCalendar)

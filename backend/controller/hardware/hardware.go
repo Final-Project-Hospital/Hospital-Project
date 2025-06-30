@@ -8,6 +8,7 @@ import (
 	"github.com/Tawunchai/hospital-project/entity"
 )
 
+
 func ListRoom(c *gin.Context) {
 	var rooms []entity.Room
 

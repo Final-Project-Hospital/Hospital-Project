@@ -11,6 +11,7 @@
   scroll-behavior: smooth;
 }
 
+
 @layer base {
   .login-input {
     @apply border border-gray-400 w-full rounded-full py-[3px] outline-none px-4 focus:ring-1 focus:ring-inset focus:ring-blue-200;

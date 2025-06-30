@@ -1,0 +1,23 @@
+.earning-grid {
+  display: grid;
+  gap: 2rem;
+  justify-content: center;
+}
+
+@media (min-width: 1024px) {
+  .earning-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .earning-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .earning-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
