@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Tawunchai/hospital-project/entity"
 
@@ -44,6 +45,7 @@ func SetupDatabase() {
 		&entity.SensorData{},
 		&entity.Standard{},
 		&entity.Unit{},
+		&entity.Calendar{},
 	)
 
 	
@@ -142,26 +144,27 @@ func SetupDatabase() {
 	}
 	db.FirstOrCreate(&Room1, entity.Room{RoomName: "ห้องตรวจวิเคราะห์อากาศ"})
 
-	// Room 2
-	bid2 := uint(2)
-	Room2 := entity.Room{
-		RoomName:   "ห้องควบคุมระบบเซนเซอร์",
-		Floor:      1,
-		EmployeeID: eid1,
-		HardwareID: hid1,
-		BuildingID: bid2,
-	}
-	db.FirstOrCreate(&Room2, entity.Room{RoomName: "ห้องควบคุมระบบเซนเซอร์"})
+	calendar_eid := uint(1)
 
-	// Room 3
-	bid3 := uint(3)
-	Room3 := entity.Room{
-		RoomName:   "ห้องประมวลผลข้อมูลสิ่งแวดล้อม",
-		Floor:      1,
-		EmployeeID: eid1,
-		HardwareID: hid1,
-		BuildingID: bid3,
+	calendar1 := entity.Calendar{
+		Title:       "Staff Meeting",
+		Location:    "Room A101",
+		Description: "Monthly all-staff meeting",
+		StartDate:   time.Date(2025, 7, 1, 9, 0, 0, 0, time.Local),
+		EndDate:     time.Date(2025, 7, 1, 10, 30, 0, 0, time.Local),
+		EmployeeID:  &calendar_eid,
 	}
-	db.FirstOrCreate(&Room3, entity.Room{RoomName: "ห้องประมวลผลข้อมูลสิ่งแวดล้อม"})
+
+	calendar2 := entity.Calendar{
+		Title:       "EV Maintenance",
+		Location:    "EV Station Zone B",
+		Description: "Routine maintenance for EV chargers",
+		StartDate:   time.Date(2025, 7, 3, 13, 0, 0, 0, time.Local),
+		EndDate:     time.Date(2025, 7, 3, 15, 0, 0, 0, time.Local),
+		EmployeeID:  &calendar_eid,
+	}
+
+	db.FirstOrCreate(&calendar1, entity.Calendar{Title: "Staff Meeting"})
+	db.FirstOrCreate(&calendar2, entity.Calendar{Title: "EV Maintenance"})
 
 }

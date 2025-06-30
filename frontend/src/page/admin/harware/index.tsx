@@ -1,25 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaHome } from 'react-icons/fa';
-import Image from "../../../assets/operating-room_4246637.png";
 import { useNavigate } from 'react-router-dom';
+import Image from "../../../assets/operating-room_4246637.png";
 import AddRoomModal from './data/room/index';
+import { ListRoom } from '../../../services/hardware';
+import { RoomInterface } from '../../../interface/IRoom';
 
-const rooms = [
-  {
-    name: 'ห้องตัดชิ้นเนื้อ',
-    floor: 'ชั้น 7',
-    building: 'อาคารอาคารรัตนเวชพัฒน์',
-    image: Image
-  },
-  {
-    name: 'ห้องเตรียมสไลด์เซลล์วิทยา',
-    floor: 'ชั้น 7',
-    building: 'อาคารอาคารรัตนเวชพัฒน์',
-    image: Image
-  }
-];
-
-const RoomCard: React.FC<typeof rooms[0]> = ({ name, floor, building, image }) => {
+const RoomCard: React.FC<{
+  name: string;
+  floor: string;
+  building: string;
+  image: string;
+}> = ({ name, floor, building, image }) => {
   const navigate = useNavigate();
 
   return (
@@ -38,7 +30,24 @@ const RoomCard: React.FC<typeof rooms[0]> = ({ name, floor, building, image }) =
 };
 
 const Index: React.FC = () => {
+  const [rooms, setRooms] = useState<RoomInterface[]>([]);
   const [showModal, setShowModal] = useState(false);
+
+  const fetchRooms = async () => {
+    const data = await ListRoom();
+    if (data) {
+      setRooms(data);
+    }
+  };
+
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const handleCreateSuccess = () => {
+    fetchRooms();
+    setShowModal(false);
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-8 mt-24 md:mt-0">
@@ -57,12 +66,18 @@ const Index: React.FC = () => {
       {/* Room Cards */}
       <div className="flex gap-6 flex-wrap justify-start">
         {rooms.map((room, index) => (
-          <RoomCard key={index} {...room} />
+          <RoomCard
+            key={index}
+            name={room.RoomName ?? 'No Data'}
+            floor={`Floor ${room.Floor}`}
+            building={room.Building?.BuildingName || 'No Data Building'}
+            image={Image}
+          />
         ))}
       </div>
 
       {/* Modal Component */}
-      <AddRoomModal show={showModal} onClose={() => setShowModal(false)} />
+      <AddRoomModal show={showModal} onClose={() => setShowModal(false)} onCreateSuccess={handleCreateSuccess} />
     </div>
   );
 };
