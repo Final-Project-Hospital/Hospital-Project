@@ -11,6 +11,7 @@ const User = Loadable(lazy(() => import("../page/user/")));
 // Admin Role 
 const Admin = Loadable(lazy(() => import("../page/admin/")));
 const MainLayout = Loadable(lazy(() => import("../component/admin/MainLayout")));
+const Calendar = Loadable(lazy(() => import("../page/admin/calendar/Calendar")));
 
 // Hardware
 const Hardware_Main = Loadable(lazy(() => import("../page/admin/harware/index")));
@@ -45,6 +46,7 @@ const AdminRoutes = (): RouteObject[] => [
       { path: "Dashboard", element: <Admin /> },
       { path: "Hardware", element: <Hardware_Main /> },
       { path: "Room", element: <Hardware_Room /> },
+      { path: "Calendar", element: <Calendar /> },
     ],
   },
 ];

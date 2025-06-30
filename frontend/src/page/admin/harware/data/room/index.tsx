@@ -1,11 +1,82 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { Input, Select, Button, message } from 'antd';
+import { CreateRoom, ListBuilding, ListHardware } from '../../../../../services/hardware';
+import { RoomInterface } from '../../../../../interface/IRoom';
+import { BuildingInterface } from '../../../../../interface/IBuilding';
+import { HardwareInterface } from '../../../../../interface/IHardware';
+
+const { Option } = Select;
 
 interface Props {
   show: boolean;
   onClose: () => void;
+  onCreateSuccess: () => void;
 }
 
-const AddRoomModal: React.FC<Props> = ({ show, onClose }) => {
+const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
+  const [room, setRoom] = useState<RoomInterface>({
+    RoomName: '',
+    Floor: '',
+    Employee: { ID: 1 }, // default 1
+  });
+
+  const [buildings, setBuildings] = useState<BuildingInterface[]>([]);
+  const [hardwares, setHardwares] = useState<HardwareInterface[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const b = await ListBuilding();
+      const h = await ListHardware();
+
+      if (b) setBuildings(b);
+      if (h) setHardwares(h);
+    };
+
+    if (show) {
+      fetchData();
+      setRoom((prev) => ({ ...prev, Employee: { ID: 1 } }));
+    }
+  }, [show]);
+
+  const handleChange = (field: keyof RoomInterface, value: any) => {
+    setRoom((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSubmit = async () => {
+    if (!room.RoomName || !room.Floor || !room.Building?.ID || !room.Hardware?.ID) {
+      message.error('กรุณากรอกข้อมูลให้ครบทุกช่อง');
+      return;
+    }
+
+    setLoading(true);
+
+    const payload: RoomInterface = {
+      RoomName: room.RoomName,
+      Floor: room.Floor,
+      Building: buildings.find((b) => b.ID === Number(room.Building?.ID)),
+      Employee: { ID: 1 },
+      Hardware: hardwares.find((h) => h.ID === Number(room.Hardware?.ID)),
+    };
+
+    const res = await CreateRoom(payload);
+    setLoading(false);
+
+    if (res) {
+      message.success('บันทึกสำเร็จ');
+      onCreateSuccess();  // แจ้งให้ parent โหลดข้อมูลใหม่และปิด modal
+    } else {
+      message.error('เกิดข้อผิดพลาดในการบันทึก');
+    }
+  };
+
+  const handleReset = () => {
+    setRoom({ RoomName: '', Floor: '', Employee: { ID: 1 } });
+  };
+
   if (!show) return null;
 
   return (
@@ -16,46 +87,64 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose }) => {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <input
-            type="text"
+          {/* RoomName Input */}
+          <Input
             placeholder="ห้องผู้ป่วยนอก"
-            className="border rounded-full px-4 py-2 w-full"
+            name="RoomName"
+            value={room.RoomName}
+            onChange={(e) => handleChange('RoomName', e.target.value)}
+            allowClear
           />
-          <select className="border rounded-full px-4 py-2 w-full">
-            <option>เซนเซอร์ 01</option>
-            <option>เซนเซอร์ 02</option>
-          </select>
-          <input
-            type="text"
-            placeholder="ชั้น 7"
-            className="border rounded-full px-4 py-2 w-full"
+
+          {/* Hardware Select */}
+          <Select
+            placeholder="เลือกเซนเซอร์"
+            value={room.Hardware?.ID || undefined}
+            onChange={(val) => handleChange('Hardware', { ID: val })}
+            allowClear
+            className="w-full"
+          >
+            {hardwares.map((hw) => (
+              <Option key={hw.ID} value={hw.ID}>
+                {hw.Name}
+              </Option>
+            ))}
+          </Select>
+
+          {/* Floor Input (รับเฉพาะเลข) */}
+          <Input
+            placeholder="ชั้น เช่น 7"
+            value={room.Floor}
+            maxLength={2}
+            onChange={(e) => {
+              const val = e.target.value.replace(/[^0-9]/g, '');
+              handleChange('Floor', val);
+            }}
+            allowClear
           />
-          <input
-            type="text"
-            placeholder="อาคารรัตนเวชพัฒน์"
-            className="border rounded-full px-4 py-2 w-full"
-          />
+
+          {/* Building Select */}
+          <Select
+            placeholder="เลือกอาคาร"
+            value={room.Building?.ID || undefined}
+            onChange={(val) => handleChange('Building', { ID: val })}
+            allowClear
+            className="w-full"
+          >
+            {buildings.map((b) => (
+              <Option key={b.ID} value={b.ID}>
+                {b.BuildingName}
+              </Option>
+            ))}
+          </Select>
         </div>
 
         <div className="flex justify-end gap-4">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 rounded-full bg-gray-300 text-gray-800 hover:bg-gray-400 transition"
-          >
-            ยกเลิก
-          </button>
-          <button
-            onClick={() => alert("ล้างข้อมูล")}
-            className="px-6 py-2 rounded-full bg-white border border-gray-300 text-gray-800 hover:bg-gray-100 transition"
-          >
-            รีเซ็ต
-          </button>
-          <button
-            onClick={() => alert("บันทึกสำเร็จ")}
-            className="px-6 py-2 rounded-full bg-teal-700 text-white hover:bg-teal-800 transition"
-          >
+          <Button onClick={onClose}>ยกเลิก</Button>
+          <Button onClick={handleReset}>รีเซ็ต</Button>
+          <Button type="primary" loading={loading} onClick={handleSubmit}>
             บันทึก
-          </button>
+          </Button>
         </div>
       </div>
     </div>
