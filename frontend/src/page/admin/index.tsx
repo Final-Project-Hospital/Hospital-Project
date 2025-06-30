@@ -7,7 +7,7 @@ const index = () => {
 
     const handleLogout = () => {
         localStorage.removeItem("isLogin");
-        localStorage.removeItem("userRole");
+        localStorage.removeItem("Role");
         localStorage.clear();
 
         message.success("ออกจากระบบ");

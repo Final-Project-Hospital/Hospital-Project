@@ -29,29 +29,17 @@ func ConnectionDB() {
 
 func SetupDatabase() {
 	db.AutoMigrate(
-		&entity.Employee{},
-		&entity.Role{},
+		&entity.User{},
+		&entity.UserRoles{},
 		&entity.Position{},
-
-		&entity.BeforeAfterTreatment{},
-		&entity.Building{},
-		&entity.Environment{},
-		&entity.EnvironmentalRecord{},
-		&entity.Hardware{},
-		&entity.Parameter{},
-		&entity.Room{},
-		&entity.SensorDataParameter{},
-		&entity.SensorData{},
-		&entity.Standard{},
-		&entity.Unit{},
 	)
 
 	// Roles
-	AdminRole := entity.Role{RoleName: "Admin"}
-	UserRole := entity.Role{RoleName: "User"}
+	AdminRole := entity.UserRoles{RoleName: "Admin"}
+	UserRole := entity.UserRoles{RoleName: "User"}
 
-	db.FirstOrCreate(&AdminRole, &entity.Role{RoleName: "Admin"})
-	db.FirstOrCreate(&UserRole, &entity.Role{RoleName: "User"})
+	db.FirstOrCreate(&AdminRole, &entity.UserRoles{RoleName: "Admin"})
+	db.FirstOrCreate(&UserRole, &entity.UserRoles{RoleName: "User"})
 
 	// Positions
 	Position1 := entity.Position{Position: "Engineer"}
@@ -62,52 +50,56 @@ func SetupDatabase() {
 	db.FirstOrCreate(&Position2, &entity.Position{Position: "Doctor"})
 	db.FirstOrCreate(&Position3, &entity.Position{Position: "unknown"})
 
-	// Employees
-	User1 := entity.Employee{
+	// Users
+	User1 := entity.User{
+		Username:    "user1",
 		FirstName:   "Janis",
 		LastName:    "Green",
 		Email:       "janis.green@example.com",
 		Password:    "123",
 		Profile:     "uploads/profile/profile6.jpg",
-		Phone: 		 "0945096372",
+		PhoneNumber: "0945096372",
 		PositionID:  3,
-		RoleID:  2,
+		UserRoleID:  2,
 	}
-	db.FirstOrCreate(&User1, entity.Employee{Email: "janis.green@example.com"})
+	db.FirstOrCreate(&User1, entity.User{Username: "user1"})
 
-	User2 := entity.Employee{
+	User2 := entity.User{
+		Username:    "user2",
 		FirstName:   "Chris",
 		LastName:    "Taylor",
 		Email:       "chris.taylor@example.com",
 		Password:    "123",
 		Profile:     "uploads/profile/profile5.jpeg",
-		Phone: 		 "0945096372",
+		PhoneNumber: "0945096372",
 		PositionID:  3,
-		RoleID:  2,
+		UserRoleID:  2,
 	}
-	db.FirstOrCreate(&User2, entity.Employee{Email: "chris.taylor@example.com"})
+	db.FirstOrCreate(&User2, entity.User{Username: "user2"})
 
-	User3 := entity.Employee{
+	User3 := entity.User{
+		Username:    "user3",
 		FirstName:   "Alex",
 		LastName:    "Smith",
 		Email:       "alex.smith@example.com",
 		Password:    "123",
 		Profile:     "uploads/profile/profile4.jpeg",
-		Phone: 		 "0945096372",
+		PhoneNumber: "0945096372",
 		PositionID:  3,
-		RoleID:  2,
+		UserRoleID:  2,
 	}
-	db.FirstOrCreate(&User3, entity.Employee{Email: "alex.smith@example.com"})
+	db.FirstOrCreate(&User3, entity.User{Username: "user3"})
 
-	Admin := entity.Employee{
+	Admin := entity.User{
+		Username:    "admin",
 		FirstName:   "Kanyapron",
 		LastName:    "KD",
-		Email:       "admin@gmail.com",
+		Email:       "Kanyapron@gmail.com",
 		Password:    "123",
 		Profile:     "uploads/profile/profile1.jpg",
-		Phone:		 "0945096372",
+		PhoneNumber: "0945096372",
 		PositionID:  1,
-		RoleID:  1,
+		UserRoleID:  1,
 	}
-	db.FirstOrCreate(&Admin, entity.Employee{Email: "admin@gmail.com"})
+	db.FirstOrCreate(&Admin, entity.User{Username: "admin"})
 }

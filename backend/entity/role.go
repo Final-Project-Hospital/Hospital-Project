@@ -5,9 +5,9 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserRoles struct {
+type Role struct {
 	gorm.Model
 	RoleName string
 	
-	Users []User `gorm:"foreignKey:UserRoleID"`
+	Employee []Employee `gorm:"foreignKey: RoleID"`
 }
