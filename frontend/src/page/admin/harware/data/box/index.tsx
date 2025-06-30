@@ -1,7 +1,3 @@
-import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import { Navigation } from 'swiper/modules';
 import { FaChartPie } from "react-icons/fa";
 import { AiOutlineDotChart } from "react-icons/ai";
 import { LuChartSpline } from "react-icons/lu";
@@ -17,62 +13,49 @@ const Boxs = () => {
   const formaldehyde = 3.85;
 
   return (
-    <>
-      <Swiper
-        slidesPerView={4}
-        spaceBetween={10}
-        navigation={true}
-        modules={[Navigation]}
-        className="dashboardboxesSlider"
-      >
-        <SwiperSlide>
-          <div className='box p-5 cursor-pointer hover:bg-[#f1f1f1] bg-white rounded-md border border-[rgba(0,0,0,0.1)] flex items-center gap-4'>
-            <GiChemicalDrop className='text-[40px] text-purple-600'/>
-            <div className='info w-[70%]'>
-              <h3>Formaldehyde</h3>
-              <b>{formaldehyde} ppm</b>
-            </div>
-            <AiOutlineDotChart className='text-[40px] text-purple-500'/>
-          </div>
-        </SwiperSlide>
+    <div className="w-full max-w-screen-xl mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Formaldehyde */}
+      <div className="p-5 bg-white rounded-md border border-gray-200 flex items-center gap-4 hover:bg-gray-100 transition">
+        <GiChemicalDrop className="text-4xl text-purple-600" />
+        <div className="flex-1">
+          <h3 className="text-sm font-semibold text-gray-600">Formaldehyde</h3>
+          <b className="text-lg">{formaldehyde} ppm</b>
+        </div>
+        <AiOutlineDotChart className="text-4xl text-purple-500" />
+      </div>
 
-        <SwiperSlide>
-          <div className='box p-5 cursor-pointer bg-white hover:bg-[#f1f1f1] rounded-md border border-[rgba(0,0,0,0.1)] flex items-center gap-4'>
-            <FaTemperatureHigh className='text-[40px] text-red-500'/>
-            <div className='info w-[70%]'>
-              <h3>Temperature</h3>
-              <b className='flex'>
-                {temperature.toFixed(1)} 
-                <RiCelsiusFill className='w-[32px] h-[18px] mt-[3px]'/>
-              </b>
-            </div>
-            <FaChartPie className='text-[40px] text-red-500'/>
-          </div>
-        </SwiperSlide>
+      {/* Temperature */}
+      <div className="p-5 bg-white rounded-md border border-gray-200 flex items-center gap-4 hover:bg-gray-100 transition">
+        <FaTemperatureHigh className="text-4xl text-red-500" />
+        <div className="flex-1">
+          <h3 className="text-sm font-semibold text-gray-600">Temperature</h3>
+          <b className="text-lg flex items-center">
+            {temperature.toFixed(1)} <RiCelsiusFill className="ml-1 w-5 h-5" />
+          </b>
+        </div>
+        <FaChartPie className="text-4xl text-red-500" />
+      </div>
 
-        <SwiperSlide>
-          <div className='box p-5 cursor-pointer bg-white hover:bg-[#f1f1f1] rounded-md border border-[rgba(0,0,0,0.1)] flex items-center gap-4'>
-            <IoWater className='text-[40px] text-blue-500'/>
-            <div className='info w-[70%]'>
-              <h3>Humidity</h3>
-              <b>{humidity.toFixed(1)} %</b>
-            </div>
-            <LuChartSpline className='text-[40px] text-blue-500'/>
-          </div>
-        </SwiperSlide>
+      {/* Humidity */}
+      <div className="p-5 bg-white rounded-md border border-gray-200 flex items-center gap-4 hover:bg-gray-100 transition">
+        <IoWater className="text-4xl text-blue-500" />
+        <div className="flex-1">
+          <h3 className="text-sm font-semibold text-gray-600">Humidity</h3>
+          <b className="text-lg">{humidity.toFixed(1)}%</b>
+        </div>
+        <LuChartSpline className="text-4xl text-blue-500" />
+      </div>
 
-        <SwiperSlide>
-          <div className='box p-5 cursor-pointer bg-white hover:bg-[#f1f1f1] rounded-md border border-[rgba(0,0,0,0.1)] flex items-center gap-4'>
-            <IoWifi className='text-[40px] text-gray-500'/>
-            <div className='info w-[70%]'>
-              <h3>Status</h3>
-              <b>{status}</b> 
-            </div>
-            <GiWifiRouter className='text-[40px] text-gray-500'/>
-          </div>
-        </SwiperSlide>
-      </Swiper>
-    </>
+      {/* Status */}
+      <div className="p-5 bg-white rounded-md border border-gray-200 flex items-center gap-4 hover:bg-gray-100 transition">
+        <IoWifi className="text-4xl text-gray-500" />
+        <div className="flex-1">
+          <h3 className="text-sm font-semibold text-gray-600">Status</h3>
+          <b className="text-lg">{status}</b>
+        </div>
+        <GiWifiRouter className="text-4xl text-gray-500" />
+      </div>
+    </div>
   );
 };
 

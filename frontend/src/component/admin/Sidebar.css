@@ -1,0 +1,74 @@
+.ant-menu-item a,
+.ant-menu-submenu-title,
+.ant-menu-title-content {
+  color: #5D5D5D !important;
+}
+
+/* สีพื้นหลังและตัวอักษร + ไอคอน เมื่อเมนูถูกเลือก */
+.ant-menu-item-selected a,
+.ant-menu-submenu-selected > .ant-menu-submenu-title {
+  color: white !important;
+}
+
+.ant-menu-item-selected svg,
+.ant-menu-submenu-selected > .ant-menu-submenu-title svg {
+  color: white !important;
+ 
+}
+
+.ant-menu-item-selected {
+  background-color: #2ABDBF !important;
+  border-radius: 8px;
+}
+
+.ant-menu-submenu-selected > .ant-menu-submenu-title {
+  background-color: #A1EFF090 !important;
+  border-radius: 8px;
+}
+
+/* ===== Hover Background ===== */
+.ant-menu-item:hover,
+.ant-menu-submenu-title:hover {
+  background-color: #A1EFF090 !important;
+  border-radius: 8px;
+}
+
+/* Custom trigger: layout เมนูย่อย */
+.custom-submenu-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  user-select: none;
+}
+
+.custom-submenu-icon-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-submenu-arrow {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+.ant-menu-item-icon,
+.custom-submenu-icon-text > svg {
+  font-size: 20px !important;
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* -------- ขนาด section title -------- */
+.sidebar-section-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #949494;
+  margin-left: 16px;
+  margin-top: 24px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}

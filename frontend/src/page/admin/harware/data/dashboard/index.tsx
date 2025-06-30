@@ -1,5 +1,8 @@
 import picture1 from "../../../../../assets/ESP32.png";
 import Boxsdata from "../box/index";
+import TableData from "../table/index"
+import Avergare from "../footer/index";
+import LineChart from "../chart/index"
 
 const Index = () => {
   return (
@@ -25,9 +28,22 @@ const Index = () => {
         />
       </section>
 
-      <section className="max-w-screen-2xl mx-auto px-5">
+      <section>
         <Boxsdata />
       </section>
+
+      <div>
+        <TableData />
+      </div>
+
+      <div>
+        <LineChart />
+      </div>
+      <br />
+      <div>
+        <Avergare />
+      </div>
+
     </>
   );
 };
