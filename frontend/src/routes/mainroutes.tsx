@@ -17,6 +17,9 @@ const Calendar = Loadable(lazy(() => import("../page/admin/calendar/Calendar")))
 const Hardware_Main = Loadable(lazy(() => import("../page/admin/harware/index")));
 const Hardware_Room = Loadable(lazy(() => import("../page/admin/harware/data/index")));
 
+const BOD = Loadable(lazy(() => import("../page/admin/data-management/EnvironmentTabs")));
+const BOD2 = Loadable(lazy(() => import("../page/admin/data-management/BODcenter")));
+
 
 const UserRoutes = (): RouteObject[] => [
   {
@@ -47,6 +50,19 @@ const AdminRoutes = (): RouteObject[] => [
       { path: "Hardware", element: <Hardware_Main /> },
       { path: "Room", element: <Hardware_Room /> },
       { path: "Calendar", element: <Calendar /> },
+      {
+        path: "people",
+        element: <BOD />, // Header + Tabs
+        children: [
+          { index: true, element: <BOD2 /> },         // /admin/environment
+          { path: "ph", element: <Calendar /> },            // /admin/environment/ph
+          { path: "bod", element: <BOD2 /> },          // /admin/environment/bod
+          // { path: "tds", element: <TDS /> },          // /admin/environment/tds
+          // { path: "ts", element: <TS /> },
+          // { path: "fog", element: <FOG /> },
+          // { path: "tkn", element: <TKN /> },
+        ],
+      },
     ],
   },
 ];
