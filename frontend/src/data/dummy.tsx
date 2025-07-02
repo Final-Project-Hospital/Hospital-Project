@@ -1,7 +1,7 @@
-import { AiOutlineCalendar } from 'react-icons/ai';
-import { FiShoppingBag,  FiBarChart, FiCreditCard, FiStar, FiShoppingCart } from 'react-icons/fi';
+
+import { FiShoppingBag, FiBarChart, FiCreditCard, FiStar, FiShoppingCart } from 'react-icons/fi';
 import { BsBoxSeam, BsCurrencyDollar, BsShield, BsChatLeft } from 'react-icons/bs';
-import { RiContactsLine } from 'react-icons/ri';
+import { FiHome } from 'react-icons/fi'; import { MdWaterDrop, MdBarChart, MdManageAccounts, MdSensors } from 'react-icons/md'; import { AiOutlineDatabase, AiOutlineCalendar } from 'react-icons/ai';
 import { MdOutlineSupervisorAccount } from 'react-icons/md';
 import { HiOutlineRefresh } from 'react-icons/hi';
 import { TiTick } from 'react-icons/ti';
@@ -21,7 +21,7 @@ import product5 from '../assets/admin/product5.jpg';
 import product6 from '../assets/admin/product6.jpg';
 import product7 from '../assets/admin/product7.jpg';
 
-export const gridOrderImage = (props : any) => (
+export const gridOrderImage = (props: any) => (
   <div>
     <img
       className="rounded-xl h-20 md:ml-3"
@@ -31,7 +31,7 @@ export const gridOrderImage = (props : any) => (
   </div>
 );
 
-export const gridOrderStatus = (props : any) => (
+export const gridOrderStatus = (props: any) => (
   <button
     type="button"
     style={{ background: props.StatusBg }}
@@ -42,24 +42,32 @@ export const gridOrderStatus = (props : any) => (
 );
 
 export const kanbanGrid = [
-  { headerText: 'To Do',
+  {
+    headerText: 'To Do',
     keyField: 'Open',
-    allowToggle: true },
+    allowToggle: true
+  },
 
-  { headerText: 'In Progress',
+  {
+    headerText: 'In Progress',
     keyField: 'InProgress',
-    allowToggle: true },
+    allowToggle: true
+  },
 
-  { headerText: 'Testing',
+  {
+    headerText: 'Testing',
     keyField: 'Testing',
     allowToggle: true,
-    isExpanded: false },
+    isExpanded: false
+  },
 
-  { headerText: 'Done',
+  {
+    headerText: 'Done',
     keyField: 'Close',
-    allowToggle: true },
+    allowToggle: true
+  },
 ];
-const gridEmployeeProfile = (props : any) => (
+const gridEmployeeProfile = (props: any) => (
   <div className="flex items-center gap-2">
     <img
       className="rounded-full w-10 h-10"
@@ -70,7 +78,7 @@ const gridEmployeeProfile = (props : any) => (
   </div>
 );
 
-const gridEmployeeCountry = (props : any) => (
+const gridEmployeeCountry = (props: any) => (
   <div className="flex items-center justify-center gap-2">
     <GrLocation />
     <span>{props.Country}</span>
@@ -118,7 +126,7 @@ export const EditorData = () => (
     </h3>
   </div>
 );
-const customerGridImage = (props : any) => (
+const customerGridImage = (props: any) => (
   <div className="image flex gap-4">
     <img
       className="rounded-full w-10 h-10"
@@ -132,7 +140,7 @@ const customerGridImage = (props : any) => (
   </div>
 );
 
-const customerGridStatus = (props : any) => (
+const customerGridStatus = (props: any) => (
   <div className="flex gap-2 justify-center items-center text-gray-700 capitalize">
     <p style={{ background: props.StatusBg }} className="rounded-full h-3 w-3" />
     <p>{props.Status}</p>
@@ -158,7 +166,7 @@ export const areaPrimaryYAxis = {
   labelStyle: { color: 'gray' },
 
 };
-export const barPrimaryXAxis : AxisModel = {
+export const barPrimaryXAxis: AxisModel = {
   valueType: 'Category',
   interval: 1,
   majorGridLines: { width: 0 },
@@ -322,20 +330,26 @@ export const colorMappingData = [
 ];
 
 export const rangeColorMapping = [
-  { label: '1°C to 10°C',
+  {
+    label: '1°C to 10°C',
     start: '1',
     end: '10',
-    colors: colorMappingData[1] },
+    colors: colorMappingData[1]
+  },
 
-  { label: '11°C to 20°C',
+  {
+    label: '11°C to 20°C',
     start: '11',
     end: '20',
-    colors: colorMappingData[2] },
+    colors: colorMappingData[2]
+  },
 
-  { label: '21°C to 30°C',
+  {
+    label: '21°C to 30°C',
     start: '21',
     end: '30',
-    colors: colorMappingData[3] },
+    colors: colorMappingData[3]
+  },
 
 ];
 
@@ -371,9 +385,9 @@ export const FinancialPrimaryYAxis = {
 };
 
 export const LinePrimaryXAxis = {
-  valueType: 'DateTime' as 'DateTime',   
+  valueType: 'DateTime' as 'DateTime',
   labelFormat: 'y',
-  intervalType: 'Years' as 'Years', 
+  intervalType: 'Years' as 'Years',
   edgeLabelPlacement: 'Shift' as EdgeLabelPlacement,
   majorGridLines: { width: 0 },
   background: 'white',
@@ -392,38 +406,50 @@ export const LinePrimaryYAxis = {
 
 export const customersGrid = [
   { type: 'checkbox', width: '50' },
-  { headerText: 'Name',
+  {
+    headerText: 'Name',
     width: '150',
     template: customerGridImage,
-    textAlign: 'Center' },
-  { field: 'ProjectName',
+    textAlign: 'Center'
+  },
+  {
+    field: 'ProjectName',
     headerText: 'Project Name',
     width: '150',
-    textAlign: 'Center' },
-  { field: 'Status',
+    textAlign: 'Center'
+  },
+  {
+    field: 'Status',
     headerText: 'Status',
     width: '130',
     format: 'yMd',
     textAlign: 'Center',
-    template: customerGridStatus },
+    template: customerGridStatus
+  },
   {
     field: 'Weeks',
     headerText: 'Weeks',
     width: '100',
     format: 'C2',
-    textAlign: 'Center' },
-  { field: 'Budget',
+    textAlign: 'Center'
+  },
+  {
+    field: 'Budget',
     headerText: 'Budget',
     width: '100',
     format: 'yMd',
-    textAlign: 'Center' },
+    textAlign: 'Center'
+  },
 
-  { field: 'Location',
+  {
+    field: 'Location',
     headerText: 'Location',
     width: '150',
-    textAlign: 'Center' },
+    textAlign: 'Center'
+  },
 
-  { field: 'CustomerID',
+  {
+    field: 'CustomerID',
     headerText: 'Customer ID',
     width: '120',
     textAlign: 'Center',
@@ -433,78 +459,111 @@ export const customersGrid = [
 ];
 
 export const employeesGrid = [
-  { headerText: 'Employee',
+  {
+    headerText: 'Employee',
     width: '150',
     template: gridEmployeeProfile,
-    textAlign: 'Center' },
-  { field: 'Name',
+    textAlign: 'Center'
+  },
+  {
+    field: 'Name',
     headerText: '',
     width: '0',
     textAlign: 'Center',
   },
-  { field: 'Title',
+  {
+    field: 'Title',
     headerText: 'Designation',
     width: '170',
     textAlign: 'Center',
   },
-  { headerText: 'Country',
+  {
+    headerText: 'Country',
     width: '120',
     textAlign: 'Center',
-    template: gridEmployeeCountry },
+    template: gridEmployeeCountry
+  },
 
-  { field: 'HireDate',
+  {
+    field: 'HireDate',
     headerText: 'Hire Date',
     width: '135',
     format: 'yMd',
-    textAlign: 'Center' },
+    textAlign: 'Center'
+  },
 
-  { field: 'ReportsTo',
+  {
+    field: 'ReportsTo',
     headerText: 'Reports To',
     width: '120',
-    textAlign: 'Center' },
-  { field: 'EmployeeID',
+    textAlign: 'Center'
+  },
+  {
+    field: 'EmployeeID',
     headerText: 'Employee ID',
     width: '125',
-    textAlign: 'Center' },
+    textAlign: 'Center'
+  },
 ];
 
 export const links = [
   {
-    title: 'Dashboard',
+    title: 'หน้าแรก',
     links: [
       {
         name: 'Dashboard',
-        icon: <FiShoppingBag />,
+        label: 'หน้าเเรก',
+        icon: <FiHome />,
       },
     ],
   },
 
   {
-    title: 'Mangement',
+    title: 'จัดการ',
     links: [
       {
-        name: 'People',
-        icon: <RiContactsLine />,
+        name: 'data-visualization',
+        label: 'ข้อมูลตรวจวัด',
+        icon: <MdBarChart />,
+        subMenu: [
+          {
+            name: 'กลุ่มน้ำ',
+            label: 'กลุ่มน้ำ',
+            icon: <MdWaterDrop />,
+            path: '/measurement/water',
+            subMenu: [
+              {
+                name: 'นํ้าเสีย',
+                path: '/measurement/water/',
+              },
+            ],
+          },
+        ],
       },
       {
-        name: 'Monitoring Data',
-        icon: <RiContactsLine />,
-      },
-      {
-        name: 'Information',
-        icon: <RiContactsLine />,
+        name: 'data-management',
+        label: 'จัดการข้อมูล',
+        icon: <AiOutlineDatabase />,
       },
       {
         name: 'Hardware',
-        icon: <RiContactsLine />,
+        label: 'ข้อมูลเซนเซอร์',
+        icon: <MdSensors />,
+      },
+      {
+        name: '-management',
+        label: 'จัดการบุคคล',
+        icon: <MdManageAccounts />,
       },
     ],
   },
+
   {
-    title: 'Work',
+    title: 'งาน',
     links: [
       {
         name: 'Calendar',
+        label: 'ปฏิทิน',
         icon: <AiOutlineCalendar />,
       },
     ],
@@ -837,7 +896,8 @@ export const ordersGrid = [
     editType: 'dropdownedit',
     textAlign: 'Center',
   },
-  { field: 'CustomerName',
+  {
+    field: 'CustomerName',
     headerText: 'Customer Name',
     width: '150',
     textAlign: 'Center',
@@ -1443,7 +1503,7 @@ export const employeesData = [
     Country: 'USA',
     ReportsTo: 'Carson',
     EmployeeImage:
-    avatar3,
+      avatar3,
   },
   {
     EmployeeID: 2,
@@ -1513,7 +1573,7 @@ export const employeesData = [
     Country: 'USA',
     ReportsTo: 'Carson',
     EmployeeImage:
-    avatar2,
+      avatar2,
 
   },
   {
@@ -1584,7 +1644,7 @@ export const employeesData = [
     Country: 'USA',
     ReportsTo: 'Carson',
     EmployeeImage:
-    avatar,
+      avatar,
   },
   {
     EmployeeID: 2,
@@ -1654,7 +1714,7 @@ export const employeesData = [
     Country: 'USA',
     ReportsTo: 'Carson',
     EmployeeImage:
-    avatar2,
+      avatar2,
 
   },
   {
@@ -1725,7 +1785,7 @@ export const employeesData = [
     Country: 'USA',
     ReportsTo: 'Carson',
     EmployeeImage:
-    avatar2,
+      avatar2,
 
   },
   {
@@ -1796,7 +1856,7 @@ export const employeesData = [
     Country: 'USA',
     ReportsTo: 'Carson',
     EmployeeImage:
-    avatar2,
+      avatar2,
 
   },
   {
@@ -1867,7 +1927,7 @@ export const employeesData = [
     Country: 'USA',
     ReportsTo: 'Carson',
     EmployeeImage:
-    avatar2,
+      avatar2,
 
   },
   {
@@ -1938,7 +1998,7 @@ export const employeesData = [
     Country: 'USA',
     ReportsTo: 'Carson',
     EmployeeImage:
-    avatar2,
+      avatar2,
 
   },
   {
@@ -2009,7 +2069,7 @@ export const employeesData = [
     Country: 'USA',
     ReportsTo: 'Carson',
     EmployeeImage:
-    avatar2,
+      avatar2,
 
   },
   {
@@ -2129,7 +2189,7 @@ export const ordersData = [
     Status: 'rejected',
     StatusBg: 'red',
     ProductImage:
-    product1,
+      product1,
   },
   {
     OrderID: 94757,
@@ -3045,29 +3105,35 @@ export const SparklineAreaData = [
 ];
 
 export const lineCustomSeries = [
-  { dataSource: lineChartData[0],
+  {
+    dataSource: lineChartData[0],
     xName: 'x',
     yName: 'y',
     name: 'Germany',
     width: '2',
     marker: { visible: true, width: 10, height: 10 },
-    type: 'Line' },
+    type: 'Line'
+  },
 
-  { dataSource: lineChartData[1],
+  {
+    dataSource: lineChartData[1],
     xName: 'x',
     yName: 'y',
     name: 'England',
     width: '2',
     marker: { visible: true, width: 10, height: 10 },
-    type: 'Line' },
+    type: 'Line'
+  },
 
-  { dataSource: lineChartData[2],
+  {
+    dataSource: lineChartData[2],
     xName: 'x',
     yName: 'y',
     name: 'India',
     width: '2',
     marker: { visible: true, width: 10, height: 10 },
-    type: 'Line' },
+    type: 'Line'
+  },
 
 ];
 
@@ -3130,7 +3196,8 @@ export const stackedChartData = [
 
 export const stackedCustomSeries = [
 
-  { dataSource: stackedChartData[0],
+  {
+    dataSource: stackedChartData[0],
     xName: 'x',
     yName: 'y',
     name: 'Budget',
@@ -3139,7 +3206,8 @@ export const stackedCustomSeries = [
 
   },
 
-  { dataSource: stackedChartData[1],
+  {
+    dataSource: stackedChartData[1],
     xName: 'x',
     yName: 'y',
     name: 'Expense',
@@ -3158,7 +3226,7 @@ export const stackedPrimaryXAxis: AxisModel = {
   interval: 1,
   lineStyle: { width: 0 },
   labelIntersectAction: 'Rotate45',
-  valueType: 'Category', 
+  valueType: 'Category',
 };
 
 export const stackedPrimaryYAxis = {

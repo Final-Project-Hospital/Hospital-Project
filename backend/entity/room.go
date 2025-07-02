@@ -6,14 +6,15 @@ import (
 
 type Room struct {
 	gorm.Model
-	RoomName	string
-	Floor		int
+	RoomName string
+	Floor    int
 
-	BuildingID	uint
-	Building	*Building `gorm:"foreignKey: BuildingID"`
+	BuildingID uint
+	Building   *Building `gorm:"foreignKey: BuildingID"`
 
-	EmployeeID	uint
-	Employee	*Employee `gorm:"foreignKey: EmployeeID"`
+	EmployeeID uint
+	Employee   *Employee `gorm:"foreignKey: EmployeeID"`
 
-	Hardware []Hardware `gorm:"foreignKey: RoomID"`
+	HardwareID uint
+	Hardware   *Hardware `gorm:"foreignKey: HardwareID"`
 }

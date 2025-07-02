@@ -11,6 +11,14 @@ const User = Loadable(lazy(() => import("../page/user/")));
 // Admin Role 
 const Admin = Loadable(lazy(() => import("../page/admin/")));
 const MainLayout = Loadable(lazy(() => import("../component/admin/MainLayout")));
+const Calendar = Loadable(lazy(() => import("../page/admin/calendar/Calendar")));
+
+// Hardware
+const Hardware_Main = Loadable(lazy(() => import("../page/admin/harware/index")));
+const Hardware_Room = Loadable(lazy(() => import("../page/admin/harware/data/index")));
+
+const EnvironmentTabs = Loadable(lazy(() => import("../page/admin/data-management/EnvironmentTabs")));
+const BOD = Loadable(lazy(() => import("../page/admin/data-management/BODcenter")));
 
 
 const UserRoutes = (): RouteObject[] => [
@@ -39,6 +47,22 @@ const AdminRoutes = (): RouteObject[] => [
     children: [
       { index: true, element: <Admin /> },
       { path: "Dashboard", element: <Admin /> },
+      { path: "Hardware", element: <Hardware_Main /> },
+      { path: "Room", element: <Hardware_Room /> },
+      { path: "Calendar", element: <Calendar /> },
+      {
+        path: "data-management",
+        element: <EnvironmentTabs />, // Header + Tabs
+        children: [
+          { index: true, element: <BOD /> },         // /admin/environment
+          { path: "ph", element: <Calendar /> },            // /admin/environment/ph
+          { path: "bod", element: <BOD /> },          // /admin/environment/bod
+          // { path: "tds", element: <TDS /> },          // /admin/environment/tds
+          // { path: "ts", element: <TS /> },
+          // { path: "fog", element: <FOG /> },
+          // { path: "tkn", element: <TKN /> },
+        ],
+      },
     ],
   },
 ];

@@ -1,0 +1,59 @@
+.tds-header {
+  background: linear-gradient(90deg, #356768, #5AEEF0);
+  padding: 30px;
+  border-radius: 0 0 25px 25px;
+  color: white;
+}
+
+.tds-header h1 {
+  font-size: 2rem; /* ปรับให้ responsive โดยไม่ใช้ xx-large */
+  text-shadow: 0 4px 5px #000000ba;
+  font-weight: 500;
+  margin: 0;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: inherit;
+  border-bottom: 2px solid #A1EFF0;
+  width: 100%; /* default full width */
+  box-sizing: border-box;
+}
+
+/* Responsive Behavior */
+@media (max-width: 768px) {
+  .tabs {
+    width: 50%;
+    margin: 0 auto;
+  }
+  .tds-header{
+    margin-top: 50px;
+  }
+  .tds-header h1 {
+    font-size: 2.5rem;
+    text-align: center;
+  }
+  .tds-header p{
+    font-size: 1rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .tds-header {
+    padding: 20px;
+  }
+
+  .tds-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .tabs {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+}

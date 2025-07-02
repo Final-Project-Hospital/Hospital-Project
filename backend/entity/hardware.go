@@ -6,10 +6,10 @@ import (
 
 type Hardware struct {
 	gorm.Model
+	Name string
 	IpAddress	string
 
-	RoomID	uint
-	Room	*Room `gorm:"foreignKey: RoomID"`
-	
+	Room []Room `gorm:"foreignKey: HardwareID"`
+
 	SensorData []SensorData `gorm:"foreignKey: HardwareID"`
 }
