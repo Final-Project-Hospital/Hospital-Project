@@ -57,8 +57,10 @@ func main() {
 		//Building
 		public.GET("/buildings", building.ListBuilding)
 
-		//
+		// Sensorparameter
 		public.GET("/data-sensorparameter", sensordata.ListDataSensorParameter)
+		public.GET("/sensor-data-parameters/:id", sensordata.GetSensorDataParametersBySensorDataID)
+		public.GET("/sensor-data-by-hardware/:id", sensordata.GetSensorDataIDByHardwareID)
 
 		//Calendar
 		public.GET("/calendars", calendar.ListCalendar)

@@ -3,8 +3,17 @@ import Boxsdata from "../box/index";
 import TableData from "../table/index";
 import Avergare from "../footer/index";
 import LineChart from "../chart/index";
+import { useLocation } from 'react-router-dom';
+import { useEffect } from "react";
 
 const Index = () => {
+  const location = useLocation();
+  const { hardwareID } = location.state || {};
+
+  useEffect(() => {
+    console.log("HardwareID:", hardwareID);
+  }, [hardwareID]);
+
   return (
     <>
       <section className="max-w-screen-2xl mx-auto p-5 bg-white border border-gray-200 rounded-lg shadow-md mb-8 mt-24 md:mt-0 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center">
@@ -29,11 +38,11 @@ const Index = () => {
       </section>
 
       <section>
-        <Boxsdata />
+        <Boxsdata hardwareID={hardwareID} />
       </section>
 
       <div>
-        <TableData />
+        <TableData hardwareID={hardwareID}/>
       </div>
 
       {/* บรรจุ 2 กราฟให้อยู่ข้างกัน */}
@@ -49,7 +58,7 @@ const Index = () => {
       <br />
 
       <div>
-        <Avergare />
+        <Avergare hardwareID={hardwareID} />
       </div>
     </>
   );

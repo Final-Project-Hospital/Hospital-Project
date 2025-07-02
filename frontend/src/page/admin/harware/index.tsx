@@ -3,9 +3,9 @@ import { FaHome, FaEdit, FaTrash } from 'react-icons/fa';
 import { Trash2 } from 'react-feather';
 import { useNavigate } from 'react-router-dom';
 import Image from "../../../assets/operating-room_4246637.png";
-import AddRoomModal from './data/room/create';        
-import EditRoomModal from './data/room/edit';         
-import Modal from '../harware/data/room/delete';      
+import AddRoomModal from './data/room/create';
+import EditRoomModal from './data/room/edit';
+import Modal from '../harware/data/room/delete';
 import { ListRoom, DeleteRoomById } from '../../../services/hardware';
 import { RoomInterface } from '../../../interface/IRoom';
 
@@ -16,6 +16,7 @@ interface RoomCardProps {
   image: string;
   onUpdate: () => void;
   onDelete: () => void;
+  hardwareID: number;
 }
 
 const RoomCard: React.FC<RoomCardProps> = ({
@@ -24,13 +25,14 @@ const RoomCard: React.FC<RoomCardProps> = ({
   building,
   image,
   onUpdate,
-  onDelete
+  onDelete,
+  hardwareID,
 }) => {
   const navigate = useNavigate();
 
   return (
     <div
-      onClick={() => navigate('/admin/Room')}
+      onClick={() => navigate('/admin/Room', { state: { hardwareID } })}
       className="bg-white rounded-2xl shadow-lg p-6 flex justify-between items-center w-full max-w-md transition hover:shadow-xl cursor-pointer"
     >
       <div>
@@ -83,6 +85,7 @@ const Index: React.FC = () => {
 
   const fetchRooms = async () => {
     const data = await ListRoom();
+    console.log(data)
     if (data) setRooms(data);
   };
 
@@ -164,8 +167,9 @@ const Index: React.FC = () => {
             floor={`Floor ${room.Floor}`}
             building={room.Building?.BuildingName || 'No Data Building'}
             image={Image}
-            onUpdate={() => handleEditClick(room)}  
+            onUpdate={() => handleEditClick(room)}
             onDelete={() => handleDelete(room.ID!, room.RoomName ?? 'No Data')}
+            hardwareID={room.Hardware?.ID!}
           />
         ))}
       </div>

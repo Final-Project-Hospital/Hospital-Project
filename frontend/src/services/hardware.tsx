@@ -2,6 +2,7 @@ import axios from "axios";
 import { RoomInterface } from "../interface/IRoom"
 import { BuildingInterface } from "../interface/IBuilding"
 import { HardwareInterface } from "../interface/IHardware"
+import { SensorDataParameterInterface } from "../interface/ISensorDataParameter"
 const apiUrl = "http://localhost:8000";
 
 const getAuthHeader = () => {
@@ -167,6 +168,52 @@ export const ListBuilding = async (): Promise<BuildingInterface[] | null> => {
     }
   } catch (error) {
     console.error("Error fetching buildings:", error);
+    return null;
+  }
+};
+
+export const GetSensorDataParametersBySensorDataID = async (
+  id: number
+): Promise<SensorDataParameterInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/sensor-data-parameters/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching sensor data parameters:", error);
+    return null;
+  }
+};
+
+export const GetSensorDataByHardwareID = async (
+  id: number
+): Promise<any[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/sensor-data-by-hardware/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching sensor data by hardware ID:", error);
     return null;
   }
 };
