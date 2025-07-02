@@ -2,6 +2,7 @@ import axios from "axios";
 import { RoomInterface } from "../interface/IRoom"
 import { BuildingInterface } from "../interface/IBuilding"
 import { HardwareInterface } from "../interface/IHardware"
+import { SensorDataParameterInterface } from "../interface/ISensorDataParameter"
 const apiUrl = "http://localhost:8000";
 
 const getAuthHeader = () => {
@@ -77,6 +78,58 @@ export const CreateRoom = async (room: RoomInterface): Promise<RoomInterface | n
   }
 };
 
+export const UpdateRoom = async (
+  id: number,
+  room: Partial<RoomInterface>
+): Promise<RoomInterface | null> => {
+  try {
+    const payload: any = {};
+
+    if (room.RoomName !== undefined) payload.RoomName = room.RoomName;
+    if (room.Floor !== undefined) payload.Floor = Number(room.Floor);
+    if (room.Building?.ID !== undefined) payload.BuildingID = room.Building.ID;
+    if (room.Employee?.ID !== undefined) payload.EmployeeID = room.Employee.ID;
+    if (room.Hardware?.ID !== undefined) payload.HardwareID = room.Hardware.ID;
+
+    const response = await axios.patch(`${apiUrl}/update-room/${id}`, payload, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected response status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error updating room:", error);
+    return null;
+  }
+};
+
+export const DeleteRoomById = async (id: number): Promise<boolean> => {
+  try {
+    const response = await axios.delete(`${apiUrl}/delete-room/${id}`, {
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return true;
+    } else {
+      console.error("Unexpected response status:", response.status);
+      return false;
+    }
+  } catch (error) {
+    console.error("Error deleting room:", error);
+    return false;
+  }
+};
+
 export const ListHardware = async (): Promise<HardwareInterface[] | null> => {
   try {
     const response = await axios.get(`${apiUrl}/hardwares`, {
@@ -115,6 +168,52 @@ export const ListBuilding = async (): Promise<BuildingInterface[] | null> => {
     }
   } catch (error) {
     console.error("Error fetching buildings:", error);
+    return null;
+  }
+};
+
+export const GetSensorDataParametersBySensorDataID = async (
+  id: number
+): Promise<SensorDataParameterInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/sensor-data-parameters/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching sensor data parameters:", error);
+    return null;
+  }
+};
+
+export const GetSensorDataByHardwareID = async (
+  id: number
+): Promise<any[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/sensor-data-by-hardware/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching sensor data by hardware ID:", error);
     return null;
   }
 };
