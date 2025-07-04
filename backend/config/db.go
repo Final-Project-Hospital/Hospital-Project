@@ -185,45 +185,46 @@ func SetupDatabase() {
 
 	if count == 0 {
 		index := 0
-		for i := 0; i < 40; i++ {
-			month := (i / 10) + 1 // เดือนที่ 1-4
-			day := (i % 10) + 1   // วันที่ 1-10
-			date := time.Date(2025, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+		for month := 1; month <= 12; month++ {
+			for day := 1; day <= 20; day++ {
+				date := time.Date(2025, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 
-			// Formaldehyde (ParameterID = 1)
-			param1 := entity.SensorDataParameter{
-				Data:         float64(0.1 + float64(i)*0.01),
-				SensorDataID: 1,
-				ParameterID:  1,
-				Date:         date,
-			}
-			db.Create(&param1)
-			index++
+				// Formaldehyde (ParameterID = 1)
+				// เพิ่มค่าให้ขึ้นเรื่อย ๆ ตามเดือนและวัน เล็กน้อย
+				param1 := entity.SensorDataParameter{
+					Data:         0.1 + float64(month)*0.05 + float64(day)*0.002,
+					SensorDataID: 1,
+					ParameterID:  1,
+					Date:         date,
+				}
+				db.Create(&param1)
+				index++
 
-			// Temperature (ParameterID = 2)
-			param2 := entity.SensorDataParameter{
-				Data:         float64(25 + i%5),
-				SensorDataID: 1,
-				ParameterID:  2,
-				Date:         date,
-			}
-			db.Create(&param2)
-			index++
+				// Temperature (ParameterID = 2)
+				// ค่า 20-35 เพิ่ม-ลดตามวันและเดือน
+				param2 := entity.SensorDataParameter{
+					Data:         20 + float64(month) + float64(day)*0.3 + float64((day%5)-2),
+					SensorDataID: 1,
+					ParameterID:  2,
+					Date:         date,
+				}
+				db.Create(&param2)
+				index++
 
-			// Humidity (ParameterID = 3)
-			param3 := entity.SensorDataParameter{
-				Data:         float64(50 + i%10),
-				SensorDataID: 1,
-				ParameterID:  3,
-				Date:         date,
+				// Humidity (ParameterID = 3)
+				// ค่า 40-70 แบบขึ้นลงตามวันเดือนเล็กน้อย
+				param3 := entity.SensorDataParameter{
+					Data:         40 + float64(month)*2 + float64(day)*0.8 + float64((day%7)-3),
+					SensorDataID: 1,
+					ParameterID:  3,
+					Date:         date,
+				}
+				db.Create(&param3)
+				index++
 			}
-			db.Create(&param3)
-			index++
 		}
-
-		println("✅ เพิ่มข้อมูล SensorDataParameter ทั้งหมด 120 records พร้อมวันที่")
+		println("✅ เพิ่มข้อมูล SensorDataParameter ทั้งหมด", index, "records พร้อมวันที่")
 	} else {
 		println("⚠️  ข้ามการเพิ่มข้อมูล SensorDataParameter เพราะมีข้อมูลอยู่แล้ว")
 	}
-
 }
