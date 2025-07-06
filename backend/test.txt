@@ -43,9 +43,9 @@ func main() {
 
 		public := r.Group("")
 		{
-			public.GET("/users", user.ListUsers)
-			public.GET("/uploads/*filename", user.ServeImage)
-			public.GET("/user-data/:userID", user.GetDataByUserID)
+			public.GET("/users", users.ListUsers)
+			public.GET("/uploads/*filename", users.ServeImage)
+			public.GET("/user-data/:userID", users.GetDataByUserID)
 
 			// Room
 			public.GET("/rooms", room.ListRoom)
@@ -87,7 +87,7 @@ func main() {
 
 	publicSensor := rSensor.Group("")
 	{
-		publicSensor.POST("/hardware/receive", hardware.ReceiveSensorData) // ตัวอย่าง API รับข้อมูล sensor
+		publicSensor.POST("/hardware", hardware.ReceiveSensorData) // ตัวอย่าง API รับข้อมูล sensor
 	}
 
 	rSensor.GET("/", func(c *gin.Context) {
