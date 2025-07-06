@@ -1,5 +1,5 @@
 
-import { FiShoppingBag, FiBarChart, FiCreditCard, FiStar, FiShoppingCart } from 'react-icons/fi';
+import { FiBarChart, FiCreditCard, FiStar, FiShoppingCart } from 'react-icons/fi';
 import { BsBoxSeam, BsCurrencyDollar, BsShield, BsChatLeft } from 'react-icons/bs';
 import { FiHome } from 'react-icons/fi'; import { MdWaterDrop, MdBarChart, MdManageAccounts, MdSensors } from 'react-icons/md'; import { AiOutlineDatabase, AiOutlineCalendar } from 'react-icons/ai';
 import { MdOutlineSupervisorAccount } from 'react-icons/md';
@@ -3082,19 +3082,13 @@ export const lineChartData = [
     { x: new Date(2011, 0, 1), y: 100 },
   ],
 ];
+
 export const dropdownData = [
-  {
-    Id: '1',
-    Time: 'March 2021',
-  },
-  {
-    Id: '2',
-    Time: 'April 2021',
-  }, {
-    Id: '3',
-    Time: 'May 2021',
-  },
+  { Id: 'day', Time: 'Daily' },
+  { Id: 'month', Time: 'Monthly' },
+  { Id: 'year', Time: 'Yearly' },
 ];
+
 export const SparklineAreaData = [
   { x: 1, yval: 2 },
   { x: 2, yval: 6 },

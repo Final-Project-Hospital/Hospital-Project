@@ -42,17 +42,11 @@ const Index = () => {
       </section>
 
       <div>
-        <TableData hardwareID={hardwareID}/>
+        <TableData hardwareID={hardwareID} />
       </div>
 
-      {/* บรรจุ 2 กราฟให้อยู่ข้างกัน */}
-      <div className="flex flex-col md:flex-row gap-6 max-w-full overflow-x-auto p-1">
-        <div className="flex-1 bg-white p-4 rounded shadow min-w-[320px]">
-          <LineChart />
-        </div>
-        <div className="flex-1 bg-white p-4 rounded shadow min-w-[320px]">
-          <LineChart />
-        </div>
+      <div className="w-full bg-white p-4 rounded shadow my-6">
+        <LineChart hardwareID={hardwareID} />
       </div>
 
       <br />
