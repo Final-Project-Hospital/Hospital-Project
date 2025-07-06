@@ -13,7 +13,8 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/logins"
 	"github.com/Tawunchai/hospital-project/controller/room"
 	"github.com/Tawunchai/hospital-project/controller/sensordata"
-
+	"github.com/Tawunchai/hospital-project/controller/tkncenter"
+	"github.com/Tawunchai/hospital-project/controller/tscenter"
 	"github.com/Tawunchai/hospital-project/controller/users"
 
 	"github.com/Tawunchai/hospital-project/middlewares"
@@ -44,6 +45,20 @@ func main() {
 		public.GET("/users", user.ListUsers)
 		public.GET("/uploads/*filename", user.ServeImage)
 		public.GET("/user-data/:userID", user.GetDataByUserID)
+
+		//TKN
+		public.POST("/create-tkn", tkncenter.CreateTKN)
+		public.GET("/read-tkn", tkncenter.GetTKN)
+		public.GET("read-tkn/:id", tkncenter.GetTKNbyID)
+		public.PATCH("/update-tkn/:id", tkncenter.UpdateTKN)
+		public.DELETE("/delete-tkn/:id", tkncenter.DeleteTKN)
+
+		//TS
+		public.POST("/create-ts", tscenter.CreateTS)
+		public.GET("/read-ts", tscenter.GetTS)
+		public.GET("read-ts/:id", tscenter.GetTSbyID)
+		public.PATCH("/update-ts/:id", tscenter.UpdateTS)
+		public.DELETE("/delete-ts/:id", tscenter.DeleteTS)
 
 		//Room
 		public.GET("/rooms", room.ListRoom)

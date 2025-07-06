@@ -24,7 +24,7 @@ func CreateTKN(c *gin.Context) {
 		Data:                   input.Data,
 		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
 		EnvironmentID:          input.EnvironmentID,
-		ParameterID:            input.ParameterID,
+		ParameterID:            4,
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,
@@ -53,6 +53,29 @@ func GetTKN(c *gin.Context) {
 
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, tkn)
+}
+
+func GetTKNbyID(c *gin.Context) {
+	id := c.Param("id")
+
+	var tkn entity.EnvironmentalRecord
+
+	db := config.DB()
+
+	result := db.Preload("BeforeAfterTreatment").
+		Preload("Environment").
+		Preload("Parameter").
+		Preload("Standard").
+		Preload("Unit").
+		Preload("Employee").
+		First(&tkn, id)
+
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูล"})
 		return
 	}
 
