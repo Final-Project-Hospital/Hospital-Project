@@ -17,7 +17,7 @@ func DB() *gorm.DB {
 }
 
 func ConnectionDB() {
-	dsn := "host=localhost user=postgres password=1234 dbname=hospital port=5432 sslmode=disable TimeZone=Asia/Bangkok"
+	dsn := "host=localhost user=postgres password=123456 dbname=HospitalDB port=5432 sslmode=disable TimeZone=Asia/Bangkok"
 
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Error),
@@ -49,7 +49,29 @@ func SetupDatabase() {
 		&entity.Unit{},
 		&entity.Calendar{},
 	)
+	// Enviroment
+	Wastewater := entity.Environment{
+		EnvironmentName: "น้ำเสีย",
+	}
+	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
+	
+	// Standaed
+	Standard := entity.Standard{
+		StandardValue: 100,
+	}
+	db.FirstOrCreate(&Standard, &entity.Standard{StandardValue: 100})
 
+	// Unit
+	Unit := entity.Unit{
+		UnitName: "มิลลิกรัมต่อลิตร",
+	}
+	db.FirstOrCreate(&Unit, &entity.Unit{UnitName: "มิลลิกรัมต่อลิตร"})
+
+	//BeforeAfter
+	Before := entity.BeforeAfterTreatment{TreatmentName: "ก่อน"}
+	After := entity.BeforeAfterTreatment{TreatmentName: "หลัง"}
+	db.FirstOrCreate(&Before, &entity.BeforeAfterTreatment{TreatmentName: "ก่อน"})
+	db.FirstOrCreate(&After, &entity.BeforeAfterTreatment{TreatmentName: "หลัง"})
 	// Roles
 	AdminRole := entity.Role{RoleName: "Admin"}
 	UserRole := entity.Role{RoleName: "User"}
@@ -177,10 +199,14 @@ func SetupDatabase() {
 	param1 := entity.Parameter{ParameterName: "Formaldehyde"}
 	param2 := entity.Parameter{ParameterName: "Temperature"}
 	param3 := entity.Parameter{ParameterName: "Humidity"}
+	param4 := entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"}
+	param5 := entity.Parameter{ParameterName: "Total Solid"}
 
 	db.FirstOrCreate(&param1, entity.Parameter{ParameterName: "Formaldehyde"})
 	db.FirstOrCreate(&param2, entity.Parameter{ParameterName: "Temperature"})
 	db.FirstOrCreate(&param3, entity.Parameter{ParameterName: "Humidity"})
+	db.FirstOrCreate(&param4, entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"})
+	db.FirstOrCreate(&param5, entity.Parameter{ParameterName: "Total Solid"})
 
 	var count int64
 	db.Model(&entity.SensorDataParameter{}).Count(&count)

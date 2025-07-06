@@ -7,24 +7,26 @@ import (
 
 type EnvironmentalRecord struct {
 	gorm.Model
-	Date	time.Time
-	Data	float32
+	Date time.Time `gorm:"column:date"`
+	Data float32   `gorm:"column:data"`
+	
+	comment string
 
-	BeforeAfterTreatmentID	uint
-	BeforeAfterTreatment	*BeforeAfterTreatment `gorm:"foreignKey: BeforeAfterTreatmentID"`
+	BeforeAfterTreatmentID uint                  `gorm:"column:before_after_treatment_id"`
+	BeforeAfterTreatment   *BeforeAfterTreatment `gorm:"foreignKey:BeforeAfterTreatmentID"`
 
-	EnvironmentID	uint
-	Environment		*Environment `gorm:"foreignKey: EnvironmentID"`
+	EnvironmentID uint         `gorm:"column:environment_id"`
+	Environment   *Environment `gorm:"foreignKey:EnvironmentID"`
 
-	ParameterID	uint
-	Parameter   *Parameter `gorm:"foreignKey: ParameterID"`
+	ParameterID uint       `gorm:"column:parameter_id"`
+	Parameter   *Parameter `gorm:"foreignKey:ParameterID"`
 
-	StandardID	uint
-	Standard	*Standard `gorm:"foreignKey: StandardID"`
+	StandardID uint       `gorm:"column:standard_id"`
+	Standard   *Standard  `gorm:"foreignKey:StandardID"`
 
-	UnitID	uint
-	Unit	*Unit `gorm:"foreignKey: UnitID"`
+	UnitID uint     `gorm:"column:unit_id"`
+	Unit   *Unit    `gorm:"foreignKey:UnitID"`
 
-	EmployeeID	uint
-	Employee	*Employee `gorm:"foreignKey: EmployeeID"`
+	EmployeeID uint       `gorm:"column:employee_id"`
+	Employee   *Employee  `gorm:"foreignKey:EmployeeID"`
 }
