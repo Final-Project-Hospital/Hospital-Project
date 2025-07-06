@@ -13,15 +13,16 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/logins"
 	"github.com/Tawunchai/hospital-project/controller/room"
 	"github.com/Tawunchai/hospital-project/controller/sensordata"
-
+	"github.com/Tawunchai/hospital-project/controller/tkncenter"
+	"github.com/Tawunchai/hospital-project/controller/tscenter"
 	"github.com/Tawunchai/hospital-project/controller/users"
 
 	"github.com/Tawunchai/hospital-project/middlewares"
 )
 
 const (
-	PORT_WEB     = "8000"
-	PORT_SENSOR  = "8001"
+	PORT_WEB    = "8000"
+	PORT_SENSOR = "8001"
 )
 
 func main() {
@@ -38,7 +39,7 @@ func main() {
 		authorized := r.Group("")
 		authorized.Use(middlewares.Authorizes())
 		{
-			// ใส่ route ที่ต้องการให้มีการ authorize
+			// ใส่ route ที่ต้องการ authorize
 		}
 
 		public := r.Group("")
@@ -47,15 +48,28 @@ func main() {
 			public.GET("/uploads/*filename", users.ServeImage)
 			public.GET("/user-data/:userID", users.GetDataByUserID)
 
+			// TKN
+			public.POST("/create-tkn", tkncenter.CreateTKN)
+			public.GET("/read-tkn", tkncenter.GetTKN)
+			public.GET("read-tkn/:id", tkncenter.GetTKNbyID)
+			public.PATCH("/update-tkn/:id", tkncenter.UpdateTKN)
+			public.DELETE("/delete-tkn/:id", tkncenter.DeleteTKN)
+
+			// TS
+			public.POST("/create-ts", tscenter.CreateTS)
+			public.GET("/read-ts", tscenter.GetTS)
+			public.GET("read-ts/:id", tscenter.GetTSbyID)
+			public.PATCH("/update-ts/:id", tscenter.UpdateTS)
+			public.DELETE("/delete-ts/:id", tscenter.DeleteTS)
+
 			// Room
 			public.GET("/rooms", room.ListRoom)
 			public.POST("/create-rooms", room.CreateRoom)
 			public.PATCH("/update-room/:id", room.UpdateRoom)
 			public.DELETE("/delete-room/:id", room.DeleteRoomById)
 
-			// Hardware
+			// Hardware (list only, no receive here)
 			public.GET("/hardwares", hardware.ListHardware)
-			public.POST("/hardware/receive", hardware.ReceiveSensorData)
 
 			// Building
 			public.GET("/buildings", building.ListBuilding)
@@ -87,7 +101,7 @@ func main() {
 
 	publicSensor := rSensor.Group("")
 	{
-		publicSensor.POST("/hardware", hardware.ReceiveSensorData) // ตัวอย่าง API รับข้อมูล sensor
+		publicSensor.POST("/hardware/receive", hardware.ReceiveSensorData) // API สำหรับรับข้อมูล sensor
 	}
 
 	rSensor.GET("/", func(c *gin.Context) {
@@ -99,11 +113,10 @@ func main() {
 	}
 }
 
-// CORS สำหรับเว็บ (localhost:8000)
+// CORS สำหรับเว็บ (localhost:8000) อนุญาตเฉพาะ frontend เช่น http://localhost:3000
 func CORSMiddlewareForWeb() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// อนุญาต localhost หรือโดเมนเว็บที่ต้องการ
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000") // ตัวอย่าง frontend port 3000
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000") // เปลี่ยนตาม frontend ของคุณ
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
@@ -133,3 +146,166 @@ func CORSMiddlewareForSensor() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+
+// code esp32-s3 
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <time.h>
+
+// WiFi config
+const char *ssid = "vivo Y33T";
+const char *password = "0935096372";
+const char *serverName = "http://192.168.53.128:8001/hardware/receive";
+
+// Google Sheets webhook
+String serverNameGoogleSheet = "https://script.google.com/macros/s/AKfycby4zYHxIXY09v2bGhfLEMg3JcPLqcSGIDCyqMxA24w8mGXlZ1VxxlXqFgb8jxdkjHGW/exec";
+
+// NTP Time config
+const char *ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = 7 * 3600;
+const int daylightOffset_sec = 0;
+
+// LINE Messaging API
+String LINE_TOKEN = "fu2y79teeVFwE577ZCbwXOyHIYcYYK4rrubebwDEcMouX8PNzDZ4zCsnW+quBLQ9RxcaME5vQ3I1BW82d1/ZYezvWklVMUk+EGGfXRmI4jxXkFCtWQ+PRtJs9DsHDRjIqmrwKi6sd/Xovtb4QbodrwdB04t89/1O/w1cDnyilFU=";
+String LINE_USER_ID = "U3af93a2f92b1048757172584d47571c8";
+
+// ส่งข้อความไปยัง LINE
+void sendLineMessage(String msg) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin("https://api.line.me/v2/bot/message/push");
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("Authorization", "Bearer " + LINE_TOKEN);
+
+    msg.replace("\n", "\\n");
+    String payload = "{\"to\":\"" + LINE_USER_ID + "\","
+                     "\"messages\":[{\"type\":\"text\",\"text\":\"" + msg + "\"}]}";
+
+    int statusCode = http.POST(payload);
+    Serial.print("LINE Message Status: ");
+    Serial.println(statusCode);
+
+    if (statusCode == 200) {
+      Serial.println("ส่งข้อความไปยัง LINE สำเร็จ");
+    } else {
+      Serial.println("ส่งข้อความไปยัง LINE ไม่สำเร็จ");
+      Serial.println("รายละเอียดข้อผิดพลาด: " + http.getString());
+    }
+
+    http.end();
+  }
+}
+
+// ดึงวันที่และเวลา
+void getCurrentDateTime(String &dateStr, String &timeStr) {
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo)) {
+    char dateBuf[11], timeBuf[9];
+    strftime(dateBuf, sizeof(dateBuf), "%Y-%m-%d", &timeinfo);
+    strftime(timeBuf, sizeof(timeBuf), "%H:%M:%S", &timeinfo);
+    dateStr = String(dateBuf);
+    timeStr = String(timeBuf);
+  } else {
+    dateStr = "0000-00-00";
+    timeStr = "00:00:00";
+  }
+}
+
+// ส่งข้อมูลไปยัง Google Sheets
+void logToGoogleSheet(String dateStr, String timeStr, float temperature, float humidity, String status) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin(serverNameGoogleSheet);
+    http.addHeader("Content-Type", "application/json");
+
+    String payload = "{\"date\":\"" + dateStr + "\","
+                     "\"time\":\"" + timeStr + "\","
+                     "\"status\":\"" + status + "\","
+                     "\"temperature\":\"" + String(temperature, 1) + "\","
+                     "\"humidity\":\"" + String(humidity, 1) + "\"}";
+
+    int httpResponseCode = http.POST(payload);
+    Serial.print("Google Sheet HTTP Response Code: ");
+    Serial.println(httpResponseCode);
+    http.end();
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("Start program");
+
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected");
+  Serial.println("IP address: " + WiFi.localIP().toString());
+
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Failed to obtain time");
+  } else {
+    Serial.println(&timeinfo, "Time acquired: %Y-%m-%d %H:%M:%S");
+  }
+}
+
+void loop() {
+  String dateStr, timeStr;
+  getCurrentDateTime(dateStr, timeStr);
+
+  float temperature = random(200, 350) / 10.0;
+  float humidity = random(300, 800) / 10.0;
+  float formaldehyde = random(1, 10) / 100.0;
+  String status = "Ready";
+
+  // ✅ สร้าง JSON ส่งไปยัง /hardware/receive
+  String json = "{";
+  json += "\"name\":\"ESP32-Sensor-01\",";
+  json += "\"sensor\":{";
+  json += "\"Temperature\":" + String(temperature, 2) + ",";
+  json += "\"Humidity\":" + String(humidity, 2) + ",";
+  json += "\"Formaldehyde\":" + String(formaldehyde, 2);
+  json += "}}";
+
+  HTTPClient http;
+  http.begin(serverName);
+  http.addHeader("Content-Type", "application/json");
+
+  int responseCode = http.POST(json);
+
+  if (responseCode == 200) {
+    Serial.println("Data sent to backend successfully!");
+    Serial.println("Payload: " + json);
+  } else {
+    Serial.println("Failed to send data to backend.");
+    Serial.println("Response Code: " + String(responseCode));
+  }
+
+  http.end();
+
+  // แสดงผลที่ Serial Monitor
+  Serial.println("------------------------");
+  Serial.println("Date: " + dateStr);
+  Serial.println("Time: " + timeStr);
+  Serial.println("Status: " + status);
+  Serial.println("Temp: " + String(temperature));
+  Serial.println("Humidity: " + String(humidity));
+  Serial.println("Formaldehyde: " + String(formaldehyde));
+
+  // ส่งไปยัง Google Sheets
+  logToGoogleSheet(dateStr, timeStr, temperature, humidity, status);
+
+  // แจ้งเตือน LINE ถ้าอุณหภูมิสูงเกิน 50 องศา
+  if (temperature > 50.0) {
+    sendLineMessage("🚨 อุณหภูมิสูงเกินกำหนด!\nTemp: " + String(temperature, 1) + "°C");
+  }
+
+  delay(10000); // ส่งข้อมูลทุก 10 วินาที
+}
+
