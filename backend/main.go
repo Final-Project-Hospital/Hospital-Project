@@ -19,111 +19,71 @@ import (
 	"github.com/Tawunchai/hospital-project/middlewares"
 )
 
-const (
-	PORT_WEB     = "8000"
-	PORT_SENSOR  = "8001"
-)
+const PORT = "8000"
 
 func main() {
+
 	config.ConnectionDB()
+
 	config.SetupDatabase()
 
-	// Server 1: localhost:8000 สำหรับเว็บทั่วไป
-	go func() {
-		r := gin.Default()
-		r.Use(CORSMiddlewareForWeb())
+	r := gin.Default()
 
-		r.POST("/login", logins.AddLogin)
+	r.Use(CORSMiddleware())
 
-		authorized := r.Group("")
-		authorized.Use(middlewares.Authorizes())
-		{
-			// ใส่ route ที่ต้องการให้มีการ authorize
-		}
+	r.POST("/login", logins.AddLogin)
 
-		public := r.Group("")
-		{
-			public.GET("/users", user.ListUsers)
-			public.GET("/uploads/*filename", user.ServeImage)
-			public.GET("/user-data/:userID", user.GetDataByUserID)
-
-			// Room
-			public.GET("/rooms", room.ListRoom)
-			public.POST("/create-rooms", room.CreateRoom)
-			public.PATCH("/update-room/:id", room.UpdateRoom)
-			public.DELETE("/delete-room/:id", room.DeleteRoomById)
-
-			// Hardware
-			public.GET("/hardwares", hardware.ListHardware)
-			public.POST("/hardware/receive", hardware.ReceiveSensorData)
-
-			// Building
-			public.GET("/buildings", building.ListBuilding)
-
-			// Sensorparameter
-			public.GET("/data-sensorparameter", sensordata.ListDataSensorParameter)
-			public.GET("/sensor-data-parameters/:id", sensordata.GetSensorDataParametersBySensorDataID)
-			public.GET("/sensor-data-by-hardware/:id", sensordata.GetSensorDataIDByHardwareID)
-
-			// Calendar
-			public.GET("/calendars", calendar.ListCalendar)
-			public.POST("/create-calendar", calendar.PostCalendar)
-			public.PUT("/update-calendar/:id", calendar.UpdateCalendar)
-			public.DELETE("/delete-calendar/:id", calendar.DeleteCalendar)
-		}
-
-		r.GET("/", func(c *gin.Context) {
-			c.String(http.StatusOK, "API WEB 8000 RUNNING...")
-		})
-
-		if err := r.Run("localhost:" + PORT_WEB); err != nil {
-			panic("Failed to run web server: " + err.Error())
-		}
-	}()
-
-	// Server 2: 0.0.0.0:8001 สำหรับรับข้อมูล sensor (เช่น ESP32)
-	rSensor := gin.Default()
-	rSensor.Use(CORSMiddlewareForSensor())
-
-	publicSensor := rSensor.Group("")
+	authorized := r.Group("")
+	authorized.Use(middlewares.Authorizes())
 	{
-		publicSensor.POST("/hardware/receive", hardware.ReceiveSensorData) // ตัวอย่าง API รับข้อมูล sensor
+
 	}
 
-	rSensor.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "API SENSOR 8001 RUNNING...")
+	public := r.Group("")
+	{
+		public.GET("/users", user.ListUsers)
+		public.GET("/uploads/*filename", user.ServeImage)
+		public.GET("/user-data/:userID", user.GetDataByUserID)
+
+		//Room
+		public.GET("/rooms", room.ListRoom)
+		public.POST("/create-rooms", room.CreateRoom)
+		public.PATCH("/update-room/:id", room.UpdateRoom) 
+		public.DELETE("/delete-room/:id", room.DeleteRoomById)
+
+		//Hardware
+		public.GET("/hardwares", hardware.ListHardware)
+		public.POST("/hardware/receive", hardware.ReceiveSensorData)
+
+		//Building
+		public.GET("/buildings", building.ListBuilding)
+
+		// Sensorparameter
+		public.GET("/data-sensorparameter", sensordata.ListDataSensorParameter)
+		public.GET("/sensor-data-parameters/:id", sensordata.GetSensorDataParametersBySensorDataID)
+		public.GET("/sensor-data-by-hardware/:id", sensordata.GetSensorDataIDByHardwareID)
+
+		//Calendar
+		public.GET("/calendars", calendar.ListCalendar)
+		public.POST("/create-calendar", calendar.PostCalendar)
+		public.PUT("/update-calendar/:id", calendar.UpdateCalendar)
+		public.DELETE("/delete-calendar/:id", calendar.DeleteCalendar)
+	}
+
+	r.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "API RUNNING... PORT: %s", PORT)
 	})
 
-	if err := rSensor.Run("0.0.0.0:" + PORT_SENSOR); err != nil {
-		panic("Failed to run sensor server: " + err.Error())
-	}
+	r.Run("localhost:" + PORT)
+
 }
 
-// CORS สำหรับเว็บ (localhost:8000)
-func CORSMiddlewareForWeb() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// อนุญาต localhost หรือโดเมนเว็บที่ต้องการ
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000") // ตัวอย่าง frontend port 3000
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		c.Next()
-	}
-}
-
-// CORS สำหรับ sensor (0.0.0.0:8001) อนุญาตทุกที่ (*)
-func CORSMiddlewareForSensor() gin.HandlerFunc {
+func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
