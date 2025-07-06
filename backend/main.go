@@ -68,6 +68,7 @@ func main() {
 
 		//Hardware
 		public.GET("/hardwares", hardware.ListHardware)
+		public.POST("/hardware/receive", hardware.ReceiveSensorData)
 
 		//Building
 		public.GET("/buildings", building.ListBuilding)
