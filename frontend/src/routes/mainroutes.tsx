@@ -12,6 +12,7 @@ const User = Loadable(lazy(() => import("../page/user/")));
 const Admin = Loadable(lazy(() => import("../page/admin/")));
 const MainLayout = Loadable(lazy(() => import("../component/admin/MainLayout")));
 const Calendar = Loadable(lazy(() => import("../page/admin/calendar/Calendar")));
+const People = Loadable(lazy(() => import("../page/admin/people")));
 
 // Hardware
 const Hardware_Main = Loadable(lazy(() => import("../page/admin/harware/index")));
@@ -57,6 +58,7 @@ const AdminRoutes = (): RouteObject[] => [
       { path: "Hardware", element: <Hardware_Main /> },
       { path: "Room", element: <Hardware_Room /> },
       { path: "Calendar", element: <Calendar /> },
+      { path: "people", element: <People /> },
       {
         path: "data-visualization/water",
         children: [
