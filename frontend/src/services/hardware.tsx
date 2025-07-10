@@ -234,3 +234,4 @@ async function ListDataHardware() {
 export {
   ListDataHardware,
 }
+

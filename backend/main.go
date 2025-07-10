@@ -37,7 +37,7 @@ func main() {
 	authorized := r.Group("")
 	authorized.Use(middlewares.Authorizes())
 	{
-
+		
 	}
 
 	public := r.Group("")
