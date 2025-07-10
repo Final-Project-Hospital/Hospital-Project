@@ -54,12 +54,13 @@ func SetupDatabase() {
 		EnvironmentName: "น้ำเสีย",
 	}
 	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
-	
+
 	// Standaed
-	Standard := entity.Standard{
-		StandardValue: 100,
+	standardValues := []float32{5.0, 6.0, 7.0, 8.0, 9.0, 20.0, 30.0, 1.0, 500.0, 0.5, 35.0}
+	for _, val := range standardValues {
+		Standard := entity.Standard{StandardValue: val}
+		db.FirstOrCreate(&Standard, entity.Standard{StandardValue: val})
 	}
-	db.FirstOrCreate(&Standard, &entity.Standard{StandardValue: 100})
 
 	// Unit
 	Unit := entity.Unit{
@@ -70,8 +71,11 @@ func SetupDatabase() {
 	//BeforeAfter
 	Before := entity.BeforeAfterTreatment{TreatmentName: "ก่อน"}
 	After := entity.BeforeAfterTreatment{TreatmentName: "หลัง"}
+	BeforeAndAfter := entity.BeforeAfterTreatment{TreatmentName: "ก่อนเเละหลัง"}
 	db.FirstOrCreate(&Before, &entity.BeforeAfterTreatment{TreatmentName: "ก่อน"})
 	db.FirstOrCreate(&After, &entity.BeforeAfterTreatment{TreatmentName: "หลัง"})
+	db.FirstOrCreate(&BeforeAndAfter, &entity.BeforeAfterTreatment{TreatmentName: "ก่อนเเละหลัง"})
+
 	// Roles
 	AdminRole := entity.Role{RoleName: "Admin"}
 	UserRole := entity.Role{RoleName: "User"}

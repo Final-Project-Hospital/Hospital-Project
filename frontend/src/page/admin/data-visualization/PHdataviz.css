@@ -1,0 +1,41 @@
+.title-header {
+  background: linear-gradient(90deg, #356768, #5AEEF0);
+  padding: 30px;
+  border-radius: 0 0 25px 25px;
+  color: white;
+}
+
+.title-header h1 {
+  font-size: 2rem;
+  /* ปรับให้ responsive โดยไม่ใช้ xx-large */
+  text-shadow: 0 4px 5px #000000ba;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Responsive Behavior */
+@media (max-width: 768px) {
+  .title-header {
+    margin-top: 50px;
+  }
+
+  .title-header h1 {
+    font-size: 2.5rem;
+    text-align: center;
+  }
+
+  .title-header p {
+    font-size: 1rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .title-header {
+    padding: 20px;
+  }
+
+  .title-header h1 {
+    font-size: 1.5rem;
+  }
+}
