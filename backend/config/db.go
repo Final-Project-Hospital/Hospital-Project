@@ -49,9 +49,11 @@ func SetupDatabase() {
 	// Roles
 	AdminRole := entity.Role{RoleName: "Admin"}
 	UserRole := entity.Role{RoleName: "User"}
+	GuestRole := entity.Role{RoleName: "Guest"}
 
 	db.FirstOrCreate(&AdminRole, &entity.Role{RoleName: "Admin"})
 	db.FirstOrCreate(&UserRole, &entity.Role{RoleName: "User"})
+	db.FirstOrCreate(&GuestRole, &entity.Role{RoleName: "Guest"})
 
 	// Positions
 	Position1 := entity.Position{Position: "Engineer"}

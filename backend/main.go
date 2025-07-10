@@ -12,7 +12,11 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/users"
 
 	"github.com/Tawunchai/hospital-project/middlewares"
+
+	"github.com/Tawunchai/hospital-project/controller/employee"
 )
+
+
 
 const PORT = "8000"
 
@@ -31,7 +35,7 @@ func main() {
 	authorized := r.Group("")
 	authorized.Use(middlewares.Authorizes())
 	{
-		
+		authorized.PATCH("/api/employees/:id/role", employee.UpdateRole)
 	}
 
 	public := r.Group("")
@@ -39,6 +43,7 @@ func main() {
 		public.GET("/users", user.ListUsers)
 		public.GET("/uploads/*filename", user.ServeImage)
 		public.GET("/user-data/:userID", user.GetDataByUserID) 
+		public.GET("/api/employees", employee.GetEmployees)
 	}
 
 	r.GET("/", func(c *gin.Context) {
