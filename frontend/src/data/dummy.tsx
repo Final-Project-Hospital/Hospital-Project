@@ -527,14 +527,13 @@ export const links = [
         icon: <MdBarChart />,
         subMenu: [
           {
-            name: 'กลุ่มน้ำ',
+            name: 'data-visualization/water',
             label: 'กลุ่มน้ำ',
             icon: <MdWaterDrop />,
-            path: '/measurement/water',
             subMenu: [
               {
-                name: 'นํ้าเสีย',
-                path: '/measurement/water/',
+                name: 'data-visualization/water',
+                label: 'นํ้าเสีย',
               },
             ],
           },
@@ -544,6 +543,19 @@ export const links = [
         name: 'data-management',
         label: 'จัดการข้อมูล',
         icon: <AiOutlineDatabase />,
+        subMenu: [
+          {
+            name: 'data-management/water',
+            label: 'กลุ่มน้ำ',
+            icon: <MdWaterDrop />,
+            subMenu: [
+              {
+                name: 'data-management/water',
+                label: 'นํ้าเสีย',
+              },
+            ],
+          },
+        ],
       },
       {
         name: 'Hardware',

@@ -1,4 +1,3 @@
-// src/layouts/EnvironmentLayout.tsx
 import React from 'react';
 import { Button } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
@@ -33,10 +32,10 @@ const EnvironmentLayout: React.FC = () => {
       }}
     >
       <Button
-        type={isActive('/admin/data-management/ph') ? 'primary' : 'text'}
-        onClick={() => navigate('/admin/data-management/ph')}
+        type={isActive('/admin/data-management/water/ph') ? 'primary' : 'text'}
+        onClick={() => navigate('/admin/data-management/water/ph')}
         style={
-          isActive('/admin/data-management/ph')
+          isActive('/admin/data-management/water/ph')
             ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
             : {}
         }
@@ -44,10 +43,10 @@ const EnvironmentLayout: React.FC = () => {
         pH-Central
       </Button>
       <Button
-        type={isActive('/admin/data-management/bod') ? 'primary' : 'text'}
-        onClick={() => navigate('/admin/data-management/bod')}
+        type={isActive('/admin/data-management/water/bod') ? 'primary' : 'text'}
+        onClick={() => navigate('/admin/data-management/water/bod')}
         style={
-          isActive('/admin/data-management/bod')
+          isActive('/admin/data-management/water/bod')
             ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
             : {}
         }
@@ -55,10 +54,10 @@ const EnvironmentLayout: React.FC = () => {
         BOD-Central
       </Button>
       <Button
-        type={isActive('/admin/data-management/ts') ? 'primary' : 'text'}
-        onClick={() => navigate('/admin/data-management/ts')}
+        type={isActive('/admin/data-management/water/ts') ? 'primary' : 'text'}
+        onClick={() => navigate('/admin/data-management/water/ts')}
         style={
-          isActive('/admin/data-management/ts')
+          isActive('/admin/data-management/water/ts')
             ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
             : {}
         }
@@ -66,10 +65,10 @@ const EnvironmentLayout: React.FC = () => {
         TS-Central
       </Button>
       <Button
-        type={isActive('/admin/data-management/tds') ? 'primary' : 'text'}
-        onClick={() => navigate('/admin/data-management/tds')}
+        type={isActive('/admin/data-management/water/tds') ? 'primary' : 'text'}
+        onClick={() => navigate('/admin/data-management/water/tds')}
         style={
-          isActive('/admin/data-management/tds')
+          isActive('/admin/data-management/water/tds')
             ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
             : {}
         }
