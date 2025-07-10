@@ -18,6 +18,8 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/users"
 
 	"github.com/Tawunchai/hospital-project/middlewares"
+
+	"github.com/Tawunchai/hospital-project/controller/employee"
 )
 
 const PORT = "8000"
@@ -37,7 +39,7 @@ func main() {
 	authorized := r.Group("")
 	authorized.Use(middlewares.Authorizes())
 	{
-		
+		authorized.PATCH("/api/employees/:id/role", employee.UpdateRole)
 	}
 
 	public := r.Group("")
@@ -83,6 +85,8 @@ func main() {
 		public.POST("/create-calendar", calendar.PostCalendar)
 		public.PUT("/update-calendar/:id", calendar.UpdateCalendar)
 		public.DELETE("/delete-calendar/:id", calendar.DeleteCalendar)
+
+		public.GET("/api/employees", employee.GetEmployees)
 	}
 
 	r.GET("/", func(c *gin.Context) {

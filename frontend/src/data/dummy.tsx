@@ -563,7 +563,7 @@ export const links = [
         icon: <MdSensors />,
       },
       {
-        name: '-management',
+        name: 'People',
         label: 'จัดการบุคคล',
         icon: <MdManageAccounts />,
       },
