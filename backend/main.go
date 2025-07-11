@@ -2,11 +2,8 @@ package main
 
 import (
 	"net/http"
-
 	"github.com/gin-gonic/gin"
-
 	"github.com/Tawunchai/hospital-project/config"
-
 	"github.com/Tawunchai/hospital-project/controller/building"
 	"github.com/Tawunchai/hospital-project/controller/calendar"
 	"github.com/Tawunchai/hospital-project/controller/hardware"
@@ -16,9 +13,7 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/tkncenter"
 	"github.com/Tawunchai/hospital-project/controller/tscenter"
 	"github.com/Tawunchai/hospital-project/controller/users"
-
 	"github.com/Tawunchai/hospital-project/middlewares"
-
 	"github.com/Tawunchai/hospital-project/controller/employee"
 )
 
