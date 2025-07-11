@@ -23,6 +23,28 @@ func ListDataSensorParameter(c *gin.Context) {
 	c.JSON(http.StatusOK, sensorDataParameters)
 }
 
+func ListDataHardwareParameterByParameter(c *gin.Context) {
+	parameter := c.Query("parameter") // รับจาก query string
+	if parameter == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Parameter is required"})
+		return
+	}
+
+	var params []entity.HardwareParameter
+
+	db := config.DB()
+	result := db.Preload("HardwareGraph").Preload("SensorDataParameter").
+		Where("parameter = ?", parameter).
+		Find(&params)
+
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, params)
+}
+
 func GetSensorDataIDByHardwareID(c *gin.Context) {
 	id := c.Param("id")
 	hardwareID, err := strconv.ParseUint(id, 10, 64)

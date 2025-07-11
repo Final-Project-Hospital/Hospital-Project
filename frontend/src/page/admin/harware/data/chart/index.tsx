@@ -15,7 +15,6 @@ const Index: React.FC<ChartdataProps> = ({ hardwareID }) => {
   const [timeRangeType, setTimeRangeType] = useState<'day' | 'month' | 'year'>('day');
   const [selectedRange, setSelectedRange] = useState<any>(null);
 
-  // ตั้งค่า default เมื่อเปิด component หรือเมื่อเปลี่ยน timeRangeType
   useEffect(() => {
     if (timeRangeType === 'day') {
       const today = new Date();

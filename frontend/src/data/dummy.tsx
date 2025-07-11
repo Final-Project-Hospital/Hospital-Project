@@ -332,26 +332,25 @@ export const colorMappingData = [
 export const rangeColorMapping = [
   {
     label: '1°C to 10°C',
-    start: '1',
-    end: '10',
-    colors: colorMappingData[1]
+    start: 1,
+    end: 10,
+    colors: ['#FFFFB3'], // ตัวอย่างสี
   },
-
   {
     label: '11°C to 20°C',
-    start: '11',
-    end: '20',
-    colors: colorMappingData[2]
+    start: 11,
+    end: 20,
+    colors: ['#FFB347'], // ตัวอย่างสี
   },
-
   {
     label: '21°C to 30°C',
-    start: '21',
-    end: '30',
-    colors: colorMappingData[3]
+    start: 21,
+    end: 30,
+    colors: ['#FF6961'], // ตัวอย่างสี
   },
-
 ];
+
+
 
 export const ColorMappingPrimaryXAxis: AxisModel = {
   valueType: 'Category',

@@ -103,3 +103,4 @@ func ReceiveSensorData(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Sensor data saved successfully"})
 }
+
