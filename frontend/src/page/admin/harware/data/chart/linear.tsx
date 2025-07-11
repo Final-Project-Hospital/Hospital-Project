@@ -109,7 +109,7 @@ const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, select
         if (!Array.isArray(params)) continue;
 
         for (const param of params) {
-          const name = param.Parameter?.ParameterName;
+          const name = param.HardwareParameter?.Parameter;
           const dataRaw = param.Data;
           const dateRaw = param.Date;
 
