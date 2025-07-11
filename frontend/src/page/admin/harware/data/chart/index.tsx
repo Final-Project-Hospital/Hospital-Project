@@ -7,9 +7,12 @@ import { useStateContext } from '../../../../../contexts/ContextProvider';
 
 interface ChartdataProps {
   hardwareID: number;
+  parameters: string[];
+  timeRangeType?: 'day' | 'month' | 'year';  
+  selectedRange?: any;                       
 }
 
-const Index: React.FC<ChartdataProps> = ({ hardwareID }) => {
+const Index: React.FC<ChartdataProps> = ({ hardwareID, parameters }) => {
   const { currentMode } = useStateContext();
 
   const [timeRangeType, setTimeRangeType] = useState<'day' | 'month' | 'year'>('day');
@@ -23,9 +26,9 @@ const Index: React.FC<ChartdataProps> = ({ hardwareID }) => {
       setSelectedRange([sevenDaysAgo, today]);
     } else if (timeRangeType === 'month') {
       const now = new Date();
-      setSelectedRange({ 
-        month: (now.getMonth() + 1).toString().padStart(2, '0'), 
-        year: now.getFullYear().toString() 
+      setSelectedRange({
+        month: (now.getMonth() + 1).toString().padStart(2, '0'),
+        year: now.getFullYear().toString()
       });
     } else if (timeRangeType === 'year') {
       setSelectedRange(new Date().getFullYear().toString());
@@ -67,6 +70,7 @@ const Index: React.FC<ChartdataProps> = ({ hardwareID }) => {
           hardwareID={hardwareID}
           timeRangeType={timeRangeType}
           selectedRange={selectedRange}
+          parameters={parameters} // ✅ ส่งค่า parameters เข้าไป
         />
       </div>
     </div>
