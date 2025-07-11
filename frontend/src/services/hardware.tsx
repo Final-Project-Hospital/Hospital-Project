@@ -265,6 +265,39 @@ export const ListDataGraph = async (): Promise<HardwareGraphInterface[] | null> 
   }
 };
 
+// ฟังก์ชันสำหรับอัปเดต HardwareParameter
+export const UpdateHardwareParameterByID = async (
+  id: number,
+  payload: {
+    parameter?: string;
+    hardware_graph_id?: number;
+    hardware_parameter_color_id?: number;
+  }
+): Promise<HardwareParameterInterface | null> => {
+  try {
+    const response = await axios.patch(
+      `${apiUrl}/update-hardware-parameter/${id}`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error updating hardware parameter:", error);
+    return null;
+  }
+};
+
 
 async function ListDataHardware() {
 

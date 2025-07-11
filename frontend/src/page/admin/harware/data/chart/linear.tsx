@@ -1,4 +1,3 @@
-// LineChart.tsx
 import {
   ChartComponent,
   SeriesCollectionDirective,
@@ -19,11 +18,12 @@ import { useStateContext } from '../../../../../contexts/ContextProvider';
 interface LineChartProps {
   hardwareID: number;
   timeRangeType: 'day' | 'month' | 'year';
+  colors?: string[];
   selectedRange: any;
   parameters: string[];
 }
 
-const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, selectedRange, parameters }) => {
+const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, selectedRange, parameters, colors }) => {
   const { currentMode } = useStateContext();
   const [seriesData, setSeriesData] = useState<any[]>([]);
 
@@ -116,7 +116,11 @@ const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, select
       <Inject services={[LineSeries, DateTime, Legend, Tooltip]} />
       <SeriesCollectionDirective>
         {seriesData.map((item, idx) => (
-          <SeriesDirective key={idx} {...item} />
+          <SeriesDirective
+            key={idx}
+            {...item}
+            fill={Array.isArray(colors) && colors[idx] ? colors[idx] : undefined}
+          />
         ))}
       </SeriesCollectionDirective>
     </ChartComponent>

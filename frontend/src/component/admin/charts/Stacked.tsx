@@ -20,6 +20,7 @@ import {
 interface ChartdataProps {
   hardwareID: number;
   parameters: string[];
+  colors?: string[];
   timeRangeType: 'day' | 'month' | 'year';
   selectedRange: any;
 }
@@ -27,6 +28,7 @@ interface ChartdataProps {
 const Stacked: React.FC<ChartdataProps> = ({
   hardwareID,
   parameters,
+  colors,
   timeRangeType,
   selectedRange,
 }) => {
@@ -129,6 +131,7 @@ const Stacked: React.FC<ChartdataProps> = ({
               yName="y"
               name={param}
               type="StackingColumn"
+              fill={colors && colors[index] ? colors[index] : undefined}
             />
           ))}
         </SeriesCollectionDirective>

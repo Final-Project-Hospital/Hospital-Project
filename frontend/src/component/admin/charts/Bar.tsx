@@ -21,6 +21,7 @@ import {
 interface ChartdataProps {
   hardwareID: number;
   parameters: string[];
+  colors?: string[]; // เพิ่ม colors
   timeRangeType: 'day' | 'month' | 'year';
   selectedRange: any;
 }
@@ -28,6 +29,7 @@ interface ChartdataProps {
 const Bar: React.FC<ChartdataProps> = ({
   hardwareID,
   parameters,
+  colors, // รับเข้ามาด้วย!
   timeRangeType,
   selectedRange,
 }) => {
@@ -100,7 +102,7 @@ const Bar: React.FC<ChartdataProps> = ({
         type: 'Column' as const,
         marker: {
           dataLabel: {
-            visible: true,
+            visible: false,
             position: 'Top',
             font: { fontWeight: '600' },
           },
@@ -141,7 +143,11 @@ const Bar: React.FC<ChartdataProps> = ({
         />
         <SeriesCollectionDirective>
           {seriesData.map((item, index) => (
-            <SeriesDirective key={index} {...item} />
+            <SeriesDirective
+              key={index}
+              {...item}
+              fill={colors && colors[index] ? colors[index] : undefined}
+            />
           ))}
         </SeriesCollectionDirective>
       </ChartComponent>

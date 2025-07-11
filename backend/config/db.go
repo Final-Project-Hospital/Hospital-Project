@@ -49,6 +49,7 @@ func SetupDatabase() {
 		&entity.Calendar{},
 		&entity.HardwareGraph{},
 		&entity.HardwareParameter{},
+		&entity.HardwareParameterColor{},
 	)
 	// Enviroment
 	Wastewater := entity.Environment{
@@ -104,14 +105,25 @@ func SetupDatabase() {
 	db.FirstOrCreate(&Building2, &entity.Building{BuildingName: "Building2"})
 	db.FirstOrCreate(&Building3, &entity.Building{BuildingName: "Building3"})
 
-	defaultGraph := entity.HardwareGraph{Graph: "Default Graph"}
-	db.FirstOrCreate(&defaultGraph, entity.HardwareGraph{Graph: "Default Graph"})
+	colorPurple := entity.HardwareParameterColor{Color: "Purple", Code: "#800080"} 
+	colorBlue := entity.HardwareParameterColor{Color: "Blue", Code: "#1E90FF"}     
+	colorOrange := entity.HardwareParameterColor{Color: "Orange", Code: "#FFA500"} 
+	colorYellow := entity.HardwareParameterColor{Color: "Yellow", Code: "#FFD700"} 
+	colorGreen := entity.HardwareParameterColor{Color: "Green", Code: "#32CD32"}   
 
+	db.FirstOrCreate(&colorPurple, entity.HardwareParameterColor{Color: "Purple"})
+	db.FirstOrCreate(&colorBlue, entity.HardwareParameterColor{Color: "Blue"})
+	db.FirstOrCreate(&colorOrange, entity.HardwareParameterColor{Color: "Orange"})
+	db.FirstOrCreate(&colorYellow, entity.HardwareParameterColor{Color: "Yellow"})
+	db.FirstOrCreate(&colorGreen, entity.HardwareParameterColor{Color: "Green"})
+
+	defaultGraph := entity.HardwareGraph{Graph: "Default Graph"}
 	areaGraph := entity.HardwareGraph{Graph: "Area"}
 	barGraph := entity.HardwareGraph{Graph: "Bar"}
 	colorMappingGraph := entity.HardwareGraph{Graph: "Color Mapping"}
 	stackedGraph := entity.HardwareGraph{Graph: "Stacked"}
 
+	db.FirstOrCreate(&defaultGraph, entity.HardwareGraph{Graph: "Default Graph"})
 	db.FirstOrCreate(&areaGraph, entity.HardwareGraph{Graph: "Area"})
 	db.FirstOrCreate(&barGraph, entity.HardwareGraph{Graph: "Bar"})
 	db.FirstOrCreate(&colorMappingGraph, entity.HardwareGraph{Graph: "Color Mapping"})
@@ -119,22 +131,27 @@ func SetupDatabase() {
 
 	paramhardware1 := entity.HardwareParameter{
 		Parameter:       "Formaldehyde",
+		HardwareParameterColorID: colorPurple.ID,
 		HardwareGraphID: defaultGraph.ID,
 	}
 	paramhardware2 := entity.HardwareParameter{
 		Parameter:       "Temperature",
+		HardwareParameterColorID: colorBlue.ID,
 		HardwareGraphID: areaGraph.ID,
 	}
 	paramhardware3 := entity.HardwareParameter{
 		Parameter:       "Humidity",
+		HardwareParameterColorID: colorOrange.ID,
 		HardwareGraphID: barGraph.ID,
 	}
 	paramhardware4 := entity.HardwareParameter{
 		Parameter:       "Light",
+		HardwareParameterColorID: colorYellow.ID,
 		HardwareGraphID: colorMappingGraph.ID,
 	}
 	paramhardware5 := entity.HardwareParameter{
 		Parameter:       "Gas",
+		HardwareParameterColorID: colorGreen.ID,
 		HardwareGraphID: stackedGraph.ID,
 	}
 

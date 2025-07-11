@@ -1,4 +1,3 @@
-// Area.tsx
 import {
   ChartComponent,
   SeriesCollectionDirective,
@@ -20,6 +19,7 @@ import {
 interface ChartdataProps {
   hardwareID: number;
   parameters: string[];
+  colors?: string[];      // เพิ่มตรงนี้!
   timeRangeType: 'day' | 'month' | 'year';
   selectedRange: any;
 }
@@ -27,6 +27,7 @@ interface ChartdataProps {
 const Area: React.FC<ChartdataProps> = ({
   hardwareID,
   parameters,
+  colors,         // รับเข้ามา!
   timeRangeType,
   selectedRange
 }) => {
@@ -52,27 +53,18 @@ const Area: React.FC<ChartdataProps> = ({
 
   useEffect(() => {
     const fetchData = async () => {
-      console.log("Parameters:", parameters);
-      console.log("Selected Range:", selectedRange);
-
       if (!hardwareID || !parameters?.length) return;
-
       const raw = await GetSensorDataByHardwareID(hardwareID);
-      console.log("Raw sensor data:", raw);
       if (!Array.isArray(raw)) return;
-
       const parameterMap: Record<string, { x: Date; y: number }[]> = {};
 
       for (const sensor of raw) {
         const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
-        console.log("Sensor params:", params);
         if (!Array.isArray(params)) continue;
-
         for (const param of params) {
           const name = param.HardwareParameter?.Parameter;
           const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
           const date = new Date(param.Date);
-
           const include = name && parameters.includes(name) && !isNaN(value) && !isNaN(date.getTime());
           const inRange = (() => {
             if (timeRangeType === 'day') {
@@ -86,18 +78,11 @@ const Area: React.FC<ChartdataProps> = ({
             }
             return false;
           })();
-
-          console.log("Checking param", { name, value, date });
-          console.log("Included?", include);
-          console.log("In range?", inRange);
-
           if (!include || !inRange) continue;
-
           if (!parameterMap[name]) parameterMap[name] = [];
           parameterMap[name].push({ x: date, y: value });
         }
       }
-
       const series = Object.entries(parameterMap).map(([name, data]) => ({
         dataSource: data.sort((a, b) => a.x.getTime() - b.x.getTime()),
         xName: 'x',
@@ -108,11 +93,8 @@ const Area: React.FC<ChartdataProps> = ({
         type: 'SplineArea' as const,
         opacity: 0.4,
       }));
-
-      console.log("Final series data", series);
       setSeriesData(series);
     };
-
     fetchData();
   }, [hardwareID, timeRangeType, selectedRange, parameters]);
 
@@ -133,7 +115,11 @@ const Area: React.FC<ChartdataProps> = ({
         <Inject services={[SplineAreaSeries, DateTime, Legend, Tooltip]} />
         <SeriesCollectionDirective>
           {seriesData.map((item, index) => (
-            <SeriesDirective key={index} {...item} />
+            <SeriesDirective
+              key={index}
+              {...item}
+              fill={colors && colors[index] ? colors[index] : undefined}
+            />
           ))}
         </SeriesCollectionDirective>
       </ChartComponent>

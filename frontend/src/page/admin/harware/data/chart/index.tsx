@@ -8,27 +8,42 @@ import { useStateContext } from '../../../../../contexts/ContextProvider';
 interface ChartdataProps {
   hardwareID: number;
   parameters: string[];
+  colors?: string[];                     // ← เพิ่ม prop colors
   timeRangeType?: 'day' | 'month' | 'year';  
   selectedRange?: any;                       
 }
 
-const Index: React.FC<ChartdataProps> = ({ hardwareID, parameters }) => {
+const Index: React.FC<ChartdataProps> = ({
+  hardwareID,
+  parameters,
+  colors = [],                         // ← กำหนด default ให้เป็น array ว่าง
+}) => {
   const { currentMode } = useStateContext();
-
   const [timeRangeType, setTimeRangeType] = useState<'day' | 'month' | 'year'>('day');
   const [selectedRange, setSelectedRange] = useState<any>(null);
+
+  // log ค่า props และ state ทุกครั้งที่เปลี่ยน
+  useEffect(() => {
+    console.log('📥 LineChart Props:', {
+      hardwareID,
+      parameters,
+      colors,
+      timeRangeType,
+      selectedRange,
+    });
+  }, [hardwareID, parameters, colors, timeRangeType, selectedRange]);
 
   useEffect(() => {
     if (timeRangeType === 'day') {
       const today = new Date();
       const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(today.getDate() - 6); // รวมวันนี้ = 7 วัน
+      sevenDaysAgo.setDate(today.getDate() - 6);
       setSelectedRange([sevenDaysAgo, today]);
     } else if (timeRangeType === 'month') {
       const now = new Date();
       setSelectedRange({
         month: (now.getMonth() + 1).toString().padStart(2, '0'),
-        year: now.getFullYear().toString()
+        year: now.getFullYear().toString(),
       });
     } else if (timeRangeType === 'year') {
       setSelectedRange(new Date().getFullYear().toString());
@@ -70,7 +85,8 @@ const Index: React.FC<ChartdataProps> = ({ hardwareID, parameters }) => {
           hardwareID={hardwareID}
           timeRangeType={timeRangeType}
           selectedRange={selectedRange}
-          parameters={parameters} // ✅ ส่งค่า parameters เข้าไป
+          parameters={parameters}
+          colors={colors}            
         />
       </div>
     </div>
