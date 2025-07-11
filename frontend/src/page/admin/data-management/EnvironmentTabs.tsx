@@ -13,72 +13,94 @@ const EnvironmentLayout: React.FC = () => {
   return (
     <div>
       <div className="tds-header">
-        <h1>TDS-Central</h1>
+        <h1>น้ำเสีย</h1>
         <p>
           โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
         </p>
       </div>
-      <br/>
+      <br />
       <div
-      className="tabs"
-      style={{
-        width: '50%',
-        margin: '0 auto',
-        display: 'flex',
-        justifyContent: 'center',
-        gap: 8,
-        padding: '10px 20px',
-        background: 'inherit',
-        borderBottom: '2px solid #A1EFF0',
-      }}
-    >
-      <Button
-        type={isActive('/admin/data-management/ph') ? 'primary' : 'text'}
-        onClick={() => navigate('/admin/data-management/ph')}
-        style={
-          isActive('/admin/data-management/ph')
-            ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
-            : {}
-        }
+        className="tabs"
+        style={{
+          width: '80%',
+          margin: '0 auto',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 8,
+          padding: '10px 20px',
+          background: 'inherit',
+          borderBottom: '2px solid #A1EFF0',
+        }}
       >
-        pH-Central
-      </Button>
-      <Button
-        type={isActive('/admin/data-management/bod') ? 'primary' : 'text'}
-        onClick={() => navigate('/admin/data-management/bod')}
-        style={
-          isActive('/admin/data-management/bod')
-            ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
-            : {}
-        }
-      >
-        BOD-Central
-      </Button>
-      <Button
-        type={isActive('/admin/data-management/ts') ? 'primary' : 'text'}
-        onClick={() => navigate('/admin/data-management/ts')}
-        style={
-          isActive('/admin/data-management/ts')
-            ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
-            : {}
-        }
-      >
-        TS-Central
-      </Button>
-      <Button
-        type={isActive('/admin/data-management/tds') ? 'primary' : 'text'}
-        onClick={() => navigate('/admin/data-management/tds')}
-        style={
-          isActive('/admin/data-management/tds')
-            ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
-            : {}
-        }
-      >
-        TDS-Central
-      </Button>
-    </div>
+        <Button
+          type={isActive('/admin/data-management/ph') ? 'primary' : 'text'}
+          onClick={() => navigate('/admin/data-management/ph')}
+          style={
+            isActive('/admin/data-management/ph')
+              ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
+              : {}
+          }
+        >
+          pH-Central
+        </Button>
+        <Button
+          type={isActive('/admin/data-management/bod') ? 'primary' : 'text'}
+          onClick={() => navigate('/admin/data-management/bod')}
+          style={
+            isActive('/admin/data-management/bod')
+              ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
+              : {}
+          }
+        >
+          BOD-Central
+        </Button>
+        <Button
+          type={isActive('/admin/data-management/ts') ? 'primary' : 'text'}
+          onClick={() => navigate('/admin/data-management/ts')}
+          style={
+            isActive('/admin/data-management/ts')
+              ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
+              : {}
+          }
+        >
+          TS-Central
+        </Button>
+        <Button
+          type={isActive('/admin/data-management/tds') ? 'primary' : 'text'}
+          onClick={() => navigate('/admin/data-management/tds')}
+          style={
+            isActive('/admin/data-management/tds')
+              ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
+              : {}
+          }
+        >
+          TDS-Central
+        </Button>
+        <Button
+          type={isActive('/admin/data-management/fog') ? 'primary' : 'text'}
+          onClick={() => navigate('/admin/data-management/fog')}
+          style={
+            isActive('/admin/data-management/fog')
+              ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
+              : {}
+          }
+        >
+          FOG-Central
+        </Button>
+        <Button
+          type={isActive('/admin/data-management/tkn') ? 'primary' : 'text'}
+          onClick={() => navigate('/admin/data-management/tkn')}
+          style={
+            isActive('/admin/data-management/tkn')
+              ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
+              : {}
+          }
+        >
+          TKN-Central
+        </Button>
+      </div>
       {/* <hr className='line'/> */}
-      <br/>
+      <br />
       <Outlet />
     </div>
   );

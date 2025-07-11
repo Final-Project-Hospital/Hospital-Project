@@ -23,6 +23,9 @@
   width: 100%; /* default full width */
   box-sizing: border-box;
 }
+.tabs button{
+  border-radius: 15px;
+}
 
 /* Responsive Behavior */
 @media (max-width: 768px) {

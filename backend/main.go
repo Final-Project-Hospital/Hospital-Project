@@ -7,6 +7,7 @@ import (
 
 	"github.com/Tawunchai/hospital-project/config"
 
+	"github.com/Tawunchai/hospital-project/controller/DataManagement"
 	"github.com/Tawunchai/hospital-project/controller/building"
 	"github.com/Tawunchai/hospital-project/controller/calendar"
 	"github.com/Tawunchai/hospital-project/controller/hardware"
@@ -62,6 +63,8 @@ func main() {
 		public.POST("/create-calendar", calendar.PostCalendar)
 		public.PUT("/update-calendar/:id", calendar.UpdateCalendar)
 		public.DELETE("/delete-calendar/:id", calendar.DeleteCalendar)
+
+		public.POST("/create-environment-record", DataManagement.CreateEnvironmentRecord)
 	}
 
 	r.GET("/", func(c *gin.Context) {

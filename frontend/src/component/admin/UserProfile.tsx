@@ -4,6 +4,7 @@ import { message } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useStateContext } from '../../contexts/ContextProvider';
 import avatar from '../../assets/admin/avatar3.png';
+import './FlowerButton.css'; // นำเข้า CSS
 
 const UserProfile = () => {
   const { currentColor } = useStateContext();
@@ -55,6 +56,22 @@ const UserProfile = () => {
           onClick={handleLogout}
         />
       </div>
+      {/* <div className="flower-wrapper">
+        <button className="btn" onClick={handleLogout}>
+          <div className="wrapper">
+            <p className="text">Flowers</p>
+
+            {[1, 2, 3, 4, 5, 6].map((num) => (
+              <div className={`flower flower${num}`} key={num}>
+                <div className="petal one" />
+                <div className="petal two" />
+                <div className="petal three" />
+                <div className="petal four" />
+              </div>
+            ))}
+          </div>
+        </button>
+      </div> */}
     </div>
 
   );

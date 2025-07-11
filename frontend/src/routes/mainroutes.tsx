@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { useRoutes, RouteObject} from "react-router-dom";
+import { useRoutes, RouteObject } from "react-router-dom";
 import Loadable from "../component/third-patry/Loadable";
 
 const Login = Loadable(lazy(() => import("../page/login")));
@@ -23,8 +23,8 @@ const BOD = Loadable(lazy(() => import("../page/admin/data-management/BODcenter"
 
 const UserRoutes = (): RouteObject[] => [
   {
-    path: "/", element: <User />, 
-  },                                          
+    path: "/", element: <User />,
+  },
   {
     path: "/user",
     children: [
@@ -38,7 +38,7 @@ const AdminRoutes = (): RouteObject[] => [
     path: "/",
     element: <MainLayout />,
     children: [
-      { index: true, element: <Admin /> }, 
+      { index: true, element: <Admin /> },
     ],
   },
   {
@@ -56,11 +56,11 @@ const AdminRoutes = (): RouteObject[] => [
         children: [
           { index: true, element: <BOD /> },         // /admin/environment
           { path: "ph", element: <Calendar /> },            // /admin/environment/ph
-          { path: "bod", element: <BOD /> },          // /admin/environment/bod
-          // { path: "tds", element: <TDS /> },          // /admin/environment/tds
-          // { path: "ts", element: <TS /> },
-          // { path: "fog", element: <FOG /> },
-          // { path: "tkn", element: <TKN /> },
+          { path: "bod", element: <BOD /> },
+          { path: "ts", element: <BOD /> },        // /admin/environment/bod
+          { path: "tds", element: <BOD /> },          // /admin/environment/tds
+          { path: "fog", element: <BOD /> },
+          { path: "tkn", element: <BOD /> },
         ],
       },
     ],
@@ -73,9 +73,9 @@ const MainRoutes = (): RouteObject[] => [
     path: "/",
     children: [
       { index: true, element: <Login /> },
-      {path: "/register", element: <Register/>},
+      { path: "/register", element: <Register /> },
       { path: "*", element: <Login /> },
-      {path: "/register", element: <Register/>},
+      { path: "/register", element: <Register /> },
     ],
   },
 ];
@@ -104,7 +104,7 @@ function ConfigRoutes() {
         routes = MainRoutes();
         break;
     }
-  } 
+  }
   else {
     routes = MainRoutes();
   }
