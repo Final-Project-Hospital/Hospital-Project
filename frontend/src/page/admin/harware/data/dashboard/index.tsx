@@ -135,7 +135,7 @@ const Index = () => {
                 <div key={g.ID ?? i} className="p-3 bg-gray-50 rounded shadow">
                   <LineChart
                     hardwareID={hardwareID}
-                    timeRangeType="day"
+                    timeRangeType={"day"}
                     selectedRange={[defaultStart, defaultEnd]}
                     parameters={g.Parameters}
                   />
@@ -144,8 +144,6 @@ const Index = () => {
                   </p>
                 </div>
               ))}
-
-            {/* Other Charts */}
             {uniqueGraphs
               .filter((g) => g.Graph !== "Default Graph")
               .map((g, index, arr) => {
@@ -153,7 +151,12 @@ const Index = () => {
                   (uniqueGraphs.some((gg) => gg.Graph === "Default Graph") ? 1 : 0) + arr.length;
                 const isLastAndOdd = index === arr.length - 1 && totalCharts % 2 === 1;
 
-                const commonProps = { hardwareID, parameters: g.Parameters };
+                const commonProps = {
+                  hardwareID,
+                  parameters: g.Parameters,
+                  timeRangeType: "day" as "day",
+                  selectedRange: [defaultStart, defaultEnd],
+                };
 
                 const ChartComponent = (() => {
                   switch (g.Graph) {
