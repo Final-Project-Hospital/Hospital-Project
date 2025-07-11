@@ -35,7 +35,6 @@ func SetupDatabase() {
 		&entity.Employee{},
 		&entity.Role{},
 		&entity.Position{},
-
 		&entity.BeforeAfterTreatment{},
 		&entity.Building{},
 		&entity.Environment{},
@@ -48,6 +47,8 @@ func SetupDatabase() {
 		&entity.Standard{},
 		&entity.Unit{},
 		&entity.Calendar{},
+		&entity.HardwareGraph{},
+		&entity.HardwareParameter{},
 	)
 	// Enviroment
 	Wastewater := entity.Environment{
@@ -102,6 +103,46 @@ func SetupDatabase() {
 	db.FirstOrCreate(&Building1, &entity.Building{BuildingName: "Building1"})
 	db.FirstOrCreate(&Building2, &entity.Building{BuildingName: "Building2"})
 	db.FirstOrCreate(&Building3, &entity.Building{BuildingName: "Building3"})
+
+	defaultGraph := entity.HardwareGraph{Graph: "Default Graph"}
+	db.FirstOrCreate(&defaultGraph, entity.HardwareGraph{Graph: "Default Graph"})
+
+	areaGraph := entity.HardwareGraph{Graph: "Area"}
+	barGraph := entity.HardwareGraph{Graph: "Bar"}
+	colorMappingGraph := entity.HardwareGraph{Graph: "Color Mapping"}
+	stackedGraph := entity.HardwareGraph{Graph: "Stacked"}
+
+	db.FirstOrCreate(&areaGraph, entity.HardwareGraph{Graph: "Area"})
+	db.FirstOrCreate(&barGraph, entity.HardwareGraph{Graph: "Bar"})
+	db.FirstOrCreate(&colorMappingGraph, entity.HardwareGraph{Graph: "Color Mapping"})
+	db.FirstOrCreate(&stackedGraph, entity.HardwareGraph{Graph: "Stacked"})
+
+	paramhardware1 := entity.HardwareParameter{
+		Parameter:       "Formaldehyde",
+		HardwareGraphID: defaultGraph.ID,
+	}
+	paramhardware2 := entity.HardwareParameter{
+		Parameter:       "Temperature",
+		HardwareGraphID: areaGraph.ID,
+	}
+	paramhardware3 := entity.HardwareParameter{
+		Parameter:       "Humidity",
+		HardwareGraphID: barGraph.ID,
+	}
+	paramhardware4 := entity.HardwareParameter{
+		Parameter:       "Light",
+		HardwareGraphID: colorMappingGraph.ID,
+	}
+	paramhardware5 := entity.HardwareParameter{
+		Parameter:       "Gas",
+		HardwareGraphID: stackedGraph.ID,
+	}
+
+	db.FirstOrCreate(&paramhardware1, entity.HardwareParameter{Parameter: "Formaldehyde", HardwareGraphID: defaultGraph.ID})
+	db.FirstOrCreate(&paramhardware2, entity.HardwareParameter{Parameter: "Temperature", HardwareGraphID: areaGraph.ID})
+	db.FirstOrCreate(&paramhardware3, entity.HardwareParameter{Parameter: "Humidity", HardwareGraphID: barGraph.ID})
+	db.FirstOrCreate(&paramhardware4, entity.HardwareParameter{Parameter: "Light", HardwareGraphID: colorMappingGraph.ID})
+	db.FirstOrCreate(&paramhardware5, entity.HardwareParameter{Parameter: "Gas", HardwareGraphID: stackedGraph.ID})
 
 	// Employees
 	User1 := entity.Employee{
@@ -202,17 +243,11 @@ func SetupDatabase() {
 
 	db.FirstOrCreate(&SensorData1, entity.SensorData{HardwareID: SensorData1.HardwareID})
 
-	param1 := entity.Parameter{ParameterName: "Formaldehyde"}
-	param2 := entity.Parameter{ParameterName: "Temperature"}
-	param3 := entity.Parameter{ParameterName: "Humidity"}
-	param4 := entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"}
-	param5 := entity.Parameter{ParameterName: "Total Solid"}
+	param1 := entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"}
+	param2 := entity.Parameter{ParameterName: "Total Solid"}
 
-	db.FirstOrCreate(&param1, entity.Parameter{ParameterName: "Formaldehyde"})
-	db.FirstOrCreate(&param2, entity.Parameter{ParameterName: "Temperature"})
-	db.FirstOrCreate(&param3, entity.Parameter{ParameterName: "Humidity"})
-	db.FirstOrCreate(&param4, entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"})
-	db.FirstOrCreate(&param5, entity.Parameter{ParameterName: "Total Solid"})
+	db.FirstOrCreate(&param1, entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"})
+	db.FirstOrCreate(&param2, entity.Parameter{ParameterName: "Total Solid"})
 
 	var count int64
 	db.Model(&entity.SensorDataParameter{}).Count(&count)
@@ -223,37 +258,54 @@ func SetupDatabase() {
 			for day := 1; day <= 20; day++ {
 				date := time.Date(2025, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 
-				// Formaldehyde (ParameterID = 1)
-				// เพิ่มค่าให้ขึ้นเรื่อย ๆ ตามเดือนและวัน เล็กน้อย
+				// Formaldehyde (HardwareParameterID = 1)
 				param1 := entity.SensorDataParameter{
-					Data:         0.1 + float64(month)*0.05 + float64(day)*0.002,
-					SensorDataID: 1,
-					ParameterID:  1,
-					Date:         date,
+					Data:                0.1 + float64(month)*0.05 + float64(day)*0.002,
+					SensorDataID:        1,
+					HardwareParameterID: 1,
+					Date:                date,
 				}
 				db.Create(&param1)
 				index++
 
-				// Temperature (ParameterID = 2)
-				// ค่า 20-35 เพิ่ม-ลดตามวันและเดือน
+				// Temperature (HardwareParameterID = 2)
 				param2 := entity.SensorDataParameter{
-					Data:         20 + float64(month) + float64(day)*0.3 + float64((day%5)-2),
-					SensorDataID: 1,
-					ParameterID:  2,
-					Date:         date,
+					Data:                20 + float64(month) + float64(day)*0.3 + float64((day%5)-2),
+					SensorDataID:        1,
+					HardwareParameterID: 2,
+					Date:                date,
 				}
 				db.Create(&param2)
 				index++
 
-				// Humidity (ParameterID = 3)
-				// ค่า 40-70 แบบขึ้นลงตามวันเดือนเล็กน้อย
+				// Humidity (HardwareParameterID = 3)
 				param3 := entity.SensorDataParameter{
-					Data:         40 + float64(month)*2 + float64(day)*0.8 + float64((day%7)-3),
-					SensorDataID: 1,
-					ParameterID:  3,
-					Date:         date,
+					Data:                40 + float64(month)*2 + float64(day)*0.8 + float64((day%7)-3),
+					SensorDataID:        1,
+					HardwareParameterID: 3,
+					Date:                date,
 				}
 				db.Create(&param3)
+				index++
+
+				// Light (HardwareParameterID = 4)
+				param4 := entity.SensorDataParameter{
+					Data:                100 + float64(month)*10 + float64(day)*2,
+					SensorDataID:        1,
+					HardwareParameterID: 4,
+					Date:                date,
+				}
+				db.Create(&param4)
+				index++
+
+				// Gas (HardwareParameterID = 5)
+				param5 := entity.SensorDataParameter{
+					Data:                5 + float64(month)*0.4 + float64(day)*0.1,
+					SensorDataID:        1,
+					HardwareParameterID: 5,
+					Date:                date,
+				}
+				db.Create(&param5)
 				index++
 			}
 		}

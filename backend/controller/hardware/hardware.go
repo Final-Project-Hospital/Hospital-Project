@@ -51,10 +51,10 @@ func ReceiveSensorData(c *gin.Context) {
 		}
 	}
 
-	// 2. หา SensorData ของ hardware นี้ (ใช้ล่าสุด)
+	// 2. หา SensorData ล่าสุดของ hardware นี้
 	var sensorData entity.SensorData
 	if err := db.Where("hardware_id = ?", hardware.ID).
-		Order("date desc"). // ใช้ล่าสุด
+		Order("date desc").
 		First(&sensorData).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			// ยังไม่มี → สร้างใหม่
@@ -74,12 +74,12 @@ func ReceiveSensorData(c *gin.Context) {
 
 	// 3. วนแต่ละ parameter ที่ส่งมา
 	for paramName, value := range input.Sensor {
-		var parameter entity.Parameter
-		if err := db.Where("parameter_name = ?", paramName).First(&parameter).Error; err != nil {
+		var parameter entity.HardwareParameter
+		if err := db.Where("parameter = ?", paramName).First(&parameter).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
-				parameter = entity.Parameter{ParameterName: paramName}
+				parameter = entity.HardwareParameter{Parameter: paramName}
 				if err := db.Create(&parameter).Error; err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot create parameter: " + err.Error()})
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot create HardwareParameter: " + err.Error()})
 					return
 				}
 			} else {
@@ -90,10 +90,10 @@ func ReceiveSensorData(c *gin.Context) {
 
 		// 4. เพิ่ม SensorDataParameter
 		sensorParam := entity.SensorDataParameter{
-			Date:          time.Now(),
-			Data:          value,
-			SensorDataID:  sensorData.ID,
-			ParameterID:   parameter.ID,
+			Date:                time.Now(),
+			Data:                value,
+			SensorDataID:        sensorData.ID,
+			HardwareParameterID: parameter.ID,
 		}
 		if err := db.Create(&sensorParam).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot create SensorDataParameter: " + err.Error()})
@@ -103,3 +103,4 @@ func ReceiveSensorData(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Sensor data saved successfully"})
 }
+

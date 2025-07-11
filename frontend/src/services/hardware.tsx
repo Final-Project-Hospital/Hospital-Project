@@ -3,6 +3,8 @@ import { RoomInterface } from "../interface/IRoom"
 import { BuildingInterface } from "../interface/IBuilding"
 import { HardwareInterface } from "../interface/IHardware"
 import { SensorDataParameterInterface } from "../interface/ISensorDataParameter"
+import { HardwareGraphInterface } from "../interface/IHardwareGraph"
+import { HardwareParameterInterface } from "../interface/IHardwareParameter"
 const apiUrl = "http://localhost:8000";
 
 const getAuthHeader = () => {
@@ -195,6 +197,30 @@ export const GetSensorDataParametersBySensorDataID = async (
   }
 };
 
+export const ListDataHardwareParameterByParameter = async (
+  parameter: string
+): Promise<HardwareParameterInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/hardware-parameters-by-parameter`, {
+      params: { parameter },
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching hardware parameters by parameter:", error);
+    return null;
+  }
+};
+
 export const GetSensorDataByHardwareID = async (
   id: number
 ): Promise<any[] | null> => {
@@ -218,6 +244,27 @@ export const GetSensorDataByHardwareID = async (
   }
 };
 
+export const ListDataGraph = async (): Promise<HardwareGraphInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/hardware-graphs`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching hardware graphs:", error);
+    return null;
+  }
+};
+
 
 async function ListDataHardware() {
 
@@ -234,3 +281,4 @@ async function ListDataHardware() {
 export {
   ListDataHardware,
 }
+

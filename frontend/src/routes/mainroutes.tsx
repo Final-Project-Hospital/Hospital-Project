@@ -18,6 +18,17 @@ const People = Loadable(lazy(() => import("../page/admin/people/index")));
 const Hardware_Main = Loadable(lazy(() => import("../page/admin/harware/index")));
 const Hardware_Room = Loadable(lazy(() => import("../page/admin/harware/data/index")));
 
+// Test Hardware
+{/* charts  */ }
+const Area = Loadable(lazy(() => import("../component/admin/charts/Area")));
+const Bar = Loadable(lazy(() => import("../component/admin/charts/Bar")));
+const Financial = Loadable(lazy(() => import("../component/admin/charts/Financial")));
+const LineLinear = Loadable(lazy(() => import("../component/admin/charts/Line")));
+const ColorMapping = Loadable(lazy(() => import("../component/admin/charts/ColorMapping")));
+const Pie = Loadable(lazy(() => import("../component/admin/charts/Pie")));
+const Pyramid = Loadable(lazy(() => import("../component/admin/charts/Pyramid")));
+const Stacked = Loadable(lazy(() => import("../component/admin/charts/Stacked")));
+
 // data-visualization
 const EnvironmentBlock = Loadable(lazy(() => import("../page/admin/data-visualization/EnvironmentBlock")));
 const DatavizPH = Loadable(lazy(() => import("../page/admin/data-visualization/PHdataviz")));
@@ -59,6 +70,15 @@ const AdminRoutes = (): RouteObject[] => [
       { path: "Room", element: <Hardware_Room /> },
       { path: "Calendar", element: <Calendar /> },
       { path: "people", element: <People /> },
+      {/* charts Test  */ },
+      { path: "Area", element: <Area /> },
+      { path: "Bar", element: <Bar /> },
+      { path: "Financial", element: <Financial /> },
+      { path: "LineLinear", element: <LineLinear /> },
+      { path: "ColorMapping", element: <ColorMapping /> },
+      { path: "Pie", element: <Pie /> },
+      { path: "Pyramid", element: <Pyramid /> },
+      { path: "Stacked", element: <Stacked /> },
       {
         path: "data-visualization/water",
         children: [

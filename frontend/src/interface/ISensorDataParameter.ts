@@ -1,12 +1,12 @@
-import {ParameterInterface} from "./IParameter"
+import {HardwareParameterInterface} from "./IHardwareParameter"
 import {SensorDataInterface} from "./ISensordata"
 
 export interface SensorDataParameterInterface {
   ID?: number;
   Date: string;
   Data: number;
-  SensorDataID: ParameterInterface;
-  ParameterID: SensorDataInterface;
+  SensorDataID: SensorDataInterface;
+  ParameterID: HardwareParameterInterface;
   SensorData?: any;
-  Parameter?: any;
+  HardwareParameter?: any;
 }
