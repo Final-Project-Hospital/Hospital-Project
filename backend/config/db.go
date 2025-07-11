@@ -35,7 +35,6 @@ func SetupDatabase() {
 		&entity.Employee{},
 		&entity.Role{},
 		&entity.Position{},
-
 		&entity.BeforeAfterTreatment{},
 		&entity.Building{},
 		&entity.Environment{},
@@ -48,6 +47,7 @@ func SetupDatabase() {
 		&entity.Standard{},
 		&entity.Unit{},
 		&entity.Calendar{},
+		&entity.HardwareParameter{},
 	)
 	// Enviroment
 	Wastewater := entity.Environment{
@@ -202,17 +202,19 @@ func SetupDatabase() {
 
 	db.FirstOrCreate(&SensorData1, entity.SensorData{HardwareID: SensorData1.HardwareID})
 
-	param1 := entity.Parameter{ParameterName: "Formaldehyde"}
-	param2 := entity.Parameter{ParameterName: "Temperature"}
-	param3 := entity.Parameter{ParameterName: "Humidity"}
-	param4 := entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"}
-	param5 := entity.Parameter{ParameterName: "Total Solid"}
+	param1 := entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"}
+	param2 := entity.Parameter{ParameterName: "Total Solid"}
 
-	db.FirstOrCreate(&param1, entity.Parameter{ParameterName: "Formaldehyde"})
-	db.FirstOrCreate(&param2, entity.Parameter{ParameterName: "Temperature"})
-	db.FirstOrCreate(&param3, entity.Parameter{ParameterName: "Humidity"})
-	db.FirstOrCreate(&param4, entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"})
-	db.FirstOrCreate(&param5, entity.Parameter{ParameterName: "Total Solid"})
+	db.FirstOrCreate(&param1, entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"})
+	db.FirstOrCreate(&param2, entity.Parameter{ParameterName: "Total Solid"})
+
+	paramhardware1 := entity.HardwareParameter{Parameter: "Formaldehyde"}
+	paramhardware2 := entity.HardwareParameter{Parameter: "Temperature"}
+	paramhardware3 := entity.HardwareParameter{Parameter: "Humidity"}
+
+	db.FirstOrCreate(&paramhardware1, entity.HardwareParameter{Parameter: "Formaldehyde"})
+	db.FirstOrCreate(&paramhardware2, entity.HardwareParameter{Parameter: "Temperature"})
+	db.FirstOrCreate(&paramhardware3, entity.HardwareParameter{Parameter: "Humidity"})
 
 	var count int64
 	db.Model(&entity.SensorDataParameter{}).Count(&count)
@@ -226,10 +228,10 @@ func SetupDatabase() {
 				// Formaldehyde (ParameterID = 1)
 				// เพิ่มค่าให้ขึ้นเรื่อย ๆ ตามเดือนและวัน เล็กน้อย
 				param1 := entity.SensorDataParameter{
-					Data:         0.1 + float64(month)*0.05 + float64(day)*0.002,
-					SensorDataID: 1,
-					ParameterID:  1,
-					Date:         date,
+					Data:                0.1 + float64(month)*0.05 + float64(day)*0.002,
+					SensorDataID:        1,
+					HardwareParameterID: 1,
+					Date:                date,
 				}
 				db.Create(&param1)
 				index++
@@ -237,10 +239,10 @@ func SetupDatabase() {
 				// Temperature (ParameterID = 2)
 				// ค่า 20-35 เพิ่ม-ลดตามวันและเดือน
 				param2 := entity.SensorDataParameter{
-					Data:         20 + float64(month) + float64(day)*0.3 + float64((day%5)-2),
-					SensorDataID: 1,
-					ParameterID:  2,
-					Date:         date,
+					Data:                20 + float64(month) + float64(day)*0.3 + float64((day%5)-2),
+					SensorDataID:        1,
+					HardwareParameterID: 2,
+					Date:                date,
 				}
 				db.Create(&param2)
 				index++
@@ -248,10 +250,10 @@ func SetupDatabase() {
 				// Humidity (ParameterID = 3)
 				// ค่า 40-70 แบบขึ้นลงตามวันเดือนเล็กน้อย
 				param3 := entity.SensorDataParameter{
-					Data:         40 + float64(month)*2 + float64(day)*0.8 + float64((day%7)-3),
-					SensorDataID: 1,
-					ParameterID:  3,
-					Date:         date,
+					Data:                40 + float64(month)*2 + float64(day)*0.8 + float64((day%7)-3),
+					SensorDataID:        1,
+					HardwareParameterID: 3,
+					Date:                date,
 				}
 				db.Create(&param3)
 				index++
