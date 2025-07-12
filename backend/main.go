@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Tawunchai/hospital-project/config"
+	"github.com/Tawunchai/hospital-project/controller/bodcenter"
 	"github.com/Tawunchai/hospital-project/controller/building"
 	"github.com/Tawunchai/hospital-project/controller/calendar"
 	
@@ -114,6 +115,7 @@ func main() {
 
 		public.GET("/api/employees", employee.GetEmployees)
 
+		public.POST("/create-bod", bodcenter.CreateBod)
 		//SelectBoxAll
 		public.GET("/list-BeforeAfterTreatment", selectBoxAll.ListBeforeAfterTreatment)
 		public.GET("/list-unit", selectBoxAll.ListUnit)

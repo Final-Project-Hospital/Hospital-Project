@@ -345,4 +345,16 @@ func SetupDatabase() {
 	} else {
 		println("⚠️  ข้ามการเพิ่มข้อมูล SensorDataParameter เพราะมีข้อมูลอยู่แล้ว")
 	}
+	// environment := entity.Environment{EnvironmentName: "น้ำเสีย"}
+	// db.FirstOrCreate(&environment, &entity.Environment{EnvironmentName: "น้ำเสีย"})
+
+	// BodStandard := entity.Standard{StandardValue: 20}
+	// db.FirstOrCreate(&BodStandard, &entity.Standard{StandardValue: 20})
+
+	// BodUnit := entity.Unit{UnitName: "mg/L"}
+	// db.FirstOrCreate(&BodUnit, &entity.Unit{UnitName: "mg/L"})
+
+	BodParameter := entity.Parameter{ParameterName: "Biochemical Oxygen Demand"}
+	db.FirstOrCreate(&BodParameter, &entity.Parameter{ParameterName: "Biochemical Oxygen Demand"})
+
 }

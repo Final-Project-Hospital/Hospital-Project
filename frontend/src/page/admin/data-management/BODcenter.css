@@ -1,34 +1,58 @@
-.tds-container {
+.bod-container {
   background: white;
   padding: 24px;
   border-radius: 25px;
   box-shadow: 0 4px 20px #7b61ff3b;
   max-width: 1000px;
   margin: 0 auto;
-  width: 90%; /* ทำให้ปรับตามขนาดหน้าจอได้ดีขึ้น */
+  width: 90%;
   box-sizing: border-box;
+  
+}
+.bod-container label{
+  color:#000000 !important;
+  font-size: medium !important;
+  font-weight:500 !important;
+}
+/* .bod-container.label{
+  font-size:larger;
+} */
+
+/* ปรับ input ให้มี border-radius 50px */
+.bod-container .ant-input,
+.bod-container .ant-input-number,
+.bod-container .ant-picker,
+.bod-container .ant-select-selector {
+  border-radius: 50px !important;
+}
+.bod-container .ant-input-number-handler-wrap {
+  border-radius: 0 50px 50px 0 !important;
+  overflow: hidden;
 }
 
-.form-group {
+.bod-form-group {
   display: flex;
   gap: 24px;
   flex-wrap: wrap;
 }
 
-.form-group .ant-form-item {
-  flex: 1 1 300px; /* ทำให้มีขั้นต่ำ 300px และยืดหดได้ */
+
+.bod-form-group .ant-form-item {
+  flex: 1 1 300px;
+  /* ทำให้มีขั้นต่ำ 300px และยืดหดได้ */
+
 }
 
-.full-width {
+.bod-full-width {
   width: 100%;
 }
 
-.red-text {
+.bod-red-text {
   color: red;
   font-weight: bold;
 }
 
-.form-actions {
+.bod-form-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -36,54 +60,73 @@
   margin-top: 16px;
 }
 
-.cancel,
-.reset,
-.submit {
+.bod-cancel,
+.bod-reset,
+.bod-submit {
   padding: 10px 20px;
-  min-width: 100px;
+  min-width: 80px;
+  height: inherit;
   text-align: center;
-  font-weight: bold;
+  font-weight: bolder;
   cursor: pointer;
-  border-radius: 15px;
+  border-radius: 50px;
   border: none;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  font-size:medium;
 }
 
 /* ปุ่มแต่ละแบบ */
-.cancel {
+.bod-cancel {
   background-color: #949494;
   color: white;
 }
 
-.reset {
+.bod-reset {
   background-color: #ffffff;
   color: #326667;
 }
 
-.submit {
+.bod-submit {
   background-color: #326667;
   color: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.bod-submit:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #358788 !important;
+  transform: scale(1.05) !important;
+}
+.bod-reset:hover {
+  color: #326667!important;
+  background-color: #ffffff !important;
+  transform: scale(1.05) !important;
+}
+.bod-cancel:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #646464 !important;
+  transform: scale(1.05) !important;
 }
 
 /* Responsive behavior */
 @media (max-width: 768px) {
-  .form-group {
+  .bod-form-group {
     flex-direction: column;
     gap: 16px;
   }
 
-  .form-group .ant-form-item {
+  .bod-form-group .ant-form-item {
     flex: 1 1 100%;
   }
 
-  .form-actions {
+  .bod-form-actions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .cancel,
-  .reset,
-  .submit {
+  .bod-cancel,
+  .bod-reset,
+  .bod-submit {
     width: 100%;
   }
 }
