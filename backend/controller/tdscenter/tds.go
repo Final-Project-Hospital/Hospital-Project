@@ -24,7 +24,7 @@ func CreateTDS(c *gin.Context) {
 		Data:                   input.Data,
 		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
 		EnvironmentID:          input.EnvironmentID,
-		ParameterID:            7, 
+		ParameterID:            4, 
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,

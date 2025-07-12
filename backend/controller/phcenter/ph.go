@@ -24,7 +24,7 @@ func CreatePH(c *gin.Context) {
 		Data:                   input.Data,
 		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
 		EnvironmentID:          input.EnvironmentID,
-		ParameterID:            6, 
+		ParameterID:            3, 
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,
