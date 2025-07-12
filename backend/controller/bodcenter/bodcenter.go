@@ -1,4 +1,4 @@
-package DataManagement
+package bodcenter
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CreateEnvironmentRecord(c *gin.Context) {
+func CreateBod(c *gin.Context) {
 	fmt.Println("Creating Environment Record")
 
 	var input struct {
@@ -31,12 +31,19 @@ func CreateEnvironmentRecord(c *gin.Context) {
 
 	db := config.DB()
 
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?","Biochemical Oxygen Demand").First(&parameter).Error; err != nil {
+		fmt.Println("Error fetching parameter:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+		return
+	}
+
 	environmentRecord := entity.EnvironmentalRecord{
 		Date:                   time.Now(),
 		Data:                   input.Data,
 		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
 		EnvironmentID:          input.EnvironmentID,
-		ParameterID:            input.ParameterID, // แก้ตรงนี้
+		ParameterID:            parameter.ID, // แก้ตรงนี้
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,

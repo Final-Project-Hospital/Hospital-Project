@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { MdOutlineCancel } from 'react-icons/md';
 import { Button } from '.';
 import { message } from "antd";
@@ -9,7 +10,10 @@ import './FlowerButton.css'; // นำเข้า CSS
 const UserProfile = () => {
   const { currentColor } = useStateContext();
   const navigate = useNavigate();
-
+  const [fullName, setFullName] = useState('');
+  const [roleName, setRoleName] = useState('');
+  const [positionName, setPositionName] = useState('');
+  const [emailUser, setEmailUser] = useState('');
   const handleLogout = () => {
     localStorage.removeItem("isLogin");
     localStorage.removeItem("Role");
@@ -21,6 +25,14 @@ const UserProfile = () => {
       navigate("/login");
     }, 3500);
   };
+  useEffect(() => {
+    const firstName = localStorage.getItem('firstnameuser') || '';
+    const lastName = localStorage.getItem('lastnameuser') || '';
+    setRoleName(localStorage.getItem('roleName') || '');
+    setPositionName(localStorage.getItem('positionuser') || '');
+    setEmailUser(localStorage.getItem('emailuser') || '');
+    setFullName(`${firstName} ${lastName}`);
+  }, []);
 
   return (
     <div className="nav-item absolute right-1 top-16 bg-white dark:bg-[#42464D] p-8 rounded-lg w-96">
@@ -41,9 +53,10 @@ const UserProfile = () => {
           alt="user-profile"
         />
         <div>
-          <p className="font-semibold text-xl dark:text-gray-200"> Tawunchai </p>
-          <p className="text-gray-500 text-sm dark:text-gray-400">  Computer Engineer </p>
-          <p className="text-gray-500 text-sm font-semibold dark:text-gray-400"> tawunchaien@gmail.com </p>
+          <p className="font-semibold text-xl dark:text-gray-200"> {fullName || 'ผู้ใช้'} </p>
+          <p className="text-gray-500 text-sm dark:text-gray-400">  {roleName|| 'ไม่มีพบตำแหน่ง' } </p>
+          <p className="text-gray-500 text-sm dark:text-gray-400">  {positionName|| 'ไม่มีพบอาชีพ' } </p>
+          <p className="text-gray-500 text-sm font-semibold dark:text-gray-400"> {emailUser|| 'ไม่มีพบอีเมล' } </p>
         </div>
       </div>
       <div className="mt-5">

@@ -13,16 +13,18 @@
 }
 
 .tabs {
+  width: 80%;
+  margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
   padding: 10px 20px;
   background: inherit;
-  border-bottom: 2px solid #A1EFF0;
-  width: 100%; /* default full width */
+  border-bottom: 2.5px solid #A1EFF0;
   box-sizing: border-box;
 }
+
 .tabs button{
   border-radius: 15px;
 }

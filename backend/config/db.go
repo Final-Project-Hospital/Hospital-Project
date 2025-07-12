@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/Tawunchai/hospital-project/entity"
-
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var db *gorm.DB
@@ -19,12 +19,14 @@ func DB() *gorm.DB {
 func ConnectionDB() {
 	dsn := "host=localhost user=postgres password=1234 dbname=hospital port=5432 sslmode=disable TimeZone=Asia/Bangkok"
 
-	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Error),
+	})
 	if err != nil {
 		panic("failed to connect to PostgreSQL database")
 	}
 
-	fmt.Println("connected to PostgreSQL database")
+	fmt.Println("✅ connected to PostgreSQL database")
 	db = database
 }
 
@@ -45,14 +47,44 @@ func SetupDatabase() {
 		&entity.Standard{},
 		&entity.Unit{},
 		&entity.Calendar{},
+		&entity.HardwareGraph{},
+		&entity.HardwareParameter{},
 	)
+	// Enviroment
+	Wastewater := entity.Environment{
+		EnvironmentName: "น้ำเสีย",
+	}
+	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
+
+	// Standaed
+	standardValues := []float32{5.0, 6.0, 7.0, 8.0, 9.0, 20.0, 30.0, 1.0, 500.0, 0.5, 35.0}
+	for _, val := range standardValues {
+		Standard := entity.Standard{StandardValue: val}
+		db.FirstOrCreate(&Standard, entity.Standard{StandardValue: val})
+	}
+
+	// Unit
+	Unit := entity.Unit{
+		UnitName: "มิลลิกรัมต่อลิตร",
+	}
+	db.FirstOrCreate(&Unit, &entity.Unit{UnitName: "มิลลิกรัมต่อลิตร"})
+
+	//BeforeAfter
+	Before := entity.BeforeAfterTreatment{TreatmentName: "ก่อน"}
+	After := entity.BeforeAfterTreatment{TreatmentName: "หลัง"}
+	BeforeAndAfter := entity.BeforeAfterTreatment{TreatmentName: "ก่อนเเละหลัง"}
+	db.FirstOrCreate(&Before, &entity.BeforeAfterTreatment{TreatmentName: "ก่อน"})
+	db.FirstOrCreate(&After, &entity.BeforeAfterTreatment{TreatmentName: "หลัง"})
+	db.FirstOrCreate(&BeforeAndAfter, &entity.BeforeAfterTreatment{TreatmentName: "ก่อนเเละหลัง"})
 
 	// Roles
 	AdminRole := entity.Role{RoleName: "Admin"}
 	UserRole := entity.Role{RoleName: "User"}
+	GuestRole := entity.Role{RoleName: "Guest"}
 
 	db.FirstOrCreate(&AdminRole, &entity.Role{RoleName: "Admin"})
 	db.FirstOrCreate(&UserRole, &entity.Role{RoleName: "User"})
+	db.FirstOrCreate(&GuestRole, &entity.Role{RoleName: "Guest"})
 
 	// Positions
 	Position1 := entity.Position{Position: "Engineer"}
@@ -71,6 +103,46 @@ func SetupDatabase() {
 	db.FirstOrCreate(&Building1, &entity.Building{BuildingName: "Building1"})
 	db.FirstOrCreate(&Building2, &entity.Building{BuildingName: "Building2"})
 	db.FirstOrCreate(&Building3, &entity.Building{BuildingName: "Building3"})
+
+	defaultGraph := entity.HardwareGraph{Graph: "Default Graph"}
+	db.FirstOrCreate(&defaultGraph, entity.HardwareGraph{Graph: "Default Graph"})
+
+	areaGraph := entity.HardwareGraph{Graph: "Area"}
+	barGraph := entity.HardwareGraph{Graph: "Bar"}
+	colorMappingGraph := entity.HardwareGraph{Graph: "Color Mapping"}
+	stackedGraph := entity.HardwareGraph{Graph: "Stacked"}
+
+	db.FirstOrCreate(&areaGraph, entity.HardwareGraph{Graph: "Area"})
+	db.FirstOrCreate(&barGraph, entity.HardwareGraph{Graph: "Bar"})
+	db.FirstOrCreate(&colorMappingGraph, entity.HardwareGraph{Graph: "Color Mapping"})
+	db.FirstOrCreate(&stackedGraph, entity.HardwareGraph{Graph: "Stacked"})
+
+	paramhardware1 := entity.HardwareParameter{
+		Parameter:       "Formaldehyde",
+		HardwareGraphID: defaultGraph.ID,
+	}
+	paramhardware2 := entity.HardwareParameter{
+		Parameter:       "Temperature",
+		HardwareGraphID: areaGraph.ID,
+	}
+	paramhardware3 := entity.HardwareParameter{
+		Parameter:       "Humidity",
+		HardwareGraphID: barGraph.ID,
+	}
+	paramhardware4 := entity.HardwareParameter{
+		Parameter:       "Light",
+		HardwareGraphID: colorMappingGraph.ID,
+	}
+	paramhardware5 := entity.HardwareParameter{
+		Parameter:       "Gas",
+		HardwareGraphID: stackedGraph.ID,
+	}
+
+	db.FirstOrCreate(&paramhardware1, entity.HardwareParameter{Parameter: "Formaldehyde", HardwareGraphID: defaultGraph.ID})
+	db.FirstOrCreate(&paramhardware2, entity.HardwareParameter{Parameter: "Temperature", HardwareGraphID: areaGraph.ID})
+	db.FirstOrCreate(&paramhardware3, entity.HardwareParameter{Parameter: "Humidity", HardwareGraphID: barGraph.ID})
+	db.FirstOrCreate(&paramhardware4, entity.HardwareParameter{Parameter: "Light", HardwareGraphID: colorMappingGraph.ID})
+	db.FirstOrCreate(&paramhardware5, entity.HardwareParameter{Parameter: "Gas", HardwareGraphID: stackedGraph.ID})
 
 	// Employees
 	User1 := entity.Employee{
@@ -171,60 +243,76 @@ func SetupDatabase() {
 
 	db.FirstOrCreate(&SensorData1, entity.SensorData{HardwareID: SensorData1.HardwareID})
 
-	param1 := entity.Parameter{ParameterName: "Formaldehyde"}
-	param2 := entity.Parameter{ParameterName: "Temperature"}
-	param3 := entity.Parameter{ParameterName: "Humidity"}
+	param1 := entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"}
+	param2 := entity.Parameter{ParameterName: "Total Solid"}
 
-	db.FirstOrCreate(&param1, entity.Parameter{ParameterName: "Formaldehyde"})
-	db.FirstOrCreate(&param2, entity.Parameter{ParameterName: "Temperature"})
-	db.FirstOrCreate(&param3, entity.Parameter{ParameterName: "Humidity"})
+	db.FirstOrCreate(&param1, entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"})
+	db.FirstOrCreate(&param2, entity.Parameter{ParameterName: "Total Solid"})
 
 	var count int64
 	db.Model(&entity.SensorDataParameter{}).Count(&count)
 
 	if count == 0 {
 		index := 0
-		for i := 0; i < 40; i++ {
-			month := (i / 10) + 1 // เดือนที่ 1-4
-			day := (i % 10) + 1   // วันที่ 1-10
-			date := time.Date(2025, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+		for month := 1; month <= 12; month++ {
+			for day := 1; day <= 20; day++ {
+				date := time.Date(2025, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 
-			// Formaldehyde (ParameterID = 1)
-			param1 := entity.SensorDataParameter{
-				Data:         float64(0.1 + float64(i)*0.01),
-				SensorDataID: 1,
-				ParameterID:  1,
-				Date:         date,
-			}
-			db.Create(&param1)
-			index++
+				// Formaldehyde (HardwareParameterID = 1)
+				param1 := entity.SensorDataParameter{
+					Data:                0.1 + float64(month)*0.05 + float64(day)*0.002,
+					SensorDataID:        1,
+					HardwareParameterID: 1,
+					Date:                date,
+				}
+				db.Create(&param1)
+				index++
 
-			// Temperature (ParameterID = 2)
-			param2 := entity.SensorDataParameter{
-				Data:         float64(25 + i%5),
-				SensorDataID: 1,
-				ParameterID:  2,
-				Date:         date,
-			}
-			db.Create(&param2)
-			index++
+				// Temperature (HardwareParameterID = 2)
+				param2 := entity.SensorDataParameter{
+					Data:                20 + float64(month) + float64(day)*0.3 + float64((day%5)-2),
+					SensorDataID:        1,
+					HardwareParameterID: 2,
+					Date:                date,
+				}
+				db.Create(&param2)
+				index++
 
-			// Humidity (ParameterID = 3)
-			param3 := entity.SensorDataParameter{
-				Data:         float64(50 + i%10),
-				SensorDataID: 1,
-				ParameterID:  3,
-				Date:         date,
+				// Humidity (HardwareParameterID = 3)
+				param3 := entity.SensorDataParameter{
+					Data:                40 + float64(month)*2 + float64(day)*0.8 + float64((day%7)-3),
+					SensorDataID:        1,
+					HardwareParameterID: 3,
+					Date:                date,
+				}
+				db.Create(&param3)
+				index++
+
+				// Light (HardwareParameterID = 4)
+				param4 := entity.SensorDataParameter{
+					Data:                100 + float64(month)*10 + float64(day)*2,
+					SensorDataID:        1,
+					HardwareParameterID: 4,
+					Date:                date,
+				}
+				db.Create(&param4)
+				index++
+
+				// Gas (HardwareParameterID = 5)
+				param5 := entity.SensorDataParameter{
+					Data:                5 + float64(month)*0.4 + float64(day)*0.1,
+					SensorDataID:        1,
+					HardwareParameterID: 5,
+					Date:                date,
+				}
+				db.Create(&param5)
+				index++
 			}
-			db.Create(&param3)
-			index++
 		}
-
-		println("✅ เพิ่มข้อมูล SensorDataParameter ทั้งหมด 120 records พร้อมวันที่")
+		println("✅ เพิ่มข้อมูล SensorDataParameter ทั้งหมด", index, "records พร้อมวันที่")
 	} else {
 		println("⚠️  ข้ามการเพิ่มข้อมูล SensorDataParameter เพราะมีข้อมูลอยู่แล้ว")
 	}
-
 	environment := entity.Environment{EnvironmentName: "น้ำเสีย"}
 	db.FirstOrCreate(&environment, &entity.Environment{EnvironmentName: "น้ำเสีย"})
 
@@ -234,14 +322,10 @@ func SetupDatabase() {
 	BodUnit := entity.Unit{UnitName: "mg/L"}
 	db.FirstOrCreate(&BodUnit, &entity.Unit{UnitName: "mg/L"})
 
-	BodParameter := entity.Parameter{ParameterName: "BOD"}
-	db.FirstOrCreate(&BodParameter, &entity.Parameter{ParameterName: "BOD"})
+	BodParameter := entity.Parameter{ParameterName: "Biochemical Oxygen Demand"}
+	db.FirstOrCreate(&BodParameter, &entity.Parameter{ParameterName: "Biochemical Oxygen Demand"})
 
 	BeforeTreatment := entity.BeforeAfterTreatment{TreatmentName: "บริเวณบ่อพักนํ้าทิ้งก่อนเข้าระบบบำบัด"}
 	db.FirstOrCreate(&BeforeTreatment, &entity.BeforeAfterTreatment{TreatmentName: "บริเวณบ่อพักนํ้าทิ้งก่อนเข้าระบบบำบัด"})
 
-	// environment_record1 := entity.BeforeAfterTreatment{
-	// 	Date :time.Now(),
-	// 	Data : 7.5 
-	// }
 }

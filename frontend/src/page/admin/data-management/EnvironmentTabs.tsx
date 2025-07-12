@@ -1,14 +1,20 @@
-// src/layouts/EnvironmentLayout.tsx
 import React from 'react';
 import { Button } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import './EnvironmentTabs.css';
 
+const tabs = [
+  { label: 'pH-Central', path: '/admin/data-management/water/ph' },
+  { label: 'BOD-Central', path: '/admin/data-management/water/bod' },
+  { label: 'TS-Central', path: '/admin/data-management/water/ts' },
+  { label: 'TDS-Central', path: '/admin/data-management/water/tds' },
+  { label: 'FOG-Central', path: '/admin/data-management/water/fog' },
+  { label: 'TKN-Central', path: '/admin/data-management/water/tkn' },
+];
+
 const EnvironmentLayout: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const isActive = (path: string) => location.pathname === path;
+  const { pathname } = useLocation();
 
   return (
     <div>
@@ -21,85 +27,30 @@ const EnvironmentLayout: React.FC = () => {
       <br />
       <div
         className="tabs"
-        style={{
-          width: '80%',
-          margin: '0 auto',
-          display: 'flex',
-          justifyContent: 'center',
-          gap: 8,
-          padding: '10px 20px',
-          background: 'inherit',
-          borderBottom: '2px solid #A1EFF0',
-        }}
+      // style={{
+      //   width: '80%',
+      //   margin: '0 auto',
+      //   display: 'flex',
+      //   justifyContent: 'center',
+      //   gap: 8,
+      //   padding: '10px 20px',
+      //   borderBottom: '5px solid #A1EFF0',
+      // }}
       >
-        <Button
-          type={isActive('/admin/data-management/ph') ? 'primary' : 'text'}
-          onClick={() => navigate('/admin/data-management/ph')}
-          style={
-            isActive('/admin/data-management/ph')
-              ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
-              : {}
-          }
-        >
-          pH-Central
-        </Button>
-        <Button
-          type={isActive('/admin/data-management/bod') ? 'primary' : 'text'}
-          onClick={() => navigate('/admin/data-management/bod')}
-          style={
-            isActive('/admin/data-management/bod')
-              ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
-              : {}
-          }
-        >
-          BOD-Central
-        </Button>
-        <Button
-          type={isActive('/admin/data-management/ts') ? 'primary' : 'text'}
-          onClick={() => navigate('/admin/data-management/ts')}
-          style={
-            isActive('/admin/data-management/ts')
-              ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
-              : {}
-          }
-        >
-          TS-Central
-        </Button>
-        <Button
-          type={isActive('/admin/data-management/tds') ? 'primary' : 'text'}
-          onClick={() => navigate('/admin/data-management/tds')}
-          style={
-            isActive('/admin/data-management/tds')
-              ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
-              : {}
-          }
-        >
-          TDS-Central
-        </Button>
-        <Button
-          type={isActive('/admin/data-management/fog') ? 'primary' : 'text'}
-          onClick={() => navigate('/admin/data-management/fog')}
-          style={
-            isActive('/admin/data-management/fog')
-              ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
-              : {}
-          }
-        >
-          FOG-Central
-        </Button>
-        <Button
-          type={isActive('/admin/data-management/tkn') ? 'primary' : 'text'}
-          onClick={() => navigate('/admin/data-management/tkn')}
-          style={
-            isActive('/admin/data-management/tkn')
-              ? { backgroundColor: 'black', borderColor: 'black', color: 'white' }
-              : {}
-          }
-        >
-          TKN-Central
-        </Button>
+        {tabs.map(({ label, path }) => {
+          const active = pathname === path;
+          return (
+            <Button
+              key={path}
+              type={active ? 'primary' : 'text'}
+              onClick={() => navigate(path)}
+              style={active ? { backgroundColor: 'black', borderColor: 'black', color: 'white' } : {}}
+            >
+              {label}
+            </Button>
+          );
+        })}
       </div>
-      {/* <hr className='line'/> */}
       <br />
       <Outlet />
     </div>

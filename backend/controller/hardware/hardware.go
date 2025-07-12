@@ -2,41 +2,13 @@ package hardware
 
 import (
 	"net/http"
+	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
-
-
-func ListRoom(c *gin.Context) {
-	var rooms []entity.Room
-
-	db := config.DB()
-
-	if err := db.Preload("Building").Preload("Employee").Preload("Hardware").Find(&rooms).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, &rooms)
-}
-
-func CreateRoom(c *gin.Context) {
-	var room entity.Room
-
-	if err := c.ShouldBindJSON(&room); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := config.DB().Create(&room).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, room)
-}
 
 func ListHardware(c *gin.Context) {
 	var hardwares []entity.Hardware
@@ -49,3 +21,86 @@ func ListHardware(c *gin.Context) {
 
 	c.JSON(http.StatusOK, hardwares)
 }
+
+type SensorInput struct {
+	Name   string             `json:"name"`
+	Sensor map[string]float64 `json:"sensor"`
+}
+
+func ReceiveSensorData(c *gin.Context) {
+	var input SensorInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: " + err.Error()})
+		return
+	}
+
+	db := config.DB()
+
+	// 1. เช็กหรือสร้าง Hardware
+	var hardware entity.Hardware
+	if err := db.Where("name = ?", input.Name).First(&hardware).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			hardware = entity.Hardware{Name: input.Name}
+			if err := db.Create(&hardware).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot create hardware: " + err.Error()})
+				return
+			}
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	// 2. หา SensorData ล่าสุดของ hardware นี้
+	var sensorData entity.SensorData
+	if err := db.Where("hardware_id = ?", hardware.ID).
+		Order("date desc").
+		First(&sensorData).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			// ยังไม่มี → สร้างใหม่
+			sensorData = entity.SensorData{
+				Date:       time.Now(),
+				HardwareID: hardware.ID,
+			}
+			if err := db.Create(&sensorData).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot create SensorData: " + err.Error()})
+				return
+			}
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	// 3. วนแต่ละ parameter ที่ส่งมา
+	for paramName, value := range input.Sensor {
+		var parameter entity.HardwareParameter
+		if err := db.Where("parameter = ?", paramName).First(&parameter).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				parameter = entity.HardwareParameter{Parameter: paramName}
+				if err := db.Create(&parameter).Error; err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot create HardwareParameter: " + err.Error()})
+					return
+				}
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+		}
+
+		// 4. เพิ่ม SensorDataParameter
+		sensorParam := entity.SensorDataParameter{
+			Date:                time.Now(),
+			Data:                value,
+			SensorDataID:        sensorData.ID,
+			HardwareParameterID: parameter.ID,
+		}
+		if err := db.Create(&sensorParam).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot create SensorDataParameter: " + err.Error()})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Sensor data saved successfully"})
+}
+

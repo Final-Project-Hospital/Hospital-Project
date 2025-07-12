@@ -1,5 +1,5 @@
 
-import { FiShoppingBag, FiBarChart, FiCreditCard, FiStar, FiShoppingCart } from 'react-icons/fi';
+import { FiBarChart, FiCreditCard, FiStar, FiShoppingCart } from 'react-icons/fi';
 import { BsBoxSeam, BsCurrencyDollar, BsShield, BsChatLeft } from 'react-icons/bs';
 import { FiHome } from 'react-icons/fi'; import { MdWaterDrop, MdBarChart, MdManageAccounts, MdSensors } from 'react-icons/md'; import { AiOutlineDatabase, AiOutlineCalendar } from 'react-icons/ai';
 import { MdOutlineSupervisorAccount } from 'react-icons/md';
@@ -332,26 +332,25 @@ export const colorMappingData = [
 export const rangeColorMapping = [
   {
     label: '1°C to 10°C',
-    start: '1',
-    end: '10',
-    colors: colorMappingData[1]
+    start: 1,
+    end: 10,
+    colors: ['#FFFFB3'], // ตัวอย่างสี
   },
-
   {
     label: '11°C to 20°C',
-    start: '11',
-    end: '20',
-    colors: colorMappingData[2]
+    start: 11,
+    end: 20,
+    colors: ['#FFB347'], // ตัวอย่างสี
   },
-
   {
     label: '21°C to 30°C',
-    start: '21',
-    end: '30',
-    colors: colorMappingData[3]
+    start: 21,
+    end: 30,
+    colors: ['#FF6961'], // ตัวอย่างสี
   },
-
 ];
+
+
 
 export const ColorMappingPrimaryXAxis: AxisModel = {
   valueType: 'Category',
@@ -527,14 +526,13 @@ export const links = [
         icon: <MdBarChart />,
         subMenu: [
           {
-            name: 'กลุ่มน้ำ',
+            name: 'data-visualization/water',
             label: 'กลุ่มน้ำ',
             icon: <MdWaterDrop />,
-            path: '/measurement/water',
             subMenu: [
               {
-                name: 'นํ้าเสีย',
-                path: '/measurement/water/',
+                name: 'data-visualization/water',
+                label: 'นํ้าเสีย',
               },
             ],
           },
@@ -544,6 +542,19 @@ export const links = [
         name: 'data-management',
         label: 'จัดการข้อมูล',
         icon: <AiOutlineDatabase />,
+        subMenu: [
+          {
+            name: 'data-management/water',
+            label: 'กลุ่มน้ำ',
+            icon: <MdWaterDrop />,
+            subMenu: [
+              {
+                name: 'data-management/water',
+                label: 'นํ้าเสีย',
+              },
+            ],
+          },
+        ],
       },
       {
         name: 'Hardware',
@@ -551,7 +562,7 @@ export const links = [
         icon: <MdSensors />,
       },
       {
-        name: '-management',
+        name: 'People',
         label: 'จัดการบุคคล',
         icon: <MdManageAccounts />,
       },
@@ -568,6 +579,7 @@ export const links = [
       },
     ],
   },
+  
 ];
 
 export const cartData = [
@@ -3082,19 +3094,13 @@ export const lineChartData = [
     { x: new Date(2011, 0, 1), y: 100 },
   ],
 ];
+
 export const dropdownData = [
-  {
-    Id: '1',
-    Time: 'March 2021',
-  },
-  {
-    Id: '2',
-    Time: 'April 2021',
-  }, {
-    Id: '3',
-    Time: 'May 2021',
-  },
+  { Id: 'day', Time: 'Daily' },
+  { Id: 'month', Time: 'Monthly' },
+  { Id: 'year', Time: 'Yearly' },
 ];
+
 export const SparklineAreaData = [
   { x: 1, yval: 2 },
   { x: 2, yval: 6 },
