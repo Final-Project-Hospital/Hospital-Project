@@ -1,5 +1,9 @@
 import axios from "axios";
 import { CalendarInterface } from "../interface/ICalendar";
+import { ListBeforeAfterTreatmentInterface } from "../interface/IBeforeAfterTreatment";
+import { ListUnitInterface } from "../interface/IUnit";
+import { ListStandardInterface } from "../interface/IStandard";
+
 const apiUrl = "http://localhost:8000";
 
 const Authorization = localStorage.getItem("token");
@@ -125,6 +129,71 @@ export const DeleteCalendar = async (
     }
   } catch (error: any) {
     console.error("Error deleting calendar:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+
+//SelectBoxAll
+export const ListBeforeAfterTreatment = async (): Promise<ListBeforeAfterTreatmentInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/list-BeforeAfterTreatment`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error fetching calendars:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const ListUnit = async (): Promise<ListUnitInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/list-unit`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error fetching calendars:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const ListStandard = async (): Promise<ListStandardInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/list-standard`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error fetching calendars:", error.response?.data || error.message);
     return null;
   }
 };

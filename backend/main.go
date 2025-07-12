@@ -7,16 +7,24 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/bodcenter"
 	"github.com/Tawunchai/hospital-project/controller/building"
 	"github.com/Tawunchai/hospital-project/controller/calendar"
-	"github.com/Tawunchai/hospital-project/controller/employee"
+	
 	"github.com/Tawunchai/hospital-project/controller/graph"
 	"github.com/Tawunchai/hospital-project/controller/hardware"
 	"github.com/Tawunchai/hospital-project/controller/logins"
 	"github.com/Tawunchai/hospital-project/controller/room"
 	"github.com/Tawunchai/hospital-project/controller/sensordata"
+
+	"github.com/Tawunchai/hospital-project/controller/phcenter"
+	"github.com/Tawunchai/hospital-project/controller/tdscenter"
 	"github.com/Tawunchai/hospital-project/controller/tkncenter"
 	"github.com/Tawunchai/hospital-project/controller/tscenter"
+
+	"github.com/Tawunchai/hospital-project/controller/employee"
+
 	"github.com/Tawunchai/hospital-project/controller/users"
 	"github.com/Tawunchai/hospital-project/middlewares"
+
+	"github.com/Tawunchai/hospital-project/controller/selectBoxAll"
 	"github.com/gin-gonic/gin"
 )
 
@@ -46,6 +54,20 @@ func main() {
 		public.GET("/uploads/*filename", user.ServeImage)
 		public.GET("/user-data/:userID", user.GetDataByUserID)
 
+		//PH
+		public.POST("/create-ph", phcenter.CreatePH)
+		public.GET("/get-ph", phcenter.GetPH)
+		public.GET("/get-ph/:id", phcenter.GetPHbyID)
+		public.PATCH("/update-ph/:id", phcenter.UpdatePH)
+		public.DELETE("/delete-ph/:id", phcenter.DeletePH)
+
+		//TDS
+		public.POST("/create-tds", tdscenter.CreateTDS)
+		public.GET("/get-tds", tdscenter.GetTDS)
+		public.GET("/get-tds/:id", tdscenter.GetTDSbyID)
+		public.PATCH("/update-tds/:id", tdscenter.UpdateTDS)
+		public.DELETE("/delete-tds/:id", tdscenter.DeleteTDS)
+
 		//TKN
 		public.POST("/create-tkn", tkncenter.CreateTKN)
 		public.GET("/read-tkn", tkncenter.GetTKN)
@@ -68,7 +90,10 @@ func main() {
 
 		//Hardware
 		public.GET("/hardwares", hardware.ListHardware)
+		public.GET("/hardware-colors", hardware.ListColors)
 		public.POST("/hardware/receive", hardware.ReceiveSensorData)
+		public.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID) // test system
+		public.PATCH("/update-hardware-parameter/:id", hardware.UpdateHardwareParameterByID)
 
 		//Graph
 		public.GET("/hardware-graphs", graph.ListDataGraph)
@@ -91,6 +116,10 @@ func main() {
 		public.GET("/api/employees", employee.GetEmployees)
 
 		public.POST("/create-bod", bodcenter.CreateBod)
+		//SelectBoxAll
+		public.GET("/list-BeforeAfterTreatment", selectBoxAll.ListBeforeAfterTreatment)
+		public.GET("/list-unit", selectBoxAll.ListUnit)
+		public.GET("/list-standard", selectBoxAll.ListStandard)
 	}
 
 	r.GET("/", func(c *gin.Context) {

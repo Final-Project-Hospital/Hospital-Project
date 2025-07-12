@@ -24,7 +24,7 @@ func ListDataSensorParameter(c *gin.Context) {
 }
 
 func ListDataHardwareParameterByParameter(c *gin.Context) {
-	parameter := c.Query("parameter") // รับจาก query string
+	parameter := c.Query("parameter")
 	if parameter == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Parameter is required"})
 		return
@@ -33,9 +33,7 @@ func ListDataHardwareParameterByParameter(c *gin.Context) {
 	var params []entity.HardwareParameter
 
 	db := config.DB()
-	result := db.Preload("HardwareGraph").Preload("SensorDataParameter").
-		Where("parameter = ?", parameter).
-		Find(&params)
+	result := db.Preload("HardwareGraph").Preload("SensorDataParameter").Preload("HardwareParameterColor").Where("parameter = ?", parameter).Find(&params)
 
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})

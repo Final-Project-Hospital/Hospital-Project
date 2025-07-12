@@ -23,6 +23,7 @@ import {
 interface ChartdataProps {
   hardwareID: number;
   parameters: string[];
+  colors?: string[]; // รับสี
   timeRangeType: 'day' | 'month' | 'year';
   selectedRange: any;
 }
@@ -30,6 +31,7 @@ interface ChartdataProps {
 const ColorMapping: React.FC<ChartdataProps> = ({
   hardwareID,
   parameters,
+  colors,
   timeRangeType,
   selectedRange,
 }) => {
@@ -54,24 +56,18 @@ const ColorMapping: React.FC<ChartdataProps> = ({
   useEffect(() => {
     const fetchData = async () => {
       if (!hardwareID || !parameters?.length || !selectedRange) return;
-
       const raw = await GetSensorDataByHardwareID(hardwareID);
       if (!Array.isArray(raw)) return;
-
       const dataPoints: { x: Date; y: number }[] = [];
-
       for (const sensor of raw) {
         const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
         if (!Array.isArray(params)) continue;
-
         for (const param of params) {
           const name = param.HardwareParameter?.Parameter;
           const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
           const date = new Date(param.Date);
-
           if (!name || !parameters.includes(name)) continue;
           if (isNaN(value) || isNaN(date.getTime())) continue;
-
           const inRange = (() => {
             if (timeRangeType === 'day') {
               const [start, end] = selectedRange;
@@ -86,13 +82,10 @@ const ColorMapping: React.FC<ChartdataProps> = ({
             }
             return false;
           })();
-
           if (!inRange) continue;
-
           dataPoints.push({ x: date, y: value });
         }
       }
-
       dataPoints.sort((a, b) => a.x.getTime() - b.x.getTime());
       setSeriesData(dataPoints);
     };
@@ -104,7 +97,7 @@ const ColorMapping: React.FC<ChartdataProps> = ({
 
   return (
     <div className="bg-white dark:bg-secondary-dark-bg rounded-2xl p-4 h-[540px]">
-      <ChartsHeader category="Color Mapping" title="Sensor Color Mapping" />
+      <ChartsHeader category="Sensor Data" />
       <ChartComponent
         id="color-mapping-chart"
         primaryXAxis={primaryXAxis}
@@ -128,9 +121,15 @@ const ColorMapping: React.FC<ChartdataProps> = ({
           />
         </SeriesCollectionDirective>
         <RangeColorSettingsDirective>
-          <RangeColorSettingDirective start={0} end={50} colors={['#40BFB4']} label="Low" />
-          <RangeColorSettingDirective start={51} end={100} colors={['#40BFB4']} label="Medium" />
-          <RangeColorSettingDirective start={101} end={9999} colors={['#40BFB4']} label="High" />
+          {parameters.map((param, idx) => (
+            <RangeColorSettingDirective
+              key={param}
+              start={0}
+              end={99999} // คุณอาจกำหนดช่วงตาม logic จริง
+              colors={[colors && colors[idx] ? colors[idx] : '#40BFB4']}
+              label={param}
+            />
+          ))}
         </RangeColorSettingsDirective>
       </ChartComponent>
     </div>

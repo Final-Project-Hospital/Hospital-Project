@@ -4,6 +4,7 @@ import { BuildingInterface } from "../interface/IBuilding"
 import { HardwareInterface } from "../interface/IHardware"
 import { SensorDataParameterInterface } from "../interface/ISensorDataParameter"
 import { HardwareGraphInterface } from "../interface/IHardwareGraph"
+import { HardwareParameterColorInterface } from "../interface/IHardwareColor"
 import { HardwareParameterInterface } from "../interface/IHardwareParameter"
 const apiUrl = "http://localhost:8000";
 
@@ -261,6 +262,85 @@ export const ListDataGraph = async (): Promise<HardwareGraphInterface[] | null> 
     }
   } catch (error) {
     console.error("Error fetching hardware graphs:", error);
+    return null;
+  }
+};
+
+export const ListHardwareColors = async (): Promise<HardwareParameterColorInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/hardware-colors`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(), 
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching hardware colors:", error);
+    return null;
+  }
+};
+
+// ฟังก์ชันสำหรับอัปเดต HardwareParameter
+export const UpdateHardwareParameterByID = async (
+  id: number,
+  payload: {
+    parameter?: string;
+    hardware_graph_id?: number;
+    hardware_parameter_color_id?: number;
+  }
+): Promise<HardwareParameterInterface | null> => {
+  try {
+    const response = await axios.patch(
+      `${apiUrl}/update-hardware-parameter/${id}`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error updating hardware parameter:", error);
+    return null;
+  }
+};
+
+export const ListHardwareParameterByHardwareID = async (
+  hardwareID: number
+): Promise<HardwareParameterInterface[] | null> => {
+  try {
+    const response = await axios.get(
+      `${apiUrl}/hardware-parameter/by-hardware/${hardwareID}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching hardware parameters by hardwareID:", error);
     return null;
   }
 };

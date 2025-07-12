@@ -49,6 +49,7 @@ func SetupDatabase() {
 		&entity.Calendar{},
 		&entity.HardwareGraph{},
 		&entity.HardwareParameter{},
+		&entity.HardwareParameterColor{},
 	)
 	// Enviroment
 	Wastewater := entity.Environment{
@@ -104,45 +105,72 @@ func SetupDatabase() {
 	db.FirstOrCreate(&Building2, &entity.Building{BuildingName: "Building2"})
 	db.FirstOrCreate(&Building3, &entity.Building{BuildingName: "Building3"})
 
-	defaultGraph := entity.HardwareGraph{Graph: "Default Graph"}
-	db.FirstOrCreate(&defaultGraph, entity.HardwareGraph{Graph: "Default Graph"})
+	var colorCount, graphCount, paramCount int64
 
-	areaGraph := entity.HardwareGraph{Graph: "Area"}
-	barGraph := entity.HardwareGraph{Graph: "Bar"}
-	colorMappingGraph := entity.HardwareGraph{Graph: "Color Mapping"}
-	stackedGraph := entity.HardwareGraph{Graph: "Stacked"}
+	db.Model(&entity.HardwareParameterColor{}).Count(&colorCount)
+	db.Model(&entity.HardwareGraph{}).Count(&graphCount)
+	db.Model(&entity.HardwareParameter{}).Count(&paramCount)
 
-	db.FirstOrCreate(&areaGraph, entity.HardwareGraph{Graph: "Area"})
-	db.FirstOrCreate(&barGraph, entity.HardwareGraph{Graph: "Bar"})
-	db.FirstOrCreate(&colorMappingGraph, entity.HardwareGraph{Graph: "Color Mapping"})
-	db.FirstOrCreate(&stackedGraph, entity.HardwareGraph{Graph: "Stacked"})
+	if colorCount == 0 && graphCount == 0 && paramCount == 0 {
+		// ----- สร้างสี -----
+		colorPurple := entity.HardwareParameterColor{Color: "Purple", Code: "#800080"}
+		colorBlue := entity.HardwareParameterColor{Color: "Blue", Code: "#1E90FF"}
+		colorOrange := entity.HardwareParameterColor{Color: "Orange", Code: "#FFA500"}
+		colorYellow := entity.HardwareParameterColor{Color: "Yellow", Code: "#FFD700"}
+		colorGreen := entity.HardwareParameterColor{Color: "Green", Code: "#32CD32"}
 
-	paramhardware1 := entity.HardwareParameter{
-		Parameter:       "Formaldehyde",
-		HardwareGraphID: defaultGraph.ID,
-	}
-	paramhardware2 := entity.HardwareParameter{
-		Parameter:       "Temperature",
-		HardwareGraphID: areaGraph.ID,
-	}
-	paramhardware3 := entity.HardwareParameter{
-		Parameter:       "Humidity",
-		HardwareGraphID: barGraph.ID,
-	}
-	paramhardware4 := entity.HardwareParameter{
-		Parameter:       "Light",
-		HardwareGraphID: colorMappingGraph.ID,
-	}
-	paramhardware5 := entity.HardwareParameter{
-		Parameter:       "Gas",
-		HardwareGraphID: stackedGraph.ID,
-	}
+		db.FirstOrCreate(&colorPurple, entity.HardwareParameterColor{Color: "Purple"})
+		db.FirstOrCreate(&colorBlue, entity.HardwareParameterColor{Color: "Blue"})
+		db.FirstOrCreate(&colorOrange, entity.HardwareParameterColor{Color: "Orange"})
+		db.FirstOrCreate(&colorYellow, entity.HardwareParameterColor{Color: "Yellow"})
+		db.FirstOrCreate(&colorGreen, entity.HardwareParameterColor{Color: "Green"})
 
-	db.FirstOrCreate(&paramhardware1, entity.HardwareParameter{Parameter: "Formaldehyde", HardwareGraphID: defaultGraph.ID})
-	db.FirstOrCreate(&paramhardware2, entity.HardwareParameter{Parameter: "Temperature", HardwareGraphID: areaGraph.ID})
-	db.FirstOrCreate(&paramhardware3, entity.HardwareParameter{Parameter: "Humidity", HardwareGraphID: barGraph.ID})
-	db.FirstOrCreate(&paramhardware4, entity.HardwareParameter{Parameter: "Light", HardwareGraphID: colorMappingGraph.ID})
-	db.FirstOrCreate(&paramhardware5, entity.HardwareParameter{Parameter: "Gas", HardwareGraphID: stackedGraph.ID})
+		// ----- สร้างกราฟ -----
+		defaultGraph := entity.HardwareGraph{Graph: "Default Graph"}
+		areaGraph := entity.HardwareGraph{Graph: "Area"}
+		barGraph := entity.HardwareGraph{Graph: "Bar"}
+		colorMappingGraph := entity.HardwareGraph{Graph: "Color Mapping"}
+		stackedGraph := entity.HardwareGraph{Graph: "Stacked"}
+
+		db.FirstOrCreate(&defaultGraph, entity.HardwareGraph{Graph: "Default Graph"})
+		db.FirstOrCreate(&areaGraph, entity.HardwareGraph{Graph: "Area"})
+		db.FirstOrCreate(&barGraph, entity.HardwareGraph{Graph: "Bar"})
+		db.FirstOrCreate(&colorMappingGraph, entity.HardwareGraph{Graph: "Color Mapping"})
+		db.FirstOrCreate(&stackedGraph, entity.HardwareGraph{Graph: "Stacked"})
+
+		// ----- สร้าง Parameter -----
+		paramhardware1 := entity.HardwareParameter{
+			Parameter:                "Formaldehyde",
+			HardwareParameterColorID: colorPurple.ID,
+			HardwareGraphID:          defaultGraph.ID,
+		}
+		paramhardware2 := entity.HardwareParameter{
+			Parameter:                "Temperature",
+			HardwareParameterColorID: colorBlue.ID,
+			HardwareGraphID:          areaGraph.ID,
+		}
+		paramhardware3 := entity.HardwareParameter{
+			Parameter:                "Humidity",
+			HardwareParameterColorID: colorOrange.ID,
+			HardwareGraphID:          barGraph.ID,
+		}
+		paramhardware4 := entity.HardwareParameter{
+			Parameter:                "Light",
+			HardwareParameterColorID: colorYellow.ID,
+			HardwareGraphID:          colorMappingGraph.ID,
+		}
+		paramhardware5 := entity.HardwareParameter{
+			Parameter:                "Gas",
+			HardwareParameterColorID: colorGreen.ID,
+			HardwareGraphID:          stackedGraph.ID,
+		}
+
+		db.FirstOrCreate(&paramhardware1, entity.HardwareParameter{Parameter: "Formaldehyde", HardwareGraphID: defaultGraph.ID})
+		db.FirstOrCreate(&paramhardware2, entity.HardwareParameter{Parameter: "Temperature", HardwareGraphID: areaGraph.ID})
+		db.FirstOrCreate(&paramhardware3, entity.HardwareParameter{Parameter: "Humidity", HardwareGraphID: barGraph.ID})
+		db.FirstOrCreate(&paramhardware4, entity.HardwareParameter{Parameter: "Light", HardwareGraphID: colorMappingGraph.ID})
+		db.FirstOrCreate(&paramhardware5, entity.HardwareParameter{Parameter: "Gas", HardwareGraphID: stackedGraph.ID})
+	}
 
 	// Employees
 	User1 := entity.Employee{
@@ -245,9 +273,13 @@ func SetupDatabase() {
 
 	param1 := entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"}
 	param2 := entity.Parameter{ParameterName: "Total Solid"}
+	param3 := entity.Parameter{ParameterName: "Potential of Hydrogen"}
+	param4 := entity.Parameter{ParameterName: "Total Dissolved Solids"}
 
 	db.FirstOrCreate(&param1, entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"})
 	db.FirstOrCreate(&param2, entity.Parameter{ParameterName: "Total Solid"})
+	db.FirstOrCreate(&param3, entity.Parameter{ParameterName: "Potential of Hydrogen"})
+	db.FirstOrCreate(&param4, entity.Parameter{ParameterName: "Total Dissolved Solids"})
 
 	var count int64
 	db.Model(&entity.SensorDataParameter{}).Count(&count)
@@ -313,19 +345,16 @@ func SetupDatabase() {
 	} else {
 		println("⚠️  ข้ามการเพิ่มข้อมูล SensorDataParameter เพราะมีข้อมูลอยู่แล้ว")
 	}
-	environment := entity.Environment{EnvironmentName: "น้ำเสีย"}
-	db.FirstOrCreate(&environment, &entity.Environment{EnvironmentName: "น้ำเสีย"})
+	// environment := entity.Environment{EnvironmentName: "น้ำเสีย"}
+	// db.FirstOrCreate(&environment, &entity.Environment{EnvironmentName: "น้ำเสีย"})
 
-	BodStandard := entity.Standard{StandardValue: 20}
-	db.FirstOrCreate(&BodStandard, &entity.Standard{StandardValue: 20})
+	// BodStandard := entity.Standard{StandardValue: 20}
+	// db.FirstOrCreate(&BodStandard, &entity.Standard{StandardValue: 20})
 
-	BodUnit := entity.Unit{UnitName: "mg/L"}
-	db.FirstOrCreate(&BodUnit, &entity.Unit{UnitName: "mg/L"})
+	// BodUnit := entity.Unit{UnitName: "mg/L"}
+	// db.FirstOrCreate(&BodUnit, &entity.Unit{UnitName: "mg/L"})
 
 	BodParameter := entity.Parameter{ParameterName: "Biochemical Oxygen Demand"}
 	db.FirstOrCreate(&BodParameter, &entity.Parameter{ParameterName: "Biochemical Oxygen Demand"})
-
-	BeforeTreatment := entity.BeforeAfterTreatment{TreatmentName: "บริเวณบ่อพักนํ้าทิ้งก่อนเข้าระบบบำบัด"}
-	db.FirstOrCreate(&BeforeTreatment, &entity.BeforeAfterTreatment{TreatmentName: "บริเวณบ่อพักนํ้าทิ้งก่อนเข้าระบบบำบัด"})
 
 }
