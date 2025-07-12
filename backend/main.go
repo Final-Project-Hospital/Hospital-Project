@@ -3,12 +3,11 @@ package main
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/Tawunchai/hospital-project/config"
-
 	"github.com/Tawunchai/hospital-project/controller/building"
 	"github.com/Tawunchai/hospital-project/controller/calendar"
+	
+	"github.com/Tawunchai/hospital-project/controller/graph"
 	"github.com/Tawunchai/hospital-project/controller/hardware"
 	"github.com/Tawunchai/hospital-project/controller/logins"
 	"github.com/Tawunchai/hospital-project/controller/room"
@@ -22,10 +21,10 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/employee"
 
 	"github.com/Tawunchai/hospital-project/controller/users"
-
 	"github.com/Tawunchai/hospital-project/middlewares"
 
 	"github.com/Tawunchai/hospital-project/controller/selectBoxAll"
+	"github.com/gin-gonic/gin"
 )
 
 const PORT = "8000"
@@ -90,13 +89,20 @@ func main() {
 
 		//Hardware
 		public.GET("/hardwares", hardware.ListHardware)
+		public.GET("/hardware-colors", hardware.ListColors)
 		public.POST("/hardware/receive", hardware.ReceiveSensorData)
+		public.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID) // test system
+		public.PATCH("/update-hardware-parameter/:id", hardware.UpdateHardwareParameterByID)
+
+		//Graph
+		public.GET("/hardware-graphs", graph.ListDataGraph)
 
 		//Building
 		public.GET("/buildings", building.ListBuilding)
 
 		// Sensorparameter
 		public.GET("/data-sensorparameter", sensordata.ListDataSensorParameter)
+		public.GET("/hardware-parameters-by-parameter", sensordata.ListDataHardwareParameterByParameter)
 		public.GET("/sensor-data-parameters/:id", sensordata.GetSensorDataParametersBySensorDataID)
 		public.GET("/sensor-data-by-hardware/:id", sensordata.GetSensorDataIDByHardwareID)
 

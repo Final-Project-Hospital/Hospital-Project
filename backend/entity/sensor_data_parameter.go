@@ -14,6 +14,6 @@ type SensorDataParameter struct {
 	SensorDataID	uint
 	SensorData	*SensorData `gorm:"foreignKey: SensorDataID"`
 
-	ParameterID	uint
-	Parameter	*Parameter `gorm:"foreignKey: ParameterID"`
+	HardwareParameterID	uint
+	HardwareParameter	*HardwareParameter `gorm:"foreignKey: HardwareParameterID"`
 }

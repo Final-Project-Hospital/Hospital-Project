@@ -2,6 +2,7 @@ package hardware
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Tawunchai/hospital-project/config"
@@ -51,10 +52,10 @@ func ReceiveSensorData(c *gin.Context) {
 		}
 	}
 
-	// 2. หา SensorData ของ hardware นี้ (ใช้ล่าสุด)
+	// 2. หา SensorData ล่าสุดของ hardware นี้
 	var sensorData entity.SensorData
 	if err := db.Where("hardware_id = ?", hardware.ID).
-		Order("date desc"). // ใช้ล่าสุด
+		Order("date desc").
 		First(&sensorData).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			// ยังไม่มี → สร้างใหม่
@@ -74,12 +75,12 @@ func ReceiveSensorData(c *gin.Context) {
 
 	// 3. วนแต่ละ parameter ที่ส่งมา
 	for paramName, value := range input.Sensor {
-		var parameter entity.Parameter
-		if err := db.Where("parameter_name = ?", paramName).First(&parameter).Error; err != nil {
+		var parameter entity.HardwareParameter
+		if err := db.Where("parameter = ?", paramName).First(&parameter).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
-				parameter = entity.Parameter{ParameterName: paramName}
+				parameter = entity.HardwareParameter{Parameter: paramName}
 				if err := db.Create(&parameter).Error; err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot create parameter: " + err.Error()})
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot create HardwareParameter: " + err.Error()})
 					return
 				}
 			} else {
@@ -90,10 +91,10 @@ func ReceiveSensorData(c *gin.Context) {
 
 		// 4. เพิ่ม SensorDataParameter
 		sensorParam := entity.SensorDataParameter{
-			Date:          time.Now(),
-			Data:          value,
-			SensorDataID:  sensorData.ID,
-			ParameterID:   parameter.ID,
+			Date:                time.Now(),
+			Data:                value,
+			SensorDataID:        sensorData.ID,
+			HardwareParameterID: parameter.ID,
 		}
 		if err := db.Create(&sensorParam).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot create SensorDataParameter: " + err.Error()})
@@ -102,4 +103,133 @@ func ReceiveSensorData(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Sensor data saved successfully"})
+}
+
+// อาจได้เอาออกหรือทำใหม่เลย
+func ListHardwareParameterByHardwareID(c *gin.Context) {
+	var hardwareParameters []entity.HardwareParameter
+
+	hardwareID := c.Param("id") // รับ id จาก path /:id
+
+	// 1. หา SensorDataID ของ HardwareID นี้
+	var sensorDataIDs []uint
+	config.DB().Model(&entity.SensorData{}).
+		Where("hardware_id = ?", hardwareID).
+		Pluck("id", &sensorDataIDs)
+
+	if len(sensorDataIDs) == 0 {
+		c.JSON(http.StatusOK, hardwareParameters)
+		return
+	}
+
+	// 2. หา HardwareParameterID ที่อยู่ใน SensorDataParameter (ไม่ซ้ำ)
+	var hardwareParameterIDs []uint
+	config.DB().Model(&entity.SensorDataParameter{}).
+		Where("sensor_data_id IN ?", sensorDataIDs).
+		Distinct().
+		Pluck("hardware_parameter_id", &hardwareParameterIDs)
+
+	if len(hardwareParameterIDs) == 0 {
+		c.JSON(http.StatusOK, hardwareParameters)
+		return
+	}
+
+	// 3. Preload ข้อมูล HardwareParameter ที่เกี่ยวข้อง
+	if err := config.DB().
+		Preload("HardwareGraph").
+		Preload("HardwareParameterColor").
+		Find(&hardwareParameters, hardwareParameterIDs).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, hardwareParameters)
+}
+
+// PATCH /update-hardware-parameter/:id
+func UpdateHardwareParameterByID(c *gin.Context) {
+	// 1. รับ ID จาก param
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	// 2. Bind JSON body
+	var req struct {
+		Parameter                *string `json:"parameter"`
+		HardwareGraphID          *uint   `json:"hardware_graph_id"`
+		HardwareParameterColorID *uint   `json:"hardware_parameter_color_id"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 3. Find ตัวเดิม
+	var hardwareParameter entity.HardwareParameter
+	if err := config.DB().First(&hardwareParameter, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "HardwareParameter not found"})
+		return
+	}
+
+	// 4. Validate foreign key (ถ้ามีส่งมา)
+	if req.HardwareGraphID != nil {
+		var hardwareGraph entity.HardwareGraph
+		if err := config.DB().First(&hardwareGraph, *req.HardwareGraphID).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "HardwareGraph ไม่พบในระบบ"})
+			return
+		}
+	}
+	if req.HardwareParameterColorID != nil {
+		var color entity.HardwareParameterColor
+		if err := config.DB().First(&color, *req.HardwareParameterColorID).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "HardwareParameterColor ไม่พบในระบบ"})
+			return
+		}
+	}
+
+	// 5. Prepare fields for update
+	updateFields := map[string]interface{}{}
+	if req.Parameter != nil {
+		updateFields["parameter"] = *req.Parameter
+	}
+	if req.HardwareGraphID != nil {
+		updateFields["hardware_graph_id"] = *req.HardwareGraphID
+	}
+	if req.HardwareParameterColorID != nil {
+		updateFields["hardware_parameter_color_id"] = *req.HardwareParameterColorID
+	}
+
+	if len(updateFields) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no field to update"})
+		return
+	}
+
+	// 6. Update
+	if err := config.DB().Model(&hardwareParameter).Updates(updateFields).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 7. Preload relation หลังอัปเดต
+	config.DB().
+		Preload("HardwareGraph").
+		Preload("HardwareParameterColor").
+		First(&hardwareParameter, id)
+
+	c.JSON(http.StatusOK, hardwareParameter)
+}
+
+func ListColors(c *gin.Context) {
+	var colors []entity.HardwareParameterColor
+
+	db := config.DB()
+	if err := db.Find(&colors).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, colors)
 }

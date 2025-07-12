@@ -33,7 +33,6 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID }) => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedColumns, setSelectedColumns] = useState<string[]>(["Date"]);
   const [searchText, setSearchText] = useState<string>("");
-
   const [openDownloadDialog, setOpenDownloadDialog] = useState(false);
   const [csvData, setCsvData] = useState<any[]>([]);
   const [downloadFilename, setDownloadFilename] = useState("sensor-data.csv");
@@ -95,7 +94,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID }) => {
         const parameters = await GetSensorDataParametersBySensorDataID(sensor.ID);
         if (Array.isArray(parameters)) {
           parameters.forEach((param: any) => {
-            const name = param.Parameter?.ParameterName;
+            const name = param.HardwareParameter?.Parameter;
             const value = param.Data;
 
             let sensorDate = "ไม่ทราบวันที่";
@@ -177,9 +176,9 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID }) => {
 
   return (
     <>
-      <div className="card my-5 shadow-md sm:rounded-lg bg-white border-[hsla(0,0%,0%,0)] px-3 py-3">
+      <div className="card my-5  sm:rounded-lg bg-white border-[hsla(0,0%,0%,0)] px-3 py-3">
         <div className="flex items-center justify-between px-3 py-2">
-          <h2 className="text-[18px] font-[700]">Recent Sensor Data</h2>
+          <h2 className="text-lg font-semibold mb-4 text-gray-700">Hardware Data Overview</h2>
           <div className="flex items-center gap-3">
             <input
               type="text"

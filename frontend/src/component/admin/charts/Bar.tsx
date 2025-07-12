@@ -3,42 +3,49 @@ import {
   SeriesCollectionDirective,
   SeriesDirective,
   Inject,
-  LineSeries,
-  DateTime,
   Legend,
+  Category,
   Tooltip,
+  ColumnSeries,
+  DataLabel,
+  DateTime,
 } from '@syncfusion/ej2-react-charts';
+import ChartsHeader from '../ChartsHeader';
+import { useStateContext } from '../../../contexts/ContextProvider';
 import { useEffect, useState } from 'react';
 import {
   GetSensorDataByHardwareID,
-  GetSensorDataParametersBySensorDataID
-} from '../../../../../services/hardware';
-import { useStateContext } from '../../../../../contexts/ContextProvider';
+  GetSensorDataParametersBySensorDataID,
+} from '../../../services/hardware';
 
-interface LineChartProps {
+interface ChartdataProps {
   hardwareID: number;
-  timeRangeType: 'day' | 'month' | 'year';
-  colors?: string[];
-  selectedRange: any;
   parameters: string[];
+  colors?: string[]; // เพิ่ม colors
+  timeRangeType: 'day' | 'month' | 'year';
+  selectedRange: any;
 }
 
-const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, selectedRange, parameters, colors }) => {
+const Bar: React.FC<ChartdataProps> = ({
+  hardwareID,
+  parameters,
+  colors, // รับเข้ามาด้วย!
+  timeRangeType,
+  selectedRange,
+}) => {
   const { currentMode } = useStateContext();
   const [seriesData, setSeriesData] = useState<any[]>([]);
 
-  const LinePrimaryXAxis = {
+  const primaryXAxis = {
     valueType: 'DateTime' as const,
     labelFormat: timeRangeType === 'year' ? 'MMM' : 'dd/MM',
     intervalType: timeRangeType === 'year' ? 'Months' as const : 'Days' as const,
-    edgeLabelPlacement: 'Shift' as const,
     majorGridLines: { width: 0 },
-    background: 'white',
+    edgeLabelPlacement: 'Shift' as const,
   };
 
-  const LinePrimaryYAxis = {
+  const primaryYAxis = {
     labelFormat: '{value}',
-    rangePadding: 'None' as const,
     lineStyle: { width: 0 },
     majorTickLines: { width: 0 },
     minorTickLines: { width: 0 },
@@ -46,7 +53,7 @@ const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, select
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!hardwareID || !parameters?.length) return;
+      if (!hardwareID || !parameters?.length || !selectedRange) return;
 
       const raw = await GetSensorDataByHardwareID(hardwareID);
       if (!Array.isArray(raw)) return;
@@ -62,16 +69,18 @@ const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, select
           const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
           const date = new Date(param.Date);
 
-          const include = name && parameters.includes(name) && !isNaN(value) && !isNaN(date.getTime());
-          if (!include) continue;
+          if (!name || !parameters.includes(name)) continue;
+          if (isNaN(value) || isNaN(date.getTime())) continue;
 
           const inRange = (() => {
             if (timeRangeType === 'day') {
               const [start, end] = selectedRange;
               return date >= new Date(start) && date <= new Date(end);
             } else if (timeRangeType === 'month') {
-              return date.getMonth() + 1 === Number(selectedRange.month) &&
-                     date.getFullYear() === Number(selectedRange.year);
+              return (
+                date.getMonth() + 1 === Number(selectedRange.month) &&
+                date.getFullYear() === Number(selectedRange.year)
+              );
             } else if (timeRangeType === 'year') {
               return date.getFullYear() === Number(selectedRange);
             }
@@ -90,9 +99,14 @@ const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, select
         xName: 'x',
         yName: 'y',
         name,
-        width: 2,
-        marker: { visible: true, width: 8, height: 8 },
-        type: 'Line' as const,
+        type: 'Column' as const,
+        marker: {
+          dataLabel: {
+            visible: false,
+            position: 'Top',
+            font: { fontWeight: '600' },
+          },
+        },
       }));
 
       setSeriesData(series);
@@ -101,30 +115,44 @@ const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, select
     fetchData();
   }, [hardwareID, timeRangeType, selectedRange, parameters]);
 
+  if (!selectedRange || !parameters?.length) return null;
+
   return (
-    <ChartComponent
-      id="line-chart"
-      height="420px"
-      width="100%"
-      primaryXAxis={LinePrimaryXAxis}
-      primaryYAxis={LinePrimaryYAxis}
-      chartArea={{ border: { width: 0 } }}
-      tooltip={{ enable: true }}
-      background={currentMode === 'Dark' ? '#33373E' : '#fff'}
-      legendSettings={{ background: 'white' }}
-    >
-      <Inject services={[LineSeries, DateTime, Legend, Tooltip]} />
-      <SeriesCollectionDirective>
-        {seriesData.map((item, idx) => (
-          <SeriesDirective
-            key={idx}
-            {...item}
-            fill={Array.isArray(colors) && colors[idx] ? colors[idx] : undefined}
-          />
-        ))}
-      </SeriesCollectionDirective>
-    </ChartComponent>
+    <div className="bg-white dark:bg-secondary-dark-bg rounded-2xl p-4 h-[540px]">
+      <ChartsHeader category="Sensor Data" />
+      <ChartComponent
+        id="bar-chart"
+        primaryXAxis={primaryXAxis}
+        primaryYAxis={primaryYAxis}
+        chartArea={{ border: { width: 0 } }}
+        tooltip={{ enable: true }}
+        background={currentMode === 'Dark' ? '#33373E' : '#fff'}
+        legendSettings={{ background: 'white' }}
+        width="100%"
+        height="370px"
+      >
+        <Inject
+          services={[
+            ColumnSeries,
+            Legend,
+            Tooltip,
+            Category,
+            DataLabel,
+            DateTime,
+          ]}
+        />
+        <SeriesCollectionDirective>
+          {seriesData.map((item, index) => (
+            <SeriesDirective
+              key={index}
+              {...item}
+              fill={colors && colors[index] ? colors[index] : undefined}
+            />
+          ))}
+        </SeriesCollectionDirective>
+      </ChartComponent>
+    </div>
   );
 };
 
-export default LineChart;
+export default Bar;

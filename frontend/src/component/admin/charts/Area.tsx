@@ -3,31 +3,38 @@ import {
   SeriesCollectionDirective,
   SeriesDirective,
   Inject,
-  LineSeries,
   DateTime,
+  SplineAreaSeries,
   Legend,
-  Tooltip,
+  Tooltip
 } from '@syncfusion/ej2-react-charts';
+import ChartsHeader from '../ChartsHeader';
+import { useStateContext } from '../../../contexts/ContextProvider';
 import { useEffect, useState } from 'react';
 import {
   GetSensorDataByHardwareID,
   GetSensorDataParametersBySensorDataID
-} from '../../../../../services/hardware';
-import { useStateContext } from '../../../../../contexts/ContextProvider';
+} from '../../../services/hardware';
 
-interface LineChartProps {
+interface ChartdataProps {
   hardwareID: number;
-  timeRangeType: 'day' | 'month' | 'year';
-  colors?: string[];
-  selectedRange: any;
   parameters: string[];
+  colors?: string[];      // เพิ่มตรงนี้!
+  timeRangeType: 'day' | 'month' | 'year';
+  selectedRange: any;
 }
 
-const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, selectedRange, parameters, colors }) => {
+const Area: React.FC<ChartdataProps> = ({
+  hardwareID,
+  parameters,
+  colors,         // รับเข้ามา!
+  timeRangeType,
+  selectedRange
+}) => {
   const { currentMode } = useStateContext();
   const [seriesData, setSeriesData] = useState<any[]>([]);
 
-  const LinePrimaryXAxis = {
+  const primaryXAxis = {
     valueType: 'DateTime' as const,
     labelFormat: timeRangeType === 'year' ? 'MMM' : 'dd/MM',
     intervalType: timeRangeType === 'year' ? 'Months' as const : 'Days' as const,
@@ -36,7 +43,7 @@ const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, select
     background: 'white',
   };
 
-  const LinePrimaryYAxis = {
+  const primaryYAxis = {
     labelFormat: '{value}',
     rangePadding: 'None' as const,
     lineStyle: { width: 0 },
@@ -47,84 +54,77 @@ const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, select
   useEffect(() => {
     const fetchData = async () => {
       if (!hardwareID || !parameters?.length) return;
-
       const raw = await GetSensorDataByHardwareID(hardwareID);
       if (!Array.isArray(raw)) return;
-
       const parameterMap: Record<string, { x: Date; y: number }[]> = {};
 
       for (const sensor of raw) {
         const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
         if (!Array.isArray(params)) continue;
-
         for (const param of params) {
           const name = param.HardwareParameter?.Parameter;
           const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
           const date = new Date(param.Date);
-
           const include = name && parameters.includes(name) && !isNaN(value) && !isNaN(date.getTime());
-          if (!include) continue;
-
           const inRange = (() => {
             if (timeRangeType === 'day') {
               const [start, end] = selectedRange;
               return date >= new Date(start) && date <= new Date(end);
             } else if (timeRangeType === 'month') {
               return date.getMonth() + 1 === Number(selectedRange.month) &&
-                     date.getFullYear() === Number(selectedRange.year);
+                date.getFullYear() === Number(selectedRange.year);
             } else if (timeRangeType === 'year') {
               return date.getFullYear() === Number(selectedRange);
             }
             return false;
           })();
-
-          if (!inRange) continue;
-
+          if (!include || !inRange) continue;
           if (!parameterMap[name]) parameterMap[name] = [];
           parameterMap[name].push({ x: date, y: value });
         }
       }
-
       const series = Object.entries(parameterMap).map(([name, data]) => ({
         dataSource: data.sort((a, b) => a.x.getTime() - b.x.getTime()),
         xName: 'x',
         yName: 'y',
         name,
         width: 2,
-        marker: { visible: true, width: 8, height: 8 },
-        type: 'Line' as const,
+        marker: { visible: true, width: 6, height: 6 },
+        type: 'SplineArea' as const,
+        opacity: 0.4,
       }));
-
       setSeriesData(series);
     };
-
     fetchData();
   }, [hardwareID, timeRangeType, selectedRange, parameters]);
 
   return (
-    <ChartComponent
-      id="line-chart"
-      height="420px"
-      width="100%"
-      primaryXAxis={LinePrimaryXAxis}
-      primaryYAxis={LinePrimaryYAxis}
-      chartArea={{ border: { width: 0 } }}
-      tooltip={{ enable: true }}
-      background={currentMode === 'Dark' ? '#33373E' : '#fff'}
-      legendSettings={{ background: 'white' }}
-    >
-      <Inject services={[LineSeries, DateTime, Legend, Tooltip]} />
-      <SeriesCollectionDirective>
-        {seriesData.map((item, idx) => (
-          <SeriesDirective
-            key={idx}
-            {...item}
-            fill={Array.isArray(colors) && colors[idx] ? colors[idx] : undefined}
-          />
-        ))}
-      </SeriesCollectionDirective>
-    </ChartComponent>
+    <div className="bg-white dark:bg-secondary-dark-bg rounded-2xl p-4 h-[540px]">
+      <ChartsHeader category="Sensor Data" />
+      <ChartComponent
+        id="area-chart"
+        primaryXAxis={primaryXAxis}
+        primaryYAxis={primaryYAxis}
+        chartArea={{ border: { width: 0 } }}
+        background={currentMode === 'Dark' ? '#33373E' : '#fff'}
+        legendSettings={{ background: 'white' }}
+        tooltip={{ enable: true }}
+        width="100%"
+        height="370px"
+      >
+        <Inject services={[SplineAreaSeries, DateTime, Legend, Tooltip]} />
+        <SeriesCollectionDirective>
+          {seriesData.map((item, index) => (
+            <SeriesDirective
+              key={index}
+              {...item}
+              fill={colors && colors[index] ? colors[index] : undefined}
+            />
+          ))}
+        </SeriesCollectionDirective>
+      </ChartComponent>
+    </div>
   );
 };
 
-export default LineChart;
+export default Area;

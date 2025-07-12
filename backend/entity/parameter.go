@@ -9,6 +9,4 @@ type Parameter struct {
 	ParameterName	string
 	
 	EnvironmentalRecord	[]EnvironmentalRecord `gorm:"foreignKey: ParameterID"`
-
-	SensorDataParameter	[]SensorDataParameter `gorm:"foreignKey: ParameterID"`
 }
