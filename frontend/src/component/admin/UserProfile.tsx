@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useStateContext } from '../../contexts/ContextProvider';
 import avatar from '../../assets/admin/avatar3.png';
 import './FlowerButton.css'; // นำเข้า CSS
+import { GetUserDataByUserID } from '../../services/httpLogin';
 
 const UserProfile = () => {
   const { currentColor } = useStateContext();
@@ -14,6 +15,7 @@ const UserProfile = () => {
   const [roleName, setRoleName] = useState('');
   const [positionName, setPositionName] = useState('');
   const [emailUser, setEmailUser] = useState('');
+  const [loading, setLoading] = useState<boolean>(true);
   const handleLogout = () => {
     localStorage.removeItem("isLogin");
     localStorage.removeItem("Role");
@@ -26,13 +28,36 @@ const UserProfile = () => {
     }, 3500);
   };
   useEffect(() => {
-    const firstName = localStorage.getItem('firstnameuser') || '';
-    const lastName = localStorage.getItem('lastnameuser') || '';
-    setRoleName(localStorage.getItem('roleName') || '');
-    setPositionName(localStorage.getItem('positionuser') || '');
-    setEmailUser(localStorage.getItem('emailuser') || '');
-    setFullName(`${firstName} ${lastName}`);
+    const fetchUser = async () => {
+      const id = Number(localStorage.getItem("employeeid")); // ดึงจาก localStorage
+      if (!id || isNaN(id)) {
+        console.error("ไม่มีหรือ ID ไม่ถูกต้อง");
+        setLoading(false);
+        return;
+      }
+
+      const res = await GetUserDataByUserID(id);
+      if (res !== false) {
+        setFullName(`${res.FirstName} ${res.LastName}`);
+        setPositionName(res.Position?.Position ?? 'ไม่มีพบอาชีพ');
+        setRoleName(res.Role?.RoleName ?? 'ไม่มีพบตำแหน่ง');
+        setEmailUser(`${res.Email}`)
+      }
+      setLoading(false);
+    };
+
+    fetchUser();
   }, []);
+  if (loading) return <div>กำลังโหลดข้อมูลผู้ใช้...</div>;
+  if (!fullName) return <div>ไม่พบข้อมูลผู้ใช้</div>;
+  // useEffect(() => {
+  //   const firstName = localStorage.getItem('firstnameuser') || '';
+  //   const lastName = localStorage.getItem('lastnameuser') || '';
+  //   setRoleName(localStorage.getItem('roleName') || '');
+  //   setPositionName(localStorage.getItem('positionuser') || '');
+  //   setEmailUser(localStorage.getItem('emailuser') || '');
+  //   setFullName(`${firstName} ${lastName}`);
+  // }, []);
 
   return (
     <div className="nav-item absolute right-1 top-16 bg-white dark:bg-[#42464D] p-8 rounded-lg w-96">
