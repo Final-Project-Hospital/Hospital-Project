@@ -3,118 +3,183 @@ import {
   FaChartPie,
   FaTemperatureHigh
 } from "react-icons/fa";
-import { AiOutlineDotChart } from "react-icons/ai";
+import { AiOutlineDotChart, AiOutlineLeft, AiOutlineRight } from "react-icons/ai";
 import { LuChartSpline } from "react-icons/lu";
-import { IoWater, IoWifi } from "react-icons/io5";
-import { GiChemicalDrop, GiWifiRouter } from "react-icons/gi";
+import { IoWater } from "react-icons/io5";
+import { GiChemicalDrop } from "react-icons/gi";
 import { RiCelsiusFill } from "react-icons/ri";
+import {
+  GetSensorDataByHardwareID,
+  GetSensorDataParametersBySensorDataID,
+  ListDataHardwareParameterByParameter
+} from "../../../../../services/hardware";
 
-import { GetSensorDataByHardwareID, GetSensorDataParametersBySensorDataID } from "../../../../../services/hardware";
+const iconMap: Record<string, [ReactNode, ReactNode]> = {
+  Formaldehyde: [
+    <GiChemicalDrop className="text-4xl" />,
+    <AiOutlineDotChart className="text-4xl" />
+  ],
+  Temperature: [
+    <FaTemperatureHigh className="text-4xl" />,
+    <FaChartPie className="text-4xl" />
+  ],
+  Humidity: [
+    <IoWater className="text-4xl" />,
+    <LuChartSpline className="text-4xl" />
+  ],
+};
 
 interface BoxsdataProps {
   hardwareID: number;
 }
-
 interface SensorParameter {
   id: number;
   name: string;
   value: number;
 }
-
-// แก้จาก JSX.Element เป็น ReactNode และลบ key ออกจากตรงนี้ (key ต้องใส่ที่ JSX map ด้านนอก)
-const iconMap: Record<string, [ReactNode, ReactNode]> = {
-  Formaldehyde: [
-    <GiChemicalDrop className="text-4xl text-purple-600" />,
-    <AiOutlineDotChart className="text-4xl text-purple-500" />
-  ],
-  Temperature: [
-    <FaTemperatureHigh className="text-4xl text-red-500" />,
-    <FaChartPie className="text-4xl text-red-500" />
-  ],
-  Humidity: [
-    <IoWater className="text-4xl text-blue-500" />,
-    <LuChartSpline className="text-4xl text-blue-500" />
-  ],
-  Status: [
-    <IoWifi className="text-4xl text-gray-500" />,
-    <GiWifiRouter className="text-4xl text-gray-500" />
-  ],
-};
+interface ParameterColorMap {
+  [parameter: string]: string;
+}
+const MAX_SHOW = 4;
 
 const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID }) => {
-  const [parameters, setParameters] = useState<SensorParameter[]>([]);//@ts-ignore
-  const [status, setStatus] = useState("Online");
+  const [parameters, setParameters] = useState<SensorParameter[]>([]);
+  const [parameterColors, setParameterColors] = useState<ParameterColorMap>({});
+  const [slideIndex, setSlideIndex] = useState(0);
 
   useEffect(() => {
     const fetchSensorAndParameters = async () => {
       if (!hardwareID) return;
 
       const sensorDataList = await GetSensorDataByHardwareID(hardwareID);
-
       if (sensorDataList && sensorDataList.length > 0) {
         const latestSensorDataID = sensorDataList[sensorDataList.length - 1].ID;
-
         const params = await GetSensorDataParametersBySensorDataID(latestSensorDataID);
-
         if (params && params.length > 0) {
           const latestParamsMap = new Map<string, SensorParameter>();
-
           params.forEach((param: any) => {
             const paramName = param.HardwareParameter?.Parameter || "Unknown";
             latestParamsMap.set(paramName, {
               id: param.ParameterID,
               name: paramName,
-              value: param.Data,
+              value: Number(param.Data),
             });
           });
-
           const latestParamsArray = Array.from(latestParamsMap.values());
           setParameters(latestParamsArray);
+          // get color if not yet
+          const needColor = latestParamsArray
+            .map(p => p.name)
+            .filter(name => !(name in parameterColors));
+          if (needColor.length > 0) {
+            const colorsMap = { ...parameterColors };
+            Promise.all(
+              needColor.map(async (paramName) => {
+                const res = await ListDataHardwareParameterByParameter(paramName);
+                if (res && res.length > 0) {
+                  colorsMap[paramName] = res[0].HardwareParameterColor?.Code || "#999999";
+                } else {
+                  colorsMap[paramName] = "#999999";
+                }
+              })
+            ).then(() => {
+              setParameterColors(colorsMap);
+            });
+          }
         }
       }
     };
-
     fetchSensorAndParameters();
   }, [hardwareID]);
 
-  return (
-    <div className="w-full max-w-screen-xl mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {parameters.length > 0 ? (
-        parameters.map((param) => (
-          <div
-            key={param.id}
-            className="p-5 bg-white rounded-md border border-gray-200 flex items-center gap-4 hover:bg-gray-100 transition"
-          >
-            <div className="flex flex-col justify-center items-center gap-2">
-              {iconMap[param.name]?.[0] || <GiChemicalDrop className="text-4xl text-gray-600" />}
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-gray-600">{param.name}</h3>
-              <b className="text-lg flex items-center">
-                {param.value.toFixed(2)}
-                {param.name === "Temperature" && <RiCelsiusFill className="ml-1 w-5 h-5" />}
-                {param.name === "Formaldehyde" && " ppm"}
-                {param.name === "Humidity" && "%"}
-              </b>
-            </div>
-            <div className="flex flex-col justify-center items-center gap-2">
-              {iconMap[param.name]?.[1] || <AiOutlineDotChart className="text-4xl text-gray-400" />}
-            </div>
-          </div>
-        ))
-      ) : (
-        <p>Loading data...</p>
-      )}
+  function withIconColor(icon: ReactNode, color: string): ReactNode {
+    if (React.isValidElement(icon)) {
+      const elem = icon as React.ReactElement<any, any>;
+      const style = elem.props && typeof elem.props === "object" && "style" in elem.props
+        ? elem.props.style
+        : {};
+      return React.cloneElement(elem, {
+        style: { ...style, color, fontSize: "2rem" }
+      });
+    }
+    return icon;
+  }
 
-      {/* Status card แยกไว้ */}
-      <div className="p-5 bg-white rounded-md border border-gray-200 flex items-center gap-4 hover:bg-gray-100 transition">
-        <IoWifi className="text-4xl text-gray-500" />
-        <div className="flex-1">
-          <h3 className="text-sm font-semibold text-gray-600">Status</h3>
-          <b className="text-lg">{status}</b>
+  // Slide Logic (with infinite loop)
+  const totalSlide = parameters.length > MAX_SHOW ? Math.ceil(parameters.length / MAX_SHOW) : 1;
+  const showParams = parameters.slice(slideIndex * MAX_SHOW, slideIndex * MAX_SHOW + MAX_SHOW);
+
+  const handlePrev = () => {
+    setSlideIndex(slideIndex === 0 ? totalSlide - 1 : slideIndex - 1);
+  };
+  const handleNext = () => {
+    setSlideIndex(slideIndex === totalSlide - 1 ? 0 : slideIndex + 1);
+  };
+
+  return (
+    <div className="w-full max-w-screen-xl mx-auto px-4">
+      <div className="flex items-center justify-center gap-3 mt-2">
+        {/* ปุ่ม Slide Left */}
+        {totalSlide > 1 && (
+          <button
+            onClick={handlePrev}
+            className="w-11 h-11 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center transition 
+            hover:bg-blue-50 active:scale-95 active:bg-blue-100 text-blue-500 hover:text-blue-700"
+            aria-label="Slide Left"
+          >
+            <AiOutlineLeft size={24} />
+          </button>
+        )}
+        {/* Parameter Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 flex-1">
+          {showParams.length > 0 ? (
+            showParams.map((param) => {
+              const color = parameterColors[param.name] || "#999999";
+              return (
+                <div
+                  key={param.id}
+                  className="p-5 bg-white rounded-2xl border-2 flex items-center gap-4 hover:bg-gray-50 shadow-sm transition h-[100px]"
+                  style={{ borderColor: color }}
+                >
+                  <div className="flex flex-col justify-center items-center gap-2">
+                    {withIconColor(iconMap[param.name]?.[0] || <GiChemicalDrop className="text-4xl" />, color)}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base font-semibold text-gray-700">{param.name}</h3>
+                    <b className="text-xl flex items-center mt-1">
+                      {param.value.toFixed(2)}
+                      {param.name === "Temperature" && <RiCelsiusFill className="ml-1 w-5 h-5" />}
+                      {param.name === "Formaldehyde" && " ppm"}
+                      {param.name === "Humidity" && "%"}
+                    </b>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="col-span-4 flex justify-center items-center h-[140px]">
+              <p>Loading data...</p>
+            </div>
+          )}
         </div>
-        <GiWifiRouter className="text-4xl text-gray-500" />
+        {/* ปุ่ม Slide Right */}
+        {totalSlide > 1 && (
+          <button
+            onClick={handleNext}
+            className="w-11 h-11 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center transition 
+            hover:bg-blue-50 active:scale-95 active:bg-blue-100 text-blue-500 hover:text-blue-700"
+            aria-label="Slide Right"
+          >
+            <AiOutlineRight size={24} />
+          </button>
+        )}
       </div>
+      {/* Slide Index Display */}
+      {totalSlide > 1 && (
+        <div className="text-center mt-3 text-xs text-gray-500">
+          {slideIndex + 1} / {totalSlide}
+        </div>
+      )}
     </div>
   );
 };

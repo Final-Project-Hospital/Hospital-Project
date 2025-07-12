@@ -67,6 +67,7 @@ func main() {
 
 		//Hardware
 		public.GET("/hardwares", hardware.ListHardware)
+		public.GET("/hardware-colors", hardware.ListColors)
 		public.POST("/hardware/receive", hardware.ReceiveSensorData)
 		public.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID) // test system
 		public.PATCH("/update-hardware-parameter/:id", hardware.UpdateHardwareParameterByID)

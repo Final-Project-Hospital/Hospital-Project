@@ -128,11 +128,10 @@ const Index = () => {
 
       {/* Sections อื่น ๆ */}
       <section className="max-w-screen-2xl mx-auto bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-4 text-gray-700">Summary</h2>
+        <h2 className="text-lg font-semibold mb-4 text-gray-700">Current Sensor Data</h2>
         <Boxsdata hardwareID={hardwareID} />
       </section>
       <section className="max-w-screen-2xl mx-auto bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-4 text-gray-700">Sensor Data Table</h2>
         <TableData hardwareID={hardwareID} />
       </section>
       <section className="max-w-screen-2xl mx-auto bg-white p-6 rounded-lg shadow space-y-4">
@@ -196,7 +195,6 @@ const Index = () => {
         )}
       </section>
       <section className="max-w-screen-2xl mx-auto bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-4 text-gray-700">Average Data</h2>
         <Avergare hardwareID={hardwareID} />
       </section>
 
@@ -204,11 +202,7 @@ const Index = () => {
       <EditParameterModal
         open={showEdit}
         onClose={() => setShowEdit(false)}
-        initialValues={{
-          parameter: "", // กำหนด default ตามที่ต้องการ
-          hardware_graph_id: 1,
-          hardware_parameter_color_id: 1,
-        }}
+        hardwareID={hardwareID}
       />
     </div>
   );

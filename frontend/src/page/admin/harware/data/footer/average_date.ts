@@ -57,78 +57,9 @@ export const TopProductsWrap = styled.div`
           border-bottom: 1px solid ${(props) => props.theme.colors.aliceBlue};
         }
 
-        tr {
-          &:nth-child(1) {
-            .tbl-progress-bar {
-              background-color: ${(props) => props.theme.colors.columbiaBlue};
-
-              .bar-fill {
-                background-color: ${(props) => props.theme.colors.dodgerBlue};
-              }
-            }
-
-            .tbl-badge {
-              background-color: ${(props) => props.theme.colors.aliceBlue};
-              color: ${(props) => props.theme.colors.dodgerBlue};
-              border: 1px solid ${(props) => props.theme.colors.dodgerBlue};
-            }
-          }
-
-          &:nth-child(2) {
-            .tbl-progress-bar {
-              background-color: ${(props) => props.theme.colors.orangesuff};
-              color: ${(props) => props.theme.colors.orange};
-
-              .bar-fill {
-                background-color: ${(props) => props.theme.colors.orange};
-              }
-            }
-
-            .tbl-badge {
-              background-color: ${(props) => props.theme.colors.orangesuff};
-              color: ${(props) => props.theme.colors.orange};
-              border: 1px solid ${(props) => props.theme.colors.orange};
-            }
-          }
-
-          &:nth-child(3) {
-            .tbl-progress-bar {
-              background-color: ${(props) => props.theme.colors.mauve};
-              color: ${(props) => props.theme.colors.violet};
-
-              .bar-fill {
-                background-color: ${(props) => props.theme.colors.violet};
-              }
-            }
-
-            .tbl-badge {
-              background-color: ${(props) => props.theme.colors.palePurple};
-              color: ${(props) => props.theme.colors.violet};
-              border: 1px solid ${(props) => props.theme.colors.violet};
-            }
-          }
-
-          &:nth-child(4) {
-            .tbl-progress-bar {
-              background-color: ${(props) => props.theme.colors.sunset};
-              color: ${(props) => props.theme.colors.orange};
-
-              .bar-fill {
-                background-color: ${(props) => props.theme.colors.orange};
-              }
-            }
-
-            .tbl-badge {
-              background-color: ${(props) => props.theme.colors.latte};
-              color: ${(props) => props.theme.colors.orange};
-              border: 1px solid ${(props) => props.theme.colors.orange};
-            }
-          }
-        }
-
         .tbl-progress-bar {
-          min-width: 180px;
-          height: 5px;
+          min-width: 350px;
+          height: 10px;
           border-radius: 100vh;
           overflow: hidden;
           position: relative;
