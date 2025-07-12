@@ -1,5 +1,6 @@
 import axios from "axios";
 import { EnvironmentalRecordInterface } from "../interface/IEnvironmentalRecord";
+import { Underline } from "react-feather";
 const apiUrl = "http://localhost:8000";
 
 const getAuthHeader = () => {
@@ -14,7 +15,7 @@ export const CreateTKN = async (tknrecord: EnvironmentalRecordInterface): Promis
             Date: tknrecord.date,
             Data: tknrecord.data,
             coomment: tknrecord.comment,
-            BeforeAfterTreatmentID: tknrecord.BeforeAfterTreatmentID,
+            BeforeAfterTreatmentID: tknrecord.BeforeAfterTreatment?.ID,
             EnvironmentID: tknrecord.EnvironmentID,
             ParameterID: tknrecord.ParameterID,
             StandardID: tknrecord.StandardID,
@@ -72,6 +73,7 @@ export const UpdateTKN  = async (
             if(tknrecord.date !== undefined) payload.date = tknrecord.date;
             if(tknrecord.data !== undefined) payload.data = Number(tknrecord.data);
             if(tknrecord.comment !== undefined) payload.comment = tknrecord.comment;
-            if(tknrecord)
+            if(tknrecord.BeforeAfterTreatment?.ID  !== undefined) payload.BeforeAfterTreatmentID = tknrecord.BeforeAfterTreatment.ID;
+            if(tknrecord.Environment?.ID !== undefined) payload.EnvironmentID = tknrecord.Environment.ID;
         }
     }
