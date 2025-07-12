@@ -44,7 +44,7 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID }) => {
 
           if (Array.isArray(params)) {
             for (const p of params) {
-              const name = p.Parameter?.ParameterName;
+              const name = p.HardwareParameter?.Parameter;
               const value = Number(p.Data);
 
               if (name && !isNaN(value)) {

@@ -9,6 +9,7 @@ type EnvironmentalRecord struct {
 	gorm.Model
 	Date time.Time `gorm:"column:date"`
 	Data float32   `gorm:"column:data"`
+	Note string
 	
 	comment string
 

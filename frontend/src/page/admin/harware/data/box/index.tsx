@@ -60,7 +60,7 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID }) => {
           const latestParamsMap = new Map<string, SensorParameter>();
 
           params.forEach((param: any) => {
-            const paramName = param.Parameter?.ParameterName || "Unknown";
+            const paramName = param.HardwareParameter?.Parameter || "Unknown";
             latestParamsMap.set(paramName, {
               id: param.ParameterID,
               name: paramName,

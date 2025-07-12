@@ -10,11 +10,10 @@
   color: white !important;
 }
 
-.ant-menu-item-selected svg,
+/*.ant-menu-item-selected svg,
 .ant-menu-submenu-selected > .ant-menu-submenu-title svg {
   color: white !important;
- 
-}
+}*/
 
 .ant-menu-item-selected {
   background-color: #2ABDBF !important;

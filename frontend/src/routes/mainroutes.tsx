@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { useRoutes, RouteObject} from "react-router-dom";
+import { useRoutes, RouteObject } from "react-router-dom";
 import Loadable from "../component/third-patry/Loadable";
 
 const Login = Loadable(lazy(() => import("../page/login")));
@@ -12,19 +12,27 @@ const User = Loadable(lazy(() => import("../page/user/")));
 const Admin = Loadable(lazy(() => import("../page/admin/")));
 const MainLayout = Loadable(lazy(() => import("../component/admin/MainLayout")));
 const Calendar = Loadable(lazy(() => import("../page/admin/calendar/Calendar")));
+const People = Loadable(lazy(() => import("../page/admin/people/index")));
 
 // Hardware
 const Hardware_Main = Loadable(lazy(() => import("../page/admin/harware/index")));
 const Hardware_Room = Loadable(lazy(() => import("../page/admin/harware/data/index")));
 
+// data-visualization
+const EnvironmentBlock = Loadable(lazy(() => import("../page/admin/data-visualization/EnvironmentBlock")));
+const DatavizPH = Loadable(lazy(() => import("../page/admin/data-visualization/PHdataviz")));
+const DatavizBOD = Loadable(lazy(() => import("../page/admin/data-visualization/BODdataviz")));
+
+// data-management
 const EnvironmentTabs = Loadable(lazy(() => import("../page/admin/data-management/EnvironmentTabs")));
+const PH = Loadable(lazy(() => import("../page/admin/data-management/PHcenter")));
 const BOD = Loadable(lazy(() => import("../page/admin/data-management/BODcenter")));
 
 
 const UserRoutes = (): RouteObject[] => [
   {
-    path: "/", element: <User />, 
-  },                                          
+    path: "/", element: <User />,
+  },
   {
     path: "/user",
     children: [
@@ -38,7 +46,7 @@ const AdminRoutes = (): RouteObject[] => [
     path: "/",
     element: <MainLayout />,
     children: [
-      { index: true, element: <Admin /> }, 
+      { index: true, element: <Admin /> },
     ],
   },
   {
@@ -50,12 +58,25 @@ const AdminRoutes = (): RouteObject[] => [
       { path: "Hardware", element: <Hardware_Main /> },
       { path: "Room", element: <Hardware_Room /> },
       { path: "Calendar", element: <Calendar /> },
+      { path: "people", element: <People /> },
       {
-        path: "data-management",
+        path: "data-visualization/water",
+        children: [
+          { index: true, element: <EnvironmentBlock /> },
+          { path: "datavizPH", element: <DatavizPH /> },
+          { path: "datavizBOD", element: <DatavizBOD /> },
+          // { path: "datavizTS", element: <DatavizTS /> },
+          // { path: "datavizTDS", element: <DatavizTDS /> },
+          // { path: "datavizFOG", element: <DatavizFOG /> },
+          // { path: "datavizTKN", element: <DatavizTKN /> },
+        ]
+      },
+      {
+        path: "data-management/water",
         element: <EnvironmentTabs />, // Header + Tabs
         children: [
           { index: true, element: <BOD /> },         // /admin/environment
-          { path: "ph", element: <Calendar /> },            // /admin/environment/ph
+          { path: "ph", element: <PH /> },            // /admin/environment/ph
           { path: "bod", element: <BOD /> },          // /admin/environment/bod
           // { path: "tds", element: <TDS /> },          // /admin/environment/tds
           // { path: "ts", element: <TS /> },
@@ -73,9 +94,9 @@ const MainRoutes = (): RouteObject[] => [
     path: "/",
     children: [
       { index: true, element: <Login /> },
-      {path: "/register", element: <Register/>},
+      { path: "/register", element: <Register /> },
       { path: "*", element: <Login /> },
-      {path: "/register", element: <Register/>},
+      { path: "/register", element: <Register /> },
     ],
   },
 ];
@@ -104,7 +125,7 @@ function ConfigRoutes() {
         routes = MainRoutes();
         break;
     }
-  } 
+  }
   else {
     routes = MainRoutes();
   }

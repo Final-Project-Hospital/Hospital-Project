@@ -8,7 +8,6 @@ import {
   Legend,
   Tooltip,
 } from '@syncfusion/ej2-react-charts';
-
 import { useEffect, useState } from 'react';
 import {
   GetSensorDataByHardwareID,
@@ -19,19 +18,18 @@ import { useStateContext } from '../../../../../contexts/ContextProvider';
 interface LineChartProps {
   hardwareID: number;
   timeRangeType: 'day' | 'month' | 'year';
+  colors?: string[];
   selectedRange: any;
+  parameters: string[];
 }
 
-const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, selectedRange }) => {
+const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, selectedRange, parameters, colors }) => {
   const { currentMode } = useStateContext();
   const [seriesData, setSeriesData] = useState<any[]>([]);
 
   const LinePrimaryXAxis = {
     valueType: 'DateTime' as const,
-    labelFormat:
-      timeRangeType === 'year'
-        ? 'MMM'
-        : 'dd/MM',
+    labelFormat: timeRangeType === 'year' ? 'MMM' : 'dd/MM',
     intervalType: timeRangeType === 'year' ? 'Months' as const : 'Days' as const,
     edgeLabelPlacement: 'Shift' as const,
     majorGridLines: { width: 0 },
@@ -48,59 +46,10 @@ const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, select
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!hardwareID) return;
-
-      // Validate selectedRange
-      if (timeRangeType === 'day') {
-        if (!selectedRange || !Array.isArray(selectedRange) || selectedRange.length !== 2) return;
-      } else if (timeRangeType === 'month') {
-        if (!selectedRange?.month || !selectedRange?.year) return;
-      } else if (timeRangeType === 'year') {
-        if (!selectedRange) return;
-      }
+      if (!hardwareID || !parameters?.length) return;
 
       const raw = await GetSensorDataByHardwareID(hardwareID);
       if (!Array.isArray(raw)) return;
-
-      let minDate: Date | null = null;
-      let maxDate: Date | null = null;
-
-      for (const sensor of raw) {
-        const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
-        if (!Array.isArray(params)) continue;
-
-        params.forEach(param => {
-          const date = new Date(param.Date);
-          if (!minDate || date < minDate) minDate = date;
-          if (!maxDate || date > maxDate) maxDate = date;
-        });
-      }
-
-      if (!minDate || !maxDate) return;
-
-      const getNormalizedDayRange = () => {
-        let start = new Date(selectedRange[0]);
-        start.setHours(0, 0, 0, 0);
-        let end = new Date(selectedRange[1]);
-        end.setHours(23, 59, 59, 999);
-
-        if (start > maxDate!) start = new Date(maxDate!);
-        if (end < minDate!) end = new Date(minDate!);
-        return { start, end };
-      };
-
-      const filterDate = (date: Date) => {
-        if (timeRangeType === 'day') {
-          const { start, end } = getNormalizedDayRange();
-          return date >= start && date <= end;
-        } else if (timeRangeType === 'month') {
-          return date.getMonth() + 1 === Number(selectedRange.month)
-            && date.getFullYear() === Number(selectedRange.year);
-        } else if (timeRangeType === 'year') {
-          return date.getFullYear() === Number(selectedRange);
-        }
-        return false;
-      };
 
       const parameterMap: Record<string, { x: Date; y: number }[]> = {};
 
@@ -109,52 +58,35 @@ const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, select
         if (!Array.isArray(params)) continue;
 
         for (const param of params) {
-          const name = param.Parameter?.ParameterName;
-          const dataRaw = param.Data;
-          const dateRaw = param.Date;
+          const name = param.HardwareParameter?.Parameter;
+          const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
+          const date = new Date(param.Date);
 
-          const value = typeof dataRaw === 'string' ? parseFloat(dataRaw) : typeof dataRaw === 'number' ? dataRaw : NaN;
-          const date = new Date(dateRaw);
+          const include = name && parameters.includes(name) && !isNaN(value) && !isNaN(date.getTime());
+          if (!include) continue;
 
-          if (name && !isNaN(value) && !isNaN(date.getTime()) && filterDate(date)) {
-            if (!parameterMap[name]) parameterMap[name] = [];
-            parameterMap[name].push({ x: date, y: value });
-          }
+          const inRange = (() => {
+            if (timeRangeType === 'day') {
+              const [start, end] = selectedRange;
+              return date >= new Date(start) && date <= new Date(end);
+            } else if (timeRangeType === 'month') {
+              return date.getMonth() + 1 === Number(selectedRange.month) &&
+                     date.getFullYear() === Number(selectedRange.year);
+            } else if (timeRangeType === 'year') {
+              return date.getFullYear() === Number(selectedRange);
+            }
+            return false;
+          })();
+
+          if (!inRange) continue;
+
+          if (!parameterMap[name]) parameterMap[name] = [];
+          parameterMap[name].push({ x: date, y: value });
         }
       }
 
-      if (timeRangeType === 'month') {
-        for (const name in parameterMap) {
-          const groupedByDay: Record<string, { sum: number; count: number }> = {};
-          parameterMap[name].forEach(({ x, y }) => {
-            const dayStr = x.toISOString().slice(0, 10);
-            if (!groupedByDay[dayStr]) groupedByDay[dayStr] = { sum: 0, count: 0 };
-            groupedByDay[dayStr].sum += y;
-            groupedByDay[dayStr].count++;
-          });
-          parameterMap[name] = Object.entries(groupedByDay).map(([day, { sum, count }]) => ({
-            x: new Date(day),
-            y: sum / count,
-          })).sort((a, b) => a.x.getTime() - b.x.getTime());
-        }
-      } else if (timeRangeType === 'year') {
-        for (const name in parameterMap) {
-          const groupedByMonth: Record<string, { sum: number; count: number }> = {};
-          parameterMap[name].forEach(({ x, y }) => {
-            const monthStr = x.toISOString().slice(0, 7);
-            if (!groupedByMonth[monthStr]) groupedByMonth[monthStr] = { sum: 0, count: 0 };
-            groupedByMonth[monthStr].sum += y;
-            groupedByMonth[monthStr].count++;
-          });
-          parameterMap[name] = Object.entries(groupedByMonth).map(([month, { sum, count }]) => {
-            const date = new Date(month + '-01');
-            return { x: date, y: sum / count };
-          }).sort((a, b) => a.x.getTime() - b.x.getTime());
-        }
-      }
-
-      const newSeries = Object.keys(parameterMap).map((name) => ({
-        dataSource: parameterMap[name],
+      const series = Object.entries(parameterMap).map(([name, data]) => ({
+        dataSource: data.sort((a, b) => a.x.getTime() - b.x.getTime()),
         xName: 'x',
         yName: 'y',
         name,
@@ -163,11 +95,11 @@ const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, select
         type: 'Line' as const,
       }));
 
-      setSeriesData(newSeries);
+      setSeriesData(series);
     };
 
     fetchData();
-  }, [hardwareID, timeRangeType, selectedRange]);
+  }, [hardwareID, timeRangeType, selectedRange, parameters]);
 
   return (
     <ChartComponent
@@ -183,8 +115,12 @@ const LineChart: React.FC<LineChartProps> = ({ hardwareID, timeRangeType, select
     >
       <Inject services={[LineSeries, DateTime, Legend, Tooltip]} />
       <SeriesCollectionDirective>
-        {seriesData.map((item, index) => (
-          <SeriesDirective key={index} {...item} />
+        {seriesData.map((item, idx) => (
+          <SeriesDirective
+            key={idx}
+            {...item}
+            fill={Array.isArray(colors) && colors[idx] ? colors[idx] : undefined}
+          />
         ))}
       </SeriesCollectionDirective>
     </ChartComponent>

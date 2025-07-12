@@ -33,7 +33,6 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID }) => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedColumns, setSelectedColumns] = useState<string[]>(["Date"]);
   const [searchText, setSearchText] = useState<string>("");
-
   const [openDownloadDialog, setOpenDownloadDialog] = useState(false);
   const [csvData, setCsvData] = useState<any[]>([]);
   const [downloadFilename, setDownloadFilename] = useState("sensor-data.csv");
@@ -95,7 +94,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID }) => {
         const parameters = await GetSensorDataParametersBySensorDataID(sensor.ID);
         if (Array.isArray(parameters)) {
           parameters.forEach((param: any) => {
-            const name = param.Parameter?.ParameterName;
+            const name = param.HardwareParameter?.Parameter;
             const value = param.Data;
 
             let sensorDate = "ไม่ทราบวันที่";
