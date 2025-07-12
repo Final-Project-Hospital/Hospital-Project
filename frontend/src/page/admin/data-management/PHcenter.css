@@ -1,22 +1,26 @@
 .ph-container {
   background: white;
-  padding: 24px;
-  border-radius: 25px;
-  box-shadow: 0 4px 20px #7b61ff3b;
-  max-width: 1000px;
+  padding: 20px 30px;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px #7b61ff3b;
+  max-width: 80%;
   margin: 0 auto;
-  width: 90%; /* ทำให้ปรับตามขนาดหน้าจอได้ดีขึ้น */
+  margin-bottom: 40px;
+  /* ✅ เพิ่มช่องว่างขอบล่าง */
+  width: 100%;
   box-sizing: border-box;
+  font-size: 14px;
 }
 
 .form-group {
   display: flex;
-  gap: 24px;
+  gap: 30px;
   flex-wrap: wrap;
 }
 
 .form-group .ant-form-item {
-  flex: 1 1 300px; /* ทำให้มีขั้นต่ำ 300px และยืดหดได้ */
+  flex: 1 1 300px;
+  /* ทำให้มีขั้นต่ำ 300px และยืดหดได้ */
 }
 
 .full-width {
@@ -33,19 +37,21 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 9px;
+  margin-bottom: 9px;
 }
 
 .cancel,
 .reset,
 .submit {
-  padding: 10px 20px;
+  padding: 10px 10px;
   min-width: 100px;
   text-align: center;
   font-weight: bold;
   cursor: pointer;
   border-radius: 15px;
   border: none;
+  margin-top: -15px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
@@ -53,11 +59,13 @@
 .cancel {
   background-color: #949494;
   color: white;
+  margin-right: 10px;
 }
 
 .reset {
   background-color: #ffffff;
   color: #326667;
+  margin-right: 10px;
 }
 
 .submit {
