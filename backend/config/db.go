@@ -207,12 +207,16 @@ func SetupDatabase() {
 	param3 := entity.Parameter{ParameterName: "Humidity"}
 	param4 := entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"}
 	param5 := entity.Parameter{ParameterName: "Total Solid"}
+	param6 := entity.Parameter{ParameterName: "Potential of Hydrogen"}
+	param7 := entity.Parameter{ParameterName: "Total Dissolved Solids"}
 
 	db.FirstOrCreate(&param1, entity.Parameter{ParameterName: "Formaldehyde"})
 	db.FirstOrCreate(&param2, entity.Parameter{ParameterName: "Temperature"})
 	db.FirstOrCreate(&param3, entity.Parameter{ParameterName: "Humidity"})
 	db.FirstOrCreate(&param4, entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"})
 	db.FirstOrCreate(&param5, entity.Parameter{ParameterName: "Total Solid"})
+	db.FirstOrCreate(&param6, entity.Parameter{ParameterName: "Potential of Hydrogen"})
+	db.FirstOrCreate(&param7, entity.Parameter{ParameterName: "Total Dissolved Solids"})
 
 	var count int64
 	db.Model(&entity.SensorDataParameter{}).Count(&count)

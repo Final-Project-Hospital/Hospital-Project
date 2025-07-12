@@ -13,13 +13,19 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/logins"
 	"github.com/Tawunchai/hospital-project/controller/room"
 	"github.com/Tawunchai/hospital-project/controller/sensordata"
+
+	"github.com/Tawunchai/hospital-project/controller/phcenter"
+	"github.com/Tawunchai/hospital-project/controller/tdscenter"
 	"github.com/Tawunchai/hospital-project/controller/tkncenter"
 	"github.com/Tawunchai/hospital-project/controller/tscenter"
+
+	"github.com/Tawunchai/hospital-project/controller/employee"
+
 	"github.com/Tawunchai/hospital-project/controller/users"
 
 	"github.com/Tawunchai/hospital-project/middlewares"
 
-	"github.com/Tawunchai/hospital-project/controller/employee"
+	"github.com/Tawunchai/hospital-project/controller/selectBoxAll"
 )
 
 const PORT = "8000"
@@ -47,6 +53,20 @@ func main() {
 		public.GET("/users", user.ListUsers)
 		public.GET("/uploads/*filename", user.ServeImage)
 		public.GET("/user-data/:userID", user.GetDataByUserID)
+
+		//PH
+		public.POST("/create-ph", phcenter.CreatePH)
+		public.GET("/get-ph", phcenter.GetPH)
+		public.GET("/get-ph/:id", phcenter.GetPHbyID)
+		public.PATCH("/update-ph/:id", phcenter.UpdatePH)
+		public.DELETE("/delete-ph/:id", phcenter.DeletePH)
+
+		//TDS
+		public.POST("/create-tds", tdscenter.CreateTDS)
+		public.GET("/get-tds", tdscenter.GetTDS)
+		public.GET("/get-tds/:id", tdscenter.GetTDSbyID)
+		public.PATCH("/update-tds/:id", tdscenter.UpdateTDS)
+		public.DELETE("/delete-tds/:id", tdscenter.DeleteTDS)
 
 		//TKN
 		public.POST("/create-tkn", tkncenter.CreateTKN)
@@ -87,6 +107,11 @@ func main() {
 		public.DELETE("/delete-calendar/:id", calendar.DeleteCalendar)
 
 		public.GET("/api/employees", employee.GetEmployees)
+
+		//SelectBoxAll
+		public.GET("/list-BeforeAfterTreatment", selectBoxAll.ListBeforeAfterTreatment)
+		public.GET("/list-unit", selectBoxAll.ListUnit)
+		public.GET("/list-standard", selectBoxAll.ListStandard)
 	}
 
 	r.GET("/", func(c *gin.Context) {
