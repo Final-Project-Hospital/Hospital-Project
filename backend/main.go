@@ -52,7 +52,7 @@ func main() {
 	{
 		public.GET("/users", user.ListUsers)
 		public.GET("/uploads/*filename", user.ServeImage)
-		public.GET("/user-data/:userID", user.GetDataByUserID)
+		public.GET("/user-data/:EmployeeID", user.GetDataByUserID)
 
 		//PH
 		public.POST("/create-ph", phcenter.CreatePH)
