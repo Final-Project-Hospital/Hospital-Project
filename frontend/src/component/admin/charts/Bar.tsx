@@ -119,7 +119,7 @@ const Bar: React.FC<ChartdataProps> = ({
 
   return (
     <div className="bg-white dark:bg-secondary-dark-bg rounded-2xl p-4 h-[540px]">
-      <ChartsHeader category="Bar" title="Sensor Bar Chart" />
+      <ChartsHeader category="Sensor Data" />
       <ChartComponent
         id="bar-chart"
         primaryXAxis={primaryXAxis}

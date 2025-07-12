@@ -4,6 +4,7 @@ import { TopProductsWrap } from "./average_date";
 import {
   GetSensorDataByHardwareID,
   GetSensorDataParametersBySensorDataID,
+  ListDataHardwareParameterByParameter,
 } from "../../../../../services/hardware";
 
 interface HardwareStat {
@@ -19,6 +20,7 @@ interface AveragedataProps {
 
 const Average: React.FC<AveragedataProps> = ({ hardwareID }) => {
   const [hardwareStats, setHardwareStats] = useState<HardwareStat[]>([]);
+  const [parameterColors, setParameterColors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchAndCalculateAverages = async () => {
@@ -26,8 +28,6 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID }) => {
 
       try {
         const sensorData = await GetSensorDataByHardwareID(hardwareID);
-        console.log("Sensor Data:", sensorData);
-
         if (!Array.isArray(sensorData) || sensorData.length === 0) {
           setHardwareStats([]);
           return;
@@ -35,26 +35,24 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID }) => {
 
         const sums: Record<string, number> = {};
         const counts: Record<string, number> = {};
-        const maxValues: Record<string, number> = {}; // เก็บ max value ของแต่ละ ParameterName
+        const maxValues: Record<string, number> = {};
+        const allParamsSet = new Set<string>();
 
-        // เก็บข้อมูลเพื่อหาค่าสูงสุดด้วย
+        // ดึง parameter ทั้งหมด
         for (const sensor of sensorData) {
           const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
-          console.log(`Parameters for Sensor ID ${sensor.ID}:`, params);
-
           if (Array.isArray(params)) {
             for (const p of params) {
               const name = p.HardwareParameter?.Parameter;
               const value = Number(p.Data);
 
               if (name && !isNaN(value)) {
+                allParamsSet.add(name);
                 if (!sums[name]) sums[name] = 0;
                 if (!counts[name]) counts[name] = 0;
 
                 sums[name] += value;
                 counts[name] += 1;
-
-                // หาค่าสูงสุดของแต่ละ parameter
                 if (!maxValues[name] || value > maxValues[name]) {
                   maxValues[name] = value;
                 }
@@ -63,18 +61,30 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID }) => {
           }
         }
 
-        console.log("Sums:", sums);
-        console.log("Counts:", counts);
-        console.log("Max values per parameter:", maxValues);
+        // ดึงสีของแต่ละ parameter เฉพาะตัวที่ยังไม่มี
+        const paramsArr = Array.from(allParamsSet);
+        const needColorParams = paramsArr.filter((p) => !(p in parameterColors));
+        if (needColorParams.length > 0) {
+          const colorsMap: Record<string, string> = { ...parameterColors };
+          await Promise.all(
+            needColorParams.map(async (param) => {
+              const res = await ListDataHardwareParameterByParameter(param);
+              // ได้ color จาก HardwareParameterColor.Code
+              if (res && res.length > 0) {
+                colorsMap[param] = res[0].HardwareParameterColor?.Code || "#999999";
+              } else {
+                colorsMap[param] = "#999999";
+              }
+            })
+          );
+          setParameterColors(colorsMap);
+        }
 
-        // คำนวณค่าเฉลี่ยและ normalize แบบ dynamic ตาม maxValue ของ parameter นั้น ๆ
+        // เตรียมข้อมูลแสดงผล
         const avgData = Object.keys(sums).map((key, idx) => {
           const avg = counts[key] > 0 ? sums[key] / counts[key] : 0;
-
-          // กำหนด popularityPercent โดย normalize จาก maxValue ของ parameter
-          const maxValue = maxValues[key] || 100; // ถ้าไม่มี maxValue ให้ใช้ 100 เป็น default
+          const maxValue = maxValues[key] || 100;
           const popularityPercent = maxValue > 0 ? Math.min((avg / maxValue) * 100, 100) : 0;
-
           return {
             id: idx + 1,
             name: key,
@@ -83,7 +93,6 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID }) => {
           };
         });
 
-        console.log("Average Data:", avgData);
         setHardwareStats(avgData);
       } catch (error) {
         console.error("Error fetching sensor data:", error);
@@ -114,19 +123,48 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID }) => {
             {hardwareStats?.map((progressItem, index) => (
               <tr key={progressItem.id}>
                 <td>{index + 1}</td>
-                <td>{progressItem.name}</td>
+                <td>
+                  <div className="flex items-center gap-2">
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        background: parameterColors[progressItem.name] || "#999999",
+                      }}
+                    />
+                    {progressItem.name}
+                  </div>
+                </td>
                 <td className="hidden md:table-cell">
-                  <div className="tbl-progress-bar">
+                  <div className="tbl-progress-bar" style={{ background: "#eee" }}>
                     <div
                       className="bar-fill"
                       style={{
                         width: `${progressItem.popularityPercent}%`,
+                        background: parameterColors[progressItem.name] || "#999999",
+                        height: 10,
+                        borderRadius: 8,
+                        transition: "width 0.5s",
                       }}
                     ></div>
                   </div>
                 </td>
                 <td>
-                  <div className="tbl-badge">{progressItem.Percent}</div>
+                  <div
+                    className="tbl-badge"
+                    style={{
+                      background: parameterColors[progressItem.name] || "#999999",
+                      color: "#fff",
+                      padding: "0.25em 0.75em",
+                      borderRadius: 12,
+                      minWidth: 60,
+                      textAlign: "center",
+                    }}
+                  >
+                    {progressItem.Percent}
+                  </div>
                 </td>
               </tr>
             ))}

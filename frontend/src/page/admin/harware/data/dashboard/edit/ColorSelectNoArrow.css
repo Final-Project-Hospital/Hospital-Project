@@ -1,0 +1,3 @@
+.no-arrow-select .ant-select-arrow {
+  display: none !important;
+}
