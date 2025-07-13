@@ -1,12 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input } from 'antd';
+import {
+    Form,
+    InputNumber,
+    Button,
+    DatePicker,
+    TimePicker,
+    Select,
+    Input,
+    message,
+} from 'antd';
 import dayjs from 'dayjs';
 import './PHcenter.css';
 
-import { ListBeforeAfterTreatment, ListStandard, ListUnit } from '../../../services/index';
+import { ListBeforeAfterTreatment, ListStandard, ListUnit, CreatePH } from '../../../services/index';
 import { ListBeforeAfterTreatmentInterface } from '../../../interface/IBeforeAfterTreatment';
 import { ListStandardInterface } from '../../../interface/IStandard';
 import { ListUnitInterface } from '../../../interface/IUnit';
+import { CreatePHInterface } from '../../../interface/IpH';
 
 const { Option } = Select;
 
@@ -16,23 +26,20 @@ const PHCentralForm: React.FC = () => {
     const [beforeAfterOptions, setBeforeAfterOptions] = useState<ListBeforeAfterTreatmentInterface[]>([]);
     const [unitOptions, setUnitOptions] = useState<ListUnitInterface[]>([]);
     const [standardOptions, setStandardOptions] = useState<ListStandardInterface[]>([]);
-
     const [selectedTreatmentID, setSelectedTreatmentID] = useState<number | null>(null);
 
-    const renderCustomTreatmentLabel = (text: string) => {
-        const colored = (
-            <span style={{ color: '#f45415ff', fontWeight: 'bold' }}>{text}</span>
-        );
+    const ENVIRONMENT_ID = 1; // ปรับตามระบบจริง
 
-        return (
-            <>
-                ค่า pH บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
-            </>
-        );
-    };
+    const renderCustomTreatmentLabel = (text: string) => (
+        <>
+            ค่า pH บริเวณบ่อพักน้ำทิ้ง
+            <span style={{ color: '#f45415ff', fontWeight: 'bold' }}>{text}</span>
+            เข้าระบบบำบัด
+        </>
+    );
 
     useEffect(() => {
-        const fetchSelectBoxData = async () => {
+        const fetchInitialData = async () => {
             const [beforeAfter, units, standards] = await Promise.all([
                 ListBeforeAfterTreatment(),
                 ListUnit(),
@@ -44,15 +51,46 @@ const PHCentralForm: React.FC = () => {
             if (standards) setStandardOptions(standards);
         };
 
-        fetchSelectBoxData();
+        fetchInitialData();
     }, []);
 
-    const handleFinish = (values: any) => {
-        console.log('Form values:', {
-            ...values,
-            date: values.date?.format('DD/MM/YYYY'),
-            time: values.time?.format('HH:mm'),
-        });
+    const handleFinish = async (values: any) => {
+        console.log("🎯 Form Submitted:", values);
+        try {
+            const dateValue = form.getFieldValue('date') ?? dayjs();
+            const timeValue = form.getFieldValue('time') ?? dayjs();
+            const employeeID = Number(localStorage.getItem("userid"));
+            console.log(employeeID)
+            const combinedDate = dateValue.set('hour', timeValue.hour()).set('minute', timeValue.minute());
+
+            const payload: CreatePHInterface = {
+                Date: combinedDate.toISOString(),
+                Data:
+                    selectedTreatmentID === 3
+                        ? (values.valueBefore + values.valueAfter) / 2
+                        : values.data,
+                BeforeAfterTreatmentID: values.beforeAfterTreatmentID,
+                EnvironmentID: ENVIRONMENT_ID,
+                StandardID: values.standardID,
+                UnitID: values.unitID,
+                EmployeeID: employeeID, // ✅ ใช้จาก useState
+                Note: values.note,
+            };
+
+
+            const response = await CreatePH(payload);
+
+            if ((response as any)?.status === 201) {
+                message.success('สามารถบันทึกข้อมูลได้');
+                form.resetFields();
+                setSelectedTreatmentID(null);
+            } else {
+                message.error('ไม่สามารถบันทึกข้อมูลได้');
+            }
+        } catch (error: any) {
+            console.error('Error creating pH:', error.response || error);
+            message.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+        }
     };
 
     const handleCancel = () => {
@@ -62,14 +100,30 @@ const PHCentralForm: React.FC = () => {
 
     return (
         <div className="ph-container">
-            <Form form={form} layout="vertical" onFinish={handleFinish}>
+            <Form form={form}
+                layout="vertical"
+                onFinish={handleFinish}
+                initialValues={{
+                    date: dayjs(),
+                    time: dayjs(),
+                }}>
                 <div className="form-group">
                     <Form.Item label="วันที่บันทึกข้อมูล" name="date">
-                        <DatePicker defaultValue={dayjs()} format="DD/MM/YYYY" className="full-width" placeholder="เลือกวัน" />
+                        <DatePicker
+                            defaultValue={dayjs()}
+                            format="DD/MM/YYYY"
+                            className="full-width"
+                            placeholder="เลือกวัน"
+                        />
                     </Form.Item>
 
                     <Form.Item label="เวลาที่บันทึกข้อมูล" name="time">
-                        <TimePicker defaultValue={dayjs()} format="HH:mm" className="full-width" placeholder="เลือกเวลา" />
+                        <TimePicker
+                            defaultValue={dayjs()}
+                            format="HH:mm"
+                            className="full-width"
+                            placeholder="เลือกเวลา"
+                        />
                     </Form.Item>
                 </div>
 
@@ -109,7 +163,7 @@ const PHCentralForm: React.FC = () => {
                     <Form.Item
                         label="ก่อน / หลัง / ก่อนเเละหลังบำบัด"
                         name="beforeAfterTreatmentID"
-                        rules={[{ required: true, message: 'กรุณาเลือกสถานะก่อน / หลัง / ก่อนเเละหลังบำบัด' }]}
+                        rules={[{ required: true, message: 'กรุณาเลือกสถานะ' }]}
                     >
                         <Select
                             placeholder="เลือกสถานะ"
@@ -124,7 +178,6 @@ const PHCentralForm: React.FC = () => {
                             ))}
                         </Select>
                     </Form.Item>
-
 
                     {selectedTreatmentID === 3 ? (
                         <div style={{ display: 'flex', gap: '30px' }}>
