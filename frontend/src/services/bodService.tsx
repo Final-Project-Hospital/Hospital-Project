@@ -28,7 +28,7 @@ export const createBOD = async (
   data: BodcenterInterface
 ): Promise<any | null> => {
   try {
-    const response = await axios.post(`${apiUrl}/create-bod/`, data, {
+    const response = await axios.post(`${apiUrl}/create-bod`, data, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),

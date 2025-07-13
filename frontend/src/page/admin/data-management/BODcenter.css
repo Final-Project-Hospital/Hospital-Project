@@ -1,19 +1,30 @@
 .bod-container {
-  background: white;
+  /* background: white;
   padding: 24px;
   border-radius: 25px;
   box-shadow: 0 4px 20px #7b61ff3b;
   max-width: 1000px;
   margin: 0 auto;
-  width: 90%;
+  width: 100%;
+  box-sizing: border-box; */
+    background: white;
+  padding: 20px 30px;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px #7b61ff3b;
+  max-width: 80%;
+  margin: 0 auto;
+  margin-bottom: 40px;
+  /* ✅ เพิ่มช่องว่างขอบล่าง */
+  width: 100%;
   box-sizing: border-box;
+  font-size: 14px;
   
 }
-.bod-container label{
+/* .bod-container label{
   color:#000000 !important;
   font-size: medium !important;
   font-weight:500 !important;
-}
+} */
 /* .bod-container.label{
   font-size:larger;
 } */
@@ -79,11 +90,13 @@
 .bod-cancel {
   background-color: #949494;
   color: white;
+  transition: all 0.2s ease-in-out;
 }
 
 .bod-reset {
   background-color: #ffffff;
   color: #326667;
+  transition: all 0.2s ease-in-out;
 }
 
 .bod-submit {

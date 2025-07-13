@@ -2,7 +2,6 @@ export interface CreatePHInterface {
   Date: Date | string;
   Data: number;
   BeforeAfterTreatmentID: number;
-  EnvironmentID: number;
   StandardID: number;
   UnitID: number;
   EmployeeID: number;
@@ -14,7 +13,6 @@ export interface UpdatePHInterface {
   Date: Date | string;
   Data: number;
   BeforeAfterTreatmentID: number;
-  EnvironmentID: number;
   ParameterID: number; // ค่า Parameter ต้องถูกระบุในการอัปเดต
   StandardID: number;
   UnitID: number;

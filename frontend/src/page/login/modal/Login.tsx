@@ -21,7 +21,7 @@ const Login = ({ handleSignIn }: any) => {
       localStorage.setItem("roleName", res.data.Role.RoleName);
       localStorage.setItem("emailuser", res.data.Email);
       localStorage.setItem("positionuser", res.data.Position.Position);
-      localStorage.setItem("userid", res.data.EmployeeID);
+      localStorage.setItem("employeeid", res.data.EmployeeID);
       localStorage.setItem("firstnameuser", res.data.FirstNameUser);
       localStorage.setItem("lastnameuser", res.data.LastNameUser);
 
@@ -31,14 +31,14 @@ const Login = ({ handleSignIn }: any) => {
       if (userID && RoleName !== "User") {
         try {
           const UsersID = await GetUserDataByUserID(Number(userID));
+          console.log(UsersID)
           if (UsersID !== null && UsersID !== undefined) {
-            //localStorage.setItem("userid", UsersID.toString());
+            // localStorage.setItem("employeeid", UsersID.toString());
           }
         } catch (error) {
           console.error("Failed to fetch UsersID:", error);
         }
       }
-
       messageApi.success(`เข้าสู่ระบบในฐานะ ${RoleName} สำเร็จ`);
       setTimeout(() => {
         if (RoleName === "Admin") {

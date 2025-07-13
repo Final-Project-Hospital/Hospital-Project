@@ -206,7 +206,30 @@ export const ListStandard = async (): Promise<ListStandardInterface[] | null> =>
 };
 
 // PH
-export const CreatePH = async (payload: CreatePHInterface): Promise<CreatePHInterface | null> => {
+// export const CreatePH = async (payload: CreatePHInterface): Promise<CreatePHInterface | null> => {
+//   try {
+//     const response = await axios.post(`${apiUrl}/create-ph`, payload, {
+//       headers: {
+//         "Content-Type": "application/json",
+//         ...getAuthHeader(),
+//       },
+//     });
+
+//     if (response.status === 201) {
+//       message.success("บันทึกข้อมูลสำเร็จ"); // แสดงข้อความเมื่อสำเร็จ
+//       return response.data;
+//     } else {
+//       console.error("Unexpected status:", response.status);
+//       return null;
+//     }
+//   } catch (error: any) {
+//     console.error("Error creating pH:", error.response?.data || error.message);
+//     message.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+//     return null;
+//   }
+// };
+
+export const CreatePH = async (payload: CreatePHInterface): Promise<AxiosResponse<any> | null> => {
   try {
     const response = await axios.post(`${apiUrl}/create-ph`, payload, {
       headers: {
@@ -216,8 +239,8 @@ export const CreatePH = async (payload: CreatePHInterface): Promise<CreatePHInte
     });
 
     if (response.status === 201) {
-      message.success("บันทึกข้อมูลสำเร็จ"); // แสดงข้อความเมื่อสำเร็จ
-      return response.data;
+      message.success("บันทึกข้อมูลสำเร็จ");
+      return response; // ✅ ตอนนี้ TypeScript จะไม่ฟ้องแล้ว
     } else {
       console.error("Unexpected status:", response.status);
       return null;
@@ -228,6 +251,7 @@ export const CreatePH = async (payload: CreatePHInterface): Promise<CreatePHInte
     return null;
   }
 };
+
 
 export const UpdatePH = async (id: number): Promise<UpdatePHInterface[] | null> => {
   try {

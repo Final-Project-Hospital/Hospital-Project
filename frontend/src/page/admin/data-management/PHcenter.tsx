@@ -27,8 +27,7 @@ const PHCentralForm: React.FC = () => {
     const [unitOptions, setUnitOptions] = useState<ListUnitInterface[]>([]);
     const [standardOptions, setStandardOptions] = useState<ListStandardInterface[]>([]);
     const [selectedTreatmentID, setSelectedTreatmentID] = useState<number | null>(null);
-
-    const ENVIRONMENT_ID = 1; // ปรับตามระบบจริง
+    const [messageApi, contextHolder] = message.useMessage();
 
     const renderCustomTreatmentLabel = (text: string) => (
         <>
@@ -59,7 +58,7 @@ const PHCentralForm: React.FC = () => {
         try {
             const dateValue = form.getFieldValue('date') ?? dayjs();
             const timeValue = form.getFieldValue('time') ?? dayjs();
-            const employeeID = Number(localStorage.getItem("userid"));
+            const employeeID = Number(localStorage.getItem("employeeid"));
             console.log(employeeID)
             const combinedDate = dateValue.set('hour', timeValue.hour()).set('minute', timeValue.minute());
 
@@ -70,10 +69,9 @@ const PHCentralForm: React.FC = () => {
                         ? (values.valueBefore + values.valueAfter) / 2
                         : values.data,
                 BeforeAfterTreatmentID: values.beforeAfterTreatmentID,
-                EnvironmentID: ENVIRONMENT_ID,
                 StandardID: values.standardID,
                 UnitID: values.unitID,
-                EmployeeID: employeeID, // ✅ ใช้จาก useState
+                EmployeeID: employeeID,
                 Note: values.note,
             };
 
@@ -81,7 +79,10 @@ const PHCentralForm: React.FC = () => {
             const response = await CreatePH(payload);
 
             if ((response as any)?.status === 201) {
-                message.success('สามารถบันทึกข้อมูลได้');
+                messageApi.open({
+                    type: 'success',
+                    content: 'การบันทึกข้อมูลสำเร็จ',
+                });
                 form.resetFields();
                 setSelectedTreatmentID(null);
             } else {
@@ -100,6 +101,7 @@ const PHCentralForm: React.FC = () => {
 
     return (
         <div className="ph-container">
+            {contextHolder}
             <Form form={form}
                 layout="vertical"
                 onFinish={handleFinish}
@@ -107,12 +109,12 @@ const PHCentralForm: React.FC = () => {
                     date: dayjs(),
                     time: dayjs(),
                 }}>
-                <div className="form-group">
+                <div className="form-group-ph">
                     <Form.Item label="วันที่บันทึกข้อมูล" name="date">
                         <DatePicker
                             defaultValue={dayjs()}
                             format="DD/MM/YYYY"
-                            className="full-width"
+                            className="full-width-ph"
                             placeholder="เลือกวัน"
                         />
                     </Form.Item>
@@ -121,13 +123,13 @@ const PHCentralForm: React.FC = () => {
                         <TimePicker
                             defaultValue={dayjs()}
                             format="HH:mm"
-                            className="full-width"
+                            className="full-width-ph"
                             placeholder="เลือกเวลา"
                         />
                     </Form.Item>
                 </div>
 
-                <div className="form-group">
+                <div className="form-group-ph">
                     <Form.Item
                         label="หน่วยที่วัด"
                         name="unitID"
@@ -159,7 +161,7 @@ const PHCentralForm: React.FC = () => {
                     </Form.Item>
                 </div>
 
-                <div className="form-group">
+                <div className="form-group-ph">
                     <Form.Item
                         label="ก่อน / หลัง / ก่อนเเละหลังบำบัด"
                         name="beforeAfterTreatmentID"
@@ -184,10 +186,10 @@ const PHCentralForm: React.FC = () => {
                             <Form.Item
                                 label="ค่าที่วัดได้ก่อนบำบัด"
                                 name="valueBefore"
-                                rules={[{ required: true, message: 'กรุณากรอกค่าก่อนบำบัด' }]}
+                                rules={[{ required: true, message: 'กรอกค่าก่อนบำบัด' }]}
                                 style={{ flex: 1 }}
                             >
-                                <InputNumber style={{ width: '100%' }} />
+                                <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าก่อนบำบัด"/>
                             </Form.Item>
 
                             <Form.Item
@@ -196,34 +198,34 @@ const PHCentralForm: React.FC = () => {
                                 rules={[{ required: true, message: 'กรุณากรอกค่าหลังบำบัด' }]}
                                 style={{ flex: 1 }}
                             >
-                                <InputNumber style={{ width: '100%' }} />
+                                <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าก่อนบำบัด"/>
                             </Form.Item>
                         </div>
                     ) : (
                         <Form.Item
                             label="ค่าที่วัดได้"
                             name="data"
-                            rules={[{ required: true, message: 'กรุณากรอกค่าที่วัดได้' }]}
+                            rules={[{ required: true, message: 'กรอกค่าที่วัดได้' }]}
                         >
-                            <InputNumber style={{ width: '100%' }} />
+                            <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าที่วัดได้"/>
                         </Form.Item>
                     )}
                 </div>
 
-                <div className="form-group">
+                <div className="form-group-ph">
                     <Form.Item label="หมายเหตุ" name="note">
                         <Input.TextArea rows={2} placeholder="กรอกหมายเหตุ (ถ้ามี)" />
                     </Form.Item>
                 </div>
 
-                <Form.Item className="form-actions">
-                    <Button className="cancel" htmlType="button" onClick={handleCancel}>
+                <Form.Item className="form-actions-ph">
+                    <Button className="cancel-ph" htmlType="button" onClick={handleCancel}>
                         ยกเลิก
                     </Button>
-                    <Button htmlType="reset" className="reset">
+                    <Button htmlType="reset" className="reset-ph">
                         รีเซ็ต
                     </Button>
-                    <Button type="primary" htmlType="submit" className="submit">
+                    <Button type="primary" htmlType="submit" className="submit-ph">
                         บันทึก
                     </Button>
                 </Form.Item>
