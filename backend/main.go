@@ -71,14 +71,14 @@ func main() {
 		//TKN
 		public.POST("/create-tkn", tkncenter.CreateTKN)
 		public.GET("/read-tkn", tkncenter.GetTKN)
-		public.GET("read-tkn/:id", tkncenter.GetTKNbyID)
+		public.GET("/read-tkn/:id", tkncenter.GetTKNbyID)
 		public.PATCH("/update-tkn/:id", tkncenter.UpdateTKN)
 		public.DELETE("/delete-tkn/:id", tkncenter.DeleteTKN)
 
 		//TS
 		public.POST("/create-ts", tscenter.CreateTS)
 		public.GET("/read-ts", tscenter.GetTS)
-		public.GET("read-ts/:id", tscenter.GetTSbyID)
+		public.GET("/read-ts/:id", tscenter.GetTSbyID)
 		public.PATCH("/update-ts/:id", tscenter.UpdateTS)
 		public.DELETE("/delete-ts/:id", tscenter.DeleteTS)
 

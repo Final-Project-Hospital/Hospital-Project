@@ -1,8 +1,8 @@
-import { BeforeAfterTreatmentInterface } from "./IBeforeAfterTreatment";
+import { ListBeforeAfterTreatmentInterface } from "./IBeforeAfterTreatment";
 import { EnvironmentInterface } from "./IEnvironment";
 import { ParameterInterface } from "./IParameter";
-import { StandardInterface } from "./IStandard";
-import { UnitInterface } from "./IUnit";
+import { ListStandardInterface } from "./IStandard";
+import { ListUnitInterface } from "./IUnit";
 import { EmployeeInterface } from "./IEmployee";
 export interface EnvironmentalRecordInterface {
     ID? : number;
@@ -10,10 +10,10 @@ export interface EnvironmentalRecordInterface {
     data? : number;
     comment? : string;
 
-    BeforeAfterTreatment? : BeforeAfterTreatmentInterface;
+    BeforeAfterTreatment? : ListBeforeAfterTreatmentInterface;
     Environment? : EnvironmentInterface;
     Parameter? : ParameterInterface;
-    Standard? : StandardInterface;
-    Unit? : UnitInterface;
+    Standard? : ListStandardInterface;
+    Unit? : ListUnitInterface;
     Employee? : EmployeeInterface;
 }
