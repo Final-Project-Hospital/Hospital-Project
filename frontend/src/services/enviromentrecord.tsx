@@ -13,7 +13,7 @@ export const CreateTKN = async (tknrecord: EnvironmentalRecordInterface): Promis
         const payload = {
             Date:                   tknrecord.date,
             Data:                   tknrecord.data,
-            coomment:               tknrecord.comment,
+            note:                   tknrecord.note,
             BeforeAfterTreatmentID: tknrecord.BeforeAfterTreatment?.ID,
             EnvironmentID:          tknrecord.Environment?.ID,
             ParameterID:            tknrecord.Parameter?.ID,
@@ -93,7 +93,7 @@ export const UpdateTKN  = async (
 
             if(tknrecord.date !== undefined) payload.date = tknrecord.date;
             if(tknrecord.data !== undefined) payload.data = Number(tknrecord.data);
-            if(tknrecord.comment !== undefined) payload.comment = tknrecord.comment;
+            if(tknrecord.note !== undefined) payload.note = tknrecord.note;
             if(tknrecord.BeforeAfterTreatment?.ID !== undefined)
                 payload.BeforeAfterTreatmentID = tknrecord.BeforeAfterTreatment.ID;
 

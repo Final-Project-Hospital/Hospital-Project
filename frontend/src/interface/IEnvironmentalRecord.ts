@@ -8,7 +8,7 @@ export interface EnvironmentalRecordInterface {
     ID? : number;
     date? : string;
     data? : number;
-    comment? : string;
+    note? : string;
 
     BeforeAfterTreatment? : ListBeforeAfterTreatmentInterface;
     Environment? : EnvironmentInterface;
