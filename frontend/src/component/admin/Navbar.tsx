@@ -68,8 +68,8 @@ const Navbar = () => {
   //   const lastName = localStorage.getItem('lastnameuser') || '';
   //   setFullName(`${firstName} ${lastName}`);
   // }, []);
-  if (loading) return <div>กำลังโหลดข้อมูลผู้ใช้...</div>;
-  if (!fullName) return <div>ไม่พบข้อมูลผู้ใช้</div>;
+  // if (loading) return <div>กำลังโหลดข้อมูลผู้ใช้...</div>;
+  // if (!fullName) return <div>ไม่พบข้อมูลผู้ใช้</div>;
 
   const handleActiveMenu = () => setActiveMenu(!activeMenu);
 

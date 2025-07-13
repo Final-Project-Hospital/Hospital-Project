@@ -48,8 +48,8 @@ const UserProfile = () => {
 
     fetchUser();
   }, []);
-  if (loading) return <div>กำลังโหลดข้อมูลผู้ใช้...</div>;
-  if (!fullName) return <div>ไม่พบข้อมูลผู้ใช้</div>;
+  // if (loading) return <div>กำลังโหลดข้อมูลผู้ใช้...</div>;
+  // if (!fullName) return <div>ไม่พบข้อมูลผู้ใช้</div>;
   // useEffect(() => {
   //   const firstName = localStorage.getItem('firstnameuser') || '';
   //   const lastName = localStorage.getItem('lastnameuser') || '';
