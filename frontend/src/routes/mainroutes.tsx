@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { useRoutes, RouteObject } from "react-router-dom";
+import { useRoutes, RouteObject  } from "react-router-dom";
 import Loadable from "../component/third-patry/Loadable";
 
 const Login = Loadable(lazy(() => import("../page/login")));
@@ -105,11 +105,11 @@ const MainRoutes = (): RouteObject[] => [
 function ConfigRoutes() {
   const isLoggedIn = localStorage.getItem('isLogin') === 'true';
   const roleName = localStorage.getItem('roleName');
-  const userID = localStorage.getItem('userID');
+  const userID = Number(localStorage.getItem('employeeid'));
 
   console.log("isLoggedIn:", isLoggedIn);
   console.log("roleName:", roleName);
-  console.log("userID:", userID);
+  console.log("employeeid:", userID);
 
   let routes: RouteObject[] = [];
 

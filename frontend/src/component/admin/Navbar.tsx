@@ -1,12 +1,13 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { AiOutlineMenu } from 'react-icons/ai';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import { TooltipComponent } from '@syncfusion/ej2-react-popups';
 import avatar from '../../assets/admin/avatar3.png';
-import {  UserProfile } from '.';
+import { UserProfile } from '.';
 import { useStateContext } from '../../contexts/ContextProvider';
+import { GetUserDataByUserID } from '../../services/httpLogin';
 
-const NavButton = ({ title, customFunc, icon, color, dotColor } : any) => (
+const NavButton = ({ title, customFunc, icon, color, dotColor }: any) => (
   <TooltipComponent content={title} position="BottomCenter">
     <button
       type="button"
@@ -25,7 +26,26 @@ const NavButton = ({ title, customFunc, icon, color, dotColor } : any) => (
 
 const Navbar = () => {
   const { currentColor, activeMenu, setActiveMenu, handleClick, isClicked, setScreenSize, screenSize } = useStateContext();
+  const [fullName, setFullName] = useState('');
+  const [loading, setLoading] = useState<boolean>(true);
+  useEffect(() => {
+    const fetchUser = async () => {
+      const id = Number(localStorage.getItem("employeeid")); // ดึงจาก localStorage
+      if (!id || isNaN(id)) {
+        console.error("ไม่มีหรือ ID ไม่ถูกต้อง");
+        setLoading(false);
+        return;
+      }
 
+      const res = await GetUserDataByUserID(id);
+      if (res !== false) {
+        setFullName(`${res.FirstName} ${res.LastName}`);
+      }
+      setLoading(false);
+    };
+
+    fetchUser();
+  }, []);
   useEffect(() => {
     const handleResize = () => setScreenSize(window.innerWidth);
 
@@ -43,6 +63,13 @@ const Navbar = () => {
       setActiveMenu(true);
     }
   }, [screenSize]);
+  // useEffect(() => {
+  //   const firstName = localStorage.getItem('firstnameuser') || '';
+  //   const lastName = localStorage.getItem('lastnameuser') || '';
+  //   setFullName(`${firstName} ${lastName}`);
+  // }, []);
+  // if (loading) return <div>กำลังโหลดข้อมูลผู้ใช้...</div>;
+  // if (!fullName) return <div>ไม่พบข้อมูลผู้ใช้</div>;
 
   const handleActiveMenu = () => setActiveMenu(!activeMenu);
 
@@ -51,7 +78,7 @@ const Navbar = () => {
 
       <NavButton title="Menu" customFunc={handleActiveMenu} color={currentColor} icon={<AiOutlineMenu />} />
       <div className="flex">
-         <TooltipComponent content="Profile" position="BottomCenter">
+        <TooltipComponent content="Profile" position="BottomCenter">
           <div
             className="flex items-center gap-2 cursor-pointer p-1 hover:bg-light-gray rounded-lg"
             onClick={() => handleClick('userProfile')}
@@ -63,7 +90,7 @@ const Navbar = () => {
             />
             <p>
               <span className="text-gray-400 font-bold ml-1 text-14">
-                Tawunchai
+                {fullName || 'ผู้ใช้'}
               </span>
             </p>
             <MdKeyboardArrowDown className="text-gray-400 text-14" />

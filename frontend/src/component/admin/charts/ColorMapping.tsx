@@ -97,7 +97,7 @@ const ColorMapping: React.FC<ChartdataProps> = ({
 
   return (
     <div className="bg-white dark:bg-secondary-dark-bg rounded-2xl p-4 h-[540px]">
-      <ChartsHeader category="Color Mapping" title="Sensor Color Mapping" />
+      <ChartsHeader category="Sensor Data" />
       <ChartComponent
         id="color-mapping-chart"
         primaryXAxis={primaryXAxis}

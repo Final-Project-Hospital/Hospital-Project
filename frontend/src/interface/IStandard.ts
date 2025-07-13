@@ -1,4 +1,4 @@
-export interface StandardInterface {
+export interface ListStandardInterface {
     ID?: number;
-    StandardName?: string;
+    StandardValue?: number;
 }

@@ -9,9 +9,7 @@ type EnvironmentalRecord struct {
 	gorm.Model
 	Date time.Time `gorm:"column:date"`
 	Data float32   `gorm:"column:data"`
-	Note string
-	
-	comment string
+	Note string	   `gorm:"column:note"`
 
 	BeforeAfterTreatmentID uint                  `gorm:"column:before_after_treatment_id"`
 	BeforeAfterTreatment   *BeforeAfterTreatment `gorm:"foreignKey:BeforeAfterTreatmentID"`

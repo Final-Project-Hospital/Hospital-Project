@@ -53,7 +53,7 @@ const Index: React.FC<ChartdataProps> = ({
   return (
     <div className="w-full bg-white p-6 rounded-2xl dark:bg-secondary-dark-bg dark:text-gray-200">
       <div className="flex justify-between items-center gap-2 mb-6">
-        <p className="text-xl font-semibold">Hardware Data Overview</p>
+        <p className="text-3xl font-semibold">Sensor Data</p>
 
         <div className="flex gap-2 items-center">
           <div className="w-28 border border-gray-300 px-2 py-1 rounded-md">

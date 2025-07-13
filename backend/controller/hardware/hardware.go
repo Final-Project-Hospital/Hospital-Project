@@ -221,3 +221,15 @@ func UpdateHardwareParameterByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, hardwareParameter)
 }
+
+func ListColors(c *gin.Context) {
+	var colors []entity.HardwareParameterColor
+
+	db := config.DB()
+	if err := db.Find(&colors).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, colors)
+}

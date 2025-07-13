@@ -1,4 +1,4 @@
-export interface BeforeAfterTreatmentInterface {
-    ID?: number
-    TreatmentName?: string
+export interface ListBeforeAfterTreatmentInterface {
+    ID?: number;
+    TreatmentName?: string;
 }

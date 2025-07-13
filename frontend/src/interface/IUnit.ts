@@ -1,4 +1,4 @@
-export interface UnitInterface {
+export interface ListUnitInterface {
     ID?: number;
-    Unitname?: string;
+    UnitName?: string;
 }

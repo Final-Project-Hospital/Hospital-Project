@@ -100,7 +100,7 @@ const Area: React.FC<ChartdataProps> = ({
 
   return (
     <div className="bg-white dark:bg-secondary-dark-bg rounded-2xl p-4 h-[540px]">
-      <ChartsHeader category="Area" title="Sensor Area Chart" />
+      <ChartsHeader category="Sensor Data" />
       <ChartComponent
         id="area-chart"
         primaryXAxis={primaryXAxis}

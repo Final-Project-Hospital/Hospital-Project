@@ -13,13 +13,15 @@ const Login = ({ handleSignIn }: any) => {
 
   const clickLoginbt = async (datalogin: LoginInterface) => {
     let res = await AddLogin(datalogin);
-
+    console.log(res.data)
     if (res.status === 200) {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("token_type", res.data.token_type);
       localStorage.setItem("isLogin", "true");
       localStorage.setItem("roleName", res.data.Role.RoleName);
-      localStorage.setItem("userid", res.data.EmployeeID);
+      localStorage.setItem("emailuser", res.data.Email);
+      localStorage.setItem("positionuser", res.data.Position.Position);
+      localStorage.setItem("employeeid", res.data.EmployeeID);
       localStorage.setItem("firstnameuser", res.data.FirstNameUser);
       localStorage.setItem("lastnameuser", res.data.LastNameUser);
 
@@ -29,14 +31,14 @@ const Login = ({ handleSignIn }: any) => {
       if (userID && RoleName !== "User") {
         try {
           const UsersID = await GetUserDataByUserID(Number(userID));
+          console.log(UsersID)
           if (UsersID !== null && UsersID !== undefined) {
-            localStorage.setItem("userid", UsersID.toString());
+            // localStorage.setItem("employeeid", UsersID.toString());
           }
         } catch (error) {
           console.error("Failed to fetch UsersID:", error);
         }
       }
-
       messageApi.success(`เข้าสู่ระบบในฐานะ ${RoleName} สำเร็จ`);
       setTimeout(() => {
         if (RoleName === "Admin") {
@@ -48,6 +50,7 @@ const Login = ({ handleSignIn }: any) => {
     } else {
       messageApi.error("อีเมลหรือรหัสผ่านไม่ถูกต้อง!");
     }
+    
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,6 +68,7 @@ const Login = ({ handleSignIn }: any) => {
 
     await clickLoginbt(datalogin);
   };
+  
 
   return (
     <>
