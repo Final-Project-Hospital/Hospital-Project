@@ -13,6 +13,7 @@ const Login = ({ handleSignIn }: any) => {
 
   const clickLoginbt = async (datalogin: LoginInterface) => {
     let res = await AddLogin(datalogin);
+
     console.log(res.data)
     if (res.status === 200) {
       localStorage.setItem("token", res.data.token);
