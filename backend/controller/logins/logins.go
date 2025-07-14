@@ -38,7 +38,7 @@ func AddLogin(c *gin.Context) {
 		"token_type":    "Bearer",
 		"token":         signedToken,
 		"Role":      	 user.Role,
-		"UserID":    	 user.ID,
+		"EmployeeID":    	 user.ID,
 		"FirstNameUser": user.FirstName,
 		"LastNameUser":  user.LastName,
 		"Email": user.Email,

@@ -42,7 +42,7 @@ func CreateBod(c *gin.Context) {
 		Date:                   time.Now(),
 		Data:                   input.Data,
 		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
-		EnvironmentID:          input.EnvironmentID,
+		EnvironmentID:          1,
 		ParameterID:            parameter.ID, // แก้ตรงนี้
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,

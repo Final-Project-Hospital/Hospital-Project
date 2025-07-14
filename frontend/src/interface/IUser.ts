@@ -7,9 +7,15 @@ export interface UsersInterface {
     Email?: string;
     FirstName?: string;
     LastName?: string;
-    Profile?: string ;
-    UserRoleID?: number;
-    Position?: number;
+    Profile?: string;
+    Role?: {
+        ID: number;
+        RoleName: string;
+    };
+    Position?: {
+        ID: number;
+        Position: string;
+    };
     Phonenumber?: string;  // หรือ PhoneNumber?  ให้เป็น optional
     PhoneNumber?: ReactNode;  // ใส่เครื่องหมาย ? เพื่อให้เป็น optional
 }

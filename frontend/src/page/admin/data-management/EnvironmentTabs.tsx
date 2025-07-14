@@ -51,6 +51,7 @@ const EnvironmentLayout: React.FC = () => {
           );
         })}
       </div>
+      
       <br />
       <Outlet />
     </div>
