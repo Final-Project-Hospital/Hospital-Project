@@ -22,13 +22,14 @@ const Hardware_Room = Loadable(lazy(() => import("../page/admin/harware/data/ind
 const EnvironmentBlock = Loadable(lazy(() => import("../page/admin/data-visualization/EnvironmentBlock")));
 const DatavizPH = Loadable(lazy(() => import("../page/admin/data-visualization/PHdataviz")));
 const DatavizBOD = Loadable(lazy(() => import("../page/admin/data-visualization/BODdataviz")));
-const DatavizTKN = Loadable(lazy(() => import("../page/admin/data-visualization/TKNdataviz")));
+// const DatavizTKN = Loadable(lazy(() => import("../page/admin/data-visualization/TKNdataviz")));
 
 // data-management
 const EnvironmentTabs = Loadable(lazy(() => import("../page/admin/data-management/EnvironmentTabs")));
 const PH = Loadable(lazy(() => import("../page/admin/data-management/PHcenter")));
 const BOD = Loadable(lazy(() => import("../page/admin/data-management/BODcenter")));
 const TKN = Loadable(lazy(() => import("../page/admin/data-management/TKNcenter")));
+const TS = Loadable(lazy(() => import("../page/admin/data-management/TScenter") ));
 
 
 const UserRoutes = (): RouteObject[] => [
@@ -70,7 +71,7 @@ const AdminRoutes = (): RouteObject[] => [
           // { path: "datavizTS", element: <DatavizTS /> },
           // { path: "datavizTDS", element: <DatavizTDS /> },
           // { path: "datavizFOG", element: <DatavizFOG /> },
-          { path: "datavizTKN", element: <DatavizTKN /> },
+          // { path: "datavizTKN", element: <DatavizTKN /> },
         ]
       },
       {
@@ -81,7 +82,7 @@ const AdminRoutes = (): RouteObject[] => [
           { path: "ph", element: <PH /> },            // /admin/environment/ph
           { path: "bod", element: <BOD /> },          // /admin/environment/bod
           // { path: "tds", element: <TDS /> },          // /admin/environment/tds
-          // { path: "ts", element: <TS /> },
+          { path: "ts", element: <TS /> },
           // { path: "fog", element: <FOG /> },
           { path: "tkn", element: <TKN /> },
         ],

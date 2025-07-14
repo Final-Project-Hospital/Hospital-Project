@@ -1,6 +1,7 @@
 package tkncenter
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -19,12 +20,27 @@ func CreateTKN(c *gin.Context) {
 
 	db := config.DB()
 
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?","Total Kjeldahl Nitrogen").First(&parameter).Error; err != nil {
+		fmt.Println("Error fetching parameter:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+		return
+	}
+
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?","น้ำเสีย").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
+
 	tkn := entity.EnvironmentalRecord{
 		Date:                   input.Date,  
 		Data:                   input.Data,
+		Note:					input.Note,
 		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
-		EnvironmentID:          input.EnvironmentID,
-		ParameterID:            4,
+		EnvironmentID:          environment.ID, 
+		ParameterID:            parameter.ID,
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,

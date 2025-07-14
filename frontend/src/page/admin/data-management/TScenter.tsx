@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import "./TKNcenter.css";
+import "./TScenter.css";
 import {
   Form,
   InputNumber,
@@ -12,15 +12,15 @@ import {
   message,
 } from "antd";
 import { ListBeforeAfterTreatment, ListStandard, ListUnit } from "../../../services/index";
-import { CreateTKN } from "../../../services/enviromentrecord";
+import { CreateTS } from "../../../services/enviromentrecord";
 import { ListBeforeAfterTreatmentInterface } from "../../../interface/IBeforeAfterTreatment";
 import { ListStandardInterface } from "../../../interface/IStandard";
 import { ListUnitInterface } from "../../../interface/IUnit";
-import { CreateTKNInterface } from "../../../interface/IEnvironmentalRecord";
+import { CreateTSInterface } from "../../../interface/IEnvironmentalRecord";
 
 const { Option } = Select;
 
-const TKNCenterForm: React.FC = () => {
+const TSCenterForm: React.FC = () => {
   const [form] = Form.useForm();
   const [beforeAfterOptions, setBeforeAfterOptions] = useState<ListBeforeAfterTreatmentInterface[]>([]);
   const [unitOptions, setUnitOptions] = useState<ListUnitInterface[]>([]);
@@ -55,7 +55,7 @@ const TKNCenterForm: React.FC = () => {
         .minute(dayjs(values.time).minute())
         .second(0);
 
-    const TKNdata: CreateTKNInterface = {
+    const TSdata: CreateTSInterface = {
         date: combinedDateTime.toISOString(),
         data: values.data,
         note: values.note,
@@ -64,8 +64,8 @@ const TKNCenterForm: React.FC = () => {
         unitID: values.unit,
         employeeID: employeeID,
     };
-    console.log(TKNdata)
-    const response = await CreateTKN(TKNdata);
+    console.log(TSdata)
+    const response = await CreateTS(TSdata);
     
     if (response) {
         messageApi.open({
@@ -81,25 +81,25 @@ const TKNCenterForm: React.FC = () => {
 
   const renderCustomTreatmentLabel = (text: string) => (
     <>
-      ค่า TKN บริเวณบ่อพักน้ำทิ้ง <span style={{ color: '#f45415ff', fontWeight: 'bold' }}>{text}</span> เข้าระบบบำบัด
+      ค่า TS บริเวณบ่อพักน้ำทิ้ง <span style={{ color: '#f45415ff', fontWeight: 'bold' }}>{text}</span> เข้าระบบบำบัด
     </>
   );
 
   return (
     <div>
       {contextHolder}
-      <div className="tkn-container">
+      <div className="ts-container">
         <Form form={form} layout="vertical" onFinish={handleFinish}>
-          <div className="tkn-form-group">
+          <div className="ts-form-group">
             <Form.Item label="วันที่บันทึกข้อมูล" name="date">
-              <DatePicker defaultValue={dayjs()} format="DD/MM/YYYY" className="tkn-full-width" />
+              <DatePicker defaultValue={dayjs()} format="DD/MM/YYYY" className="ts-full-width" />
             </Form.Item>
             <Form.Item label="เวลาที่บันทึกข้อมูล" name="time">
-              <TimePicker defaultValue={dayjs()} format={"HH:mm"} className="tkn-full-width" />
+              <TimePicker defaultValue={dayjs()} format={"HH:mm"} className="ts-full-width" />
             </Form.Item>
           </div>
 
-          <div className="tkn-form-group">
+          <div className="ts-form-group">
             <Form.Item label="หน่วยที่วัด" name="unit" rules={[{ required: true, message: "กรุณาเลือกหน่วยที่วัด" }]}> 
               <Select placeholder="เลือกหน่วย">
                 {unitOptions.map((u) => (
@@ -116,7 +116,7 @@ const TKNCenterForm: React.FC = () => {
             </Form.Item>
           </div>
 
-          <div className="tkn-form-group">
+          <div className="ts-form-group">
             <Form.Item
               label="ก่อน / หลัง / ก่อนเเละหลังบำบัด"
               name="before_after"
@@ -150,10 +150,10 @@ const TKNCenterForm: React.FC = () => {
           </Form.Item>
 
           <Form.Item>
-            <div className="tkn-form-actions">
-              <Button className="tkn-cancel" htmlType="button">ยกเลิก</Button>
-              <Button htmlType="reset" className="tkn-reset" onClick={handleClear}>รีเซ็ต</Button>
-              <Button type="primary" htmlType="submit" className="tkn-submit">บันทึก</Button>
+            <div className="ts-form-actions">
+              <Button className="ts-cancel" htmlType="button">ยกเลิก</Button>
+              <Button htmlType="reset" className="ts-reset" onClick={handleClear}>รีเซ็ต</Button>
+              <Button type="primary" htmlType="submit" className="ts-submit">บันทึก</Button>
             </div>
           </Form.Item>
         </Form>
@@ -162,4 +162,4 @@ const TKNCenterForm: React.FC = () => {
   );
 };
 
-export default TKNCenterForm;
+export default TSCenterForm;

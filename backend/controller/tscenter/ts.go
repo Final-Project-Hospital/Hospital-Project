@@ -1,6 +1,7 @@
 package tscenter
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -19,12 +20,27 @@ func CreateTS(c *gin.Context) {
 
 	db := config.DB()
 
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?","Total Solid").First(&parameter).Error; err != nil {
+		fmt.Println("Error fetching parameter:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+		return
+	}
+
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?","น้ำเสีย").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
+
 	ts := entity.EnvironmentalRecord{
 		Date:                   input.Date,
 		Data:                   input.Data,
+		Note: 					input.Note,
 		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
-		EnvironmentID:          input.EnvironmentID,
-		ParameterID:            5, 
+		EnvironmentID:          environment.ID, 
+		ParameterID:            parameter.ID,
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,

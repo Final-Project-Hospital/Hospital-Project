@@ -1,4 +1,4 @@
-.tkn-container {
+.ts-container {
   background: white;
   padding: 20px 30px;
   border-radius: 20px;
@@ -11,37 +11,37 @@
   font-size: 14px;
 }
 
-.tkn-container .ant-input,
-.tkn-container .ant-input-number,
-.tkn-container .ant-picker,
-.tkn-container .ant-select-selector {
+.ts-container .ant-input,
+.ts-container .ant-input-number,
+.ts-container .ant-picker,
+.ts-container .ant-select-selector {
   border-radius: 50px !important;
 }
-.tkn-container .ant-input-number-handler-wrap {
+.ts-container .ant-input-number-handler-wrap {
   border-radius: 0 50px 50px 0 !important;
   overflow: hidden;
 }
 
-.tkn-form-group {
+.ts-form-group {
   display: flex;
   gap: 24px;
   flex-wrap: wrap;
 }
 
-.tkn-form-group .ant-form-item {
+.ts-form-group .ant-form-item {
   flex: 1 1 300px;
 }
 
-.tkn-full-width {
+.ts-full-width {
   width: 100%;
 }
 
-.tkn-red-text {
+.ts-red-text {
   color: red;
   font-weight: bold;
 }
 
-.tkn-form-actions {
+.ts-form-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -49,9 +49,9 @@
   margin-top: 16px;
 }
 
-.tkn-cancel,
-.tkn-reset,
-.tkn-submit {
+.ts-cancel,
+.ts-reset,
+.ts-submit {
   padding: 10px 20px;
   min-width: 80px;
   height: inherit;
@@ -64,60 +64,60 @@
   font-size: medium;
 }
 
-.tkn-cancel {
+.ts-cancel {
   background-color: #949494;
   color: white;
   transition: all 0.2s ease-in-out;
 }
 
-.tkn-reset {
+.ts-reset {
   background-color: #ffffff;
   color: #326667;
   transition: all 0.2s ease-in-out;
 }
 
-.tkn-submit {
+.ts-submit {
   background-color: #326667;
   color: white;
   transition: all 0.2s ease-in-out;
 }
 
-.tkn-submit:hover {
+.ts-submit:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #358788 !important;
   transform: scale(1.05) !important;
 }
 
-.tkn-reset:hover {
+.ts-reset:hover {
   color: #326667 !important;
   background-color: #ffffff !important;
   transform: scale(1.05) !important;
 }
 
-.tkn-cancel:hover {
+.ts-cancel:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #646464 !important;
   transform: scale(1.05) !important;
 }
 
 @media (max-width: 768px) {
-  .tkn-form-group {
+  .ts-form-group {
     flex-direction: column;
     gap: 16px;
   }
 
-  .tkn-form-group .ant-form-item {
+  .ts-form-group .ant-form-item {
     flex: 1 1 100%;
   }
 
-  .tkn-form-actions {
+  .ts-form-actions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .tkn-cancel,
-  .tkn-reset,
-  .tkn-submit {
+  .ts-cancel,
+  .ts-reset,
+  .ts-submit {
     width: 100%;
   }
 }
