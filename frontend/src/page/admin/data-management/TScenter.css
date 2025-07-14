@@ -1,0 +1,123 @@
+.ts-container {
+  background: white;
+  padding: 20px 30px;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px #7b61ff3b;
+  max-width: 80%;
+  margin: 0 auto;
+  margin-bottom: 40px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+.ts-container .ant-input,
+.ts-container .ant-input-number,
+.ts-container .ant-picker,
+.ts-container .ant-select-selector {
+  border-radius: 50px !important;
+}
+.ts-container .ant-input-number-handler-wrap {
+  border-radius: 0 50px 50px 0 !important;
+  overflow: hidden;
+}
+
+.ts-form-group {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.ts-form-group .ant-form-item {
+  flex: 1 1 300px;
+}
+
+.ts-full-width {
+  width: 100%;
+}
+
+.ts-red-text {
+  color: red;
+  font-weight: bold;
+}
+
+.ts-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.ts-cancel,
+.ts-reset,
+.ts-submit {
+  padding: 10px 20px;
+  min-width: 80px;
+  height: inherit;
+  text-align: center;
+  font-weight: bolder;
+  cursor: pointer;
+  border-radius: 50px;
+  border: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  font-size: medium;
+}
+
+.ts-cancel {
+  background-color: #949494;
+  color: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.ts-reset {
+  background-color: #ffffff;
+  color: #326667;
+  transition: all 0.2s ease-in-out;
+}
+
+.ts-submit {
+  background-color: #326667;
+  color: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.ts-submit:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #358788 !important;
+  transform: scale(1.05) !important;
+}
+
+.ts-reset:hover {
+  color: #326667 !important;
+  background-color: #ffffff !important;
+  transform: scale(1.05) !important;
+}
+
+.ts-cancel:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #646464 !important;
+  transform: scale(1.05) !important;
+}
+
+@media (max-width: 768px) {
+  .ts-form-group {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .ts-form-group .ant-form-item {
+    flex: 1 1 100%;
+  }
+
+  .ts-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ts-cancel,
+  .ts-reset,
+  .ts-submit {
+    width: 100%;
+  }
+}

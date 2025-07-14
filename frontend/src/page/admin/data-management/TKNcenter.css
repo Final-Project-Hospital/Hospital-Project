@@ -1,0 +1,123 @@
+.tkn-container {
+  background: white;
+  padding: 20px 30px;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px #7b61ff3b;
+  max-width: 80%;
+  margin: 0 auto;
+  margin-bottom: 40px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+.tkn-container .ant-input,
+.tkn-container .ant-input-number,
+.tkn-container .ant-picker,
+.tkn-container .ant-select-selector {
+  border-radius: 50px !important;
+}
+.tkn-container .ant-input-number-handler-wrap {
+  border-radius: 0 50px 50px 0 !important;
+  overflow: hidden;
+}
+
+.tkn-form-group {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.tkn-form-group .ant-form-item {
+  flex: 1 1 300px;
+}
+
+.tkn-full-width {
+  width: 100%;
+}
+
+.tkn-red-text {
+  color: red;
+  font-weight: bold;
+}
+
+.tkn-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.tkn-cancel,
+.tkn-reset,
+.tkn-submit {
+  padding: 10px 20px;
+  min-width: 80px;
+  height: inherit;
+  text-align: center;
+  font-weight: bolder;
+  cursor: pointer;
+  border-radius: 50px;
+  border: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  font-size: medium;
+}
+
+.tkn-cancel {
+  background-color: #949494;
+  color: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.tkn-reset {
+  background-color: #ffffff;
+  color: #326667;
+  transition: all 0.2s ease-in-out;
+}
+
+.tkn-submit {
+  background-color: #326667;
+  color: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.tkn-submit:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #358788 !important;
+  transform: scale(1.05) !important;
+}
+
+.tkn-reset:hover {
+  color: #326667 !important;
+  background-color: #ffffff !important;
+  transform: scale(1.05) !important;
+}
+
+.tkn-cancel:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #646464 !important;
+  transform: scale(1.05) !important;
+}
+
+@media (max-width: 768px) {
+  .tkn-form-group {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .tkn-form-group .ant-form-item {
+    flex: 1 1 100%;
+  }
+
+  .tkn-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tkn-cancel,
+  .tkn-reset,
+  .tkn-submit {
+    width: 100%;
+  }
+}
