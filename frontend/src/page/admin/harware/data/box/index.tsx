@@ -31,6 +31,7 @@ const iconMap: Record<string, [ReactNode, ReactNode]> = {
 
 interface BoxsdataProps {
   hardwareID: number;
+  reloadKey?: any;
 }
 interface SensorParameter {
   id: number;
@@ -42,15 +43,28 @@ interface ParameterColorMap {
 }
 const MAX_SHOW = 4;
 
-const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID }) => {
+const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey }) => {
   const [parameters, setParameters] = useState<SensorParameter[]>([]);
   const [parameterColors, setParameterColors] = useState<ParameterColorMap>({});
   const [slideIndex, setSlideIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  // *** รีเซ็ต parameterColors, parameters และ slideIndex ทุกครั้งที่ reloadKey เปลี่ยน ***
+  useEffect(() => {
+    setParameterColors({});
+    setParameters([]);
+    setSlideIndex(0);
+  }, [hardwareID, reloadKey]);
 
   useEffect(() => {
+    let mounted = true;
     const fetchSensorAndParameters = async () => {
-      if (!hardwareID) return;
-
+      setLoading(true);
+      if (!hardwareID) {
+        setLoading(false);
+        return;
+      }
+      // --- ดึงข้อมูลล่าสุดของ hardware ---
       const sensorDataList = await GetSensorDataByHardwareID(hardwareID);
       if (sensorDataList && sensorDataList.length > 0) {
         const latestSensorDataID = sensorDataList[sensorDataList.length - 1].ID;
@@ -66,31 +80,35 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID }) => {
             });
           });
           const latestParamsArray = Array.from(latestParamsMap.values());
-          setParameters(latestParamsArray);
-          // get color if not yet
-          const needColor = latestParamsArray
-            .map(p => p.name)
-            .filter(name => !(name in parameterColors));
-          if (needColor.length > 0) {
-            const colorsMap = { ...parameterColors };
-            Promise.all(
-              needColor.map(async (paramName) => {
-                const res = await ListDataHardwareParameterByParameter(paramName);
-                if (res && res.length > 0) {
-                  colorsMap[paramName] = res[0].HardwareParameterColor?.Code || "#999999";
-                } else {
-                  colorsMap[paramName] = "#999999";
-                }
-              })
-            ).then(() => {
-              setParameterColors(colorsMap);
-            });
-          }
+          if (mounted) setParameters(latestParamsArray);
+
+          // *** ดึงสีใหม่ทุกครั้ง ***
+          const colorsMap: ParameterColorMap = {};
+          await Promise.all(
+            latestParamsArray.map(async (p) => {
+              const res = await ListDataHardwareParameterByParameter(p.name);
+              if (res && res.length > 0) {
+                colorsMap[p.name] = res[0].HardwareParameterColor?.Code || "#999999";
+              } else {
+                colorsMap[p.name] = "#999999";
+              }
+            })
+          );
+          if (mounted) setParameterColors(colorsMap);
+        } else {
+          if (mounted) setParameters([]);
         }
+      } else {
+        if (mounted) setParameters([]);
       }
+      setLoading(false);
     };
+
     fetchSensorAndParameters();
-  }, [hardwareID]);
+    return () => {
+      mounted = false;
+    };
+  }, [hardwareID, reloadKey]);
 
   function withIconColor(icon: ReactNode, color: string): ReactNode {
     if (React.isValidElement(icon)) {
@@ -117,7 +135,7 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID }) => {
   };
 
   return (
-    <div className="w-full max-w-screen-xl mx-auto px-4">
+    <div className="w-full max-w-screen-xl mx-auto px-4" key={reloadKey}>
       <div className="flex items-center justify-center gap-3 mt-2">
         {/* ปุ่ม Slide Left */}
         {totalSlide > 1 && (
@@ -132,7 +150,11 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID }) => {
         )}
         {/* Parameter Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 flex-1">
-          {showParams.length > 0 ? (
+          {loading ? (
+            <div className="col-span-4 flex justify-center items-center h-[140px]">
+              <p>Loading data...</p>
+            </div>
+          ) : showParams.length > 0 ? (
             showParams.map((param) => {
               const color = parameterColors[param.name] || "#999999";
               return (
@@ -158,7 +180,7 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID }) => {
             })
           ) : (
             <div className="col-span-4 flex justify-center items-center h-[140px]">
-              <p>Loading data...</p>
+              <p>No data</p>
             </div>
           )}
         </div>

@@ -1,9 +1,10 @@
+import { useState, useEffect, useCallback } from "react";
+import { useLocation } from "react-router-dom";
+import { Spin } from "antd";
 import picture1 from "../../../../../assets/ESP32.png";
 import Boxsdata from "../box/index";
 import TableData from "../table/index";
 import Avergare from "../footer/index";
-import { useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
 import {
   GetSensorDataByHardwareID,
   GetSensorDataParametersBySensorDataID,
@@ -26,78 +27,99 @@ const Index = () => {
       ParametersWithColor: { parameter: string; color: string }[];
     }[]
   >([]);
-
   const [showEdit, setShowEdit] = useState(false);
+  const [reloadCharts, setReloadCharts] = useState(0);
+  const [reloadAverage, setReloadAverage] = useState(0);
+  const [reloadBoxes, setReloadBoxes] = useState(0);
+  const [loadingAll, setLoadingAll] = useState(false);
 
-  useEffect(() => {
-    const fetchSensorDataAndParameters = async () => {
-      if (!hardwareID) return;
+  // โหลดข้อมูลกราฟ
+  const fetchSensorDataAndParameters = useCallback(async () => {
+    if (!hardwareID) return;
 
-      const sensorDataList = await GetSensorDataByHardwareID(hardwareID);
-      if (!sensorDataList || sensorDataList.length === 0) {
-        setUniqueGraphs([]);
-        return;
+    const sensorDataList = await GetSensorDataByHardwareID(hardwareID);
+    if (!sensorDataList || sensorDataList.length === 0) {
+      setUniqueGraphs([]);
+      return;
+    }
+
+    const allParams: string[] = [];
+    for (const sensorData of sensorDataList) {
+      const parameters = await GetSensorDataParametersBySensorDataID(sensorData.ID);
+      if (parameters) {
+        const paramNames = parameters
+          .map((p) => p.HardwareParameter?.Parameter)
+          .filter(Boolean);
+        allParams.push(...paramNames);
       }
+    }
+    const uniqueParams = Array.from(new Set(allParams));
 
-      const allParams: string[] = [];
+    const graphMap: {
+      [graphID: number]: {
+        ID: number;
+        Graph: string;
+        ParametersWithColor: { parameter: string; color: string }[];
+      };
+    } = {};
 
-      for (const sensorData of sensorDataList) {
-        const parameters = await GetSensorDataParametersBySensorDataID(sensorData.ID);
-        if (parameters) {
-          const paramNames = parameters
-            .map((p) => p.HardwareParameter?.Parameter)
-            .filter(Boolean);
-          allParams.push(...paramNames);
-        }
-      }
-
-      const uniqueParams = Array.from(new Set(allParams));
-
-      const graphMap: {
-        [graphID: number]: {
-          ID: number;
-          Graph: string;
-          ParametersWithColor: { parameter: string; color: string }[];
-        };
-      } = {};
-
-      for (const param of uniqueParams) {
-        const hardwareParams = await ListDataHardwareParameterByParameter(param);
-        if (hardwareParams) {
-          for (const hp of hardwareParams) {
-            const graph = hp.HardwareGraph;
-            const colorCode = hp.HardwareParameterColor?.Code ?? "#000000";
-
-            if (graph && graph.ID) {
-              if (!graphMap[graph.ID]) {
-                graphMap[graph.ID] = {
-                  ID: graph.ID,
-                  Graph: graph.Graph ?? "Unknown",
-                  ParametersWithColor: [],
-                };
-              }
-
-              if (!graphMap[graph.ID].ParametersWithColor.find(p => p.parameter === param)) {
-                graphMap[graph.ID].ParametersWithColor.push({ parameter: param, color: colorCode });
-              }
+    for (const param of uniqueParams) {
+      const hardwareParams = await ListDataHardwareParameterByParameter(param);
+      if (hardwareParams) {
+        for (const hp of hardwareParams) {
+          const graph = hp.HardwareGraph;
+          const colorCode = hp.HardwareParameterColor?.Code ?? "#000000";
+          if (graph && graph.ID) {
+            if (!graphMap[graph.ID]) {
+              graphMap[graph.ID] = {
+                ID: graph.ID,
+                Graph: graph.Graph ?? "Unknown",
+                ParametersWithColor: [],
+              };
+            }
+            if (!graphMap[graph.ID].ParametersWithColor.find(p => p.parameter === param)) {
+              graphMap[graph.ID].ParametersWithColor.push({ parameter: param, color: colorCode });
             }
           }
         }
       }
-
-      const resultGraphs = Object.values(graphMap);
-      setUniqueGraphs(resultGraphs);
-    };
-
-    fetchSensorDataAndParameters();
+    }
+    const resultGraphs = Object.values(graphMap);
+    setUniqueGraphs(resultGraphs);
   }, [hardwareID]);
+
+  useEffect(() => {
+    fetchSensorDataAndParameters();
+  }, [hardwareID, fetchSensorDataAndParameters, reloadCharts]);
 
   const defaultStart = new Date();
   defaultStart.setDate(defaultStart.getDate() - 6);
   const defaultEnd = new Date();
 
+  // >>> Handle Success จาก Modal (Overlay Loading แล้ว fetch ใหม่)
+  const handleEditSuccess = async () => {
+    setLoadingAll(true);
+    await fetchSensorDataAndParameters();
+    setReloadCharts(prev => prev + 1);
+    setReloadAverage(prev => prev + 1);
+    setReloadBoxes(prev => prev + 1);
+
+    setTimeout(() => {
+      setLoadingAll(false);
+    }, 1000); // ปรับให้เหมาะสม
+  };
+
+
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
+      {/* Overlay Loading ทั้งหน้า */}
+      {loadingAll && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <Spin size="large" tip="Loading data..." />
+        </div>
+      )}
+
       <section className="max-w-screen-2xl mx-auto p-5 bg-white border border-gray-200 rounded-lg shadow-md mb-8 mt-24 md:mt-0 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center">
         <div className="text-center md:text-left">
           <h1 className="text-2xl md:text-4xl font-extrabold leading-tight mb-4">
@@ -126,10 +148,9 @@ const Index = () => {
         />
       </section>
 
-      {/* Sections อื่น ๆ */}
       <section className="max-w-screen-2xl mx-auto bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">Current Sensor Data</h2>
-        <Boxsdata hardwareID={hardwareID} />
+        <Boxsdata hardwareID={hardwareID} reloadKey={reloadBoxes} />
       </section>
       <section className="max-w-screen-2xl mx-auto bg-white p-4 rounded-lg shadow">
         <TableData hardwareID={hardwareID} />
@@ -156,13 +177,13 @@ const Index = () => {
 
               const ChartComponent = (() => {
                 switch (g.Graph) {
-                  case "Default Graph":
+                  case "Line":
                     return <LineChart {...commonProps} />;
                   case "Area":
                     return <Area {...commonProps} />;
                   case "Bar":
                     return <Bar {...commonProps} />;
-                  case "Color Mapping":
+                  case "Mapping":
                     return <ColorMapping {...commonProps} />;
                   case "Stacked":
                     return <Stacked {...commonProps} />;
@@ -195,14 +216,13 @@ const Index = () => {
         )}
       </section>
       <section className="max-w-screen-2xl mx-auto bg-white p-4 rounded-lg shadow">
-        <Avergare hardwareID={hardwareID} />
+        <Avergare hardwareID={hardwareID} reloadKey={reloadAverage} />
       </section>
-
-      {/* ---- Modal แก้ไข Parameter ---- */}
       <EditParameterModal
         open={showEdit}
         onClose={() => setShowEdit(false)}
         hardwareID={hardwareID}
+        onSuccess={handleEditSuccess}
       />
     </div>
   );

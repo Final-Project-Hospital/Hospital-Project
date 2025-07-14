@@ -16,13 +16,15 @@ interface HardwareStat {
 
 interface AveragedataProps {
   hardwareID: number;
+  reloadKey?: any;
 }
 
-const Average: React.FC<AveragedataProps> = ({ hardwareID }) => {
+const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey }) => {
   const [hardwareStats, setHardwareStats] = useState<HardwareStat[]>([]);
   const [parameterColors, setParameterColors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    setParameterColors({}); // สำคัญ! รีเซ็ตสี parameter ทันทีที่ reloadKey/hardwareID เปลี่ยน
     const fetchAndCalculateAverages = async () => {
       if (!hardwareID) return;
 
@@ -38,7 +40,6 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID }) => {
         const maxValues: Record<string, number> = {};
         const allParamsSet = new Set<string>();
 
-        // ดึง parameter ทั้งหมด
         for (const sensor of sensorData) {
           const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
           if (Array.isArray(params)) {
@@ -61,24 +62,20 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID }) => {
           }
         }
 
-        // ดึงสีของแต่ละ parameter เฉพาะตัวที่ยังไม่มี
+        // ดึงสีใหม่ทุกครั้ง!
         const paramsArr = Array.from(allParamsSet);
-        const needColorParams = paramsArr.filter((p) => !(p in parameterColors));
-        if (needColorParams.length > 0) {
-          const colorsMap: Record<string, string> = { ...parameterColors };
-          await Promise.all(
-            needColorParams.map(async (param) => {
-              const res = await ListDataHardwareParameterByParameter(param);
-              // ได้ color จาก HardwareParameterColor.Code
-              if (res && res.length > 0) {
-                colorsMap[param] = res[0].HardwareParameterColor?.Code || "#999999";
-              } else {
-                colorsMap[param] = "#999999";
-              }
-            })
-          );
-          setParameterColors(colorsMap);
-        }
+        const colorsMap: Record<string, string> = {};
+        await Promise.all(
+          paramsArr.map(async (param) => {
+            const res = await ListDataHardwareParameterByParameter(param);
+            if (res && res.length > 0) {
+              colorsMap[param] = res[0].HardwareParameterColor?.Code || "#999999";
+            } else {
+              colorsMap[param] = "#999999";
+            }
+          })
+        );
+        setParameterColors(colorsMap);
 
         // เตรียมข้อมูลแสดงผล
         const avgData = Object.keys(sums).map((key, idx) => {
@@ -100,7 +97,7 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID }) => {
     };
 
     fetchAndCalculateAverages();
-  }, [hardwareID]);
+  }, [hardwareID, reloadKey]);
 
   return (
     <TopProductsWrap>
