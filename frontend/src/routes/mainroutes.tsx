@@ -13,10 +13,12 @@ const Admin = Loadable(lazy(() => import("../page/admin/")));
 const MainLayout = Loadable(lazy(() => import("../component/admin/MainLayout")));
 const Calendar = Loadable(lazy(() => import("../page/admin/calendar/Calendar")));
 const People = Loadable(lazy(() => import("../page/admin/people/index")));
+const Profile = Loadable(lazy(() => import("../component/admin/profile/SocialProfile")));
 
 // Hardware
 const Hardware_Main = Loadable(lazy(() => import("../page/admin/harware/index")));
 const Hardware_Room = Loadable(lazy(() => import("../page/admin/harware/data/index")));
+const ManageRoom = Loadable(lazy(() => import("../page/admin/harware/manage")));
 
 // data-visualization
 const EnvironmentBlock = Loadable(lazy(() => import("../page/admin/data-visualization/EnvironmentBlock")));
@@ -59,10 +61,12 @@ const AdminRoutes = (): RouteObject[] => [
     children: [
       { index: true, element: <Admin /> },
       { path: "Dashboard", element: <Admin /> },
-      { path: "Hardware", element: <Hardware_Main /> },
+      { path: "hardware", element: <Hardware_Main /> },
       { path: "Room", element: <Hardware_Room /> },
       { path: "Calendar", element: <Calendar /> },
       { path: "people", element: <People /> },
+      { path: "management", element: <ManageRoom /> },
+      { path: "profile", element: <Profile /> },
       {
         path: "data-visualization/water",
         children: [
