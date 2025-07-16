@@ -76,3 +76,20 @@
   
 }
 
+.graph-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.graph-card {
+  flex: 1 1 48%;
+  background-color: #fff;
+  padding: 10px;
+  border-radius: 10px;
+  min-height: 450px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
