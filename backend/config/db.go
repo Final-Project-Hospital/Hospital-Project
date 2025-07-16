@@ -17,7 +17,7 @@ func DB() *gorm.DB {
 }
 
 func ConnectionDB() {
-	dsn := "host=localhost user=postgres password=123456 dbname=HospitalDB port=5432 sslmode=disable TimeZone=Asia/Bangkok"
+	dsn := "host=localhost user=postgres password=1234 dbname=hospital port=5432 sslmode=disable TimeZone=Asia/Bangkok"
 
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Error),
@@ -118,58 +118,60 @@ func SetupDatabase() {
 		colorOrange := entity.HardwareParameterColor{Color: "Orange", Code: "#FFA500"}
 		colorYellow := entity.HardwareParameterColor{Color: "Yellow", Code: "#FFD700"}
 		colorGreen := entity.HardwareParameterColor{Color: "Green", Code: "#32CD32"}
+		colorGray := entity.HardwareParameterColor{Color: "Gray", Code: "#808080"}
 
 		db.FirstOrCreate(&colorPurple, entity.HardwareParameterColor{Color: "Purple"})
 		db.FirstOrCreate(&colorBlue, entity.HardwareParameterColor{Color: "Blue"})
 		db.FirstOrCreate(&colorOrange, entity.HardwareParameterColor{Color: "Orange"})
 		db.FirstOrCreate(&colorYellow, entity.HardwareParameterColor{Color: "Yellow"})
 		db.FirstOrCreate(&colorGreen, entity.HardwareParameterColor{Color: "Green"})
+		db.FirstOrCreate(&colorGray, entity.HardwareParameterColor{Color: "Gray"})
 
 		// ----- สร้างกราฟ -----
-		defaultGraph := entity.HardwareGraph{Graph: "Default Graph"}
+		defaultGraph := entity.HardwareGraph{Graph: "Line"}
 		areaGraph := entity.HardwareGraph{Graph: "Area"}
 		barGraph := entity.HardwareGraph{Graph: "Bar"}
-		colorMappingGraph := entity.HardwareGraph{Graph: "Color Mapping"}
+		colorMappingGraph := entity.HardwareGraph{Graph: "Mapping"}
 		stackedGraph := entity.HardwareGraph{Graph: "Stacked"}
 
-		db.FirstOrCreate(&defaultGraph, entity.HardwareGraph{Graph: "Default Graph"})
+		db.FirstOrCreate(&defaultGraph, entity.HardwareGraph{Graph: "Line"})
 		db.FirstOrCreate(&areaGraph, entity.HardwareGraph{Graph: "Area"})
 		db.FirstOrCreate(&barGraph, entity.HardwareGraph{Graph: "Bar"})
-		db.FirstOrCreate(&colorMappingGraph, entity.HardwareGraph{Graph: "Color Mapping"})
+		db.FirstOrCreate(&colorMappingGraph, entity.HardwareGraph{Graph: "Mapping"})
 		db.FirstOrCreate(&stackedGraph, entity.HardwareGraph{Graph: "Stacked"})
 
 		// ----- สร้าง Parameter -----
 		paramhardware1 := entity.HardwareParameter{
 			Parameter:                "Formaldehyde",
-			HardwareParameterColorID: colorPurple.ID,
+			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 		}
 		paramhardware2 := entity.HardwareParameter{
 			Parameter:                "Temperature",
-			HardwareParameterColorID: colorBlue.ID,
-			HardwareGraphID:          areaGraph.ID,
+			HardwareParameterColorID: colorGray.ID,
+			HardwareGraphID:          defaultGraph.ID,
 		}
 		paramhardware3 := entity.HardwareParameter{
 			Parameter:                "Humidity",
-			HardwareParameterColorID: colorOrange.ID,
-			HardwareGraphID:          barGraph.ID,
+			HardwareParameterColorID: colorGray.ID,
+			HardwareGraphID:          defaultGraph.ID,
 		}
 		paramhardware4 := entity.HardwareParameter{
 			Parameter:                "Light",
-			HardwareParameterColorID: colorYellow.ID,
-			HardwareGraphID:          colorMappingGraph.ID,
+			HardwareParameterColorID: colorGray.ID,
+			HardwareGraphID:          defaultGraph.ID,
 		}
 		paramhardware5 := entity.HardwareParameter{
 			Parameter:                "Gas",
-			HardwareParameterColorID: colorGreen.ID,
-			HardwareGraphID:          stackedGraph.ID,
+			HardwareParameterColorID: colorGray.ID,
+			HardwareGraphID:          defaultGraph.ID,
 		}
 
 		db.FirstOrCreate(&paramhardware1, entity.HardwareParameter{Parameter: "Formaldehyde", HardwareGraphID: defaultGraph.ID})
-		db.FirstOrCreate(&paramhardware2, entity.HardwareParameter{Parameter: "Temperature", HardwareGraphID: areaGraph.ID})
-		db.FirstOrCreate(&paramhardware3, entity.HardwareParameter{Parameter: "Humidity", HardwareGraphID: barGraph.ID})
-		db.FirstOrCreate(&paramhardware4, entity.HardwareParameter{Parameter: "Light", HardwareGraphID: colorMappingGraph.ID})
-		db.FirstOrCreate(&paramhardware5, entity.HardwareParameter{Parameter: "Gas", HardwareGraphID: stackedGraph.ID})
+		db.FirstOrCreate(&paramhardware2, entity.HardwareParameter{Parameter: "Temperature", HardwareGraphID: defaultGraph.ID})
+		db.FirstOrCreate(&paramhardware3, entity.HardwareParameter{Parameter: "Humidity", HardwareGraphID: defaultGraph.ID})
+		db.FirstOrCreate(&paramhardware4, entity.HardwareParameter{Parameter: "Light", HardwareGraphID: defaultGraph.ID})
+		db.FirstOrCreate(&paramhardware5, entity.HardwareParameter{Parameter: "Gas", HardwareGraphID: defaultGraph.ID})
 	}
 
 	// Employees
