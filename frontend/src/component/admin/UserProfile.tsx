@@ -5,8 +5,9 @@ import { message } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useStateContext } from '../../contexts/ContextProvider';
 import avatar from '../../assets/admin/avatar3.png';
-import './FlowerButton.css'; // นำเข้า CSS
+import './FlowerButton.css'; // ถ้ามี css แบบเดิม
 import { GetUserDataByUserID } from '../../services/httpLogin';
+import { AiOutlineUser } from 'react-icons/ai';
 
 const UserProfile = () => {
   const { currentColor } = useStateContext();
@@ -14,8 +15,9 @@ const UserProfile = () => {
   const [fullName, setFullName] = useState('');
   const [roleName, setRoleName] = useState('');
   const [positionName, setPositionName] = useState('');
-  const [emailUser, setEmailUser] = useState('');
+  const [emailUser, setEmailUser] = useState(''); //@ts-ignore
   const [loading, setLoading] = useState<boolean>(true);
+
   const handleLogout = () => {
     localStorage.removeItem("isLogin");
     localStorage.removeItem("Role");
@@ -27,6 +29,17 @@ const UserProfile = () => {
       navigate("/login");
     }, 3500);
   };
+
+  const userProfileData = [
+    {
+      icon: <AiOutlineUser />,
+      title: 'My Profile',
+      desc: 'Account Settings',
+      iconColor: '#03C9D7',
+      iconBg: '#E5FAFB',
+    },
+  ];
+
   useEffect(() => {
     const fetchUser = async () => {
       const id = Number(localStorage.getItem("employeeid")); // ดึงจาก localStorage
@@ -48,21 +61,13 @@ const UserProfile = () => {
 
     fetchUser();
   }, []);
-  // if (loading) return <div>กำลังโหลดข้อมูลผู้ใช้...</div>;
-  // if (!fullName) return <div>ไม่พบข้อมูลผู้ใช้</div>;
-  // useEffect(() => {
-  //   const firstName = localStorage.getItem('firstnameuser') || '';
-  //   const lastName = localStorage.getItem('lastnameuser') || '';
-  //   setRoleName(localStorage.getItem('roleName') || '');
-  //   setPositionName(localStorage.getItem('positionuser') || '');
-  //   setEmailUser(localStorage.getItem('emailuser') || '');
-  //   setFullName(`${firstName} ${lastName}`);
-  // }, []);
 
   return (
     <div className="nav-item absolute right-1 top-16 bg-white dark:bg-[#42464D] p-8 rounded-lg w-96">
       <div className="flex justify-between items-center">
-        <p className="font-semibold text-lg dark:text-gray-200">User Profile</p>
+        <p className="font-semibold text-lg dark:text-gray-200">
+          {roleName || 'User Profile'}
+        </p>
         <Button
           icon={<MdOutlineCancel />}
           color="rgb(153, 171, 180)"
@@ -79,10 +84,32 @@ const UserProfile = () => {
         />
         <div>
           <p className="font-semibold text-xl dark:text-gray-200"> {fullName || 'ผู้ใช้'} </p>
-          <p className="text-gray-500 text-sm dark:text-gray-400">  {roleName|| 'ไม่มีพบตำแหน่ง' } </p>
-          <p className="text-gray-500 text-sm dark:text-gray-400">  {positionName|| 'ไม่มีพบอาชีพ' } </p>
-          <p className="text-gray-500 text-sm font-semibold dark:text-gray-400"> {emailUser|| 'ไม่มีพบอีเมล' } </p>
+          <p className="text-gray-500 text-sm dark:text-gray-400">  {roleName || 'ไม่มีพบตำแหน่ง'} </p>
+          <p className="text-gray-500 text-sm dark:text-gray-400">  {positionName || 'ไม่มีพบอาชีพ'} </p>
+          <p className="text-gray-500 text-sm font-semibold dark:text-gray-400"> {emailUser || 'ไม่มีพบอีเมล'} </p>
         </div>
+      </div>
+      <div>
+        {userProfileData.map((item, index) => (
+          <div
+            key={index}
+            onClick={() => navigate('/admin/profile')}
+            className="flex gap-5 border-b-1 border-color p-4 hover:bg-light-gray cursor-pointer dark:hover:bg-[#42464D]"
+          >
+            <button
+              type="button"
+              style={{ color: item.iconColor, backgroundColor: item.iconBg }}
+              className="text-xl rounded-lg p-3 hover:bg-light-gray"
+            >
+              {item.icon}
+            </button>
+
+            <div>
+              <p className="font-semibold dark:text-gray-200">{item.title}</p>
+              <p className="text-gray-500 text-sm dark:text-gray-400">{item.desc}</p>
+            </div>
+          </div>
+        ))}
       </div>
       <div className="mt-5">
         <Button
@@ -94,24 +121,7 @@ const UserProfile = () => {
           onClick={handleLogout}
         />
       </div>
-      {/* <div className="flower-wrapper">
-        <button className="btn" onClick={handleLogout}>
-          <div className="wrapper">
-            <p className="text">Flowers</p>
-
-            {[1, 2, 3, 4, 5, 6].map((num) => (
-              <div className={`flower flower${num}`} key={num}>
-                <div className="petal one" />
-                <div className="petal two" />
-                <div className="petal three" />
-                <div className="petal four" />
-              </div>
-            ))}
-          </div>
-        </button>
-      </div> */}
     </div>
-
   );
 };
 

@@ -4,6 +4,8 @@ import { BsBoxSeam, BsCurrencyDollar, BsShield, BsChatLeft } from 'react-icons/b
 import { FiHome } from 'react-icons/fi'; import { MdWaterDrop, MdBarChart, MdManageAccounts, MdSensors } from 'react-icons/md'; import { AiOutlineDatabase, AiOutlineCalendar } from 'react-icons/ai';
 import { MdOutlineSupervisorAccount } from 'react-icons/md';
 import { HiOutlineRefresh } from 'react-icons/hi';
+import { BiCube } from "react-icons/bi";
+import { AiOutlineSetting } from "react-icons/ai";
 import { TiTick } from 'react-icons/ti';
 import { GrLocation } from 'react-icons/gr';
 import { AxisModel } from '@syncfusion/ej2-react-charts';
@@ -560,6 +562,18 @@ export const links = [
         name: 'Hardware',
         label: 'ข้อมูลเซนเซอร์',
         icon: <MdSensors />,
+        subMenu: [
+          {
+            name: 'hardware',
+            label: 'ข้อมูลเซนเซอร์ภายในห้อง',
+            icon: <BiCube />,
+          },
+          {
+            name: 'management',
+            label: 'จัดการข้อมูลเซนเซอร์',
+            icon: <AiOutlineSetting />,
+          },
+        ],
       },
       {
         name: 'People',
@@ -579,7 +593,7 @@ export const links = [
       },
     ],
   },
-  
+
 ];
 
 export const cartData = [
