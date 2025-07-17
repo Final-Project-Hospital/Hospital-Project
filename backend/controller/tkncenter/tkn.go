@@ -55,16 +55,28 @@ func CreateTKN(c *gin.Context) {
 }
 
 func GetTKN(c *gin.Context) {
-	var tkn []entity.EnvironmentalRecord
-
 	db := config.DB()
 
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?", "Total Kjeldahl Nitrogen").First(&parameter).Error; err != nil {
+		if err != nil {
+    		fmt.Println("Parameter not found:", err)
+		} else {
+    		fmt.Println("Parameter ID:", parameter.ID)
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Parameter TKN not found"})
+		return
+	}
+	
+
+	var tkn []entity.EnvironmentalRecord
 	result := db.Preload("BeforeAfterTreatment").
 		Preload("Environment").
 		Preload("Parameter").
 		Preload("Standard").
 		Preload("Unit").
 		Preload("Employee").
+		Where("parameter_id = ?", parameter.ID).
 		Find(&tkn)
 
 	if result.Error != nil {
@@ -74,6 +86,7 @@ func GetTKN(c *gin.Context) {
 
 	c.JSON(http.StatusOK, tkn)
 }
+
 
 func GetTKNbyID(c *gin.Context) {
 	id := c.Param("id")

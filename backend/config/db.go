@@ -398,4 +398,41 @@ func SetupDatabase() {
 	BodParameter := entity.Parameter{ParameterName: "Biochemical Oxygen Demand"}
 	db.FirstOrCreate(&BodParameter, &entity.Parameter{ParameterName: "Biochemical Oxygen Demand"})
 
+	tknBeforeData := entity.EnvironmentalRecord{
+		Date: time.Date(2025, 7, 1, 9, 0, 0, 0, time.UTC), // ก่อนบำบัด 1 ชั่วโมง
+		Data: 12,
+		Note: "ค่าตรวจวัด TKN ก่อนบำบัด",
+
+		BeforeAfterTreatmentID: 1, // ก่อน
+		EnvironmentID:          1, // น้ำเสีย
+		ParameterID:            4, // Total Kjeldahl Nitrogen
+		StandardID:             1,
+		UnitID:                 1,
+		EmployeeID:             1,
+	}
+
+	db.FirstOrCreate(&tknBeforeData, entity.EnvironmentalRecord{
+		Date:                 tknBeforeData.Date,
+		ParameterID:          tknBeforeData.ParameterID,
+		BeforeAfterTreatmentID: tknBeforeData.BeforeAfterTreatmentID,
+	})
+
+	tknData := entity.EnvironmentalRecord{
+		Date: time.Date(2025, 7, 1, 10, 0, 0, 0, time.UTC),
+		Data: 7,
+		Note: "ค่าตรวจวัด TKN หลังบำบัด",
+
+		BeforeAfterTreatmentID: 2, // หลัง
+		EnvironmentID:          1, // น้ำเสีย
+		ParameterID:            4, // Total Kjeldahl Nitrogen
+		StandardID:             1,
+		UnitID:                 1,
+		EmployeeID:             1,
+	}
+	db.FirstOrCreate(&tknData, entity.EnvironmentalRecord{
+		Date:                 tknData.Date,
+		ParameterID:          tknData.ParameterID,
+		BeforeAfterTreatmentID: tknData.BeforeAfterTreatmentID,
+	})
+
 }

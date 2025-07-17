@@ -33,6 +33,7 @@ const TKNdataviz: React.FC = () => {
       setLoading(true);
       try {
         const response = await ReadTKN();
+        console.log(response);
         if (response) {
           setData(response);
 
@@ -134,8 +135,14 @@ const TKNdataviz: React.FC = () => {
     {
       title: 'จัดการข้อมูล',
       key: 'action',
-      render: (_, record) => (<a href={`#edit/${record.ID}`}>แก้ไข</a>),
-    },
+      render: (_, record) => (
+        <>
+          <a href={`update-tkn/${record.ID}`} style={{ marginRight: '10px' }}>แก้ไข</a>
+          <a href={`delete-tkn/${record.ID}`} style={{ color: 'red' }}>ลบ</a>
+        </>
+      ),
+    }
+
   ];
 
   return (
@@ -191,7 +198,7 @@ const TKNdataviz: React.FC = () => {
       </div>
 
       <div className="tkn-data">
-        <h1 className="tkn-title-text">TDS DATA</h1>
+        <h1 className="tkn-title-text">TKN DATA</h1>
         <div className="search-box">
           <Input
             placeholder="ค้นหา"
