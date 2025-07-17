@@ -38,27 +38,27 @@ func CreateBod(c *gin.Context) {
 	db := config.DB()
 
 	if input.CustomUnit != "" {
-	var existingUnit entity.Unit
-	if err := db.Where("unit_name = ?", input.CustomUnit).First(&existingUnit).Error; err == nil {
-		// เจอ unit ที่มีอยู่แล้ว
-		input.UnitID = existingUnit.ID
-	} else if errors.Is(err, gorm.ErrRecordNotFound) {
-		// ไม่เจอ unit -> สร้างใหม่
-		newUnit := entity.Unit{
-			UnitName: input.CustomUnit,
-		}
-		if err := db.Create(&newUnit).Error; err != nil {
-			fmt.Println(" ไม่สามารถสร้างหน่วยใหม่ได้:", err) // แค่ขึ้น log
-			// ไม่คืน error ไปยัง frontend
+		var existingUnit entity.Unit
+		if err := db.Where("unit_name = ?", input.CustomUnit).First(&existingUnit).Error; err == nil {
+			// เจอ unit ที่มีอยู่แล้ว
+			input.UnitID = existingUnit.ID
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			// ไม่เจอ unit -> สร้างใหม่
+			newUnit := entity.Unit{
+				UnitName: input.CustomUnit,
+			}
+			if err := db.Create(&newUnit).Error; err != nil {
+				fmt.Println(" ไม่สามารถสร้างหน่วยใหม่ได้:", err) // แค่ขึ้น log
+				// ไม่คืน error ไปยัง frontend
+			} else {
+				input.UnitID = newUnit.ID
+			}
 		} else {
-			input.UnitID = newUnit.ID
+			// เกิด error อื่นขณะเช็กหน่วย
+			fmt.Println(" เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err) // แค่ขึ้น log
+			// ไม่คืน error ไปยัง frontend
 		}
-	} else {
-		// เกิด error อื่นขณะเช็กหน่วย
-		fmt.Println(" เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err) // แค่ขึ้น log
-		// ไม่คืน error ไปยัง frontend
 	}
-}
 
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?", "Biochemical Oxygen Demand").First(&parameter).Error; err != nil {

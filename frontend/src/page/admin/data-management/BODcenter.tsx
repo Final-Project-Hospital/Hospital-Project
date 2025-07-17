@@ -6,25 +6,19 @@ import { BodcenterInterface } from '../../../interface/IBodCenter';
 import { createBOD } from '../../../services/bodService';
 import { ListBeforeAfterTreatment, ListStandard, ListUnit } from '../../../services/index';
 import { ListBeforeAfterTreatmentInterface } from '../../../interface/IBeforeAfterTreatment';
-import { ListStandardInterface } from '../../../interface/IStandard';
+// import { ListStandardInterface } from '../../../interface/IStandard';
 import { ListUnitInterface } from '../../../interface/IUnit';
 import { GetfirstBOD } from '../../../services/bodService';
-import {
-    ListMiddleStandard,
-    ListRangeStandard,
-    AddMiddleStandard,
-    AddRangeStandard,
-} from '../../../services/index';
+import {ListMiddleStandard,ListRangeStandard,AddMiddleStandard,AddRangeStandard,} from '../../../services/index';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../interface/IStandard';
+
+
 const { Option } = Select;
-
-
-
 const TDSCentralForm: React.FC = () => {
     const [form] = Form.useForm();
     const [beforeAfterOptions, setBeforeAfterOptions] = useState<ListBeforeAfterTreatmentInterface[]>([]);
     const [unitOptions, setUnitOptions] = useState<ListUnitInterface[]>([]);
-    const [standardOptions, setStandardOptions] = useState<ListStandardInterface[]>([]);
+    // const [standardOptions, setStandardOptions] = useState<ListStandardInterface[]>([]);
     const [selectedTreatmentID, setSelectedTreatmentID] = useState<number | null>(null);
     const [messageApi, contextHolder] = message.useMessage();
     // const [firstBOD, setfirstBOD] = useState<BodcenterInterface | null>(null);
@@ -206,7 +200,7 @@ const TDSCentralForm: React.FC = () => {
                 form.resetFields();
                 setTimeout(() => {
                     window.location.reload();
-                }, 1000); // รอ 1 วินาทีก่อนรีเฟรช เพื่อให้ข้อความ success แสดงทัน
+                }, 1500); // รอ 1 วินาทีก่อนรีเฟรช เพื่อให้ข้อความ success แสดงทัน
             } else {
                 message.error('ไม่สามารถบันทึกข้อมูลก่อนหรือหลังได้');
             }
@@ -231,7 +225,7 @@ const TDSCentralForm: React.FC = () => {
                 form.resetFields();
                 setTimeout(() => {
                     window.location.reload();
-                }, 1000); // รอ 1 วินาทีก่อนรีเฟรช
+                }, 1500); // รอ 1 วินาทีก่อนรีเฟรช
             } else {
                 throw new Error(`การบันทึกข้อมูลไม่สำเร็จ สถานะ: ${response.status}`);
             }
@@ -361,7 +355,7 @@ const TDSCentralForm: React.FC = () => {
                                 )}
 
                                 {standardType === 'range' && useCustomStandard && (
-                                    <div className="ph-fornt-small">
+                                    <div className="bod-fornt-small">
                                         <Form.Item
                                             label="ค่าต่ำสุด (Min)"
                                             name="customMin"

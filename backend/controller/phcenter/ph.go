@@ -1,14 +1,18 @@
 package phcenter
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
+
 	//"fmt"
 	"time"
 
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // func CreatePH(c *gin.Context) {
@@ -40,7 +44,7 @@ import (
 // 		Data:                   input.Data,
 // 		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
 // 		EnvironmentID:          environment.ID,
-// 		ParameterID:            parameter.ID, 
+// 		ParameterID:            parameter.ID,
 // 		StandardID:             input.StandardID,
 // 		UnitID:                 input.UnitID,
 // 		EmployeeID:             input.EmployeeID,
@@ -71,7 +75,7 @@ func CreatePH(c *gin.Context) {
 	}
 
 	standardID := uint(rawData["StandardID"].(float64))
-	unitID := uint(rawData["UnitID"].(float64))
+	// unitID := uint(rawData["UnitID"].(float64))
 	employeeID := uint(rawData["EmployeeID"].(float64))
 	note := ""
 	if rawData["Note"] != nil {
@@ -81,6 +85,29 @@ func CreatePH(c *gin.Context) {
 
 	// เชื่อมฐานข้อมูล
 	db := config.DB()
+	var unitID uint
+	if rawUnit, ok := rawData["UnitID"]; ok && rawUnit != nil {
+		if unitFloat, ok := rawUnit.(float64); ok {
+			unitID = uint(unitFloat)
+		}
+	}
+
+	customUnit, hasCustomUnit := rawData["CustomUnit"].(string)
+	if hasCustomUnit && customUnit != "" {
+		var existingUnit entity.Unit
+		if err := db.Where("unit_name = ?", customUnit).First(&existingUnit).Error; err == nil {
+			unitID = existingUnit.ID
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			newUnit := entity.Unit{UnitName: customUnit}
+			if err := db.Create(&newUnit).Error; err != nil {
+				fmt.Println("ไม่สามารถสร้างหน่วยใหม่ได้:", err)
+			} else {
+				unitID = newUnit.ID
+			}
+		} else {
+			fmt.Println("เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err)
+		}
+	}
 
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?", "Potential of Hydrogen").First(&parameter).Error; err != nil {
