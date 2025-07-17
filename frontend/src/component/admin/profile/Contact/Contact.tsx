@@ -7,7 +7,7 @@ import type { UsersInterface } from "../../../../interface/IUser";
 
 const { Text, Link } = Typography;
 
-const Contact = () => {
+const Contact = ({ refreshKey = 0 }: { refreshKey?: number }) => {
   const { t } = useTranslation();
   const [phone, setPhone] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -23,7 +23,7 @@ const Contact = () => {
       if (typeof employee === "object" && employee !== null) {
         let phoneValue = "";
         if (employee.Phone !== undefined && employee.Phone !== null) {
-          phoneValue = String(employee.Phone); // แปลงเป็น string เสมอ
+          phoneValue = String(employee.Phone);
         }
         setPhone(phoneValue);
         setEmail(employee.Email || "");
@@ -35,13 +35,13 @@ const Contact = () => {
       }
     };
     fetchEmployeeData();
-  }, [employeeid]);
+  }, [employeeid, refreshKey]);
 
   return (
     <Card
       title={t("Contact")}
       className="w-full"
-      style={{ width: "100%" }} // บังคับให้เต็ม 100%
+      style={{ width: "100%" }}
       classNames={{ body: "pt-2", header: "border-0" }}
       bordered={false}
     >

@@ -81,3 +81,45 @@ func GetDataByUserID(c *gin.Context) {
 		"user":    user,
 	})
 }
+
+func UpdateEmployeeByID(c *gin.Context) {
+	db := config.DB()
+	idStr := c.Param("EmployeeID")
+
+	if idStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาระบุ EmployeeID"})
+		return
+	}
+
+	EmployeeID, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "EmployeeID ต้องเป็นตัวเลข"})
+		return
+	}
+
+	var employee entity.Employee
+	if err := db.First(&employee, uint(EmployeeID)).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบผู้ใช้ที่มี EmployeeID ดังกล่าว"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "เกิดข้อผิดพลาดในการดึงข้อมูล", "details": err.Error()})
+		}
+		return
+	}
+
+	var updateData map[string]interface{}
+	if err := c.ShouldBindJSON(&updateData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "รูปแบบข้อมูลไม่ถูกต้อง", "details": err.Error()})
+		return
+	}
+
+	if err := db.Model(&employee).Updates(updateData).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปเดตข้อมูลไม่สำเร็จ", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "อัปเดตข้อมูลสำเร็จ",
+		"user":    employee,
+	})
+}

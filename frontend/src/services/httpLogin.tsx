@@ -1,6 +1,6 @@
 import axios from "axios";
 import { LoginInterface } from "../interface/Login"
-import { UsersInterface } from "../interface/IUser"; 
+import { UsersInterface } from "../interface/IUser";
 
 const apiUrl = "http://localhost:8000";
 
@@ -12,6 +12,11 @@ function getAuthHeaders() {
     "Content-Type": "application/json",
   };
 }
+const getAuthHeader = () => {
+  const token = localStorage.getItem("token");
+  const tokenType = localStorage.getItem("token_type");
+  return { Authorization: `${tokenType} ${token}` };
+};
 
 const requestOptions = {
   headers: getAuthHeaders(),
@@ -28,9 +33,9 @@ const getHeaders = (): Record<string, string> => {
 
 
 async function AddLogin(data: LoginInterface) {
-  return await axios  
+  return await axios
     .post(`${apiUrl}/login`, data, requestOptions)
-    .then((res) => res) 
+    .then((res) => res)
     .catch((e) => e.response);
 }
 
@@ -50,6 +55,35 @@ export const GetUserDataByUserID = async (
       error.response?.data || error.message
     );
     return false;
+  }
+};
+
+export const UpdateEmployeeByID = async (
+  EmployeeID: number,
+  data: Partial<UsersInterface>
+): Promise<UsersInterface | null> => {
+  try {
+    const response = await axios.patch(
+      `${apiUrl}/employees/${EmployeeID}`,
+      data,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      // ถ้ากลับมาเป็น { user: ... } ให้ใช้ response.data.user
+      return response.data.user || response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error updating employee:", error);
+    return null;
   }
 };
 

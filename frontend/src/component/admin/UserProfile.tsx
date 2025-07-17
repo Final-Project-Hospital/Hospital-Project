@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { MdOutlineCancel } from 'react-icons/md';
-import { Button } from '.';
+import { Button } from '.'; // ปุ่ม custom
 import { message } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useStateContext } from '../../contexts/ContextProvider';
 import avatar from '../../assets/admin/avatar3.png';
-import './FlowerButton.css'; // ถ้ามี css แบบเดิม
+import './FlowerButton.css';
 import { GetUserDataByUserID } from '../../services/httpLogin';
 import { AiOutlineUser } from 'react-icons/ai';
 
@@ -15,7 +15,8 @@ const UserProfile = () => {
   const [fullName, setFullName] = useState('');
   const [roleName, setRoleName] = useState('');
   const [positionName, setPositionName] = useState('');
-  const [emailUser, setEmailUser] = useState(''); //@ts-ignore
+  const [emailUser, setEmailUser] = useState('');
+  const [profileImg, setProfileImg] = useState<string>(avatar);//@ts-ignore
   const [loading, setLoading] = useState<boolean>(true);
 
   const handleLogout = () => {
@@ -42,7 +43,7 @@ const UserProfile = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const id = Number(localStorage.getItem("employeeid")); // ดึงจาก localStorage
+      const id = Number(localStorage.getItem("employeeid"));
       if (!id || isNaN(id)) {
         console.error("ไม่มีหรือ ID ไม่ถูกต้อง");
         setLoading(false);
@@ -50,11 +51,19 @@ const UserProfile = () => {
       }
 
       const res = await GetUserDataByUserID(id);
-      if (res !== false) {
+      if (res !== false && res) {
         setFullName(`${res.FirstName} ${res.LastName}`);
         setPositionName(res.Position?.Position ?? 'ไม่มีพบอาชีพ');
         setRoleName(res.Role?.RoleName ?? 'ไม่มีพบตำแหน่ง');
-        setEmailUser(`${res.Email}`)
+        setEmailUser(`${res.Email}`);
+        // ถ้ามีรูปใช้ profile base64, ถ้าไม่มี fallback เป็น avatar
+        if (res.Profile && typeof res.Profile === "string" && res.Profile.length > 10) {
+          setProfileImg(res.Profile);
+        } else {
+          setProfileImg(avatar);
+        }
+      } else {
+        setProfileImg(avatar);
       }
       setLoading(false);
     };
@@ -78,9 +87,10 @@ const UserProfile = () => {
       </div>
       <div className="flex gap-5 items-center mt-6 border-color border-b-1 pb-6">
         <img
-          className="rounded-full h-24 w-24"
-          src={avatar}
+          className="rounded-full h-24 w-24 object-cover"
+          src={profileImg}
           alt="user-profile"
+          onError={(e) => { (e.target as HTMLImageElement).src = avatar }}
         />
         <div>
           <p className="font-semibold text-xl dark:text-gray-200"> {fullName || 'ผู้ใช้'} </p>
@@ -103,7 +113,6 @@ const UserProfile = () => {
             >
               {item.icon}
             </button>
-
             <div>
               <p className="font-semibold dark:text-gray-200">{item.title}</p>
               <p className="text-gray-500 text-sm dark:text-gray-400">{item.desc}</p>
