@@ -1,10 +1,6 @@
 import axios from "axios";
-import { BodcenterInterface } from "../interface/IBodCenter";
+import { FogcenterInterface } from "../interface/IFogCenter";
 const apiUrl = "http://localhost:8000";
-
-// const Authorization = localStorage.getItem("token");
-
-// const Bearer = localStorage.getItem("token_type");
 
 const getAuthHeader = () => {
   const token = localStorage.getItem("token");
@@ -12,23 +8,12 @@ const getAuthHeader = () => {
   return { Authorization: `${tokenType} ${token}` };
 };
 
-// const requestOptions = {
 
-//   headers: {
-
-//     "Content-Type": "application/json",
-
-//     Authorization: `${Bearer} ${Authorization}`,
-
-//   },
-
-// };
-
-export const createBOD = async (
-  data: BodcenterInterface
+export const createFOG = async (
+  data: FogcenterInterface
 ): Promise<any | null> => {
   try {
-    const response = await axios.post(`${apiUrl}/create-bod`, data, {
+    const response = await axios.post(`${apiUrl}/create-fog`, data, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -42,14 +27,14 @@ export const createBOD = async (
       return null;
     }
   } catch (error: any) {
-    console.error("Error creating BOD record:", error.response?.data || error.message);
+    console.error("Error creating FOG record:", error.response?.data || error.message);
     return null;
   }
 };
-export const GetfirstBOD = async (
+export const GetfirstFOG = async (
 ): Promise<any | null> => {
   try {
-    const response = await axios.get(`${apiUrl}/get-first-bod`,{
+    const response = await axios.get(`${apiUrl}/get-first-fog`,{
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),

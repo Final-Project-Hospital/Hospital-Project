@@ -1,4 +1,4 @@
-export interface BodcenterInterface {
+export interface FogcenterInterface {
     ID?: number;
     Date?: string
     Data?:number;
@@ -7,5 +7,4 @@ export interface BodcenterInterface {
     StandardID?:number;
     UnitID?:number;
     EmployeeID?:number;
-    CustomUnit?:string;
 }

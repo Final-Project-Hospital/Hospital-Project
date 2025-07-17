@@ -96,8 +96,8 @@ func CreatePH(c *gin.Context) {
 
 	if beforeAfterID == 3 {
 		// สร้าง 2 record แยก ก่อน และ หลัง
-		valueBefore := float32(rawData["valueBefore"].(float64))
-		valueAfter := float32(rawData["valueAfter"].(float64))
+		valueBefore := rawData["valueBefore"].(float64)
+		valueAfter := rawData["valueAfter"].(float64)
 
 		recordBefore := entity.EnvironmentalRecord{
 			Date:                   dateParsed,
@@ -137,7 +137,7 @@ func CreatePH(c *gin.Context) {
 	}
 
 	// สร้างกรณีทั่วไป 1 record
-	data := float32(rawData["Data"].(float64))
+	data := rawData["Data"].(float64)
 
 	record := entity.EnvironmentalRecord{
 		Date:                   dateParsed,
