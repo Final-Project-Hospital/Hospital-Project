@@ -10,17 +10,20 @@ import { LeftOutlined, SearchOutlined } from "@ant-design/icons";
 import Table, { ColumnsType } from "antd/es/table";
 
 const TKNdataviz: React.FC = () => {
+  //chart
   const [chartTypeBefore, setChartTypeBefore] = useState<'line' | 'bar'>('line');
   const [chartTypeAfter, setChartTypeAfter] = useState<'line' | 'bar'>('line');
   const [chartTypeCompare1, setChartTypeCompare1] = useState<'line' | 'bar'>('line');
   const [chartTypeCompare2, setChartTypeCompare2] = useState<'line' | 'bar'>('line');
 
+  //fetchdata
   const [data, setData] = useState<EnvironmentalRecordInterface[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
   const [compareData, setCompareData] = useState<{ date: string; before: number; after: number }[]>([]);
   const [beforeData, setBeforeData] = useState<{ date: string; data: number }[]>([]);
   const [afterData, setAfterData] = useState<{ date: string; data: number }[]>([]);
+
+  //search
   const [selectedMonth, setSelectedMonth] = useState<dayjs.Dayjs | null>(null);
   const [selectedYear, setSelectedYear] = useState<dayjs.Dayjs | null>(null);
   const [search, setSearch] = useState("");
@@ -28,7 +31,6 @@ const TKNdataviz: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      setError(null);
       try {
         const response = await ReadTKN();
         if (response) {
@@ -65,11 +67,10 @@ const TKNdataviz: React.FC = () => {
           setAfterData(after);
           setCompareData(compare);
         } else {
-          setError("ไม่พบข้อมูล TKN");
+          console.error("ไม่พบข้อมูล TKN");
         }
       } catch (err) {
         console.error("Error fetching TKN data:", err);
-        setError("เกิดข้อผิดพลาดในการดึงข้อมูล");
       } finally {
         setLoading(false);
       }
