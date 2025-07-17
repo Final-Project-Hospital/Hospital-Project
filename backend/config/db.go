@@ -357,4 +357,7 @@ func SetupDatabase() {
 	BodParameter := entity.Parameter{ParameterName: "Biochemical Oxygen Demand"}
 	db.FirstOrCreate(&BodParameter, &entity.Parameter{ParameterName: "Biochemical Oxygen Demand"})
 
+	FogParameter := entity.Parameter{ParameterName: "Fat Oil and Grease"}
+	db.FirstOrCreate(&FogParameter, &entity.Parameter{ParameterName: "Fat Oil and Grease"})
+
 }

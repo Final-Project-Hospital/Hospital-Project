@@ -30,6 +30,7 @@ const PH = Loadable(lazy(() => import("../page/admin/data-management/PHcenter"))
 const BOD = Loadable(lazy(() => import("../page/admin/data-management/BODcenter")));
 const TKN = Loadable(lazy(() => import("../page/admin/data-management/TKNcenter")));
 const TS = Loadable(lazy(() => import("../page/admin/data-management/TScenter") ));
+const FOG = Loadable(lazy(() => import("../page/admin/data-management/FOGcenter")));
 
 
 const UserRoutes = (): RouteObject[] => [
@@ -78,12 +79,12 @@ const AdminRoutes = (): RouteObject[] => [
         path: "data-management/water",
         element: <EnvironmentTabs />, // Header + Tabs
         children: [
-          { index: true, element: <BOD /> },         // /admin/environment
+          { index: true, element: <PH /> },         // /admin/environment
           { path: "ph", element: <PH /> },            // /admin/environment/ph
           { path: "bod", element: <BOD /> },          // /admin/environment/bod
           // { path: "tds", element: <TDS /> },          // /admin/environment/tds
           { path: "ts", element: <TS /> },
-          // { path: "fog", element: <FOG /> },
+          { path: "fog", element: <FOG /> },
           { path: "tkn", element: <TKN /> },
         ],
       },

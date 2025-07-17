@@ -8,6 +8,7 @@ import { ListBeforeAfterTreatment, ListStandard, ListUnit } from '../../../servi
 import { ListBeforeAfterTreatmentInterface } from '../../../interface/IBeforeAfterTreatment';
 import { ListStandardInterface } from '../../../interface/IStandard';
 import { ListUnitInterface } from '../../../interface/IUnit';
+import { GetfirstBOD } from '../../../services/bodService';
 
 const { Option } = Select;
 
@@ -19,9 +20,10 @@ const TDSCentralForm: React.FC = () => {
     const [unitOptions, setUnitOptions] = useState<ListUnitInterface[]>([]);
     const [standardOptions, setStandardOptions] = useState<ListStandardInterface[]>([]);
     const [selectedTreatmentID, setSelectedTreatmentID] = useState<number | null>(null);
-    const [messageApi,contextHolder] = message.useMessage();
+    const [messageApi, contextHolder] = message.useMessage();
+    // const [firstBOD, setfirstBOD] = useState<BodcenterInterface | null>(null);
     // const [BodData, setBodData] = useState<BodcenterInterface | null>(null);
-    // const [isOtherStandardSelected, setIsOtherStandardSelected] = useState(false);
+    const [isOtherUnitSelected, setIsOtherunitSelected] = useState(false);
 
     const renderCustomTreatmentLabel = (text: string) => {
         const colored = (
@@ -30,12 +32,32 @@ const TDSCentralForm: React.FC = () => {
 
         return (
             <>
-                ค่า pH บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
+                ค่า BOD บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
             </>
         );
     };
 
     useEffect(() => {
+        const GetfirstrowBOD = async () => {
+            try {
+                const responfirstBOD = await GetfirstBOD();
+                if (responfirstBOD.status === 200) {
+                    const data = responfirstBOD.data;
+                    // setfirstBOD(data);
+                    console.log(data);
+                    form.setFieldsValue({
+                        unit: data.UnitID,
+                        standard: data.StandardID,
+                    });
+                } else {
+                    message.error("ไม่สามารถดึงข้อมูลการนัดหมายได้ สถานะ: " + responfirstBOD.status);
+                }
+            } catch (error) {
+                console.error("Error fetching severity levels:", error);
+                message.error("เกิดข้อผิดพลาดในการดึงข้อมูลการนัดหมาย");
+            }
+
+        };
         const fetchSelectBoxData = async () => {
             const [beforeAfter, units, standards] = await Promise.all([
                 ListBeforeAfterTreatment(),
@@ -47,7 +69,7 @@ const TDSCentralForm: React.FC = () => {
             if (units) setUnitOptions(units);
             if (standards) setStandardOptions(standards);
         };
-
+        GetfirstrowBOD();
         fetchSelectBoxData();
     }, []);
 
@@ -62,13 +84,18 @@ const TDSCentralForm: React.FC = () => {
             .hour(dayjs(values.time).hour())
             .minute(dayjs(values.time).minute())
             .second(0);
+        // ตรวจสอบค่ามาตรฐาน
+        const isOther = values.unit === 'other';
+        const unitID = isOther ? null : values.unit;
+        const customUintValue = isOther ? values.customUnit : null;
         const BodData: BodcenterInterface = {
-            Date: combinedDateTime.format('YYYY-MM-DD HH:mm:ss'), // หรือ .format('YYYY-MM-DDTHH:mm:ss')
+            Date: combinedDateTime.toISOString(),
             Data: values.data,
             Note: values.note,
             BeforeAfterTreatmentID: values.before_after,
             StandardID: values.standard,
-            UnitID: values.unit,
+            UnitID: unitID,
+            CustomUnit: customUintValue, // สมมุติว่า backend รองรับ
             EmployeeID: employeeID,
         }
         const response = await createBOD(BodData);
@@ -92,11 +119,6 @@ const TDSCentralForm: React.FC = () => {
                     form={form}
                     layout="vertical"
                     onFinish={handleFinish}
-                // initialValues={{
-                //     unit: 'mg/L',
-                //     standard: '500',
-                //     process: 'ค่า TDS บริเวณบ่อพักน้ำทิ้งก่อนเข้าระบบบำบัด',
-                // }}
                 >
                     <div className="bod-form-group">
                         <Form.Item label="วันที่บันทึกข้อมูล" name="date">
@@ -111,16 +133,42 @@ const TDSCentralForm: React.FC = () => {
                     <div className="bod-form-group">
                         <Form.Item
                             label="หน่วยที่วัด"
-                            name="unit"
-                            rules={[{ required: true, message: 'กรุณาเลือกหน่วยที่วัด' }]}
+                            required
                         >
-                            <Select placeholder="เลือกหน่วย">
-                                {unitOptions.map((u) => (
-                                    <Option key={u.ID} value={u.ID}>
-                                        {u.UnitName}
-                                    </Option>
-                                ))}
-                            </Select>
+                            <Form.Item
+                                name="unit"
+                                noStyle
+                                rules={[{ required: true, message: 'กรุณาเลือกหน่วยที่วัด' }]}
+                            >
+                                <Select
+                                    placeholder="เลือกหน่วย"
+                                    onChange={(value) => {
+                                        setIsOtherunitSelected(value === 'other');
+                                        if (value !== 'other') {
+                                            form.setFieldsValue({ customUnit: undefined });
+                                        }
+                                    }}
+                                >
+                                    {unitOptions.map((u) => (
+                                        <Option key={u.ID} value={u.ID}>
+                                            {u.UnitName}
+                                        </Option>
+                                    ))}
+                                    <Option value="other">กำหนดหน่วยเอง</Option>
+                                </Select>
+                            </Form.Item>
+                            {isOtherUnitSelected && (
+                                <Form.Item
+                                    name="customUnit"
+                                    rules={[{ required: true, message: 'กรุณากรอกหน่วย' }]}
+                                    style={{ marginTop: '8px' }}
+                                >
+                                    <Input
+                                        style={{ width: '100%' }}
+                                        placeholder="กรอกหน่วยกำหนดเอง"
+                                    />
+                                </Form.Item>
+                            )}
                         </Form.Item>
 
                         <Form.Item
@@ -141,72 +189,75 @@ const TDSCentralForm: React.FC = () => {
                     </div>
 
                     <div className="bod-form-group">
-                        <Form.Item
-                            label="ก่อน / หลัง / ก่อนเเละหลังบำบัด"
-                            name="before_after"
-                            rules={[{ required: true, message: 'กรุณาเลือกสถานะก่อน / หลัง / ก่อนเเละหลังบำบัด' }]}
-                        >
-                            <Select
-                                placeholder="เลือกสถานะ"
-                                onChange={(value) => {
-                                    setSelectedTreatmentID(value);
-                                }}
-                            >
-                                {beforeAfterOptions.map((b) => (
-                                    <Option key={b.ID} value={b.ID}>
-                                        {renderCustomTreatmentLabel(b.TreatmentName || '')}
-                                    </Option>
-                                ))}
-                            </Select>
-
-                        </Form.Item>
-                        {selectedTreatmentID === 3 ? (
-                            <div style={{ display: 'flex', gap: '30px' }}>
-                                <Form.Item
-                                    label="ค่าที่วัดได้ก่อนบำบัด"
-                                    name="valueBefore"
-                                    rules={[{ required: true, message: 'กรุณากรอกค่าก่อนบำบัด' }]}
-                                    style={{ flex: 1 }}
-                                >
-                                    <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าก่อนบำบัด" />
-                                </Form.Item>
-
-                                <Form.Item
-                                    label="ค่าที่วัดได้หลังบำบัด"
-                                    name="valueAfter"
-                                    rules={[{ required: true, message: 'กรุณากรอกค่าหลังบำบัด' }]}
-                                    style={{ flex: 1 }}
-                                >
-                                    <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าหลังบำบัด" />
-                                </Form.Item>
-                            </div>
-                        ) : (
+                        <div className='bod-from-mini'>
                             <Form.Item
-                                label="ค่าที่วัดได้"
-                                name="data"
-                                rules={[{ required: true, message: 'กรุณากรอกค่าที่วัดได้' }]}
+                                label="ก่อน / หลัง / ก่อนเเละหลังบำบัด"
+                                name="before_after"
+                                rules={[{ required: true, message: 'กรุณาเลือกสถานะก่อน / หลัง / ก่อนเเละหลังบำบัด' }]}
                             >
-                                <InputNumber style={{ width: '100%' }} placeholder="กรุณากรอกค่าที่วัดได้" />
+                                <Select
+                                    placeholder="เลือกสถานะ"
+                                    onChange={(value) => {
+                                        setSelectedTreatmentID(value);
+                                    }}
+                                >
+                                    {beforeAfterOptions.map((b) => (
+                                        <Option key={b.ID} value={b.ID}>
+                                            {renderCustomTreatmentLabel(b.TreatmentName || '')}
+                                        </Option>
+                                    ))}
+                                </Select>
                             </Form.Item>
-                        )}
+                        </div>
+                        <div className='bod-from-mini'>
+                            {selectedTreatmentID === 3 ? (
+                                <div style={{ display: 'flex', gap: '30px' }}>
+                                    <Form.Item
+                                        label="ค่าที่วัดได้ก่อนบำบัด"
+                                        name="valueBefore"
+                                        rules={[{ required: true, message: 'กรุณากรอกค่าก่อนบำบัด' }]}
+                                        style={{ flex: 1 }}
+                                    >
+                                        <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าก่อนบำบัด" />
+                                    </Form.Item>
+
+                                    <Form.Item
+                                        label="ค่าที่วัดได้หลังบำบัด"
+                                        name="valueAfter"
+                                        rules={[{ required: true, message: 'กรุณากรอกค่าหลังบำบัด' }]}
+                                        style={{ flex: 1 }}
+                                    >
+                                        <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าหลังบำบัด" />
+                                    </Form.Item>
+                                </div>
+                            ) : (
+                                <Form.Item
+                                    label="ค่าที่วัดได้"
+                                    name="data"
+                                    rules={[{ required: true, message: 'กรุณากรอกค่าที่วัดได้' }]}
+                                >
+                                    <InputNumber style={{ width: '100%' }} placeholder="กรุณากรอกค่าที่วัดได้" />
+                                </Form.Item>
+                            )}
+                        </div>
                     </div>
-                    <div className="form-group">
+                    <div className="bod-form-group">
                         <Form.Item label="หมายเหตุ" name="note">
                             <Input.TextArea rows={2} placeholder="กรอกหมายเหตุ (ถ้ามี)" />
                         </Form.Item>
                     </div>
-                    <Form.Item >
-                        <div className="bod-form-actions" >
-                            <Button className="bod-cancel" htmlType="button" >
-                                ยกเลิก
-                            </Button>
-                            <Button htmlType="reset" className="bod-reset" onClick={handleClear} >
-                                รีเซ็ต
-                            </Button>
-                            <Button type="primary" htmlType="submit" className="bod-submit">
-                                บันทึก
-                            </Button>
-                        </div>
+                    <Form.Item className="bod-form-actions" >
+                        {/* <div > */}
+                        <Button className="bod-cancel" htmlType="button" >
+                            ยกเลิก
+                        </Button>
+                        <Button htmlType="reset" className="bod-reset" onClick={handleClear} >
+                            รีเซ็ต
+                        </Button>
+                        <Button type="primary" htmlType="submit" className="bod-submit">
+                            บันทึก
+                        </Button>
+                        {/* </div> */}
                     </Form.Item>
                 </Form>
             </div>

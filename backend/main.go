@@ -7,7 +7,8 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/bodcenter"
 	"github.com/Tawunchai/hospital-project/controller/building"
 	"github.com/Tawunchai/hospital-project/controller/calendar"
-	
+	"github.com/Tawunchai/hospital-project/controller/fogcenter"
+
 	"github.com/Tawunchai/hospital-project/controller/graph"
 	"github.com/Tawunchai/hospital-project/controller/hardware"
 	"github.com/Tawunchai/hospital-project/controller/logins"
@@ -82,6 +83,16 @@ func main() {
 		public.PATCH("/update-ts/:id", tscenter.UpdateTS)
 		public.DELETE("/delete-ts/:id", tscenter.DeleteTS)
 
+		//BOD
+		public.POST("/create-bod", bodcenter.CreateBod)
+		public.GET("/get-first-bod", bodcenter.GetfirstBOD)
+		public.GET("/list-bod", bodcenter.ListBOD)
+		
+		//FOG
+		public.POST("/create-fog", fogcenter.CreateFog)
+		public.GET("/get-first-fog", fogcenter.GetfirstFOG)
+
+
 		//Room
 		public.GET("/rooms", room.ListRoom)
 		public.POST("/create-rooms", room.CreateRoom)
@@ -115,7 +126,7 @@ func main() {
 
 		public.GET("/api/employees", employee.GetEmployees)
 
-		public.POST("/create-bod", bodcenter.CreateBod)
+		
 		//SelectBoxAll
 		public.GET("/list-BeforeAfterTreatment", selectBoxAll.ListBeforeAfterTreatment)
 		public.GET("/list-unit", selectBoxAll.ListUnit)
