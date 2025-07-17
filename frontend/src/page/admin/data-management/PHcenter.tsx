@@ -37,14 +37,12 @@ const PHCentralForm: React.FC = () => {
     const [middleStandards, setMiddleStandards] = useState<ListMiddleStandardInterface[]>([]);
     const [rangeStandards, setRangeStandards] = useState<ListRangeStandardInterface[]>([]);
     const [selectedTreatmentID, setSelectedTreatmentID] = useState<number | null>(null);
-
     const [standardType, setStandardType] = useState<string>('middle'); // middle or range
     const [useCustomStandard, setUseCustomStandard] = useState<boolean>(false);
-
     const [customSingleValue, setCustomSingleValue] = useState<number | undefined>(undefined);
     const [customMinValue, setCustomMinValue] = useState<number | undefined>(undefined);
     const [customMaxValue, setCustomMaxValue] = useState<number | undefined>(undefined);
-
+    const [isOtherUnitSelected, setIsOtherunitSelected] = useState(false);
     const [messageApi, contextHolder] = message.useMessage();
 
     const renderCustomTreatmentLabel = (text: string) => (
@@ -139,6 +137,9 @@ const PHCentralForm: React.FC = () => {
 
             // ดึง employeeID จาก localStorage
             const employeeID = Number(localStorage.getItem('employeeid'));
+            const isOther = values.unit === 'other';
+            const unitID = isOther ? null : values.unit;
+            const customUintValue = isOther ? values.customUnit : null;
 
             if (selectedTreatmentID === 3) {
                 // กรณี "ก่อนและหลังบำบัด" ส่งข้อมูล 2 ชุด
@@ -147,7 +148,8 @@ const PHCentralForm: React.FC = () => {
                     Data: values.valueBefore,
                     BeforeAfterTreatmentID: 1,
                     StandardID: standardID,
-                    UnitID: values.unitID,
+                    UnitID: unitID,
+                    CustomUnit: customUintValue,
                     EmployeeID: employeeID,
                     Note: values.note,
                 };
@@ -157,7 +159,8 @@ const PHCentralForm: React.FC = () => {
                     Data: values.valueAfter,
                     BeforeAfterTreatmentID: 2,
                     StandardID: standardID,
-                    UnitID: values.unitID,
+                    UnitID: unitID,
+                    CustomUnit: customUintValue,
                     EmployeeID: employeeID,
                     Note: values.note,
                 };
@@ -170,6 +173,9 @@ const PHCentralForm: React.FC = () => {
                     form.resetFields();
                     setSelectedTreatmentID(null);
                     setUseCustomStandard(false);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
                 } else {
                     message.error('ไม่สามารถบันทึกข้อมูลก่อนหรือหลังได้');
                 }
@@ -180,7 +186,8 @@ const PHCentralForm: React.FC = () => {
                     Data: values.data,
                     BeforeAfterTreatmentID: values.beforeAfterTreatmentID,
                     StandardID: standardID,
-                    UnitID: values.unitID,
+                    UnitID: unitID,
+                    CustomUnit: customUintValue,
                     EmployeeID: employeeID,
                     Note: values.note,
                 };
@@ -192,6 +199,9 @@ const PHCentralForm: React.FC = () => {
                     form.resetFields();
                     setSelectedTreatmentID(null);
                     setUseCustomStandard(false);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
                 } else {
                     message.error('ไม่สามารถบันทึกข้อมูลได้');
                 }
@@ -239,16 +249,43 @@ const PHCentralForm: React.FC = () => {
                     <div className="form-group-mini-ph">
                         <Form.Item
                             label="หน่วยที่วัด"
-                            name="unitID"
-                            rules={[{ required: true, message: 'กรุณาเลือกหน่วยที่วัด' }]}
+                            required
                         >
-                            <Select placeholder="เลือกหน่วย">
-                                {unitOptions.map((u) => (
-                                    <Option key={u.ID} value={u.ID}>
-                                        {u.UnitName}
-                                    </Option>
-                                ))}
-                            </Select>
+                            <Form.Item
+                                name="unit"
+                                noStyle
+                                rules={[{ required: true, message: 'กรุณาเลือกหน่วยที่วัด' }]}
+                            >
+                                <Select
+                                    placeholder="เลือกหน่วย"
+                                    onChange={(value) => {
+                                        setIsOtherunitSelected(value === 'other');
+                                        if (value !== 'other') {
+                                            form.setFieldsValue({ customUnit: undefined });
+                                        }
+                                    }}
+                                >
+                                    {unitOptions.map((u) => (
+                                        <Option key={u.ID} value={u.ID}>
+                                            {u.UnitName}
+                                        </Option>
+                                    ))}
+                                    <Option value="other">กำหนดหน่วยเอง</Option>
+                                </Select>
+                            </Form.Item>
+
+                            {isOtherUnitSelected && (
+                                <Form.Item
+                                    name="customUnit"
+                                    rules={[{ required: true, message: 'กรุณากรอกหน่วย' }]}
+                                    style={{ marginTop: '8px' }}
+                                >
+                                    <Input
+                                        style={{ width: '100%' }}
+                                        placeholder="กรอกหน่วยกำหนดเอง"
+                                    />
+                                </Form.Item>
+                            )}
                         </Form.Item>
                     </div>
                     <div className="form-group-mini-ph">

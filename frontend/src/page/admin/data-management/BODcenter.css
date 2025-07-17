@@ -131,6 +131,10 @@
   background-color: #646464 !important;
   transform: scale(1.05) !important;
 }
+.bod-fornt-small {
+  display: flex;
+  gap: 16px;
+}
 
 /* Responsive behavior */
 @media (max-width: 768px) {
@@ -158,6 +162,9 @@
   .bod-from-mini {
     width: 100%;
   }
+  .bod-fornt-small .ant-form-item-label > label {
+  font-size: small !important;}
+  
 }
 
 @media (max-width: 1024px) {

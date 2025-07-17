@@ -138,6 +138,9 @@
   .submit-ph {
     width: 100%;
   }
+  .form-group-mini-ph {
+    width: 100%;
+  }
   .ph-fornt-small .ant-form-item-label > label {
   font-size: small !important;
 }
