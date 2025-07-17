@@ -123,12 +123,18 @@ func main() {
 		public.POST("/api/employees", employee.CreateEmployee)
 
 		public.POST("/create-bod", bodcenter.CreateBod)
+
 		//SelectBoxAll
 		public.GET("/list-BeforeAfterTreatment", selectBoxAll.ListBeforeAfterTreatment)
 		public.GET("/list-unit", selectBoxAll.ListUnit)
-		public.GET("/list-standard", selectBoxAll.ListStandard)
-
 		public.GET("/api/positions", position.GetPositions)
+
+		public.GET("/list-standard", selectBoxAll.ListStandard)   //เก่า
+
+		public.GET("/list-standard-middle", selectBoxAll.ListMiddleStandard)
+		public.GET("/list-standard-range", selectBoxAll.ListRangeStandard)
+		public.POST("/add-middle-standard", selectBoxAll.AddMiddleStandard)
+		public.POST("/add-range-standard", selectBoxAll.AddRangeStandard)
 	}
 
 	r.GET("/", func(c *gin.Context) {
