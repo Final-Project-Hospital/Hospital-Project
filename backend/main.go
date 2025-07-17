@@ -20,12 +20,16 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/tscenter"
 
 	"github.com/Tawunchai/hospital-project/controller/employee"
+	"github.com/Tawunchai/hospital-project/controller/position"
+
 
 	"github.com/Tawunchai/hospital-project/controller/users"
 	"github.com/Tawunchai/hospital-project/middlewares"
 
 	"github.com/Tawunchai/hospital-project/controller/selectBoxAll"
 	"github.com/gin-gonic/gin"
+
+	
 )
 
 const PORT = "8000"
@@ -46,6 +50,8 @@ func main() {
 	authorized.Use(middlewares.Authorizes())
 	{
 		authorized.PATCH("/api/employees/:id/role", employee.UpdateRole)
+		authorized.PUT("/api/employees/:id", employee.UpdateEmployeeInfo)
+		authorized.DELETE("/api/employees/:id", employee.DeleteEmployee)
 	}
 
 	public := r.Group("")
@@ -114,12 +120,14 @@ func main() {
 		public.DELETE("/delete-calendar/:id", calendar.DeleteCalendar)
 
 		public.GET("/api/employees", employee.GetEmployees)
+		public.POST("/api/employees", employee.CreateEmployee)
 
 		public.POST("/create-bod", bodcenter.CreateBod)
 
 		//SelectBoxAll
 		public.GET("/list-BeforeAfterTreatment", selectBoxAll.ListBeforeAfterTreatment)
 		public.GET("/list-unit", selectBoxAll.ListUnit)
+		public.GET("/api/positions", position.GetPositions)
 
 		public.GET("/list-standard", selectBoxAll.ListStandard)   //เก่า
 
