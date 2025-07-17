@@ -11,7 +11,7 @@ type Employee struct {
     Email 	    string       
 	Phone		string
 	Password    string
-	Profile     string 
+	Profile string `gorm:"type:text"`
 		
 	RoleID	uint
 	Role	*Role `gorm:"foreignKey: RoleID"`
