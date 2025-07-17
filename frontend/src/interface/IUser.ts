@@ -18,5 +18,5 @@ export interface UsersInterface {
     };
     Phonenumber?: string;  // หรือ PhoneNumber?  ให้เป็น optional
     PhoneNumber?: ReactNode;  // ใส่เครื่องหมาย ? เพื่อให้เป็น optional
-    Phone?:number;
+    Phone?:string;
 }

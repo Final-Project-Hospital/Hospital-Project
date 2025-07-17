@@ -60,6 +60,7 @@ func main() {
 		public.GET("/users", user.ListUsers)
 		public.GET("/uploads/*filename", user.ServeImage)
 		public.GET("/user-data/:EmployeeID", user.GetDataByUserID)
+		public.PATCH("/employees/:EmployeeID", user.UpdateEmployeeByID)
 
 		//PH
 		public.POST("/create-ph", phcenter.CreatePH)
