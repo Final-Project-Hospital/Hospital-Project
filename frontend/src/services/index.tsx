@@ -3,7 +3,7 @@ import { message } from 'antd';
 import { CalendarInterface } from "../interface/ICalendar";
 import { ListBeforeAfterTreatmentInterface } from "../interface/IBeforeAfterTreatment";
 import { ListUnitInterface } from "../interface/IUnit";
-import { ListStandardInterface } from "../interface/IStandard";
+import { ListMiddleStandardInterface, ListRangeStandardInterface, ListStandardInterface, AddMiddleStandardInterface, AddRangeStandardInterface } from "../interface/IStandard";
 import { CreatePHInterface } from "../interface/IpH";
 import { UpdatePHInterface } from "../interface/IpH";
 import { DeletePHInterface } from "../interface/IpH";
@@ -184,6 +184,7 @@ export const ListUnit = async (): Promise<ListUnitInterface[] | null> => {
   }
 };
 
+// Standard
 export const ListStandard = async (): Promise<ListStandardInterface[] | null> => {
   try {
     const response = await axios.get(`${apiUrl}/list-standard`, {
@@ -201,6 +202,98 @@ export const ListStandard = async (): Promise<ListStandardInterface[] | null> =>
     }
   } catch (error: any) {
     console.error("Error fetching ListStandard:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const ListMiddleStandard = async (): Promise<ListMiddleStandardInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/list-standard-middle`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error fetching ListMiddleStandard:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const ListRangeStandard = async (): Promise<ListRangeStandardInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/list-standard-range`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error fetching ListRangeStandard:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const AddMiddleStandard = async (
+  payload: AddMiddleStandardInterface
+): Promise<ListMiddleStandardInterface | null> => {
+  try {
+    const response = await axios.post(`${apiUrl}/add-middle-standard`, payload, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 201) {
+      message.success("บันทึกข้อมูลสำเร็จ");
+      return response.data; // ✅ return ข้อมูลที่ตรงกับ interface
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error add-middle-standard:", error.response?.data || error.message);
+    message.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+    return null;
+  }
+};
+
+export const AddRangeStandard = async (
+  payload: AddRangeStandardInterface
+): Promise<ListRangeStandardInterface | null> => {
+  try {
+    const response = await axios.post(`${apiUrl}/add-range-standard`, payload, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 201) {
+      message.success("บันทึกข้อมูลสำเร็จ");
+      return response.data; // ✅ return ข้อมูลที่ตรงกับ interface
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error add-range-standard:", error.response?.data || error.message);
+    message.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
     return null;
   }
 };

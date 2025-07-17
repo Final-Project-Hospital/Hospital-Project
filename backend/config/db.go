@@ -57,11 +57,50 @@ func SetupDatabase() {
 	}
 	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
 
+	// // Standaed
+	// standardValues := []float32{5.0, 6.0, 7.0, 8.0, 9.0, 20.0, 30.0, 1.0, 500.0, 0.5, 35.0}
+	// for _, val := range standardValues {
+	// 	Standard := entity.Standard{StandardValue: val}
+	// 	db.FirstOrCreate(&Standard, entity.Standard{StandardValue: val})
+	// }
+
 	// Standaed
-	standardValues := []float32{5.0, 6.0, 7.0, 8.0, 9.0, 20.0, 30.0, 1.0, 500.0, 0.5, 35.0}
-	for _, val := range standardValues {
-		Standard := entity.Standard{StandardValue: val}
-		db.FirstOrCreate(&Standard, entity.Standard{StandardValue: val})
+	// จำลองข้อมูลแบบ "ค่าช่วง"
+	ranges := []struct {
+		min float32
+		max float32
+	}{
+		{5.0, 9.0},
+		{9.0, 10.0},
+	}
+
+	for _, r := range ranges {
+		standard := entity.Standard{
+			MinValue:    r.min,
+			MaxValue:    r.max,
+			MiddleValue: 0, // ไม่ใช้
+		}
+		db.FirstOrCreate(&standard, entity.Standard{
+			MinValue:    r.min,
+			MaxValue:    r.max,
+			MiddleValue: 0,
+		})
+	}
+
+	// จำลองข้อมูลแบบ "ค่าเดี่ยว"
+	middles := []float32{20.0, 30.0, 35.0, 500.0}
+
+	for _, m := range middles {
+		standard := entity.Standard{
+			MiddleValue: m,
+			MinValue:    0, // ไม่ใช้
+			MaxValue:    0,
+		}
+		db.FirstOrCreate(&standard, entity.Standard{
+			MiddleValue: m,
+			MinValue:    0,
+			MaxValue:    0,
+		})
 	}
 
 	// Unit

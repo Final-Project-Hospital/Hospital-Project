@@ -19,6 +19,7 @@
 .ph-container .ant-select-selector {
   border-radius: 50px !important;
 }
+
 .ph-container .ant-input-number-handler-wrap {
   border-radius: 0 50px 50px 0 !important;
   overflow: hidden;
@@ -33,6 +34,10 @@
 .form-group-ph .ant-form-item {
   flex: 1 1 300px;
   /* ทำให้มีขั้นต่ำ 300px และยืดหดได้ */
+}
+
+.form-group-mini-ph {
+  width: 48%;
 }
 
 .full-width-ph {
@@ -94,16 +99,23 @@
   background-color: #358788 !important;
   transform: scale(1.05) !important;
 }
+
 .reset-ph:hover {
-  color: #326667!important;
+  color: #326667 !important;
   background-color: #ffffff !important;
   transform: scale(1.05) !important;
 }
+
 .cancel-ph:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #646464 !important;
   transform: scale(1.05) !important;
 }
+.ph-fornt-small {
+  display: flex;
+  gap: 16px;
+}
+
 
 /* Responsive behavior */
 @media (max-width: 768px) {
@@ -124,6 +136,15 @@
   .cancel-ph,
   .reset-ph,
   .submit-ph {
+    width: 100%;
+  }
+  .ph-fornt-small .ant-form-item-label > label {
+  font-size: small !important;
+}
+}
+
+@media (max-width: 1024px) {
+  .form-group-mini-ph {
     width: 100%;
   }
 }
