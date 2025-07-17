@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Table, Input, Button, Space, Modal, message } from "antd";
-import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { SearchOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { ListRoom, DeleteRoomById } from "../../../../services/hardware";
 import { RoomInterface } from "../../../../interface/IRoom";
@@ -194,103 +194,109 @@ const RoomAdminTable: React.FC = () => {
     ];
 
     return (
-    <div className="p-4 md:p-8">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-2">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-teal-600 bg-clip-text text-transparent">
-                Room Management
-            </h2>
-            <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                className="bg-gradient-to-r from-teal-400 to-teal-500 text-white font-semibold border-none shadow px-6 py-2"
-                style={{ borderRadius: 12 }}
-                onClick={() => setShowAddModal(true)}
-            >
-                เพิ่มห้อง
-            </Button>
-        </div>
+        <div className="min-h-screen bg-gray-100 mt-24 md:mt-0">
+            <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-8 py-6 rounded-b-3xl mb-6">
+                <div className="flex justify-between items-center flex-wrap gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold drop-shadow-md">จัดการข้อมูลเซนเซอร์</h1>
+                        <p className="text-sm drop-shadow-sm">
+                            โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
+                        </p>
+                    </div>
 
-        {/* Card สีขาวห่อ search + table */}
-        <div className="bg-white rounded-2xl shadow-xl p-6">
-            <div className="mb-4 w-full md:w-1/3">
-                <Input
-                    allowClear
-                    prefix={<SearchOutlined className="text-teal-400" />}
-                    placeholder="Search all columns..."
-                    className="rounded-xl border-teal-200 focus:border-teal-400 shadow"
-                    value={searchText}
-                    onChange={e => setSearchText(e.target.value)}
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className="flex items-center gap-2 bg-white text-teal-800 px-4 py-2 rounded-full hover:bg-teal-100 transition whitespace-nowrap"
+                    >
+                        <FaHome />
+                        เพิ่มห้อง
+                    </button>
+                </div>
+            </div>
+
+
+            <div className="paddings">
+                <div className="bg-white rounded-2xl shadow-xl p-6 ">
+                    <div className="mb-4 w-full md:w-1/3">
+                        <Input
+                            allowClear
+                            prefix={<SearchOutlined className="text-teal-400" />}
+                            placeholder="Search all columns..."
+                            className="rounded-xl border-teal-200 focus:border-teal-400 shadow"
+                            value={searchText}
+                            onChange={e => setSearchText(e.target.value)}
+                        />
+                    </div>
+                    <Table
+                        columns={columns}
+                        dataSource={filteredData}
+                        rowKey="ID"
+                        loading={loading}
+                        pagination={{
+                            pageSize: 5,
+                            showSizeChanger: true,
+                            pageSizeOptions: [5, 10, 20, 50],
+                            position: ["bottomCenter"],
+                        }}
+                        className="rounded-2xl overflow-hidden"
+                    />
+                </div>
+            </div>
+
+            {/* Modal เพิ่มห้อง */}
+            <AddRoomModal
+                show={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                onCreateSuccess={handleAddRoomSuccess}
+            />
+
+            {/* Modal Edit ห้อง */}
+            {selectedRoom && (
+                <EditRoomModal
+                    show={showEditModal}
+                    onClose={() => setShowEditModal(false)}
+                    onSaveSuccess={handleUpdateSuccess}
+                    initialData={selectedRoom}
                 />
-            </div>
-            <Table
-                columns={columns}
-                dataSource={filteredData}
-                rowKey="ID"
-                loading={loading}
-                pagination={{
-                    pageSize: 5,
-                    showSizeChanger: true,
-                    pageSizeOptions: [5, 10, 20, 50],
-                    position: ["bottomCenter"],
-                }}
-                className="rounded-2xl overflow-hidden"
-            />
+            )}
+
+            {/* Modal Delete ห้อง */}
+            <Modal
+                open={showDeleteModal}
+                onCancel={() => setShowDeleteModal(false)}
+                footer={null}
+                centered
+                closeIcon={false}
+                bodyStyle={{ padding: '2.5rem 2rem' }}
+            >
+                <div className="flex flex-col items-center gap-4">
+                    <FaHome size={54} className="text-red-400 mb-2 drop-shadow-lg" />
+                    <div className="font-bold text-lg text-gray-800 mb-2">ยืนยันการลบห้อง</div>
+                    <div className="font-semibold text-red-600 text-md mb-2">{roomToDelete?.name}</div>
+                    <div className="text-gray-500 text-sm mb-4 text-center">
+                        คุณแน่ใจหรือไม่ว่าต้องการ <span className="text-red-500 font-semibold">ลบห้องนี้</span> ?<br />
+                        ข้อมูลที่เกี่ยวข้องทั้งหมดจะถูกลบออกจากระบบ!
+                    </div>
+                    <div className="flex gap-2 w-full mt-4">
+                        <Button
+                            type="primary"
+                            danger
+                            className="w-1/2"
+                            onClick={confirmDeleteRoom}
+                        >
+                            ลบ
+                        </Button>
+                        <Button
+                            className="w-1/2"
+                            onClick={() => setShowDeleteModal(false)}
+                        >
+                            ยกเลิก
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
-
-        {/* Modal เพิ่มห้อง */}
-        <AddRoomModal
-            show={showAddModal}
-            onClose={() => setShowAddModal(false)}
-            onCreateSuccess={handleAddRoomSuccess}
-        />
-
-        {/* Modal Edit ห้อง */}
-        {selectedRoom && (
-            <EditRoomModal
-                show={showEditModal}
-                onClose={() => setShowEditModal(false)}
-                onSaveSuccess={handleUpdateSuccess}
-                initialData={selectedRoom}
-            />
-        )}
-
-        {/* Modal Delete ห้อง */}
-        <Modal
-            open={showDeleteModal}
-            onCancel={() => setShowDeleteModal(false)}
-            footer={null}
-            centered
-            closeIcon={false}
-            bodyStyle={{ padding: '2.5rem 2rem' }}
-        >
-            <div className="flex flex-col items-center gap-4">
-                <FaHome size={54} className="text-red-400 mb-2 drop-shadow-lg" />
-                <div className="font-bold text-lg text-gray-800 mb-2">ยืนยันการลบห้อง</div>
-                <div className="font-semibold text-red-600 text-md mb-2">{roomToDelete?.name}</div>
-                <div className="text-gray-500 text-sm mb-4 text-center">
-                    คุณแน่ใจหรือไม่ว่าต้องการ <span className="text-red-500 font-semibold">ลบห้องนี้</span> ?<br />
-                    ข้อมูลที่เกี่ยวข้องทั้งหมดจะถูกลบออกจากระบบ!
-                </div>
-                <div className="flex gap-2 w-full mt-4">
-                    <Button
-                        type="primary"
-                        danger
-                        className="w-1/2"
-                        onClick={confirmDeleteRoom}
-                    >
-                        ลบ
-                    </Button>
-                    <Button
-                        className="w-1/2"
-                        onClick={() => setShowDeleteModal(false)}
-                    >
-                        ยกเลิก
-                    </Button>
-                </div>
-            </div>
-        </Modal>
-    </div>
-);
+    );
 };
 
 export default RoomAdminTable;
