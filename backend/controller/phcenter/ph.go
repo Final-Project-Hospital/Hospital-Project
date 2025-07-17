@@ -3,55 +3,160 @@ package phcenter
 import (
 	"net/http"
 	"strconv"
-	"fmt"
+	//"fmt"
+	"time"
 
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
 	"github.com/gin-gonic/gin"
 )
 
-func CreatePH(c *gin.Context) {
-	var input entity.EnvironmentalRecord
+// func CreatePH(c *gin.Context) {
+// 	var input entity.EnvironmentalRecord
 
-	if err := c.ShouldBindJSON(&input); err != nil {
+// 	if err := c.ShouldBindJSON(&input); err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	db := config.DB()
+
+// 	var parameter entity.Parameter
+// 	if err := db.Where("parameter_name = ?","Potential of Hydrogen").First(&parameter).Error; err != nil {
+// 		fmt.Println("Error fetching parameter:", err)
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+// 		return
+// 	}
+
+// 	var environment entity.Environment
+// 	if err := db.Where("environment_name = ?","น้ำเสีย").First(&environment).Error; err != nil {
+// 		fmt.Println("Error fetching environment:", err)
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+// 		return
+// 	}
+
+// 	ph := entity.EnvironmentalRecord{
+// 		Date:                   input.Date,
+// 		Data:                   input.Data,
+// 		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
+// 		EnvironmentID:          environment.ID,
+// 		ParameterID:            parameter.ID, 
+// 		StandardID:             input.StandardID,
+// 		UnitID:                 input.UnitID,
+// 		EmployeeID:             input.EmployeeID,
+// 		Note:					input.Note,
+// 	}
+
+// 	if err := db.Create(&ph).Error; err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	c.JSON(http.StatusCreated, gin.H{"message": "บันทึกข้อมูล pH สำเร็จ", "data": ph})
+// }
+
+func CreatePH(c *gin.Context) {
+	var rawData map[string]interface{}
+	if err := c.ShouldBindJSON(&rawData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	// แปลงค่าพื้นฐานจาก rawData
+	dateStr := rawData["Date"].(string)
+	dateParsed, err := time.Parse(time.RFC3339, dateStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format"})
+		return
+	}
+
+	standardID := uint(rawData["StandardID"].(float64))
+	unitID := uint(rawData["UnitID"].(float64))
+	employeeID := uint(rawData["EmployeeID"].(float64))
+	note := ""
+	if rawData["Note"] != nil {
+		note = rawData["Note"].(string)
+	}
+	beforeAfterID := int(rawData["BeforeAfterTreatmentID"].(float64))
+
+	// เชื่อมฐานข้อมูล
 	db := config.DB()
 
 	var parameter entity.Parameter
-	if err := db.Where("parameter_name = ?","Potential of Hydrogen").First(&parameter).Error; err != nil {
-		fmt.Println("Error fetching parameter:", err)
+	if err := db.Where("parameter_name = ?", "Potential of Hydrogen").First(&parameter).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
 	}
 
 	var environment entity.Environment
-	if err := db.Where("environment_name = ?","น้ำเสีย").First(&environment).Error; err != nil {
-		fmt.Println("Error fetching environment:", err)
+	if err := db.Where("environment_name = ?", "น้ำเสีย").First(&environment).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
 		return
 	}
 
-	ph := entity.EnvironmentalRecord{
-		Date:                   input.Date,
-		Data:                   input.Data,
-		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
-		EnvironmentID:          environment.ID,
-		ParameterID:            parameter.ID, 
-		StandardID:             input.StandardID,
-		UnitID:                 input.UnitID,
-		EmployeeID:             input.EmployeeID,
-		Note:					input.Note,
+	if beforeAfterID == 3 {
+		// สร้าง 2 record แยก ก่อน และ หลัง
+		valueBefore := rawData["valueBefore"].(float64)
+		valueAfter := rawData["valueAfter"].(float64)
+
+		recordBefore := entity.EnvironmentalRecord{
+			Date:                   dateParsed,
+			Data:                   valueBefore,
+			BeforeAfterTreatmentID: 1,
+			EnvironmentID:          environment.ID,
+			ParameterID:            parameter.ID,
+			StandardID:             standardID,
+			UnitID:                 unitID,
+			EmployeeID:             employeeID,
+			Note:                   note,
+		}
+
+		recordAfter := entity.EnvironmentalRecord{
+			Date:                   dateParsed,
+			Data:                   valueAfter,
+			BeforeAfterTreatmentID: 2,
+			EnvironmentID:          environment.ID,
+			ParameterID:            parameter.ID,
+			StandardID:             standardID,
+			UnitID:                 unitID,
+			EmployeeID:             employeeID,
+			Note:                   note,
+		}
+
+		if err := db.Create(&recordBefore).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if err := db.Create(&recordAfter).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusCreated, gin.H{"message": "บันทึกข้อมูล pH ก่อนเเละหลังบำบัดสำเร็จ", "before": recordBefore, "after": recordAfter})
+		return
 	}
 
-	if err := db.Create(&ph).Error; err != nil {
+	// สร้างกรณีทั่วไป 1 record
+	data := rawData["Data"].(float64)
+
+	record := entity.EnvironmentalRecord{
+		Date:                   dateParsed,
+		Data:                   data,
+		BeforeAfterTreatmentID: uint(beforeAfterID),
+		EnvironmentID:          environment.ID,
+		ParameterID:            parameter.ID,
+		StandardID:             standardID,
+		UnitID:                 unitID,
+		EmployeeID:             employeeID,
+		Note:                   note,
+	}
+
+	if err := db.Create(&record).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "บันทึกข้อมูล pH สำเร็จ", "data": ph})
+	c.JSON(http.StatusCreated, gin.H{"message": "บันทึกข้อมูล pH สำเร็จ", "data": record})
 }
 
 func GetPH(c *gin.Context) {

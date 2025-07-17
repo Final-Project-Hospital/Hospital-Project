@@ -18,6 +18,7 @@ interface EditParameterModalProps {
   open: boolean;
   onClose: () => void;
   hardwareID: number;
+  onSuccess?: () => Promise<void>; // ใช้ async
 }
 
 const graphImages = [
@@ -32,27 +33,24 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   open,
   onClose,
   hardwareID,
+  onSuccess,
 }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formValues, setFormValues] = useState<any[]>([]);
   const [colorOptions, setColorOptions] = useState<any[]>([]);
-
   const [draggedParamId, setDraggedParamId] = useState<number | null>(null);
   const [dragOverGraphId, setDragOverGraphId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!open || !hardwareID) return;
-
     setLoading(true);
-
     Promise.all([
       ListHardwareParameterByHardwareID(hardwareID),
       ListHardwareColors(),
     ])
       .then(([params, colors]) => {
         if (!params) return;
-
         setFormValues(
           params.map((p: any) => ({
             ID: p.ID,
@@ -62,7 +60,6 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
             HardwareParameterColorCode: p.HardwareParameterColor?.Code,
           }))
         );
-
         if (colors) {
           setColorOptions(
             colors.map((color: any) => ({
@@ -128,6 +125,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         )
       );
       message.success("Update Success!");
+      if (onSuccess) await onSuccess(); // <<< สำคัญ! รอให้ index fetch ข้อมูลเสร็จก่อน
       onClose();
     } catch (e) {
       message.error("Update Failed");

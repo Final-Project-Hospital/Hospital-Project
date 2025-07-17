@@ -6,7 +6,7 @@ import { ListUnitInterface } from "./IUnit";
 import { EmployeeInterface } from "./IEmployee";
 export interface EnvironmentalRecordInterface {
     ID?: number;
-    date?: Date | string;
+    date?: string;
     data?: number;
     note?: string;
 

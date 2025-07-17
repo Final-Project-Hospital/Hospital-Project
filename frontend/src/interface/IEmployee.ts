@@ -3,9 +3,10 @@ import { PositionInterface } from "./IPosition";
 import { RoomInterface } from "./IRoom";
 import { CalendarInterface } from "./ICalendar";
 export interface EmployeeInterface {
+    RoleID: any;
     ID?: number;
-    Firstname?: string;
-    Lastname?: string;
+    FirstName?: string;
+    LastName?: string;
     Email?: string;
     Phone?: string;
     Password?: string;

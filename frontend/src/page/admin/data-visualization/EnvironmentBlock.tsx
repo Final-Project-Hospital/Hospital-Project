@@ -11,10 +11,10 @@ import tkn from '../../../../../frontend/src/assets/nitrogen.png';
 const centers = [
   { name: 'PH Center', standard: '5 - 9', image: ph, path: 'datavizPH' },
   { name: 'BOD Center', standard: '20', image: bod, path: 'datavizBOD' },
-  { name: 'TS Center', standard: '30', image: ts, path: 'ts' },
+  { name: 'TS Center', standard: '30', image: ts, path: 'datavizTS' },
   { name: 'TDS Center', standard: '500', image: tds, path: 'tds' },
   { name: 'FOG Center', standard: '20', image: fog, path: 'fog' },
-  { name: 'TKN Center', standard: '35', image: tkn, path: 'tkn' },
+  { name: 'TKN Center', standard: '35', image: tkn, path: 'datavizTKN' },
 ];
 
 const EnvironmentBlock = () => {

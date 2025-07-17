@@ -9,7 +9,13 @@ import { ListBeforeAfterTreatmentInterface } from '../../../interface/IBeforeAft
 import { ListStandardInterface } from '../../../interface/IStandard';
 import { ListUnitInterface } from '../../../interface/IUnit';
 import { GetfirstBOD } from '../../../services/bodService';
-
+import {
+    ListMiddleStandard,
+    ListRangeStandard,
+    AddMiddleStandard,
+    AddRangeStandard,
+} from '../../../services/index';
+import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../interface/IStandard';
 const { Option } = Select;
 
 
@@ -24,6 +30,13 @@ const TDSCentralForm: React.FC = () => {
     // const [firstBOD, setfirstBOD] = useState<BodcenterInterface | null>(null);
     // const [BodData, setBodData] = useState<BodcenterInterface | null>(null);
     const [isOtherUnitSelected, setIsOtherunitSelected] = useState(false);
+    const [middleStandards, setMiddleStandards] = useState<ListMiddleStandardInterface[]>([]);
+    const [rangeStandards, setRangeStandards] = useState<ListRangeStandardInterface[]>([]);
+    const [standardType, setStandardType] = useState<string>('middle'); // middle or range
+    const [useCustomStandard, setUseCustomStandard] = useState<boolean>(false);
+    const [customSingleValue, setCustomSingleValue] = useState<number | undefined>(undefined);
+    const [customMinValue, setCustomMinValue] = useState<number | undefined>(undefined);
+    const [customMaxValue, setCustomMaxValue] = useState<number | undefined>(undefined);
 
     const renderCustomTreatmentLabel = (text: string) => {
         const colored = (
@@ -38,6 +51,21 @@ const TDSCentralForm: React.FC = () => {
     };
 
     useEffect(() => {
+
+        const fetchInitialData = async () => {
+            const [beforeAfter, units, standardsMiddle, standardsRange] = await Promise.all([
+                ListBeforeAfterTreatment(),
+                ListUnit(),
+                ListMiddleStandard(),
+                ListRangeStandard(),
+            ]);
+
+            if (beforeAfter) setBeforeAfterOptions(beforeAfter);
+            if (units) setUnitOptions(units);
+            if (standardsMiddle) setMiddleStandards(standardsMiddle);
+            if (standardsRange) setRangeStandards(standardsRange);
+        };
+
         const GetfirstrowBOD = async () => {
             try {
                 const responfirstBOD = await GetfirstBOD();
@@ -58,27 +86,84 @@ const TDSCentralForm: React.FC = () => {
             }
 
         };
-        const fetchSelectBoxData = async () => {
-            const [beforeAfter, units, standards] = await Promise.all([
-                ListBeforeAfterTreatment(),
-                ListUnit(),
-                ListStandard(),
-            ]);
+        // const fetchSelectBoxData = async () => {
+        //     const [beforeAfter, units, standards] = await Promise.all([
+        //         ListBeforeAfterTreatment(),
+        //         ListUnit(),
+        //         ListStandard(),
+        //     ]);
 
-            if (beforeAfter) setBeforeAfterOptions(beforeAfter);
-            if (units) setUnitOptions(units);
-            if (standards) setStandardOptions(standards);
-        };
+        //     if (beforeAfter) setBeforeAfterOptions(beforeAfter);
+        //     if (units) setUnitOptions(units);
+        //     if (standards) setStandardOptions(standards);
+        // };
         GetfirstrowBOD();
-        fetchSelectBoxData();
+        // fetchSelectBoxData();
+        fetchInitialData();
     }, []);
 
     const handleClear = () => {
         form.resetFields();
     };
 
+    const handleStandardGroupChange = (value: string) => {
+        setStandardType(value);
+        setUseCustomStandard(false);
+        form.setFieldsValue({
+            standardID: undefined,
+            customSingle: undefined,
+            customMin: undefined,
+            customMax: undefined,
+        });
+    };
+
+    const handleStandardSelectChange = (value: string) => {
+        if (value === 'custom') {
+            setUseCustomStandard(true);
+            form.setFieldsValue({ standardID: undefined });
+        } else {
+            setUseCustomStandard(false);
+        }
+    };
+
     const handleFinish = async (values: any) => {
         // รวม date กับ time เข้าเป็นค่าเดียว
+        let standardID = values.standardID ?? null;
+        if (useCustomStandard) {
+            if (standardType === 'middle' && values.customSingle !== undefined) {
+                const res = await AddMiddleStandard({
+                    MiddleValue: values.customSingle,
+                    MinValue: 0,
+                    MaxValue: 0,
+                });
+
+                if (res && res.ID) {
+                    standardID = res.ID;
+                    setMiddleStandards(prev => [...prev, res]);
+                }
+            } else if (
+                standardType === 'range' &&
+                values.customMin !== undefined &&
+                values.customMax !== undefined
+            ) {
+                const res = await AddRangeStandard({
+                    MiddleValue: 0,
+                    MinValue: values.customMin,
+                    MaxValue: values.customMax,
+                });
+
+                if (res && res.ID) {
+                    standardID = res.ID;
+                    setRangeStandards(prev => [...prev, res]);
+                }
+            }
+        }
+
+        // เช็คว่ามี standardID หรือไม่
+        if (!standardID) {
+            message.error('กรุณาเลือกหรือกำหนดมาตรฐานก่อนบันทึก');
+            return;
+        }
         const employeeID = Number(localStorage.getItem('employeeid'));
         const combinedDateTime = dayjs(values.date)
             .hour(dayjs(values.time).hour())
@@ -88,27 +173,64 @@ const TDSCentralForm: React.FC = () => {
         const isOther = values.unit === 'other';
         const unitID = isOther ? null : values.unit;
         const customUintValue = isOther ? values.customUnit : null;
-        const BodData: BodcenterInterface = {
-            Date: combinedDateTime.toISOString(),
-            Data: values.data,
-            Note: values.note,
-            BeforeAfterTreatmentID: values.before_after,
-            StandardID: values.standard,
-            UnitID: unitID,
-            CustomUnit: customUintValue, // สมมุติว่า backend รองรับ
-            EmployeeID: employeeID,
-        }
-        const response = await createBOD(BodData);
-        console.log(BodData);
-        if (response.status === 201) {
-            messageApi.open({
-                type: 'success',
-                content: 'การบันทึกข้อมูลสำเร็จ',
-            });
-        } else {
-            throw new Error(`การบันทึกข้อมูลไม่สำเร็จ สถานะ: ${response.status}`);
-        }
 
+        if (selectedTreatmentID === 3) {
+            // กรณี "ก่อนและหลังบำบัด" ส่งข้อมูล 2 ชุด
+            const payloadBefore: BodcenterInterface = {
+                Date: combinedDateTime.toISOString(),
+                Data: values.valueBefore,
+                BeforeAfterTreatmentID: 1,
+                StandardID: standardID,
+                UnitID: unitID,
+                CustomUnit: customUintValue,
+                EmployeeID: employeeID,
+                Note: values.note,
+            };
+
+            const payloadAfter: BodcenterInterface = {
+                Date: combinedDateTime.toISOString(),
+                Data: values.valueAfter,
+                BeforeAfterTreatmentID: 2,
+                StandardID: standardID,
+                UnitID: unitID,
+                CustomUnit: customUintValue,
+                EmployeeID: employeeID,
+                Note: values.note,
+            };
+
+            const res1 = await createBOD(payloadBefore);
+            const res2 = await createBOD(payloadAfter);
+
+            if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
+                messageApi.success('บันทึกข้อมูล pH ก่อนและหลังบำบัดสำเร็จ');
+                form.resetFields();
+                // setSelectedTreatmentID(null);
+                // setUseCustomStandard(false);
+            } else {
+                message.error('ไม่สามารถบันทึกข้อมูลก่อนหรือหลังได้');
+            }
+        } else {
+            const BodData: BodcenterInterface = {
+                Date: combinedDateTime.toISOString(),
+                Data: values.data,
+                Note: values.note,
+                BeforeAfterTreatmentID: values.before_after,
+                StandardID: standardID,
+                UnitID: unitID,
+                CustomUnit: customUintValue, // สมมุติว่า backend รองรับ
+                EmployeeID: employeeID,
+            }
+            const response = await createBOD(BodData);
+            console.log(BodData);
+            if (response.status === 201) {
+                messageApi.open({
+                    type: 'success',
+                    content: 'การบันทึกข้อมูลสำเร็จ',
+                });
+            } else {
+                throw new Error(`การบันทึกข้อมูลไม่สำเร็จ สถานะ: ${response.status}`);
+            }
+        }
     };
 
     return (
@@ -131,61 +253,140 @@ const TDSCentralForm: React.FC = () => {
                     </div>
 
                     <div className="bod-form-group">
-                        <Form.Item
-                            label="หน่วยที่วัด"
-                            required
-                        >
+                        <div className="bod-from-mini">
                             <Form.Item
-                                name="unit"
-                                noStyle
-                                rules={[{ required: true, message: 'กรุณาเลือกหน่วยที่วัด' }]}
+                                label="หน่วยที่วัด"
+                                required
                             >
-                                <Select
-                                    placeholder="เลือกหน่วย"
-                                    onChange={(value) => {
-                                        setIsOtherunitSelected(value === 'other');
-                                        if (value !== 'other') {
-                                            form.setFieldsValue({ customUnit: undefined });
-                                        }
-                                    }}
+                                <Form.Item
+                                    name="unit"
+                                    noStyle
+                                    rules={[{ required: true, message: 'กรุณาเลือกหน่วยที่วัด' }]}
                                 >
-                                    {unitOptions.map((u) => (
-                                        <Option key={u.ID} value={u.ID}>
-                                            {u.UnitName}
-                                        </Option>
-                                    ))}
-                                    <Option value="other">กำหนดหน่วยเอง</Option>
+                                    <Select
+                                        placeholder="เลือกหน่วย"
+                                        onChange={(value) => {
+                                            setIsOtherunitSelected(value === 'other');
+                                            if (value !== 'other') {
+                                                form.setFieldsValue({ customUnit: undefined });
+                                            }
+                                        }}
+                                    >
+                                        {unitOptions.map((u) => (
+                                            <Option key={u.ID} value={u.ID}>
+                                                {u.UnitName}
+                                            </Option>
+                                        ))}
+                                        <Option value="other">กำหนดหน่วยเอง</Option>
+                                    </Select>
+                                </Form.Item>
+
+                                {isOtherUnitSelected && (
+                                    <Form.Item
+                                        name="customUnit"
+                                        rules={[{ required: true, message: 'กรุณากรอกหน่วย' }]}
+                                        style={{ marginTop: '8px' }}
+                                    >
+                                        <Input
+                                            style={{ width: '100%' }}
+                                            placeholder="กรอกหน่วยกำหนดเอง"
+                                        />
+                                    </Form.Item>
+                                )}
+                            </Form.Item>
+                        </div>
+                        <div className="bod-from-mini">
+                            <Form.Item label="ประเภทมาตรฐาน" name="standardType">
+                                <Select defaultValue="middle" onChange={handleStandardGroupChange}>
+                                    <Option value="middle">ค่าเดี่ยว</Option>
+                                    <Option value="range">ช่วง (Min - Max)</Option>
                                 </Select>
                             </Form.Item>
-                            {isOtherUnitSelected && (
-                                <Form.Item
-                                    name="customUnit"
-                                    rules={[{ required: true, message: 'กรุณากรอกหน่วย' }]}
-                                    style={{ marginTop: '8px' }}
-                                >
-                                    <Input
-                                        style={{ width: '100%' }}
-                                        placeholder="กรอกหน่วยกำหนดเอง"
-                                    />
-                                </Form.Item>
-                            )}
-                        </Form.Item>
 
-                        <Form.Item
-                            label="มาตรฐาน¹"
-                            name="standard"
-                            rules={[{ required: true, message: 'กรุณาเลือกค่ามาตรฐาน' }]}
-                        >
-                            <Select placeholder="เลือกมาตรฐาน">
-                                {standardOptions
-                                    .sort((a, b) => a.StandardValue! - b.StandardValue!)
-                                    .map((s) => (
-                                        <Option key={s.ID} value={s.ID}>
-                                            {s.StandardValue}
-                                        </Option>
-                                    ))}
-                            </Select>
-                        </Form.Item>
+                            <div style={{ position: 'relative', top: '-15px' }}>
+                                {/* ค่าเดี่ยว */}
+                                {standardType === 'middle' && !useCustomStandard && (
+                                    <Form.Item
+                                        label="ค่าเดี่ยว"
+                                        name="standardID"
+                                        rules={[{ required: true, message: 'กรุณาเลือกค่าเดี่ยว' }]}
+                                    >
+                                        <Select placeholder="เลือกค่าเดี่ยว" onChange={handleStandardSelectChange}>
+                                            {middleStandards.map((s) => (
+                                                <Option key={s.ID} value={s.ID}>
+                                                    {s.MiddleValue}
+                                                </Option>
+                                            ))}
+                                            <Option value="custom">กำหนดเอง (ค่าเดี่ยว)</Option>
+                                        </Select>
+                                    </Form.Item>
+                                )}
+
+                                {standardType === 'middle' && useCustomStandard && (
+                                    <Form.Item
+                                        label="กำหนดเอง (ค่าเดี่ยว)"
+                                        name="customSingle"
+                                        rules={[{ required: true, message: 'กรุณากรอกค่ากลาง' }]}
+                                    >
+                                        <InputNumber
+                                            placeholder="กรอกค่ากลาง"
+                                            style={{ width: '100%' }}
+                                            value={customSingleValue}
+                                            onChange={(value) => setCustomSingleValue(value ?? undefined)}
+                                        />
+                                    </Form.Item>
+                                )}
+
+                                {/* ค่าช่วง */}
+                                {standardType === 'range' && !useCustomStandard && (
+                                    <Form.Item
+                                        label="ช่วง (Min - Max)"
+                                        name="standardID"
+                                        rules={[{ required: true, message: 'กรุณาเลือกช่วงมาตรฐาน' }]}
+                                    >
+                                        <Select placeholder="เลือกช่วง" onChange={handleStandardSelectChange}>
+                                            {rangeStandards.map((s) => (
+                                                <Option key={s.ID} value={s.ID}>
+                                                    {s.MinValue} - {s.MaxValue}
+                                                </Option>
+                                            ))}
+                                            <Option value="custom">กำหนดเอง (ช่วง)</Option>
+                                        </Select>
+                                    </Form.Item>
+                                )}
+
+                                {standardType === 'range' && useCustomStandard && (
+                                    <div className="ph-fornt-small">
+                                        <Form.Item
+                                            label="ค่าต่ำสุด (Min)"
+                                            name="customMin"
+                                            rules={[{ required: true, message: 'กรุณากรอกค่าต่ำสุด' }]}
+                                            style={{ flex: 1 }}
+                                        >
+                                            <InputNumber
+                                                placeholder="ค่าต่ำสุด"
+                                                style={{ width: '100%' }}
+                                                value={customMinValue}
+                                                onChange={(value) => setCustomMinValue(value ?? undefined)}
+                                            />
+                                        </Form.Item>
+                                        <Form.Item
+                                            label="ค่าสูงสุด (Max)"
+                                            name="customMax"
+                                            rules={[{ required: true, message: 'กรุณากรอกค่าสูงสุด' }]}
+                                            style={{ flex: 1 }}
+                                        >
+                                            <InputNumber
+                                                placeholder="ค่าสูงสุด"
+                                                style={{ width: '100%' }}
+                                                value={customMaxValue}
+                                                onChange={(value) => setCustomMaxValue(value ?? undefined)}
+                                            />
+                                        </Form.Item>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="bod-form-group">
