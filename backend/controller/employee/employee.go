@@ -2,11 +2,12 @@ package employee
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
+	"github.com/gin-gonic/gin"
 )
 
 func UpdateRole(c *gin.Context) {
@@ -67,4 +68,177 @@ func GetEmployees(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, employees)
+}
+
+// UpdateEmployeeInfo แก้ไขข้อมูลพนักงาน (PUT /api/employees/:id)
+func UpdateEmployeeInfo(c *gin.Context) {
+	id := c.Param("id")
+	db := config.DB()
+
+	// รับ multipart form
+	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form data"})
+		return
+	}
+
+	form := c.Request.MultipartForm
+	firstName := form.Value["firstName"]
+	lastName := form.Value["lastName"]
+	email := form.Value["email"]
+	phone := form.Value["phone"]
+	password := form.Value["password"] // new password
+	positionID := form.Value["positionID"]
+	roleID := form.Value["roleID"]
+
+	if len(firstName) == 0 || len(lastName) == 0 || len(email) == 0 || len(phone) == 0 || len(positionID) == 0 || len(roleID) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
+		return
+	}
+
+	var employee entity.Employee
+	if err := db.First(&employee, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Employee not found"})
+		return
+	}
+
+	employee.FirstName = firstName[0]
+	employee.LastName = lastName[0]
+	employee.Email = email[0]
+	employee.Phone = phone[0]
+
+	// เปลี่ยน password ถ้ามีการกรอกใหม่
+	if len(password) > 0 && password[0] != "" {
+		employee.Password = password[0] // 🔐 คุณควรเข้ารหัสใน production
+	}
+
+	// แปลง ID
+	posID, _ := strconv.ParseUint(positionID[0], 10, 32)
+	roleIDVal, _ := strconv.ParseUint(roleID[0], 10, 32)
+	employee.PositionID = uint(posID)
+	employee.RoleID = uint(roleIDVal)
+
+	// ถ้ามีรูปใหม่แนบ
+	file, err := c.FormFile("profile")
+	if err == nil {
+		path := "uploads/profile/" + file.Filename
+		if err := c.SaveUploadedFile(file, path); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปโหลดไฟล์ไม่สำเร็จ"})
+			return
+		}
+		employee.Profile = path
+	}
+
+	if err := db.Save(&employee).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถอัปเดตข้อมูลได้"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "แก้ไขข้อมูลสำเร็จ"})
+}
+
+// DeleteEmployee ลบพนักงาน (DELETE /api/employees/:id)
+func DeleteEmployee(c *gin.Context) {
+	id := c.Param("id")
+
+	db := config.DB()
+
+	var employee entity.Employee
+	if err := db.First(&employee, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Employee not found"})
+		return
+	}
+
+	if err := db.Delete(&employee).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete employee"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Employee deleted successfully"})
+}
+
+func CreateEmployee(c *gin.Context) {
+	db := config.DB()
+
+	// รับค่าจาก multipart form
+	firstName := c.PostForm("firstName")
+	lastName := c.PostForm("lastName")
+	email := c.PostForm("email")
+	password := c.PostForm("password")
+	phone := c.PostForm("phone")
+	positionIDStr := c.PostForm("positionID")
+	roleIDStr := c.PostForm("roleID")
+
+	// ตรวจสอบค่าที่ต้องกรอก
+	if firstName == "" || lastName == "" || email == "" || password == "" || phone == "" || positionIDStr == "" || roleIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":         "Missing required fields",
+			"firstName":     firstName,
+			"lastName":      lastName,
+			"email":         email,
+			"password":      password,
+			"phone":         phone,
+			"positionID":    positionIDStr,
+			"roleID":        roleIDStr,
+		})
+		return
+	}
+
+	// แปลง ID จาก string เป็น uint
+	positionID, err := strconv.ParseUint(positionIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid positionID"})
+		return
+	}
+	roleID, err := strconv.ParseUint(roleIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid roleID"})
+		return
+	}
+
+	// อ่านไฟล์ภาพโปรไฟล์
+	file, err := c.FormFile("profile")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ต้องแนบรูปโปรไฟล์"})
+		return
+	}
+
+	// อัปโหลดไฟล์
+	path := "uploads/profile/" + file.Filename
+	if err := c.SaveUploadedFile(file, path); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปโหลดไฟล์ไม่สำเร็จ"})
+		return
+	}
+
+	// ตรวจสอบว่ามี Position จริงหรือไม่
+	var position entity.Position
+	if err := db.First(&position, uint(positionID)).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ตำแหน่งไม่ถูกต้อง"})
+		return
+	}
+
+	// ตรวจสอบว่ามี Role จริงหรือไม่
+	var role entity.Role
+	if err := db.First(&role, uint(roleID)).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "บทบาทไม่ถูกต้อง"})
+		return
+	}
+
+	// สร้าง Employee
+	employee := entity.Employee{
+		FirstName:  firstName,
+		LastName:   lastName,
+		Email:      email,
+		Password:   password, // 🔐 ใน production ควรเข้ารหัส
+		Phone:      phone,
+		Profile:    path,
+		PositionID: uint(positionID),
+		RoleID:     uint(roleID),
+	}
+
+	if err := db.Create(&employee).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "บันทึกไม่สำเร็จ"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "สร้างพนักงานสำเร็จ"})
 }
