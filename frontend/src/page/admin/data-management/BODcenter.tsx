@@ -202,10 +202,11 @@ const TDSCentralForm: React.FC = () => {
             const res2 = await createBOD(payloadAfter);
 
             if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
-                messageApi.success('บันทึกข้อมูล pH ก่อนและหลังบำบัดสำเร็จ');
+                messageApi.success('บันทึกข้อมูลBODก่อนและหลังบำบัดสำเร็จ');
                 form.resetFields();
-                // setSelectedTreatmentID(null);
-                // setUseCustomStandard(false);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000); // รอ 1 วินาทีก่อนรีเฟรช เพื่อให้ข้อความ success แสดงทัน
             } else {
                 message.error('ไม่สามารถบันทึกข้อมูลก่อนหรือหลังได้');
             }
@@ -225,8 +226,12 @@ const TDSCentralForm: React.FC = () => {
             if (response.status === 201) {
                 messageApi.open({
                     type: 'success',
-                    content: 'การบันทึกข้อมูลสำเร็จ',
+                    content: 'การบันทึกข้อมูลBODสำเร็จ',
                 });
+                form.resetFields();
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000); // รอ 1 วินาทีก่อนรีเฟรช
             } else {
                 throw new Error(`การบันทึกข้อมูลไม่สำเร็จ สถานะ: ${response.status}`);
             }

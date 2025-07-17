@@ -332,7 +332,7 @@ export const CreatePH = async (payload: CreatePHInterface): Promise<AxiosRespons
     });
 
     if (response.status === 201) {
-      message.success("บันทึกข้อมูลสำเร็จ");
+      // message.success("บันทึกข้อมูลสำเร็จ2");
       return response; // ✅ ตอนนี้ TypeScript จะไม่ฟ้องแล้ว
     } else {
       console.error("Unexpected status:", response.status);
