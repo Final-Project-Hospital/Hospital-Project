@@ -70,6 +70,7 @@ func main() {
 		public.GET("/get-ph/:id", phcenter.GetPHbyID)
 		public.PATCH("/update-ph/:id", phcenter.UpdatePH)
 		public.DELETE("/delete-ph/:id", phcenter.DeletePH)
+		public.GET("/get-first-ph", phcenter.GetfirstPH)
 
 		//TDS
 		public.POST("/create-tds", tdscenter.CreateTDS)
@@ -77,6 +78,7 @@ func main() {
 		public.GET("/get-tds/:id", tdscenter.GetTDSbyID)
 		public.PATCH("/update-tds/:id", tdscenter.UpdateTDS)
 		public.DELETE("/delete-tds/:id", tdscenter.DeleteTDS)
+		public.GET("/get-first-tds", tdscenter.GetfirstTDS)
 
 		//TKN
 		public.POST("/create-tkn", tkncenter.CreateTKN)

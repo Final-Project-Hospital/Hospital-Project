@@ -1,4 +1,4 @@
-.ph-container {
+.tds-container {
   background: white;
   padding: 20px 30px;
   border-radius: 20px;
@@ -6,50 +6,47 @@
   max-width: 80%;
   margin: 0 auto;
   margin-bottom: 40px;
-  /* ✅ เพิ่มช่องว่างขอบล่าง */
   width: 100%;
   box-sizing: border-box;
   font-size: 14px;
 }
 
-/* ปรับ input ให้มี border-radius 50px */
-.ph-container .ant-input,
-.ph-container .ant-input-number,
-.ph-container .ant-picker,
-.ph-container .ant-select-selector {
+.tds-container .ant-input,
+.tds-container .ant-input-number,
+.tds-container .ant-picker,
+.tds-container .ant-select-selector {
   border-radius: 50px !important;
 }
 
-.ph-container .ant-input-number-handler-wrap {
+.tds-container .ant-input-number-handler-wrap {
   border-radius: 0 50px 50px 0 !important;
   overflow: hidden;
 }
 
-.form-group-ph {
+.form-group-tds {
   display: flex;
   gap: 30px;
   flex-wrap: wrap;
 }
 
-.form-group-ph .ant-form-item {
+.form-group-tds .ant-form-item {
   flex: 1 1 300px;
-  /* ทำให้มีขั้นต่ำ 300px และยืดหดได้ */
 }
 
-.form-group-mini-ph {
+.form-group-mini-tds {
   width: 48%;
 }
 
-.full-width-ph {
+.full-width-tds {
   width: 100%;
 }
 
-.red-text-ph {
+.red-text-tds {
   color: red;
   font-weight: bold;
 }
 
-.form-actions-ph {
+.form-actions-tds {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -58,9 +55,9 @@
   margin-bottom: 9px;
 }
 
-.cancel-ph,
-.reset-ph,
-.submit-ph {
+.cancel-tds,
+.reset-tds,
+.submit-tds {
   padding: 10px 10px;
   min-width: 80px;
   height: inherit;
@@ -74,81 +71,81 @@
 }
 
 /* ปุ่มแต่ละแบบ */
-.cancel-ph {
+.cancel-tds {
   background-color: #949494;
   color: white;
   margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
-.reset-ph {
+.reset-tds {
   background-color: #ffffff;
   color: #326667;
   margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
-.submit-ph {
+.submit-tds {
   background-color: #326667;
   color: white;
   transition: all 0.2s ease-in-out;
 }
 
-.submit-ph:hover {
+.submit-tds:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #358788 !important;
   transform: scale(1.05) !important;
 }
 
-.reset-ph:hover {
+.reset-tds:hover {
   color: #326667 !important;
   background-color: #ffffff !important;
   transform: scale(1.05) !important;
 }
 
-.cancel-ph:hover {
+.cancel-tds:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #646464 !important;
   transform: scale(1.05) !important;
 }
-.ph-fornt-small {
+.tds-fornt-small {
   display: flex;
   gap: 16px;
 }
 
 /* Responsive behavior */
 @media (max-width: 768px) {
-  .form-group-ph {
+  .form-group-tds {
     flex-direction: column;
     gap: 16px;
   }
 
-  .form-group-ph .ant-form-item {
+  .form-group-tds .ant-form-item {
     flex: 1 1 100%;
   }
 
-  .form-actions-ph {
+  .form-actions-tds {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .cancel-ph,
-  .reset-ph,
-  .submit-ph {
+  .cancel-tds,
+  .reset-tds,
+  .submit-tds {
     width: 100%;
     margin-top: 10px;
   }
 
-  .from-mini-ph {
+  .from-mini-tds {
     width: 100%;
   }
-  .fornt-small-ph .ant-form-item-label > label {
+  .fornt-small-tds .ant-form-item-label > label {
   font-size: small !important;}
   
 }
 
 @media (max-width: 1024px) {
-  .from-mini-ph {
+  .from-mini-tds {
     width: 100%;
   }
 }
