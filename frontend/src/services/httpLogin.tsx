@@ -4,6 +4,16 @@ import { UsersInterface } from "../interface/IUser";
 
 const apiUrl = "http://localhost:8000";
 
+export interface SignupInput {
+  FirstName: string;
+  LastName: string;
+  Email: string;
+  Phone?: string; 
+  Password: string;
+  Profile?: string;
+  PositionID: number;
+}
+
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
   const tokenType = localStorage.getItem("token_type");
@@ -29,6 +39,22 @@ const getHeaders = (): Record<string, string> => {
     "Content-Type": "application/json",
     Authorization: `${Bearer} ${Authorization}`,
   };
+};
+
+export const SignupUser = async (
+  input: SignupInput
+): Promise<UsersInterface | false> => {
+  try {
+    const response = await axios.post(
+      `${apiUrl}/signup`,
+      input,
+      { headers: getHeaders() }
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("Signup error:", error.response?.data || error.message);
+    return false;
+  }
 };
 
 
