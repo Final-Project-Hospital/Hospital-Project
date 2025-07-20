@@ -17,7 +17,13 @@ func AddLogin(c *gin.Context) {
 	db := config.DB()
 
 	var user entity.Employee
-	if err := db.Preload("Role").Preload("Position").Where("email = ? AND password = ?", loginData.Email, loginData.Password).First(&user).Error; err != nil {
+	if err := db.Preload("Role").Preload("Position").
+		Where("email = ?", loginData.Email).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
+		return
+	}
+
+	if !config.CheckPasswordHash([]byte(loginData.Password), []byte(user.Password)) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
@@ -35,14 +41,13 @@ func AddLogin(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"token_type":    "Bearer",
-		"token":         signedToken,
-		"Role":      	 user.Role,
-		"EmployeeID":    	 user.ID,
-		"FirstNameUser": user.FirstName,
-		"LastNameUser":  user.LastName,
-		"Email": user.Email,
-		"Position": user.Position,
+		"token_type":     "Bearer",
+		"token":          signedToken,
+		"Role":           user.Role,
+		"EmployeeID":     user.ID,
+		"FirstNameUser":  user.FirstName,
+		"LastNameUser":   user.LastName,
+		"Email":          user.Email,
+		"Position":       user.Position,
 	})
-
 }

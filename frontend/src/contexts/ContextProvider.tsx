@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, ChangeEvent } from 'react';
 
-// กำหนด type ของ initialState
+// Initial state type
 interface InitialState {
   chat: boolean;
   cart: boolean;
@@ -8,7 +8,7 @@ interface InitialState {
   notification: boolean;
 }
 
-// กำหนด type สำหรับ context value
+// Context value type
 interface StateContextType {
   screenSize: number | undefined;
   setScreenSize: React.Dispatch<React.SetStateAction<number | undefined>>;
@@ -28,7 +28,7 @@ interface StateContextType {
   handleClick: (clicked: keyof InitialState) => void;
 }
 
-// กำหนดค่าเริ่มต้นของ initialState
+// Initial state value
 const initialState: InitialState = {
   chat: false,
   cart: false,
@@ -60,8 +60,9 @@ export const ContextProvider: React.FC<ContextProviderProps> = ({ children }) =>
     localStorage.setItem('colorMode', color);
   };
 
+  // toggle แบบเปิด/ปิด ถ้ากดซ้ำ
   const handleClick = (clicked: keyof InitialState) =>
-    setIsClicked({ ...initialState, [clicked]: true });
+    setIsClicked(prev => ({ ...initialState, [clicked]: !prev[clicked] }));
 
   return (
     <StateContext.Provider

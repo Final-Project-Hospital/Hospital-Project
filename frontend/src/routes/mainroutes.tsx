@@ -3,7 +3,6 @@ import { useRoutes, RouteObject  } from "react-router-dom";
 import Loadable from "../component/third-patry/Loadable";
 
 const Login = Loadable(lazy(() => import("../page/login")));
-const Register = Loadable(lazy(() => import("../page/signup/signup"))); // ยังไม่ทำ
 
 // User Role
 const User = Loadable(lazy(() => import("../page/user/")));
@@ -104,9 +103,7 @@ const MainRoutes = (): RouteObject[] => [
     path: "/",
     children: [
       { index: true, element: <Login /> },
-      { path: "/register", element: <Register /> },
       { path: "*", element: <Login /> },
-      { path: "/register", element: <Register /> },
     ],
   },
 ];
