@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import LoginPopup from "./modal/LoginPopup";
 import BgImage from "../../assets/bg-image.jpg";
 import Main from "./background";
@@ -18,7 +17,6 @@ const Login = () => {
 
   return (
     <>
-      {/* ใส่ blur และ overlay เมื่อ popup แสดง */}
       <div className="blur-sm bg-black/30">
         <div style={bgImage}>
           <Main />

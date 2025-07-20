@@ -1,51 +1,67 @@
 import { useState, useRef } from "react";
 import Signin from "./Signin";
 import Login from "./Login";
-import Logo from "../../../assets/enviromentlogo.jpg"
+import Logo from "../../../assets/background profile.jpg";
 
-const LoginPopup = ({ loginPopup, handleLoginPopup } : any) => {
+const LoginPopup = ({ loginPopup, handleLoginPopup }: any) => {
   const [showSignIn, setShowSignIn] = useState(false);
-
-  const handleSignIn = () => {
-    setShowSignIn(!showSignIn);
-  };
-
   const loginPopupRef = useRef<HTMLDivElement>(null);
 
-  window.addEventListener("click", (e) => {
+  const handleBgClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (e.target === loginPopupRef.current) {
       handleLoginPopup(false);
     }
-  });
-
-  const bgImage = {
-    width: "100%",
-    height: "100%",
-    backgroundImage: `url(${Logo})`,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
   };
+
   return (
     <>
       {loginPopup && (
         <div
           ref={loginPopupRef}
-          className="fixed top-0 left-0 w-full h-full z-50 overflow-y-auto"
+          onClick={handleBgClick}
+          className="fixed top-0 left-0 w-full h-full z-50 flex items-center justify-center bg-black/20"
         >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-md w-[90%] sm:w-auto mx-auto bg-white ">
-            <div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center sm:w-[600px] md:w-[700px] relative">
-                {showSignIn ? (
-                  <Signin handleSignIn={handleSignIn} />
-                ) : (
-                  <Login handleSignIn={handleSignIn} />
-                )}
-                <div
-                  className="hidden sm:block rounded-e-2xl sm:h-[450px]"
-                  style={bgImage}
-                ></div>
+          <div className="
+            bg-white rounded-2xl shadow-lg flex flex-col 
+            md:flex-row w-full max-w-5xl mx-2 my-8 overflow-hidden
+          ">
+            {/* Left - Image + Info */}
+            <div className="
+              hidden md:flex flex-col justify-between items-start
+              w-1/2 min-w-[320px] max-w-[520px]
+              bg-gradient-to-t from-teal-100 to-white relative
+            ">
+              <img
+                src={Logo}
+                alt="Logo"
+                className="w-full h-full object-cover absolute inset-0 opacity-70"
+              />
+              <div className="relative z-10 p-6 lg:p-10 flex flex-col h-full justify-end">
+                <div className="mb-auto" />
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="font-extrabold text-2xl lg:text-3xl text-white drop-shadow">ENVIRONMENT</span>
+                </div>
+                <p className="text-white/90 text-base font-light">
+                  Empowering Healthcare, One Click at a Time:
+                  <br />
+                  Your Health, Your Records, Your Control.
+                </p>
               </div>
+            </div>
+
+            {/* Right - Login / Signin */}
+            <div className="
+              flex-1 w-full
+              min-w-[260px] sm:min-w-[340px] md:min-w-[360px] lg:min-w-[400px]
+              max-w-full
+              p-4 sm:p-8 lg:p-14
+              flex flex-col justify-center bg-white
+            ">
+              {showSignIn ? (
+                <Signin handleSignIn={() => setShowSignIn(false)} />
+              ) : (
+                <Login handleSignIn={() => setShowSignIn(true)} />
+              )}
             </div>
           </div>
         </div>
