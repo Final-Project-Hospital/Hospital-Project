@@ -254,7 +254,7 @@ export const AddMiddleStandard = async (
     });
 
     if (response.status === 201) {
-      message.success("บันทึกข้อมูลสำเร็จ");
+      // message.success("บันทึกข้อมูลสำเร็จ");
       return response.data; // ✅ return ข้อมูลที่ตรงกับ interface
     } else {
       console.error("Unexpected status:", response.status);
@@ -279,7 +279,7 @@ export const AddRangeStandard = async (
     });
 
     if (response.status === 201) {
-      message.success("บันทึกข้อมูลสำเร็จ");
+      // message.success("บันทึกข้อมูลสำเร็จ");
       return response.data; // ✅ return ข้อมูลที่ตรงกับ interface
     } else {
       console.error("Unexpected status:", response.status);
