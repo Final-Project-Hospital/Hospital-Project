@@ -10,11 +10,11 @@ import {
   GetSensorDataParametersBySensorDataID,
   ListDataHardwareParameterByParameter,
 } from "../../../../../services/hardware";
-import LineChart from "../chart/index";
-import Area from "../../../../../component/admin/charts/Area";
-import Bar from "../../../../../component/admin/charts/Bar";
-import ColorMapping from "../../../../../component/admin/charts/ColorMapping";
-import Stacked from "../../../../../component/admin/charts/Stacked";
+import LineChart from "../chart/line/index";
+import Area from "../chart/area/index";
+import Bar from "../chart/bar/index";
+import ColorMapping from "../chart/mapping/index";
+import Stacked from "../chart/stack/index";
 import EditParameterModal from "./edit";
 
 const Index = () => {
@@ -155,15 +155,21 @@ const Index = () => {
       <section className="max-w-screen-2xl mx-auto bg-white p-4 rounded-lg shadow">
         <TableData hardwareID={hardwareID} />
       </section>
-      <section className="max-w-screen-2xl mx-auto bg-white p-6 rounded-lg shadow space-y-4">
+            <section className="max-w-screen-2xl mx-auto bg-white p-6 rounded-lg shadow space-y-4">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">Charts</h2>
         {uniqueGraphs.length === 0 ? (
           <div className="text-center text-red-500 font-semibold">No Data</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div
+            className={
+              uniqueGraphs.length === 1
+                ? "grid grid-cols-1 gap-6"
+                : "grid grid-cols-1 md:grid-cols-2 gap-6"
+            }
+          >
             {uniqueGraphs.map((g, index, arr) => {
               const totalCharts = uniqueGraphs.length;
-              const isLastAndOdd = index === arr.length - 1 && totalCharts % 2 === 1;
+              const isLastAndOdd = index === arr.length - 1 && totalCharts % 2 === 1 && totalCharts !== 1;
               const parameters = g.ParametersWithColor.map(p => p.parameter);
               const colors = g.ParametersWithColor.map(p => p.color);
 
@@ -191,11 +197,16 @@ const Index = () => {
                     return null;
                 }
               })();
-
               return (
                 <div
                   key={g.ID}
-                  className={`p-3 bg-gray-50 rounded shadow ${isLastAndOdd ? "md:col-span-2" : ""}`}
+                  className={
+                    uniqueGraphs.length === 1
+                      ? "p-3 bg-gray-50 rounded shadow"
+                      : `p-3 bg-gray-50 rounded shadow ${
+                          isLastAndOdd ? "md:col-span-2" : ""
+                        }`
+                  }
                 >
                   {ChartComponent}
                   <p className="text-sm mt-2 flex flex-wrap items-center gap-2">
@@ -203,7 +214,10 @@ const Index = () => {
                       <span
                         key={idx}
                         className="px-2 py-1 text-xs rounded-full"
-                        style={{ backgroundColor: p.color ?? "#ccc", color: "#fff" }}
+                        style={{
+                          backgroundColor: p.color ?? "#ccc",
+                          color: "#fff",
+                        }}
                       >
                         {p.parameter}
                       </span>

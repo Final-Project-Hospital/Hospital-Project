@@ -98,35 +98,34 @@ const Navbar = () => {
         color={currentColor}
         icon={<AiOutlineMenu />}
       />
-<div className="flex">
-  <NavButton
-    title="Notification"
-    dotColor="rgb(254, 201, 15)"
-    customFunc={() => handleClick('notification')}
-    color={currentColor}
-    icon={<RiNotification3Line />}
-  />
-  <TooltipComponent content="Profile" position="BottomCenter">
-    <div
-      className="flex items-center gap-2 cursor-pointer p-1 hover:bg-light-gray rounded-lg"
-      onClick={() => handleClick('userProfile')}
-    >
-      <img
-        className="rounded-full w-10 h-10"
-        src={profileImg}
-        alt="user-profile"
-        onError={(e) => { (e.target as HTMLImageElement).src = avatar }}
-      />
-      <span className="text-gray-400 font-bold ml-1 text-14">
-        {fullName || 'ผู้ใช้'}
-      </span>
-      <MdKeyboardArrowDown className="text-gray-400 text-14" />
-    </div>
-  </TooltipComponent>
-  {/* แยก rendering ตาม state */}
-  {isClicked.notification && <Notification />}
-  {isClicked.userProfile && <UserProfile />}
-</div>
+      <div className="flex">
+        <NavButton
+          title="Notification"
+          dotColor="rgb(254, 201, 15)"
+          customFunc={() => handleClick('notification')}
+          color={currentColor}
+          icon={<RiNotification3Line />}
+        />
+        <TooltipComponent content="Profile" position="BottomCenter">
+          <div
+            className="flex items-center gap-2 cursor-pointer p-1 hover:bg-light-gray rounded-lg"
+            onClick={() => handleClick('userProfile')}
+          >
+            <img
+              className="rounded-full w-10 h-10"
+              src={profileImg}
+              alt="user-profile"
+              onError={(e) => { (e.target as HTMLImageElement).src = avatar }}
+            />
+            <span className="text-gray-400 font-bold ml-1 text-14">
+              {fullName || 'ผู้ใช้'}
+            </span>
+            <MdKeyboardArrowDown className="text-gray-400 text-14" />
+          </div>
+        </TooltipComponent>
+        {isClicked.notification && <Notification />}
+        {isClicked.userProfile && <UserProfile />}
+      </div>
     </div>
   );
 };

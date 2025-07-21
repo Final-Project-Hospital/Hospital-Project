@@ -42,7 +42,7 @@ const UserRoutes = (): RouteObject[] => [
     path: "/", element: <User />,
   },
   {
-    path: "/user",
+    path: "/guest",
     children: [
       { index: true, element: <User /> },
     ],
@@ -126,7 +126,10 @@ function ConfigRoutes() {
       case 'Admin':
         routes = AdminRoutes();
         break;
-      case 'User':
+      case 'Employee':
+        routes = AdminRoutes();
+        break;
+      case 'Guest':
         routes = UserRoutes();
         break;
       default:
