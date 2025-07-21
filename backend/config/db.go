@@ -57,15 +57,7 @@ func SetupDatabase() {
 	}
 	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
 
-	// // Standaed
-	// standardValues := []float32{5.0, 6.0, 7.0, 8.0, 9.0, 20.0, 30.0, 1.0, 500.0, 0.5, 35.0}
-	// for _, val := range standardValues {
-	// 	Standard := entity.Standard{StandardValue: val}
-	// 	db.FirstOrCreate(&Standard, entity.Standard{StandardValue: val})
-	// }
-
 	// Standaed
-	// จำลองข้อมูลแบบ "ค่าช่วง"
 	ranges := []struct {
 		min float32
 		max float32

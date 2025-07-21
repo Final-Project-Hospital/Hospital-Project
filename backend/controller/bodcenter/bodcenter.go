@@ -120,13 +120,17 @@ func GetfirstBOD(c *gin.Context) {
 		StandardID             uint      `json:"StandardID"`
 		UnitID                 uint      `json:"UnitID"`
 		EmployeeID             uint      `json:"EmployeeID"`
+		MinValue               uint      `json:"MinValue"`
+		MiddleValue            uint      `json:"MiddleValue"`
+		MaxValue               uint      `json:"MaxValue"`
 	}
 
 	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
 	result := db.Model(&entity.EnvironmentalRecord{}).
-		Select(`id, date, data, note,before_after_treatment_id,environment_id ,parameter_id ,standard_id ,unit_id ,employee_id`).
+		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note,environmental_records.before_after_treatment_id,environmental_records.environment_id ,environmental_records.parameter_id ,environmental_records.standard_id ,environmental_records.unit_id ,environmental_records.employee_id,standards.min_value,standards.middle_value,standards.max_value`).
+		Joins("inner join standards on environmental_records.standard_id = standards.id").
 		Where("parameter_id = ?", parameter.ID).
-		Order("created_at desc").
+		Order("environmental_records.created_at desc").
 		Scan(&firstbod)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
