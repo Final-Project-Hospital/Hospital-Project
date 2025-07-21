@@ -123,3 +123,39 @@ func UpdateEmployeeByID(c *gin.Context) {
 		"user":    employee,
 	})
 }
+
+func SignUpByUser(c *gin.Context) {
+	var input entity.Employee
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	db := config.DB()
+
+	var exist entity.Employee
+	if err := db.Where("email = ?", input.Email).First(&exist).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email already exists"})
+		return
+	}
+
+	hashedPassword, err := config.HashPassword(input.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Password hashing failed"})
+		return
+	}
+
+	input.Password = hashedPassword
+
+	input.RoleID = 3
+
+	if err := db.Create(&input).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	input.Password = ""
+
+	c.JSON(http.StatusOK, input)
+}

@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
-import './PHcenter.css';
+import './TDScenter.css';
 import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input, message } from 'antd';
 import { ListBeforeAfterTreatment, ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, ListUnit } from '../../../services/index';
-import { CreatePH, GetfirstPH } from '../../../services/phService';
+import { CreateTDS, GetfirstTDS } from '../../../services/tdsService';
 
 import { ListBeforeAfterTreatmentInterface } from '../../../interface/IBeforeAfterTreatment';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../interface/IStandard';
 import { ListUnitInterface } from '../../../interface/IUnit';
-import { CreatePHInterface } from '../../../interface/IpH';
+import { CreateTDSInterface } from '../../../interface/ITds';
 
 const { Option } = Select;
 
-const PHCentralForm: React.FC = () => {
+const TDSCentralForm: React.FC = () => {
     const [form] = Form.useForm();
 
     const [beforeAfterOptions, setBeforeAfterOptions] = useState<ListBeforeAfterTreatmentInterface[]>([]);
@@ -31,7 +31,7 @@ const PHCentralForm: React.FC = () => {
 
     const renderCustomTreatmentLabel = (text: string) => (
         <>
-            ค่า pH บริเวณบ่อพักน้ำทิ้ง
+            ค่า TDS บริเวณบ่อพักน้ำทิ้ง
             <span style={{ color: '#f45415ff', fontWeight: 'bold' }}>{text}</span>
             เข้าระบบบำบัด
         </>
@@ -52,11 +52,11 @@ const PHCentralForm: React.FC = () => {
             if (standardsRange) setRangeStandards(standardsRange);
         };
 
-        const GetfirstrowPH = async () => {
+        const GetfirstrowTDS = async () => {
             try {
-                const responfirstPH = await GetfirstPH();
-                if (responfirstPH.status === 200) {
-                    const data = responfirstPH.data;
+                const responfirstTDS = await GetfirstTDS();
+                if (responfirstTDS.status === 200) {
+                    const data = responfirstTDS.data;
 
                     console.log(data.StandardID)
                     const isMiddle = data.MinValue === 0 && data.MaxValue === 0;
@@ -70,15 +70,15 @@ const PHCentralForm: React.FC = () => {
                     // เผื่อใช้กับตัวแสดงผลหรือกรณีอื่น
                     setSelectedTreatmentID(data.BeforeAfterTreatmentID);
                 } else {
-                    message.error("ไม่สามารถดึงข้อมูล pH ล่าสุดได้");
+                    message.error("ไม่สามารถดึงข้อมูล TDS ล่าสุดได้");
                 }
             } catch (error) {
-                console.error("Error fetching first PH:", error);
+                console.error("Error fetching first TDS:", error);
                 message.error("เกิดข้อผิดพลาดในการโหลดค่าล่าสุด");
             }
         };
         fetchInitialData();
-        GetfirstrowPH();
+        GetfirstrowTDS();
     }, []);
 
     const handleStandardGroupChange = (value: string) => {
@@ -154,7 +154,7 @@ const PHCentralForm: React.FC = () => {
 
             if (selectedTreatmentID === 3) {
                 // กรณี "ก่อนและหลังบำบัด" ส่งข้อมูล 2 ชุด
-                const payloadBefore: CreatePHInterface = {
+                const payloadBefore: CreateTDSInterface = {
                     Date: combinedDate.toISOString(),
                     Data: values.valueBefore,
                     BeforeAfterTreatmentID: 1,
@@ -165,7 +165,7 @@ const PHCentralForm: React.FC = () => {
                     Note: values.note,
                 };
 
-                const payloadAfter: CreatePHInterface = {
+                const payloadAfter: CreateTDSInterface = {
                     Date: combinedDate.toISOString(),
                     Data: values.valueAfter,
                     BeforeAfterTreatmentID: 2,
@@ -176,11 +176,11 @@ const PHCentralForm: React.FC = () => {
                     Note: values.note,
                 };
 
-                const res1 = await CreatePH(payloadBefore);
-                const res2 = await CreatePH(payloadAfter);
+                const res1 = await CreateTDS(payloadBefore);
+                const res2 = await CreateTDS(payloadAfter);
 
                 if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
-                    messageApi.success('บันทึกข้อมูล pH ก่อนและหลังบำบัดสำเร็จ');
+                    messageApi.success('บันทึกข้อมูล TDS ก่อนและหลังบำบัดสำเร็จ');
                     form.resetFields();
                     setSelectedTreatmentID(null);
                     setUseCustomStandard(false);
@@ -192,7 +192,7 @@ const PHCentralForm: React.FC = () => {
                 }
             } else {
                 // กรณีทั่วไป ส่งข้อมูลครั้งเดียว
-                const payload: CreatePHInterface = {
+                const payload: CreateTDSInterface = {
                     Date: combinedDate.toISOString(),
                     Data: values.data,
                     BeforeAfterTreatmentID: values.beforeAfterTreatmentID,
@@ -203,10 +203,10 @@ const PHCentralForm: React.FC = () => {
                     Note: values.note,
                 };
 
-                const response = await CreatePH(payload);
+                const response = await CreateTDS(payload);
 
                 if ((response as any)?.status === 201) {
-                    messageApi.success('บันทึกข้อมูล pH สำเร็จ');
+                    messageApi.success('บันทึกข้อมูล TDS สำเร็จ');
                     form.resetFields();
                     setSelectedTreatmentID(null);
                     setUseCustomStandard(false);
@@ -223,7 +223,7 @@ const PHCentralForm: React.FC = () => {
             setCustomMinValue(undefined);
             setCustomMaxValue(undefined);
         } catch (error) {
-            console.error('Error creating pH:', error);
+            console.error('Error creating TDS:', error);
             message.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
         }
     };
@@ -235,7 +235,7 @@ const PHCentralForm: React.FC = () => {
     };
 
     return (
-        <div className="ph-container">
+        <div className="tds-container">
             {contextHolder}
             <Form
                 form={form}
@@ -247,17 +247,17 @@ const PHCentralForm: React.FC = () => {
                     standardType: 'middle',
                 }}
             >
-                <div className="form-group-ph">
+                <div className="form-group-tds">
                     <Form.Item label="วันที่บันทึกข้อมูล" name="date">
-                        <DatePicker format="DD/MM/YYYY" className="full-width-ph" placeholder="เลือกวัน" />
+                        <DatePicker format="DD/MM/YYYY" className="full-width-tds" placeholder="เลือกวัน" />
                     </Form.Item>
                     <Form.Item label="เวลาที่บันทึกข้อมูล" name="time">
-                        <TimePicker format="HH:mm" className="full-width-ph" placeholder="เลือกเวลา" />
+                        <TimePicker format="HH:mm" className="full-width-tds" placeholder="เลือกเวลา" />
                     </Form.Item>
                 </div>
 
-                <div className="form-group-ph">
-                    <div className="form-group-mini-ph">
+                <div className="form-group-tds">
+                    <div className="form-group-mini-tds">
                         <Form.Item
                             label="หน่วยที่วัด"
                             required
@@ -300,7 +300,7 @@ const PHCentralForm: React.FC = () => {
                         </Form.Item>
                     </div>
 
-                    <div className="form-group-mini-ph">
+                    <div className="form-group-mini-tds">
                         <Form.Item label="ประเภทมาตรฐาน" name="standardType">
                             <Select defaultValue="middle" onChange={handleStandardGroupChange}>
                                 <Option value="middle">ค่าเดี่ยว</Option>
@@ -363,7 +363,7 @@ const PHCentralForm: React.FC = () => {
 
                             {/* ===== ช่วง Min - Max แบบกรอกเอง ===== */}
                             {standardType === 'range' && useCustomStandard && (
-                                <div className="ph-fornt-small" style={{ display: 'flex', gap: '16px' }}>
+                                <div className="tds-fornt-small" style={{ display: 'flex', gap: '16px' }}>
                                     <Form.Item
                                         label="ค่าต่ำสุด (Min)"
                                         name="customMin"
@@ -396,8 +396,8 @@ const PHCentralForm: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="form-group-ph">
-                    <div className="form-group-mini-ph">
+                <div className="form-group-tds">
+                    <div className="form-group-mini-tds">
                         <Form.Item
                             label="ก่อน / หลัง / ก่อนและหลังบำบัด"
                             name="beforeAfterTreatmentID"
@@ -412,7 +412,7 @@ const PHCentralForm: React.FC = () => {
                             </Select>
                         </Form.Item>
                     </div>
-                    <div className="form-group-mini-ph">
+                    <div className="form-group-mini-tds">
                         {selectedTreatmentID === 3 ? (
                             <div style={{ display: 'flex', gap: '30px' }}>
                                 <Form.Item
@@ -445,20 +445,20 @@ const PHCentralForm: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="form-group-ph">
+                <div className="form-group-tds">
                     <Form.Item label="หมายเหตุ" name="note">
                         <Input.TextArea rows={2} placeholder="กรอกหมายเหตุ (ถ้ามี)" />
                     </Form.Item>
                 </div>
 
-                <Form.Item className="form-actions-ph">
-                    <Button className="cancel-ph" htmlType="button" onClick={handleCancel}>
+                <Form.Item className="form-actions-tds">
+                    <Button className="cancel-tds" htmlType="button" onClick={handleCancel}>
                         ยกเลิก
                     </Button>
-                    <Button htmlType="reset" className="reset-ph">
+                    <Button htmlType="reset" className="reset-tds">
                         รีเซ็ต
                     </Button>
-                    <Button type="primary" htmlType="submit" className="submit-ph">
+                    <Button type="primary" htmlType="submit" className="submit-tds">
                         บันทึก
                     </Button>
                 </Form.Item>
@@ -467,4 +467,4 @@ const PHCentralForm: React.FC = () => {
     );
 };
 
-export default PHCentralForm;
+export default TDSCentralForm;

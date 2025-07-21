@@ -1,59 +1,17 @@
 package phcenter
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
-	//"fmt"
 	"time"
 
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
-
-// func CreatePH(c *gin.Context) {
-// 	var input entity.EnvironmentalRecord
-
-// 	if err := c.ShouldBindJSON(&input); err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	db := config.DB()
-
-// 	var parameter entity.Parameter
-// 	if err := db.Where("parameter_name = ?","Potential of Hydrogen").First(&parameter).Error; err != nil {
-// 		fmt.Println("Error fetching parameter:", err)
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
-// 		return
-// 	}
-
-// 	var environment entity.Environment
-// 	if err := db.Where("environment_name = ?","น้ำเสีย").First(&environment).Error; err != nil {
-// 		fmt.Println("Error fetching environment:", err)
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
-// 		return
-// 	}
-
-// 	ph := entity.EnvironmentalRecord{
-// 		Date:                   input.Date,
-// 		Data:                   input.Data,
-// 		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
-// 		EnvironmentID:          environment.ID,
-// 		ParameterID:            parameter.ID, 
-// 		StandardID:             input.StandardID,
-// 		UnitID:                 input.UnitID,
-// 		EmployeeID:             input.EmployeeID,
-// 		Note:					input.Note,
-// 	}
-
-// 	if err := db.Create(&ph).Error; err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusCreated, gin.H{"message": "บันทึกข้อมูล pH สำเร็จ", "data": ph})
-// }
 
 func CreatePH(c *gin.Context) {
 	var rawData map[string]interface{}
@@ -71,7 +29,7 @@ func CreatePH(c *gin.Context) {
 	}
 
 	standardID := uint(rawData["StandardID"].(float64))
-	unitID := uint(rawData["UnitID"].(float64))
+	// unitID := uint(rawData["UnitID"].(float64))
 	employeeID := uint(rawData["EmployeeID"].(float64))
 	note := ""
 	if rawData["Note"] != nil {
@@ -81,6 +39,29 @@ func CreatePH(c *gin.Context) {
 
 	// เชื่อมฐานข้อมูล
 	db := config.DB()
+	var unitID uint
+	if rawUnit, ok := rawData["UnitID"]; ok && rawUnit != nil {
+		if unitFloat, ok := rawUnit.(float64); ok {
+			unitID = uint(unitFloat)
+		}
+	}
+
+	customUnit, hasCustomUnit := rawData["CustomUnit"].(string)
+	if hasCustomUnit && customUnit != "" {
+		var existingUnit entity.Unit
+		if err := db.Where("unit_name = ?", customUnit).First(&existingUnit).Error; err == nil {
+			unitID = existingUnit.ID
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			newUnit := entity.Unit{UnitName: customUnit}
+			if err := db.Create(&newUnit).Error; err != nil {
+				fmt.Println("ไม่สามารถสร้างหน่วยใหม่ได้:", err)
+			} else {
+				unitID = newUnit.ID
+			}
+		} else {
+			fmt.Println("เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err)
+		}
+	}
 
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?", "Potential of Hydrogen").First(&parameter).Error; err != nil {
@@ -96,8 +77,8 @@ func CreatePH(c *gin.Context) {
 
 	if beforeAfterID == 3 {
 		// สร้าง 2 record แยก ก่อน และ หลัง
-		valueBefore := float32(rawData["valueBefore"].(float64))
-		valueAfter := float32(rawData["valueAfter"].(float64))
+		valueBefore := rawData["valueBefore"].(float64)
+		valueAfter := rawData["valueAfter"].(float64)
 
 		recordBefore := entity.EnvironmentalRecord{
 			Date:                   dateParsed,
@@ -137,7 +118,7 @@ func CreatePH(c *gin.Context) {
 	}
 
 	// สร้างกรณีทั่วไป 1 record
-	data := float32(rawData["Data"].(float64))
+	data := rawData["Data"].(float64)
 
 	record := entity.EnvironmentalRecord{
 		Date:                   dateParsed,
@@ -261,4 +242,46 @@ func DeletePH(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "ลบข้อมูล pH สำเร็จ"})
+}
+
+func GetfirstPH(c *gin.Context) {
+	db := config.DB()
+
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?", "Potential of Hydrogen").First(&parameter).Error; err != nil {
+		fmt.Println("Error fetching parameter:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+		return
+	}
+
+	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
+	var firstph struct {
+		ID                     uint      `json:"ID"`
+		Date                   time.Time `json:"Date"`
+		Data                   float64   `json:"Data"`
+		Note                   string    `json:"Note"`
+		BeforeAfterTreatmentID uint      `json:"BeforeAfterTreatmentID"`
+		EnvironmentID          uint      `json:"EnvironmentID"`
+		ParameterID            uint      `json:"ParameterID"`
+		StandardID             uint      `json:"StandardID"`
+		UnitID                 uint      `json:"UnitID"`
+		EmployeeID             uint      `json:"EmployeeID"`
+		MinValue               uint      `json:"MinValue"`
+		MiddleValue            uint      `json:"MiddleValue"`
+		MaxValue               uint      `json:"MaxValue"`
+	}
+
+	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
+	result := db.Model(&entity.EnvironmentalRecord{}).
+		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note,environmental_records.before_after_treatment_id,environmental_records.environment_id ,environmental_records.parameter_id ,environmental_records.standard_id ,environmental_records.unit_id ,environmental_records.employee_id,standards.min_value,standards.middle_value,standards.max_value`).
+		Joins("inner join standards on environmental_records.standard_id = standards.id").
+		Where("parameter_id = ?", parameter.ID).
+		Order("environmental_records.created_at desc").
+		Scan(&firstph)
+
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": result.Error.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, firstph)
 }

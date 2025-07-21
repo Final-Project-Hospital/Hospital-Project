@@ -7,7 +7,8 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/bodcenter"
 	"github.com/Tawunchai/hospital-project/controller/building"
 	"github.com/Tawunchai/hospital-project/controller/calendar"
-	
+	"github.com/Tawunchai/hospital-project/controller/fogcenter"
+
 	"github.com/Tawunchai/hospital-project/controller/graph"
 	"github.com/Tawunchai/hospital-project/controller/hardware"
 	"github.com/Tawunchai/hospital-project/controller/logins"
@@ -60,6 +61,8 @@ func main() {
 		public.GET("/uploads/*filename", user.ServeImage)
 		public.GET("/user-data/:EmployeeID", user.GetDataByUserID)
 		public.PATCH("/employees/:EmployeeID", user.UpdateEmployeeByID)
+		public.POST("/signup", user.SignUpByUser)
+
 
 		//PH
 		public.POST("/create-ph", phcenter.CreatePH)
@@ -67,6 +70,7 @@ func main() {
 		public.GET("/get-ph/:id", phcenter.GetPHbyID)
 		public.PATCH("/update-ph/:id", phcenter.UpdatePH)
 		public.DELETE("/delete-ph/:id", phcenter.DeletePH)
+		public.GET("/get-first-ph", phcenter.GetfirstPH)
 
 		//TDS
 		public.POST("/create-tds", tdscenter.CreateTDS)
@@ -74,6 +78,7 @@ func main() {
 		public.GET("/get-tds/:id", tdscenter.GetTDSbyID)
 		public.PATCH("/update-tds/:id", tdscenter.UpdateTDS)
 		public.DELETE("/delete-tds/:id", tdscenter.DeleteTDS)
+		public.GET("/get-first-tds", tdscenter.GetfirstTDS)
 
 		//TKN
 		public.POST("/create-tkn", tkncenter.CreateTKN)
@@ -88,6 +93,16 @@ func main() {
 		public.GET("/read-ts/:id", tscenter.GetTSbyID)
 		public.PATCH("/update-ts/:id", tscenter.UpdateTS)
 		public.DELETE("/delete-ts/:id", tscenter.DeleteTS)
+
+		//BOD
+		public.POST("/create-bod", bodcenter.CreateBod)
+		public.GET("/get-first-bod", bodcenter.GetfirstBOD)
+		public.GET("/list-bod", bodcenter.ListBOD)
+		
+		//FOG
+		public.POST("/create-fog", fogcenter.CreateFog)
+		public.GET("/get-first-fog", fogcenter.GetfirstFOG)
+
 
 		//Room
 		public.GET("/rooms", room.ListRoom)
@@ -123,8 +138,7 @@ func main() {
 		public.GET("/api/employees", employee.GetEmployees)
 		public.POST("/api/employees", employee.CreateEmployee)
 
-		public.POST("/create-bod", bodcenter.CreateBod)
-
+		
 		//SelectBoxAll
 		public.GET("/list-BeforeAfterTreatment", selectBoxAll.ListBeforeAfterTreatment)
 		public.GET("/list-unit", selectBoxAll.ListUnit)

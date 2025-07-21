@@ -1,4 +1,4 @@
-.bod-container {
+.fog-container {
   /* background: white;
   padding: 24px;
   border-radius: 25px;
@@ -7,7 +7,7 @@
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box; */
-  background: white;
+    background: white;
   padding: 20px 30px;
   border-radius: 20px;
   box-shadow: 0 2px 12px #7b61ff3b;
@@ -18,8 +18,8 @@
   width: 100%;
   box-sizing: border-box;
   font-size: 14px;
+  
 }
-
 /* .bod-container label{
   color:#000000 !important;
   font-size: medium !important;
@@ -30,145 +30,116 @@
 } */
 
 /* ปรับ input ให้มี border-radius 50px */
-.bod-container .ant-input,
-.bod-container .ant-input-number,
-.bod-container .ant-picker,
-.bod-container .ant-select-selector {
+.fog-container .ant-input,
+.fog-container .ant-input-number,
+.fog-container .ant-picker,
+.fog-container .ant-select-selector {
   border-radius: 50px !important;
 }
-
-.bod-container .ant-input-number-handler-wrap {
+.fog-container .ant-input-number-handler-wrap {
   border-radius: 0 50px 50px 0 !important;
   overflow: hidden;
 }
 
-.bod-form-group {
+.fog-form-group {
   display: flex;
-  gap: 30px;
+  gap: 24px;
   flex-wrap: wrap;
-  /* min-width:initial; */
 }
 
-.bod-form-group .ant-form-item {
+
+.fog-form-group .ant-form-item {
   flex: 1 1 300px;
   /* ทำให้มีขั้นต่ำ 300px และยืดหดได้ */
 
 }
 
-
-.bod-from-mini {
-  width: 48%;
-}
-
-.bod-full-width {
+.fog-full-width {
   width: 100%;
 }
 
-.bod-red-text {
+.fog-red-text {
   color: red;
   font-weight: bold;
 }
 
-.bod-form-actions {
+.fog-form-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 9px;
-  margin-bottom: 9px;
+  margin-top: 16px;
 }
 
-.bod-cancel,
-.bod-reset,
-.bod-submit {
-  padding: 10px 10px;
+.fog-cancel,
+.fog-reset,
+.fog-submit {
+  padding: 10px 20px;
   min-width: 80px;
   height: inherit;
   text-align: center;
-  font-weight: bold;
+  font-weight: bolder;
   cursor: pointer;
   border-radius: 50px;
   border: none;
-  margin-top: -15px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  font-size:medium;
 }
 
 /* ปุ่มแต่ละแบบ */
-.bod-cancel {
+.fog-cancel {
   background-color: #949494;
   color: white;
-  margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
-.bod-reset {
+.fog-reset {
   background-color: #ffffff;
   color: #326667;
-  margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
-.bod-submit {
+.fog-submit {
   background-color: #326667;
   color: white;
   transition: all 0.2s ease-in-out;
 }
 
-.bod-submit:hover {
+.fog-submit:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #358788 !important;
   transform: scale(1.05) !important;
 }
-
-.bod-reset:hover {
-  color: #326667 !important;
+.fog-reset:hover {
+  color: #326667!important;
   background-color: #ffffff !important;
   transform: scale(1.05) !important;
 }
-
-.bod-cancel:hover {
+.fog-cancel:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #646464 !important;
   transform: scale(1.05) !important;
 }
-.bod-fornt-small {
-  display: flex;
-  gap: 16px;
-}
 
 /* Responsive behavior */
 @media (max-width: 768px) {
-  .bod-form-group {
+  .fog-form-group {
     flex-direction: column;
     gap: 16px;
   }
 
-  .bod-form-group .ant-form-item {
+  .fog-form-group .ant-form-item {
     flex: 1 1 100%;
   }
 
-  .bod-form-actions {
+  .fog-form-actions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .bod-cancel,
-  .bod-reset,
-  .bod-submit {
-    width: 100%;
-    margin-top: 10px;
-  }
-
-  .bod-from-mini {
-    width: 100%;
-  }
-  .bod-fornt-small .ant-form-item-label > label {
-  font-size: small !important;}
-  
-}
-
-@media (max-width: 1024px) {
-  .bod-from-mini {
+  .fog-cancel,
+  .fog-reset,
+  .fog-submit {
     width: 100%;
   }
 }

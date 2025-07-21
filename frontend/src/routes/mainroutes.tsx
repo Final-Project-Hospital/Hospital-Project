@@ -3,7 +3,6 @@ import { useRoutes, RouteObject  } from "react-router-dom";
 import Loadable from "../component/third-patry/Loadable";
 
 const Login = Loadable(lazy(() => import("../page/login")));
-const Register = Loadable(lazy(() => import("../page/signup/signup"))); // ยังไม่ทำ
 
 // User Role
 const User = Loadable(lazy(() => import("../page/user/")));
@@ -30,9 +29,11 @@ const DatavizTS = Loadable(lazy(() => import("../page/admin/data-visualization/T
 // data-management
 const EnvironmentTabs = Loadable(lazy(() => import("../page/admin/data-management/EnvironmentTabs")));
 const PH = Loadable(lazy(() => import("../page/admin/data-management/PHcenter")));
+const TDS = Loadable(lazy(() => import("../page/admin/data-management/TDScenter")));
 const BOD = Loadable(lazy(() => import("../page/admin/data-management/BODcenter")));
 const TKN = Loadable(lazy(() => import("../page/admin/data-management/TKNcenter")));
 const TS = Loadable(lazy(() => import("../page/admin/data-management/TScenter") ));
+const FOG = Loadable(lazy(() => import("../page/admin/data-management/FOGcenter")));
 
 
 const UserRoutes = (): RouteObject[] => [
@@ -83,12 +84,12 @@ const AdminRoutes = (): RouteObject[] => [
         path: "data-management/water",
         element: <EnvironmentTabs />, // Header + Tabs
         children: [
-          { index: true, element: <BOD /> },         // /admin/environment
-          { path: "ph", element: <PH /> },            // /admin/environment/ph
+          { index: true, element: <PH /> },         // /admin/environment
+          { path: "ph", element: <PH /> },            
           { path: "bod", element: <BOD /> },          // /admin/environment/bod
-          // { path: "tds", element: <TDS /> },          // /admin/environment/tds
+          { path: "tds", element: <TDS /> },          
           { path: "ts", element: <TS /> },
-          // { path: "fog", element: <FOG /> },
+          { path: "fog", element: <FOG /> },
           { path: "tkn", element: <TKN /> },
         ],
       },
@@ -102,9 +103,7 @@ const MainRoutes = (): RouteObject[] => [
     path: "/",
     children: [
       { index: true, element: <Login /> },
-      { path: "/register", element: <Register /> },
       { path: "*", element: <Login /> },
-      { path: "/register", element: <Register /> },
     ],
   },
 ];

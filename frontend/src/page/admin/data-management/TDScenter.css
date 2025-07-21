@@ -1,12 +1,4 @@
-.bod-container {
-  /* background: white;
-  padding: 24px;
-  border-radius: 25px;
-  box-shadow: 0 4px 20px #7b61ff3b;
-  max-width: 1000px;
-  margin: 0 auto;
-  width: 100%;
-  box-sizing: border-box; */
+.tds-container {
   background: white;
   padding: 20px 30px;
   border-radius: 20px;
@@ -14,62 +6,47 @@
   max-width: 80%;
   margin: 0 auto;
   margin-bottom: 40px;
-  /* ✅ เพิ่มช่องว่างขอบล่าง */
   width: 100%;
   box-sizing: border-box;
   font-size: 14px;
 }
 
-/* .bod-container label{
-  color:#000000 !important;
-  font-size: medium !important;
-  font-weight:500 !important;
-} */
-/* .bod-container.label{
-  font-size:larger;
-} */
-
-/* ปรับ input ให้มี border-radius 50px */
-.bod-container .ant-input,
-.bod-container .ant-input-number,
-.bod-container .ant-picker,
-.bod-container .ant-select-selector {
+.tds-container .ant-input,
+.tds-container .ant-input-number,
+.tds-container .ant-picker,
+.tds-container .ant-select-selector {
   border-radius: 50px !important;
 }
 
-.bod-container .ant-input-number-handler-wrap {
+.tds-container .ant-input-number-handler-wrap {
   border-radius: 0 50px 50px 0 !important;
   overflow: hidden;
 }
 
-.bod-form-group {
+.form-group-tds {
   display: flex;
   gap: 30px;
   flex-wrap: wrap;
-  /* min-width:initial; */
 }
 
-.bod-form-group .ant-form-item {
+.form-group-tds .ant-form-item {
   flex: 1 1 300px;
-  /* ทำให้มีขั้นต่ำ 300px และยืดหดได้ */
-
 }
 
-
-.bod-from-mini {
+.form-group-mini-tds {
   width: 48%;
 }
 
-.bod-full-width {
+.full-width-tds {
   width: 100%;
 }
 
-.bod-red-text {
+.red-text-tds {
   color: red;
   font-weight: bold;
 }
 
-.bod-form-actions {
+.form-actions-tds {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -78,9 +55,9 @@
   margin-bottom: 9px;
 }
 
-.bod-cancel,
-.bod-reset,
-.bod-submit {
+.cancel-tds,
+.reset-tds,
+.submit-tds {
   padding: 10px 10px;
   min-width: 80px;
   height: inherit;
@@ -94,81 +71,81 @@
 }
 
 /* ปุ่มแต่ละแบบ */
-.bod-cancel {
+.cancel-tds {
   background-color: #949494;
   color: white;
   margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
-.bod-reset {
+.reset-tds {
   background-color: #ffffff;
   color: #326667;
   margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
-.bod-submit {
+.submit-tds {
   background-color: #326667;
   color: white;
   transition: all 0.2s ease-in-out;
 }
 
-.bod-submit:hover {
+.submit-tds:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #358788 !important;
   transform: scale(1.05) !important;
 }
 
-.bod-reset:hover {
+.reset-tds:hover {
   color: #326667 !important;
   background-color: #ffffff !important;
   transform: scale(1.05) !important;
 }
 
-.bod-cancel:hover {
+.cancel-tds:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #646464 !important;
   transform: scale(1.05) !important;
 }
-.bod-fornt-small {
+.tds-fornt-small {
   display: flex;
   gap: 16px;
 }
 
 /* Responsive behavior */
 @media (max-width: 768px) {
-  .bod-form-group {
+  .form-group-tds {
     flex-direction: column;
     gap: 16px;
   }
 
-  .bod-form-group .ant-form-item {
+  .form-group-tds .ant-form-item {
     flex: 1 1 100%;
   }
 
-  .bod-form-actions {
+  .form-actions-tds {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .bod-cancel,
-  .bod-reset,
-  .bod-submit {
+  .cancel-tds,
+  .reset-tds,
+  .submit-tds {
     width: 100%;
     margin-top: 10px;
   }
 
-  .bod-from-mini {
+  .from-mini-tds {
     width: 100%;
   }
-  .bod-fornt-small .ant-form-item-label > label {
+  .fornt-small-tds .ant-form-item-label > label {
   font-size: small !important;}
   
 }
 
 @media (max-width: 1024px) {
-  .bod-from-mini {
+  .from-mini-tds {
     width: 100%;
   }
 }

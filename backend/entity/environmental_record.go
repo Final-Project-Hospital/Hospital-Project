@@ -8,7 +8,7 @@ import (
 type EnvironmentalRecord struct {
 	gorm.Model
 	Date time.Time `gorm:"column:date"`
-	Data float32   `gorm:"column:data"`
+	Data float64   `gorm:"column:data"`
 	Note string	   `gorm:"column:note"`
 
 	BeforeAfterTreatmentID uint                  `gorm:"column:before_after_treatment_id"`

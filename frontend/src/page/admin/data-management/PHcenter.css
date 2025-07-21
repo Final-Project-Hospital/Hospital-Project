@@ -116,7 +116,6 @@
   gap: 16px;
 }
 
-
 /* Responsive behavior */
 @media (max-width: 768px) {
   .form-group-ph {
@@ -137,14 +136,19 @@
   .reset-ph,
   .submit-ph {
     width: 100%;
+    margin-top: 10px;
   }
-  .ph-fornt-small .ant-form-item-label > label {
-  font-size: small !important;
-}
+
+  .from-mini-ph {
+    width: 100%;
+  }
+  .fornt-small-ph .ant-form-item-label > label {
+  font-size: small !important;}
+  
 }
 
 @media (max-width: 1024px) {
-  .form-group-mini-ph {
+  .from-mini-ph {
     width: 100%;
   }
 }

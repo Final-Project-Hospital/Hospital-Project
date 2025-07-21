@@ -6,14 +6,15 @@ export interface CreatePHInterface {
   UnitID: number;
   EmployeeID: number;
   Note?: string;
+  CustomUnit?: string;
 }
 
 export interface UpdatePHInterface {
-  ID: number; // ต้องระบุ ID เพื่อบอกว่าจะอัปเดตรายการไหน
+  ID: number; 
   Date: Date | string;
   Data: number;
   BeforeAfterTreatmentID: number;
-  ParameterID: number; // ค่า Parameter ต้องถูกระบุในการอัปเดต
+  ParameterID: number; 
   StandardID: number;
   UnitID: number;
   EmployeeID: number;
