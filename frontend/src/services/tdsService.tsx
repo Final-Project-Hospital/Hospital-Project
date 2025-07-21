@@ -27,6 +27,26 @@ const getAuthHeader = () => {
 
 // };
 
+export const GetTDS = async () => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-tds`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching TDS:", error);
+    return null;
+  }
+};
+
 export const CreateTDS = async (payload: CreateTDSInterface): Promise<AxiosResponse<any> | null> => {
   try {
     const response = await axios.post(`${apiUrl}/create-tds`, payload, {
