@@ -72,8 +72,14 @@
 .select-group {
   padding: 16px;
   display: flex;
-  gap: 12px;
-  
+  gap: 12px; 
+}
+
+.select-group .ant-picker {
+  border-radius: 20px;
+  padding: 0 10px;
+  height: 32px;
+  font-size: 14px;
 }
 
 .graph-container {
@@ -93,3 +99,4 @@
   flex-direction: column;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
+

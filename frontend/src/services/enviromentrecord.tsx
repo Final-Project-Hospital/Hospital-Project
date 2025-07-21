@@ -48,7 +48,7 @@ export const CreateTS = async (
     }
 };
 
-export const ReadTKN = async (): Promise<EnvironmentalRecordInterface[] | null> => {
+export const GetTKN = async (): Promise<EnvironmentalRecordInterface[] | null> => {
     try {
         const response = await axios.get(`${apiUrl}/read-tkn` , {
             headers: {
@@ -133,99 +133,99 @@ export const ReadTSByID = async (
     }
 };
 
-export const UpdateTKN  = async (
-    id: number,
-    tknrecord: Partial<EnvironmentalRecordInterface>
-): Promise<EnvironmentalRecordInterface | null> => {
-        try {
-            const payload: any = {};
+// export const UpdateTKN  = async (
+//     id: number,
+//     tknrecord: Partial<EnvironmentalRecordInterface>
+// ): Promise<EnvironmentalRecordInterface | null> => {
+//         try {
+//             const payload: any = {};
 
-            if(tknrecord.date !== undefined) payload.date = tknrecord.date;
-            if(tknrecord.data !== undefined) payload.data = Number(tknrecord.data);
-            if(tknrecord.note !== undefined) payload.note = tknrecord.note;
-            if(tknrecord.BeforeAfterTreatment?.ID !== undefined)
-                payload.BeforeAfterTreatmentID = tknrecord.BeforeAfterTreatment.ID;
+//             if(tknrecord.date !== undefined) payload.date = tknrecord.date;
+//             if(tknrecord.data !== undefined) payload.data = Number(tknrecord.data);
+//             if(tknrecord.note !== undefined) payload.note = tknrecord.note;
+//             if(tknrecord.BeforeAfterTreatment?.ID !== undefined)
+//                 payload.BeforeAfterTreatmentID = tknrecord.BeforeAfterTreatment.ID;
 
-            if (tknrecord.Environment?.ID !== undefined)
-                payload.EnvironmentID = tknrecord.Environment.ID;
+//             if (tknrecord.Environment?.ID !== undefined)
+//                 payload.EnvironmentID = tknrecord.Environment.ID;
 
-            if (tknrecord.Parameter?.ID !== undefined)
-                payload.ParameterID = tknrecord.Parameter.ID;
+//             if (tknrecord.Parameter?.ID !== undefined)
+//                 payload.ParameterID = tknrecord.Parameter.ID;
 
-            if (tknrecord.Standard?.ID !== undefined)
-                payload.StandardID = tknrecord.Standard.ID;
+//             if (tknrecord.Standard?.ID !== undefined)
+//                 payload.StandardID = tknrecord.Standard.ID;
 
-            if (tknrecord.Unit?.ID !== undefined)
-                payload.UnitID = tknrecord.Unit.ID;
+//             if (tknrecord.Unit?.ID !== undefined)
+//                 payload.UnitID = tknrecord.Unit.ID;
 
-            if (tknrecord.Employee?.ID !== undefined)
-                payload.EmployeeID = tknrecord.Employee.ID;
+//             if (tknrecord.Employee?.ID !== undefined)
+//                 payload.EmployeeID = tknrecord.Employee.ID;
             
-            const response = await axios.patch(`${apiUrl}/update-tkn/${id}`, payload,{
-                headers: {
-                    "Content-Type": "application/json",
-                    ...getAuthHeader(),
-                },
-            });
+//             const response = await axios.patch(`${apiUrl}/update-tkn/${id}`, payload,{
+//                 headers: {
+//                     "Content-Type": "application/json",
+//                     ...getAuthHeader(),
+//                 },
+//             });
 
-            if (response.status === 200) {
-                return response.data;
-            } else {
-                console.error("Unexpected response status:",response.status);
-                return null;
-            }
-            } catch (error) {
-                console.error("Error updating TKN record:", error);
-                return null;
-            }
-    };
+//             if (response.status === 200) {
+//                 return response.data;
+//             } else {
+//                 console.error("Unexpected response status:",response.status);
+//                 return null;
+//             }
+//             } catch (error) {
+//                 console.error("Error updating TKN record:", error);
+//                 return null;
+//             }
+//     };
 
-export const UpdateTS  = async (
-    id: number,
-    tknrecord: Partial<EnvironmentalRecordInterface>
-): Promise<EnvironmentalRecordInterface | null> => {
-        try {
-            const payload: any = {};
+// export const UpdateTS  = async (
+//     id: number,
+//     tknrecord: Partial<EnvironmentalRecordInterface>
+// ): Promise<EnvironmentalRecordInterface | null> => {
+//         try {
+//             const payload: any = {};
 
-            if(tknrecord.date !== undefined) payload.date = tknrecord.date;
-            if(tknrecord.data !== undefined) payload.data = Number(tknrecord.data);
-            if(tknrecord.note !== undefined) payload.note = tknrecord.note;
-            if(tknrecord.BeforeAfterTreatment?.ID !== undefined)
-                payload.BeforeAfterTreatmentID = tknrecord.BeforeAfterTreatment.ID;
+//             if(tknrecord.date !== undefined) payload.date = tknrecord.date;
+//             if(tknrecord.data !== undefined) payload.data = Number(tknrecord.data);
+//             if(tknrecord.note !== undefined) payload.note = tknrecord.note;
+//             if(tknrecord.BeforeAfterTreatment?.ID !== undefined)
+//                 payload.BeforeAfterTreatmentID = tknrecord.BeforeAfterTreatment.ID;
 
-            if (tknrecord.Environment?.ID !== undefined)
-                payload.EnvironmentID = tknrecord.Environment.ID;
+//             if (tknrecord.Environment?.ID !== undefined)
+//                 payload.EnvironmentID = tknrecord.Environment.ID;
 
-            if (tknrecord.Parameter?.ID !== undefined)
-                payload.ParameterID = tknrecord.Parameter.ID;
+//             if (tknrecord.Parameter?.ID !== undefined)
+//                 payload.ParameterID = tknrecord.Parameter.ID;
 
-            if (tknrecord.Standard?.ID !== undefined)
-                payload.StandardID = tknrecord.Standard.ID;
+//             if (tknrecord.Standard?.ID !== undefined)
+//                 payload.StandardID = tknrecord.Standard.ID;
 
-            if (tknrecord.Unit?.ID !== undefined)
-                payload.UnitID = tknrecord.Unit.ID;
+//             if (tknrecord.Unit?.ID !== undefined)
+//                 payload.UnitID = tknrecord.Unit.ID;
 
-            if (tknrecord.Employee?.ID !== undefined)
-                payload.EmployeeID = tknrecord.Employee.ID;
+//             if (tknrecord.Employee?.ID !== undefined)
+//                 payload.EmployeeID = tknrecord.Employee.ID;
             
-            const response = await axios.patch(`${apiUrl}/update-ts/${id}`, payload,{
-                headers: {
-                    "Content-Type": "application/json",
-                    ...getAuthHeader(),
-                },
-            });
+//             const response = await axios.patch(`${apiUrl}/update-ts/${id}`, payload,{
+//                 headers: {
+//                     "Content-Type": "application/json",
+//                     ...getAuthHeader(),
+//                 },
+//             });
 
-            if (response.status === 200) {
-                return response.data;
-            } else {
-                console.error("Unexpected response status:",response.status);
-                return null;
-            }
-            } catch (error) {
-                console.error("Error updating TS record:", error);
-                return null;
-            }
-    };
+//             if (response.status === 200) {
+//                 return response.data;
+//             } else {
+//                 console.error("Unexpected response status:",response.status);
+//                 return null;
+//             }
+//             } catch (error) {
+//                 console.error("Error updating TS record:", error);
+//                 return null;
+//             }
+//     };
 
 export const DeleteTKN = async (id: number): Promise<boolean> => {
     try {
