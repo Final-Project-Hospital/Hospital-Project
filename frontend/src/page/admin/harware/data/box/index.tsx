@@ -49,7 +49,7 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey }) => {
   const [slideIndex, setSlideIndex] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // *** รีเซ็ต parameterColors, parameters และ slideIndex ทุกครั้งที่ reloadKey เปลี่ยน ***
+  // รีเซ็ตเมื่อ reloadKey เปลี่ยน
   useEffect(() => {
     setParameterColors({});
     setParameters([]);
@@ -64,7 +64,6 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey }) => {
         setLoading(false);
         return;
       }
-      // --- ดึงข้อมูลล่าสุดของ hardware ---
       const sensorDataList = await GetSensorDataByHardwareID(hardwareID);
       if (sensorDataList && sensorDataList.length > 0) {
         const latestSensorDataID = sensorDataList[sensorDataList.length - 1].ID;
@@ -82,7 +81,7 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey }) => {
           const latestParamsArray = Array.from(latestParamsMap.values());
           if (mounted) setParameters(latestParamsArray);
 
-          // *** ดึงสีใหม่ทุกครั้ง ***
+          // สี parameter
           const colorsMap: ParameterColorMap = {};
           await Promise.all(
             latestParamsArray.map(async (p) => {
@@ -123,7 +122,7 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey }) => {
     return icon;
   }
 
-  // Slide Logic (with infinite loop)
+  // Slide Logic
   const totalSlide = parameters.length > MAX_SHOW ? Math.ceil(parameters.length / MAX_SHOW) : 1;
   const showParams = parameters.slice(slideIndex * MAX_SHOW, slideIndex * MAX_SHOW + MAX_SHOW);
 
@@ -135,23 +134,23 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey }) => {
   };
 
   return (
-    <div className="w-full max-w-screen-xl mx-auto px-4" key={reloadKey}>
-      <div className="flex items-center justify-center gap-3 mt-2">
-        {/* ปุ่ม Slide Left */}
+  <div className="w-full px-1">
+    <div className="flex flex-col items-center">
+      <div className="flex items-center w-full">
+        {/* Arrow Left */}
         {totalSlide > 1 && (
           <button
             onClick={handlePrev}
-            className="w-11 h-11 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center transition 
-            hover:bg-blue-50 active:scale-95 active:bg-blue-100 text-blue-500 hover:text-blue-700"
+            className="hidden sm:flex w-8 h-8 rounded-full bg-white border border-gray-200 shadow items-center justify-center transition hover:bg-blue-50 active:scale-95 active:bg-blue-100 text-blue-500 hover:text-blue-700 mr-2"
             aria-label="Slide Left"
           >
-            <AiOutlineLeft size={24} />
+            <AiOutlineLeft size={22} />
           </button>
         )}
-        {/* Parameter Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 flex-1">
+        {/* Cards */}
+        <div className="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {loading ? (
-            <div className="col-span-4 flex justify-center items-center h-[140px]">
+            <div className="col-span-4 flex justify-center items-center min-h-[110px]">
               <p>Loading data...</p>
             </div>
           ) : showParams.length > 0 ? (
@@ -160,15 +159,15 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey }) => {
               return (
                 <div
                   key={param.id}
-                  className="p-5 bg-white rounded-2xl border-2 flex items-center gap-4 hover:bg-gray-50 shadow-sm transition h-[100px]"
-                  style={{ borderColor: color }}
+                  className="flex flex-col items-center justify-center bg-white border-2 rounded-2xl shadow-sm h-[100px] min-h-[110px] w-full transition hover:bg-gray-50"
+                  style={{ borderColor: color, minWidth: 0 }}
                 >
-                  <div className="flex flex-col justify-center items-center gap-2">
+                  <div>
                     {withIconColor(iconMap[param.name]?.[0] || <GiChemicalDrop className="text-4xl" />, color)}
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-base font-semibold text-gray-700">{param.name}</h3>
-                    <b className="text-xl flex items-center mt-1">
+                  <div className="text-center mt-1">
+                    <h3 className="text-sm font-semibold text-gray-700">{param.name}</h3>
+                    <b className="text-xl flex items-center justify-center mt-1">
                       {param.value.toFixed(2)}
                       {param.name === "Temperature" && <RiCelsiusFill className="ml-1 w-5 h-5" />}
                       {param.name === "Formaldehyde" && " ppm"}
@@ -179,31 +178,48 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey }) => {
               );
             })
           ) : (
-            <div className="col-span-4 flex justify-center items-center h-[140px]">
+            <div className="col-span-4 flex justify-center items-center min-h-[110px]">
               <p>No data</p>
             </div>
           )}
         </div>
-        {/* ปุ่ม Slide Right */}
+        {/* Arrow Right */}
         {totalSlide > 1 && (
           <button
             onClick={handleNext}
-            className="w-11 h-11 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center transition 
-            hover:bg-blue-50 active:scale-95 active:bg-blue-100 text-blue-500 hover:text-blue-700"
+            className="hidden sm:flex w-8 h-8 rounded-full bg-white border border-gray-200 shadow items-center justify-center transition hover:bg-blue-50 active:scale-95 active:bg-blue-100 text-blue-500 hover:text-blue-700 ml-2"
             aria-label="Slide Right"
           >
-            <AiOutlineRight size={24} />
+            <AiOutlineRight size={22} />
           </button>
         )}
       </div>
-      {/* Slide Index Display */}
+      {/* Mobile arrow & page index */}
+      <div className="flex justify-center items-center gap-3 mt-2 sm:hidden">
+        {totalSlide > 1 && (
+          <>
+            <button onClick={handlePrev} className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-blue-500">
+              <AiOutlineLeft size={22} />
+            </button>
+            <span className="text-xs text-gray-500">
+              {slideIndex + 1} / {totalSlide}
+            </span>
+            <button onClick={handleNext} className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-blue-500">
+              <AiOutlineRight size={22} />
+            </button>
+          </>
+        )}
+      </div>
+      {/* Desktop index */}
       {totalSlide > 1 && (
-        <div className="text-center mt-3 text-xs text-gray-500">
+        <div className="hidden sm:block text-center mt-3 text-xs text-gray-500">
           {slideIndex + 1} / {totalSlide}
         </div>
       )}
     </div>
-  );
+  </div>
+);
+
 };
 
 export default Boxsdata;

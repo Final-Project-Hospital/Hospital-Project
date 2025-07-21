@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FaEye, FaEyeSlash, FaEnvelope, FaLock } from "react-icons/fa";
-import { message } from "antd";
+import { message, Spin } from "antd";
 import { AddLogin, GetUserDataByUserID } from "../../../services/httpLogin";
 import { LoginInterface } from "../../../interface/Login";
 import LogoLogin from "../../../assets/Logo Environment Login.png";
@@ -9,9 +9,11 @@ const Login = ({ handleSignIn }: any) => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false); // เพิ่ม state loading
   const [messageApi, contextHolder] = message.useMessage();
 
   const clickLoginbt = async (datalogin: LoginInterface) => {
+    setLoading(true); // เริ่มโหลด
     let res = await AddLogin(datalogin);
 
     if (res.status === 200) {
@@ -37,13 +39,17 @@ const Login = ({ handleSignIn }: any) => {
       }
       messageApi.success(`เข้าสู่ระบบในฐานะ ${RoleName} สำเร็จ`);
       setTimeout(() => {
+        setLoading(false); // หยุดโหลดก่อนเปลี่ยนหน้า
         if (RoleName === "Admin") {
           window.location.href = "/admin";
-        } else if (RoleName === "User") {
-          window.location.href = "/user";
+        } else if (RoleName === "Employee") {
+          window.location.href = "/admin";
+        } else if (RoleName === "Guest") {
+          window.location.href = "/guest";
         }
       }, 500);
     } else {
+      setLoading(false); // หยุดโหลด
       messageApi.error("อีเมลหรือรหัสผ่านไม่ถูกต้อง!");
     }
   };
@@ -67,7 +73,7 @@ const Login = ({ handleSignIn }: any) => {
             <img
               src={LogoLogin}
               alt="icon"
-              className="w-56 h-56 md:w-64 md:h-20"  // **ใหญ่ขึ้น 2 เท่า**
+              className="w-56 h-56 md:w-64 md:h-20"
               style={{ objectFit: 'contain' }}
             />
           </div>
@@ -93,6 +99,7 @@ const Login = ({ handleSignIn }: any) => {
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
                 required
+                disabled={loading}
               />
             </div>
           </div>
@@ -113,10 +120,12 @@ const Login = ({ handleSignIn }: any) => {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 required
+                disabled={loading}
               />
               <span
                 className="absolute top-2 right-3 text-lg text-teal-400 cursor-pointer"
                 onClick={() => setShowPassword((s) => !s)}
+                tabIndex={-1}
               >
                 {showPassword ? <FaEye /> : <FaEyeSlash />}
               </span>
@@ -129,14 +138,23 @@ const Login = ({ handleSignIn }: any) => {
 
           <button
             type="submit"
-            className="
-              mt-4 w-full
+            className={`
+              mt-4 w-full flex items-center justify-center
               bg-gradient-to-r from-teal-400 to-teal-600
               text-white py-2 rounded-full text-base font-semibold
               shadow-md hover:from-teal-500 hover:to-teal-700 transition
-            "
+              ${loading ? 'opacity-70 cursor-not-allowed' : ''}
+            `}
+            disabled={loading}
           >
-            Log In
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <Spin size="small" className="!text-white" />
+                Logging in...
+              </span>
+            ) : (
+              "Log In"
+            )}
           </button>
         </form>
 
