@@ -6,7 +6,7 @@ import { SensorDataParameterInterface } from "../interface/ISensorDataParameter"
 import { HardwareGraphInterface } from "../interface/IHardwareGraph"
 import { HardwareParameterColorInterface } from "../interface/IHardwareColor"
 import { HardwareParameterInterface } from "../interface/IHardwareParameter"
-const apiUrl = "http://localhost:8000";
+import {apiUrl} from "./index"
 
 const getAuthHeader = () => {
   const token = localStorage.getItem("token");

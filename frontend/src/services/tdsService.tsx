@@ -3,7 +3,7 @@ import { message } from 'antd';
 import { CreateTDSInterface } from "../interface/ITds";
 import { UpdateTDSInterface } from "../interface/ITds";
 import { DeleteTDSInterface } from "../interface/ITds";
-const apiUrl = "http://localhost:8000";
+import {apiUrl} from "./index"
 
 // const Authorization = localStorage.getItem("token");
 

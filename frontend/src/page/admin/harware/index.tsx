@@ -165,8 +165,7 @@ const Index: React.FC = () => {
 
   // ==== MAIN RENDER ====
   return (
-    <div className="min-h-screen bg-gray-100 mt-24 md:mt-0">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-100 mt-16 md:mt-0">
       <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-8 py-6 rounded-b-3xl mb-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center flex-wrap gap-4">
           <div>

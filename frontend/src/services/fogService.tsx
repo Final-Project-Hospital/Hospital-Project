@@ -1,6 +1,6 @@
 import axios from "axios";
 import { FogcenterInterface } from "../interface/IFogCenter";
-const apiUrl = "http://localhost:8000";
+import {apiUrl} from "./index"
 
 const getAuthHeader = () => {
   const token = localStorage.getItem("token");
