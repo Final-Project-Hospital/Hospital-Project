@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Table, Input, Button, Dropdown, Checkbox, Modal } from "antd";
-import { SearchOutlined, DownloadOutlined, DownOutlined, FilterOutlined } from "@ant-design/icons";
+import { Table, Button, Dropdown, Checkbox, Modal } from "antd";
+import {  DownloadOutlined, DownOutlined, FilterOutlined } from "@ant-design/icons";
 import { CSVLink } from "react-csv";
 import { GetSensorDataByHardwareID, GetSensorDataParametersBySensorDataID } from "../../../../../services/hardware";
 import type { ColumnsType } from "antd/es/table";
@@ -12,7 +12,7 @@ interface TableDataProps {
 const TableData: React.FC<TableDataProps> = ({ hardwareID }) => {
   const [tableData, setTableData] = useState<any[]>([]);
   const [uniqueColumns, setUniqueColumns] = useState<string[]>(["Date"]);
-  const [selectedColumns, setSelectedColumns] = useState<string[]>(["Date"]);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>(["Date"]); //@ts-ignore
   const [searchText, setSearchText] = useState("");
   const [filteredData, setFilteredData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -150,47 +150,46 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID }) => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 mt-24 md:mt-0">
-      <div className="paddings">
-        <div className="bg-white rounded-2xl shadow-xl p-6 ">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-            <Input
-              allowClear
-              prefix={<SearchOutlined className="text-teal-400" />}
-              placeholder="ค้นหาในทุกคอลัมน์..."
-              className="rounded-xl border-teal-200 focus:border-teal-400 shadow w-full md:w-1/3"
-              value={searchText}
-              onChange={e => setSearchText(e.target.value)}
-            />
-            <div className="flex gap-2">
-              <Dropdown overlay={columnSelectMenu} trigger={['click']} placement="bottomRight" arrow>
-                <Button icon={<FilterOutlined />}>
-                  เลือกคอลัมน์ <DownOutlined />
-                </Button>
-              </Dropdown>
+    <div className="w-full mt-6">
+      <div className="p-0 sm:p-3">
+        <div
+          className="bg-white rounded-2xl shadow-xl p-2 sm:p-6"
+          style={{ minHeight: 320 }}
+        >
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Dropdown overlay={columnSelectMenu} trigger={['click']} placement="bottomRight" arrow>
               <Button
-                icon={<DownloadOutlined />}
-                onClick={() => setShowDownloadModal(true)}
-                className="flex items-center gap-2 bg-white text-teal-800 rounded-full hover:bg-teal-100 border-none shadow transition"
+                icon={<FilterOutlined />}
+                className="w-full sm:w-auto"
               >
-                Download CSV
+                เลือกคอลัมน์ <DownOutlined />
               </Button>
-            </div>
+            </Dropdown>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={() => setShowDownloadModal(true)}
+              className="flex items-center gap-2 bg-white text-teal-800 rounded-full hover:bg-teal-100 border-none shadow transition w-full sm:w-auto"
+            >
+              Download CSV
+            </Button>
+          </div><br />
+          <div className="w-full overflow-x-auto" style={{ scrollbarWidth: "thin", maxWidth: "100vw" }}>
+            <Table
+              columns={columns}
+              dataSource={filteredData}
+              rowKey={(_, idx) => idx ?? Math.random()}
+              loading={loading}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                pageSizeOptions: [5, 10, 20, 50],
+                position: ["bottomCenter"],
+              }}
+              className="rounded-2xl overflow-x-auto"
+              scroll={{ x: 600 }}
+              style={{ minWidth: 350 }}
+            />
           </div>
-          <Table
-            columns={columns}
-            dataSource={filteredData}
-            rowKey={(_, idx) => idx ?? Math.random()}
-            loading={loading}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              pageSizeOptions: [5, 10, 20, 50],
-              position: ["bottomCenter"],
-            }}
-            className="rounded-2xl overflow-hidden"
-            scroll={{ x: "max-content" }}
-          />
         </div>
       </div>
 
