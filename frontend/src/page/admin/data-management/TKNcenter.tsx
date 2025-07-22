@@ -304,7 +304,7 @@ const TKNCenterForm: React.FC = () => {
               </Form.Item>
           </div>
 
-          <div className="tkn-from-mini">
+          <div className="tkn-form-mini">
               <Form.Item 
                 label="ประเภทมาตรฐาน"
                 name="standardType">
