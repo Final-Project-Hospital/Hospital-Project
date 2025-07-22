@@ -6,36 +6,86 @@ import { GetTKN } from "../../../services/enviromentrecord";
 import './TKNdataviz.css';
 import { LeftOutlined, SearchOutlined } from "@ant-design/icons";
 import Table, { ColumnsType } from "antd/es/table";
-
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  ReferenceLine
 } from "recharts";
 
 const TKNdataviz: React.FC = () => {
+  //chart
   const [chartTypeBefore, setChartTypeBefore] = useState<'line' | 'bar'>('line');
   const [chartTypeAfter, setChartTypeAfter] = useState<'line' | 'bar'>('line');
   const [chartTypeCombined, setChartTypeCombined] = useState<'line' | 'bar'>('line');
 
+  //data
   const [dataTKN, setDataTKN] = useState<EnvironmentalRecordInterface[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [beforeData, setBeforeData] = useState<{ date: string; data: number }[]>([]);
   const [afterData, setAfterData] = useState<{ date: string; data: number }[]>([]);
   const [combinedData, setCombinedData] = useState<{ date: string; before: number; after: number }[]>([]);
 
-
+  //Filter กรองข้อมูลในกราฟ
   const [selectedMonth, setSelectedMonth] = useState<dayjs.Dayjs | null>(null);
   const [selectedYear, setSelectedYear] = useState<dayjs.Dayjs | null>(null);
   const [search, setSearch] = useState("");
+
+  //กรอกค่าแบบเดี่ยวและแบบช่วง
+  const [middle, setMiddle] = useState<number | undefined>(undefined);
+  const [min, setMin] = useState<number | undefined>(undefined);
+  const [max, setMax] = useState<number | undefined>(undefined);
+
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await GetTKN();
+        let response = await GetTKN();
         console.log("Raw response from GetTKN:", response);
 
         if (response) {
+
           setDataTKN(response);
+          
+          
+          if (response){
+
+            const standardRecord = response.find(item => item.Standard);
+            if(standardRecord && standardRecord.Standard){
+              const std = standardRecord.Standard;
+
+              //middle
+              if(std.MiddleValue && std.MinValue === 0 && std.MaxValue === 0){
+                setMiddle(std.MiddleValue);
+                setMax(undefined);
+                setMin(undefined);
+              } else if (std.MinValue && std.MaxValue && std.MiddleValue === 0){
+                setMiddle(undefined);
+                setMax(std.MaxValue);
+                setMin(std.MinValue);
+              } else{
+                setMiddle(undefined);
+                setMax(undefined);
+                setMin(undefined);
+              }
+            }
+
+            if(selectedMonth){
+              const selectedMonthStr = selectedMonth.format("MM");
+              const selectedYearStr = selectedMonth.format("YYYY");
+              response = response.filter(item => {
+                const itemDate = dayjs(item.Date);
+                return itemDate.format("MM") === selectedMonthStr && itemDate.format("YYYY") === selectedYearStr;
+              });
+            }
+
+            if (selectedYear) {
+              const selectedYearStr = selectedYear.format("YYYY");
+              response = response.filter(item => {
+                const itemDate = dayjs(item.Date);
+                return itemDate.format("YYYY") === selectedYearStr;
+              });
+            }
+          }
 
           const before = response
             .filter(data => data.BeforeAfterTreatmentID === 1)
@@ -76,7 +126,7 @@ const TKNdataviz: React.FC = () => {
     };
 
     fetchData();
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   const columns: ColumnsType<EnvironmentalRecordInterface> = [
     {
@@ -98,7 +148,7 @@ const TKNdataviz: React.FC = () => {
     {
       title: 'มาตรฐาน',
       key: 'standard',
-      render: (_, record) => record.Standard?.ID || '-',
+      render: (_, record) => record.Standard?.MiddleValue || '-',
     },
     {
       title: 'ค่าก่อนเข้าระบบบำบัด',
@@ -130,7 +180,10 @@ const TKNdataviz: React.FC = () => {
   // ฟังก์ชันสำหรับเลือก chart แสดง
   const renderChart = (
     data: { date: string; data: number }[],
-    chartType: 'line' | 'bar'
+    chartType: 'line' | 'bar',
+    middle: number ,
+    min: number | undefined,
+    max: number | undefined
   ) => (
     <ResponsiveContainer width="100%" height={350}>
       {chartType === 'line' ? (
@@ -141,6 +194,7 @@ const TKNdataviz: React.FC = () => {
           <Tooltip />
           <Legend />
           <Line type="monotone" dataKey="data" name="TKN" stroke="#8884d8" />
+          {renderStandardLines(middle, min, max)}
         </LineChart>
       ) : (
         <BarChart data={data}>
@@ -150,38 +204,62 @@ const TKNdataviz: React.FC = () => {
           <Tooltip />
           <Legend />
           <Bar dataKey="data" name="TKN" fill="#82ca9d" />
+          {renderStandardLines(middle, min, max)}
         </BarChart>
       )}
     </ResponsiveContainer>
   );
-const renderCombinedChart = (
-  data: { date: string; before: number; after: number }[],
-  chartType: 'line' | 'bar'
-) => (
-  <ResponsiveContainer width="100%" height={400}>
-    {chartType === 'line' ? (
-      <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="date" />
-        <YAxis label={{ value: 'mg/L', angle: -90, position: 'insideLeft' }} />
-        <Tooltip />
-        <Legend />
-        <Line type="monotone" dataKey="before" name="ก่อนบำบัด" stroke="#8884d8" />
-        <Line type="monotone" dataKey="after" name="หลังบำบัด" stroke="#82ca9d" />
-      </LineChart>
-    ) : (
-      <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="date" />
-        <YAxis label={{ value: 'mg/L', angle: -90, position: 'insideLeft' }} />
-        <Tooltip />
-        <Legend />
-        <Bar dataKey="before" name="ก่อนบำบัด" fill="#8884d8" />
-        <Bar dataKey="after" name="หลังบำบัด" fill="#82ca9d" />
-      </BarChart>
-    )}
-  </ResponsiveContainer>
-);
+  const renderStandardLines = (
+    middle: number,
+    min: number | undefined,
+    max: number | undefined
+  ) => (
+    <>
+      {middle !== undefined && (
+        <ReferenceLine y={middle} stroke="red" label="มาตรฐาน" strokeDasharray="3 3" />
+      )}
+      {min !== undefined && (
+        <ReferenceLine y={min} stroke="orange" label="Min" strokeDasharray="4 4" />
+      )}
+      {max !== undefined && (
+        <ReferenceLine y={max} stroke="green" label="Max" strokeDasharray="4 4" />
+      )}
+    </>
+  );
+
+  const renderCombinedChart = (
+    data: { date: string; before: number; after: number }[],
+    chartType: 'line' | 'bar',
+    middle: number,
+    min: number | undefined,
+    max: number | undefined
+  ) => (
+    <ResponsiveContainer width="100%" height={400}>
+      {chartType === 'line' ? (
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis label={{ value: 'mg/L', angle: -90, position: 'insideLeft' }} />
+          <Tooltip />
+          <Legend />
+          <Line type="monotone" dataKey="before" name="ก่อนบำบัด" stroke="#8884d8" />
+          <Line type="monotone" dataKey="after" name="หลังบำบัด" stroke="#82ca9d" />
+          {renderStandardLines(middle, min, max)}
+        </LineChart>
+      ) : (
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis label={{ value: 'mg/L', angle: -90, position: 'insideLeft' }} />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="before" name="ก่อนบำบัด" fill="#8884d8" />
+          <Bar dataKey="after" name="หลังบำบัด" fill="#82ca9d" />
+          {renderStandardLines(middle, min, max)}
+        </BarChart>
+      )}
+    </ResponsiveContainer>
+  );
 
   return (
     <div>
@@ -220,7 +298,7 @@ const renderCombinedChart = (
             <Select.Option value="line">กราฟเส้น (Line Chart)</Select.Option>
             <Select.Option value="bar">กราฟแท่ง (Bar Chart)</Select.Option>
           </Select>
-          {renderChart(beforeData, chartTypeBefore)}
+          {renderChart(beforeData, chartTypeBefore, middle ?? 0, min, max)}
         </div>
 
         <div className="graph-card">
@@ -233,7 +311,7 @@ const renderCombinedChart = (
             <Select.Option value="line">กราฟเส้น (Line Chart)</Select.Option>
             <Select.Option value="bar">กราฟแท่ง (Bar Chart)</Select.Option>
           </Select>
-          {renderChart(afterData, chartTypeAfter)}
+          {renderChart(afterData, chartTypeAfter, middle ?? 0, min, max)}
         </div>
         <div className="graph-card">
           <h2>กราฟเปรียบเทียบ ก่อนและหลังบำบัด</h2>
@@ -245,7 +323,7 @@ const renderCombinedChart = (
             <Select.Option value="line">กราฟเส้น (Line Chart)</Select.Option>
             <Select.Option value="bar">กราฟแท่ง (Bar Chart)</Select.Option>
           </Select>
-          {renderCombinedChart(combinedData, chartTypeCombined)}
+          {renderCombinedChart(combinedData, chartTypeCombined, middle ?? 0, min, max)}
         </div>
       </div>
 

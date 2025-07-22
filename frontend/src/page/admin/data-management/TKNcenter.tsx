@@ -401,7 +401,7 @@ const TKNCenterForm: React.FC = () => {
           </div>
 
           <div className="tkn-form-group">
-            <div className='tkn-from-mini'>
+            <div className='tkn-form-mini'>
                 <Form.Item
                   label="ก่อน / หลัง / ก่อนเเละหลังบำบัด"
                   name="beforeAfterTreatmentID"
@@ -422,7 +422,7 @@ const TKNCenterForm: React.FC = () => {
                 </Form.Item>
             </div>
 
-            <div className="tkn-from-mini">
+            <div className="tkn-form-mini">
                   {selectedTreatmentID === 3 ? (
                     <div style={{ display: 'flex', gap: '30px' }}>
                       <Form.Item 
