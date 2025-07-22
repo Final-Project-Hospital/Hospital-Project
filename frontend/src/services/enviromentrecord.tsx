@@ -18,10 +18,12 @@ export const CreateTKN = async (
                 ...getAuthHeader(),
             },
         });
-        if (response.status === 201) 
-            return response.data;
-        console.error("Unexpected status:", response.status);
-        return null;
+        if (response.status === 201) {
+            return response;
+        }else{
+            console.error("Unexpected status:", response.status);
+            return null;
+        }
     } catch (error) {
         console.error("CreateTKN error:", error);
         return null;
@@ -39,7 +41,7 @@ export const CreateTS = async (
             },
         });
         if (response.status === 201) 
-            return response.data;
+            return response;
         console.error("Unexpected status:", response.status);
         return null;
     } catch (error) {
@@ -86,6 +88,27 @@ export const ReadTS = async (): Promise<EnvironmentalRecordInterface[] | null> =
         return null;
     }
 }
+export const GetfirstTKN = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-first-tkn`,{
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating TKN record:", error.response?.data || error.message);
+    return null;
+  }
+};
 
 export const ReadTKNByID = async (
     id: number

@@ -14,11 +14,14 @@ import {
 const TKNdataviz: React.FC = () => {
   const [chartTypeBefore, setChartTypeBefore] = useState<'line' | 'bar'>('line');
   const [chartTypeAfter, setChartTypeAfter] = useState<'line' | 'bar'>('line');
+  const [chartTypeCombined, setChartTypeCombined] = useState<'line' | 'bar'>('line');
 
   const [dataTKN, setDataTKN] = useState<EnvironmentalRecordInterface[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [beforeData, setBeforeData] = useState<{ date: string; data: number }[]>([]);
   const [afterData, setAfterData] = useState<{ date: string; data: number }[]>([]);
+  const [combinedData, setCombinedData] = useState<{ date: string; before: number; after: number }[]>([]);
+
 
   const [selectedMonth, setSelectedMonth] = useState<dayjs.Dayjs | null>(null);
   const [selectedYear, setSelectedYear] = useState<dayjs.Dayjs | null>(null);
@@ -49,9 +52,19 @@ const TKNdataviz: React.FC = () => {
               data: item.Data != null ? Number(item.Data) : 0,
             }));
             console.log("Processed After Data for Chart:", after);
+          
+          const combined = before.map(b =>{
+            const a = after.find(x => x.date === b.date);
+            return{
+              date:b.date,
+              before:b.data,
+              after: a ? a.data : 0,
+            }
+          })
 
           setBeforeData(before);
           setAfterData(after);
+          setCombinedData(combined);
         } else {
           console.error("ไม่พบข้อมูล TKN");
         }
@@ -141,6 +154,34 @@ const TKNdataviz: React.FC = () => {
       )}
     </ResponsiveContainer>
   );
+const renderCombinedChart = (
+  data: { date: string; before: number; after: number }[],
+  chartType: 'line' | 'bar'
+) => (
+  <ResponsiveContainer width="100%" height={400}>
+    {chartType === 'line' ? (
+      <LineChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="date" />
+        <YAxis label={{ value: 'mg/L', angle: -90, position: 'insideLeft' }} />
+        <Tooltip />
+        <Legend />
+        <Line type="monotone" dataKey="before" name="ก่อนบำบัด" stroke="#8884d8" />
+        <Line type="monotone" dataKey="after" name="หลังบำบัด" stroke="#82ca9d" />
+      </LineChart>
+    ) : (
+      <BarChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="date" />
+        <YAxis label={{ value: 'mg/L', angle: -90, position: 'insideLeft' }} />
+        <Tooltip />
+        <Legend />
+        <Bar dataKey="before" name="ก่อนบำบัด" fill="#8884d8" />
+        <Bar dataKey="after" name="หลังบำบัด" fill="#82ca9d" />
+      </BarChart>
+    )}
+  </ResponsiveContainer>
+);
 
   return (
     <div>
@@ -150,7 +191,9 @@ const TKNdataviz: React.FC = () => {
       </div>
 
       <div className="tkn-title">
-        <h1 className="tkn-title-text"><LeftOutlined className="tkn-back-icon" />TKN-GRAPH</h1>
+        <h1 className="tkn-title-text"><LeftOutlined className="tkn-back-icon" />TKN-Central Statistics 
+        <br></br><h2>ผลการตรวจวัดค่า ปริมาณของสารต่างๆ ที่ละลายอยู่ในน้ำ บริเวณระบบบำบัดนํ้าเสียส่วนกลาง</h2></h1>
+        
         <div className="select-group">
           <DatePicker
             picker="month"
@@ -166,7 +209,6 @@ const TKNdataviz: React.FC = () => {
           />
         </div>
       </div>
-
       <div className="graph-container">
         <div className="graph-card">
           <h2>น้ำก่อนบำบัด</h2>
@@ -193,11 +235,18 @@ const TKNdataviz: React.FC = () => {
           </Select>
           {renderChart(afterData, chartTypeAfter)}
         </div>
-      </div>
-
-      <div className="tkn-central-statistics">
-        <h1 className="tkn-title-text">TKN-Central Statistics</h1>
-        <h2>ผลการตรวจวัดค่า ปริมาณของสารต่างๆ ที่ละลายอยู่ในน้ำ บริเวณระบบบำบัดนํ้าเสียส่วนกลาง</h2>
+        <div className="graph-card">
+          <h2>กราฟเปรียบเทียบ ก่อนและหลังบำบัด</h2>
+            <Select
+            value={chartTypeCombined}
+            onChange={val => setChartTypeCombined(val)}
+            style={{ marginBottom: 10 }}
+          >
+            <Select.Option value="line">กราฟเส้น (Line Chart)</Select.Option>
+            <Select.Option value="bar">กราฟแท่ง (Bar Chart)</Select.Option>
+          </Select>
+          {renderCombinedChart(combinedData, chartTypeCombined)}
+        </div>
       </div>
 
       <div className="tkn-data">

@@ -83,6 +83,7 @@ func main() {
 		//TKN
 		public.POST("/create-tkn", tkncenter.CreateTKN)
 		public.GET("/read-tkn", tkncenter.GetTKN)
+		public.GET("/get-first-tkn", tkncenter.GetFirstTKN)
 		public.GET("/read-tkn/:id", tkncenter.GetTKNbyID)
 		public.PATCH("/update-tkn/:id", tkncenter.UpdateTKN)
 		public.DELETE("/delete-tkn/:id", tkncenter.DeleteTKN)

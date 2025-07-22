@@ -371,42 +371,60 @@ func SetupDatabase() {
 	BodParameter := entity.Parameter{ParameterName: "Biochemical Oxygen Demand"}
 	db.FirstOrCreate(&BodParameter, &entity.Parameter{ParameterName: "Biochemical Oxygen Demand"})
 
-	tknBeforeData := entity.EnvironmentalRecord{
-		Date: time.Date(2025, 7, 1, 9, 0, 0, 0, time.UTC), // ก่อนบำบัด 1 ชั่วโมง
-		Data: 12,
-		Note: "ค่าตรวจวัด TKN ก่อนบำบัด",
-
-		BeforeAfterTreatmentID: 1, // ก่อน
-		EnvironmentID:          1, // น้ำเสีย
-		ParameterID:            4, // Total Kjeldahl Nitrogen
-		StandardID:             1,
-		UnitID:                 1,
-		EmployeeID:             1,
+	// สร้างรายการจำลองสำหรับหลายวัน ทั้งก่อนและหลังบำบัด
+	tknSamples := []entity.EnvironmentalRecord{
+		{
+			Date: time.Date(2025, 7, 1, 9, 0, 0, 0, time.UTC),
+			Data: 12,
+			Note: "TKN ก่อนบำบัด 1 ก.ค.",
+			BeforeAfterTreatmentID: 1, // ก่อน
+		},
+		{
+			Date: time.Date(2025, 7, 1, 10, 0, 0, 0, time.UTC),
+			Data: 7,
+			Note: "TKN หลังบำบัด 1 ก.ค.",
+			BeforeAfterTreatmentID: 2, // หลัง
+		},
+		{
+			Date: time.Date(2025, 7, 2, 9, 0, 0, 0, time.UTC),
+			Data: 13,
+			Note: "TKN ก่อนบำบัด 2 ก.ค.",
+			BeforeAfterTreatmentID: 1,
+		},
+		{
+			Date: time.Date(2025, 7, 2, 10, 0, 0, 0, time.UTC),
+			Data: 8,
+			Note: "TKN หลังบำบัด 2 ก.ค.",
+			BeforeAfterTreatmentID: 2,
+		},
+		{
+			Date: time.Date(2025, 7, 3, 9, 0, 0, 0, time.UTC),
+			Data: 15,
+			Note: "TKN ก่อนบำบัด 3 ก.ค.",
+			BeforeAfterTreatmentID: 1,
+		},
+		{
+			Date: time.Date(2025, 7, 3, 10, 0, 0, 0, time.UTC),
+			Data: 9,
+			Note: "TKN หลังบำบัด 3 ก.ค.",
+			BeforeAfterTreatmentID: 2,
+		},
 	}
 
-	db.FirstOrCreate(&tknBeforeData, entity.EnvironmentalRecord{
-		Date:                 tknBeforeData.Date,
-		ParameterID:          tknBeforeData.ParameterID,
-		BeforeAfterTreatmentID: tknBeforeData.BeforeAfterTreatmentID,
-	})
+	for _, sample := range tknSamples {
+		sample.EnvironmentID = 1
+		sample.ParameterID = 4 // TKN
+		sample.StandardID = 1
+		sample.UnitID = 1
+		sample.EmployeeID = 1
 
-	tknData := entity.EnvironmentalRecord{
-		Date: time.Date(2025, 7, 1, 10, 0, 0, 0, time.UTC),
-		Data: 7,
-		Note: "ค่าตรวจวัด TKN หลังบำบัด",
-
-		BeforeAfterTreatmentID: 2, // หลัง
-		EnvironmentID:          1, // น้ำเสีย
-		ParameterID:            4, // Total Kjeldahl Nitrogen
-		StandardID:             1,
-		UnitID:                 1,
-		EmployeeID:             1,
+		db.FirstOrCreate(&sample, entity.EnvironmentalRecord{
+			Date:                   sample.Date,
+			ParameterID:            sample.ParameterID,
+			BeforeAfterTreatmentID: sample.BeforeAfterTreatmentID,
+		})
 	}
-	db.FirstOrCreate(&tknData, entity.EnvironmentalRecord{
-		Date:                 tknData.Date,
-		ParameterID:          tknData.ParameterID,
-		BeforeAfterTreatmentID: tknData.BeforeAfterTreatmentID,
-	})
+
 	FogParameter := entity.Parameter{ParameterName: "Fat Oil and Grease"}
 	db.FirstOrCreate(&FogParameter, &entity.Parameter{ParameterName: "Fat Oil and Grease"})
 
