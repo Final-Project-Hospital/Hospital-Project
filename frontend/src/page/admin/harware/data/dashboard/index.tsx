@@ -113,14 +113,13 @@ const Index = () => {
 
   return (
     <div className="space-y-8 relative">
-      {/* Overlay Loading ทั้งหน้า */}
       {loadingAll && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
           <Spin size="large" tip="Loading data..." />
         </div>
       )}
 
-      <section className="max-w-screen-2xl mx-auto p-5 bg-white border border-gray-200 rounded-lg shadow-md mb-8 mt-24 md:mt-0 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center">
+      <section className="w-full px-2 md:px-8 p-5 bg-white border border-gray-200 rounded-lg shadow-md mb-8 mt-24 md:mt-0 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center">
         <div className="text-center md:text-left">
           <h1 className="text-2xl md:text-4xl font-extrabold leading-tight mb-4">
             Good Morning
@@ -148,14 +147,17 @@ const Index = () => {
         />
       </section>
 
-      <section className="max-w-screen-2xl mx-auto bg-white p-4 rounded-lg shadow">
+
+      <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">Current Sensor Data</h2>
         <Boxsdata hardwareID={hardwareID} reloadKey={reloadBoxes} />
       </section>
-      <section className="max-w-screen-2xl mx-auto bg-white p-4 rounded-lg shadow">
+
+      <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
         <TableData hardwareID={hardwareID} />
       </section>
-            <section className="max-w-screen-2xl mx-auto bg-white p-6 rounded-lg shadow space-y-4">
+
+      <section className="w-full px-2 md:px-8 bg-white p-6 rounded-lg shadow space-y-4">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">Charts</h2>
         {uniqueGraphs.length === 0 ? (
           <div className="text-center text-red-500 font-semibold">No Data</div>
@@ -169,9 +171,10 @@ const Index = () => {
           >
             {uniqueGraphs.map((g, index, arr) => {
               const totalCharts = uniqueGraphs.length;
-              const isLastAndOdd = index === arr.length - 1 && totalCharts % 2 === 1 && totalCharts !== 1;
-              const parameters = g.ParametersWithColor.map(p => p.parameter);
-              const colors = g.ParametersWithColor.map(p => p.color);
+              const isLastAndOdd =
+                index === arr.length - 1 && totalCharts % 2 === 1 && totalCharts !== 1;
+              const parameters = g.ParametersWithColor.map((p) => p.parameter);
+              const colors = g.ParametersWithColor.map((p) => p.color);
 
               const commonProps = {
                 hardwareID,
@@ -203,9 +206,8 @@ const Index = () => {
                   className={
                     uniqueGraphs.length === 1
                       ? "p-3 bg-gray-50 rounded shadow"
-                      : `p-3 bg-gray-50 rounded shadow ${
-                          isLastAndOdd ? "md:col-span-2" : ""
-                        }`
+                      : `p-3 bg-gray-50 rounded shadow ${isLastAndOdd ? "md:col-span-2" : ""
+                      }`
                   }
                 >
                   {ChartComponent}
@@ -229,7 +231,8 @@ const Index = () => {
           </div>
         )}
       </section>
-      <section className="max-w-screen-2xl mx-auto bg-white p-4 rounded-lg shadow">
+
+      <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
         <Avergare hardwareID={hardwareID} reloadKey={reloadAverage} />
       </section>
       <EditParameterModal
