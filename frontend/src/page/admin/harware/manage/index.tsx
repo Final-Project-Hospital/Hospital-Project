@@ -132,7 +132,6 @@ const RoomAdminTable: React.FC = () => {
                 }
                 return fa.toString().localeCompare(fb.toString());
             },
-            responsive: ["md"],
         },
         {
             title: (
@@ -142,7 +141,6 @@ const RoomAdminTable: React.FC = () => {
             ),
             key: "Building",
             render: (_, record) => record.Building?.BuildingName ?? "-",
-            responsive: ["md"],
         },
         {
             title: (
@@ -159,7 +157,6 @@ const RoomAdminTable: React.FC = () => {
                     {record.Hardware?.Name ?? "-"}
                 </span>
             ),
-            responsive: ["md"],
         },
         {
             title: (
@@ -215,7 +212,6 @@ const RoomAdminTable: React.FC = () => {
                 </div>
             </div>
 
-
             <div className="paddings">
                 <div className="bg-white rounded-2xl shadow-xl p-6 ">
                     <div className="mb-4 w-full md:w-1/3">
@@ -240,6 +236,7 @@ const RoomAdminTable: React.FC = () => {
                             position: ["bottomCenter"],
                         }}
                         className="rounded-2xl overflow-hidden"
+                        scroll={{ x: "max-content" }} // ให้ scroll แนวนอนบนจอแคบ
                     />
                 </div>
             </div>

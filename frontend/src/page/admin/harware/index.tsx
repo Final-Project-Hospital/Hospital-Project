@@ -62,10 +62,10 @@ const RoomCard: React.FC<RoomCardProps> = ({
             <FaTrash size={15} />
           </button>
         </div>
-        {/* Floor & Building (ติดกับ Name) */}
+        {/* Floor & Building */}
         <div className="mt-1 ml-1">
-          <div className="text-gray-700 text-[15px] font-medium">Floor {floor.replace("Floor ", "")}</div>
-          <div className="text-gray-500 text-[15px] font-medium">{building}</div>
+          <div className="text-gray-700 text-[15px] font-medium">ชั้น : {floor.replace("Floor ", "")}</div>
+          <div className="text-gray-500 text-[15px] font-medium">อาคาร : {building}</div>
         </div>
       </div>
       {/* Image right side */}
@@ -79,8 +79,6 @@ const RoomCard: React.FC<RoomCardProps> = ({
     </div>
   );
 };
-
-
 
 const Index: React.FC = () => {
   const [buildings, setBuildings] = useState<BuildingInterface[]>([]);
@@ -98,6 +96,17 @@ const Index: React.FC = () => {
   const selectedRoomIdRef = useRef<number | null>(null);
   const [selectedRoomName, setSelectedRoomName] = useState<string>("");
   const [selectedRoom, setSelectedRoom] = useState<RoomInterface | null>(null);
+
+  // Mobile paging state
+  const [roomStartIndex, setRoomStartIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // ดึงข้อมูล Building
   const fetchBuildings = async () => {
@@ -184,7 +193,7 @@ const Index: React.FC = () => {
         </div>
       </div>
 
-      {/* Query Section ขวาสุด */}
+      {/* Query Section */}
       <div className="flex md:justify-end mb-6 mx-2 md:mx-8">
         <div className="bg-white rounded-2xl shadow px-6 py-4 flex flex-col md:flex-row gap-4 md:items-center w-full md:w-fit">
           <div className="flex items-center gap-2 w-full md:w-auto">
@@ -240,11 +249,14 @@ const Index: React.FC = () => {
         </div>
       </div>
 
-      {/* --- Group by Building Card --- */}
       <div className="px-2 md:px-8 pb-12">
         {buildings.map((building) => {
           const roomInBuilding = filterRooms.filter(r => r.Building?.ID === building.ID);
           if (roomInBuilding.length === 0) return null;
+          const pagedRoom = isMobile
+            ? roomInBuilding.slice(roomStartIndex, roomStartIndex + 3)
+            : roomInBuilding;
+
           return (
             <div
               key={building.ID}
@@ -268,7 +280,7 @@ const Index: React.FC = () => {
               </div>
               {/* Room Cards Grid */}
               <div className="flex flex-wrap gap-6 justify-start p-1">
-                {roomInBuilding.map((room, idx) => (
+                {pagedRoom.map((room, idx) => (
                   <RoomCard
                     key={room.ID ?? idx}
                     name={room.RoomName || 'No Data'}
@@ -281,6 +293,25 @@ const Index: React.FC = () => {
                   />
                 ))}
               </div>
+              {/* ปุ่ม Pagination เฉพาะ Mobile */}
+              {isMobile && roomInBuilding.length > 3 && (
+                <div className="flex justify-center gap-3 mt-4">
+                  <button
+                    disabled={roomStartIndex === 0}
+                    onClick={() => setRoomStartIndex(Math.max(0, roomStartIndex - 3))}
+                    className="px-3 py-1 rounded bg-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
+                  >
+                    ก่อนหน้า
+                  </button>
+                  <button
+                    disabled={roomStartIndex + 3 >= roomInBuilding.length}
+                    onClick={() => setRoomStartIndex(roomStartIndex + 3)}
+                    className="px-3 py-1 rounded bg-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
+                  >
+                    ถัดไป
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
@@ -332,4 +363,3 @@ const Index: React.FC = () => {
 };
 
 export default Index;
- 

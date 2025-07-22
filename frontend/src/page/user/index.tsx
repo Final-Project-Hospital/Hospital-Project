@@ -22,65 +22,50 @@ const UserIndex = () => {
 
   return (
     <div
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(135deg, #e6fffa 0%, #f0fdfa 100%)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
+      className="min-h-screen flex justify-center items-center bg-gradient-to-br from-teal-50 to-cyan-50 px-2"
     >
       {contextHolder}
-      <Card
-        style={{
-          width: 460,
-          borderRadius: 18,
-          boxShadow: "0 1px 10px rgba(0, 160, 146, 0.13)",
-          textAlign: "center",
-          padding: "36px 20px 28px 20px",
-          background: "#fff",
-          border: "1.5px solid #5eead4",
-        }}
-      >
-        <div
-          style={{
-            fontSize: 22,
-            fontWeight: 700,
-            marginBottom: 14,
-            color: "#14b8a6",
-            letterSpacing: 0.2,
-          }}
-        >
-          Login Role <span style={{ color: "#0d9488" }}>Guest</span>
-        </div>
-        <div style={{ color: "#64748b", marginBottom: 30, fontSize: 16 }}>
-          Welcome,{" "}
-          <span
-            style={{
-              color: "#0d9488",
-              fontWeight: 600,
-              background: "linear-gradient(90deg, #5eead4 0%, #2dd4bf 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            {FirstName} {LastName}
-          </span>
-        </div>
-        <button
-          onClick={handleLogout}
+      <div className="w-full flex justify-center items-center">
+        <Card
           className="
-            w-full py-2 text-lg font-semibold rounded-full
-            shadow-md transition
-            bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600
-            text-white hover:from-teal-500 hover:to-teal-700 active:scale-95
-            outline-none focus:ring-2 focus:ring-teal-300
+            w-full max-w-[430px] 
+            rounded-2xl 
+            shadow-lg 
+            border 
+            border-teal-200 
+            p-6 
+            sm:p-10 
+            bg-white
+            mx-2
           "
-          style={{ marginTop: 8 }}
+          bodyStyle={{ padding: 0 }}
         >
-          ออกจากระบบ
-        </button>
-      </Card>
+          <div className="flex flex-col items-center w-full">
+            <div className="text-xl md:text-2xl font-bold mb-3 text-teal-600">
+              Login Role <span className="text-teal-700">Guest</span>
+            </div>
+            <div className="text-gray-500 mb-6 text-base md:text-lg">
+              Welcome,{" "}
+              <span className="font-semibold bg-gradient-to-r from-teal-400 to-teal-700 bg-clip-text text-transparent">
+                {FirstName} {LastName}
+              </span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="
+                w-full py-3 text-base md:text-lg font-semibold rounded-full
+                shadow-md transition
+                bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600
+                text-white hover:from-teal-500 hover:to-teal-700 active:scale-95
+                outline-none focus:ring-2 focus:ring-teal-300
+              "
+              style={{ marginTop: 8 }}
+            >
+              ออกจากระบบ
+            </button>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 };
