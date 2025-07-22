@@ -115,20 +115,24 @@ const TDSdataviz: React.FC = () => {
       title: 'วันที่',
       dataIndex: 'dateOnly',
       key: 'dateOnly',
+      width: 125,
     },
     {
       title: 'เวลา',
       dataIndex: 'timeOnly',
       key: 'timeOnly',
+      width: 55,
     },
     {
       title: 'หน่วยที่วัด',
       key: 'unit',
+      width: 145,
       render: (_, record: any) => record.Unit?.UnitName || '-',
     },
     {
       title: 'มาตรฐาน',
       key: 'standard',
+      width: 100,
       render: (_: any, record: any) => {
         const std = record.Standard;
         if (std) {
@@ -138,7 +142,7 @@ const TDSdataviz: React.FC = () => {
           if (
             typeof std.MinValue === 'number' &&
             typeof std.MaxValue === 'number' &&
-            (std.MinValue !== 0 || std.MaxValue !== 0) // ถ้า MinValue กับ MaxValue ไม่ใช่ 0 ทั้งคู่
+            (std.MinValue !== 0 || std.MaxValue !== 0)
           ) {
             return `${std.MinValue} - ${std.MaxValue}`;
           }
@@ -149,21 +153,25 @@ const TDSdataviz: React.FC = () => {
     {
       title: 'ค่าก่อนเข้าระบบบำบัด',
       key: 'beforeValue',
+      width: 100,
       render: (_, record: any) => (record.BeforeAfterTreatment?.ID === 1 ? record.Data : '-'),
     },
     {
       title: 'ค่าหลังเข้าระบบบำบัด',
       key: 'afterValue',
+      width: 100,
       render: (_, record: any) => (record.BeforeAfterTreatment?.ID === 2 ? record.Data : '-'),
     },
     {
       title: 'หมายเหตุ',
       key: 'note',
+      width: 120,
       render: (_, record: any) => record.Note || '-',
     },
     {
       title: 'สถานะ',
       key: 'status',
+      width: 180,
       render: (_, record) => {
         const value = record.data;
         const standard = 500; // เปลี่ยนตาม logic จริง
@@ -176,18 +184,13 @@ const TDSdataviz: React.FC = () => {
     {
       title: 'จัดการข้อมูล',
       key: 'action',
+      width: 120,
       render: (_: any, record: any) => (
         <div className="action-buttons">
-          <button
-            className="circle-btn edit-btn"
-            onClick={() => handleEdit(record)}
-          >
+          <button className="circle-btn edit-btn" onClick={() => handleEdit(record)}>
             <EditOutlined />
           </button>
-          <button
-            className="circle-btn delete-btn"
-            onClick={() => handleDelete(record.ID)}
-          >
+          <button className="circle-btn delete-btn" onClick={() => handleDelete(record.ID)}>
             <DeleteOutlined />
           </button>
         </div>
@@ -258,22 +261,24 @@ const TDSdataviz: React.FC = () => {
         </div>
       </div>
 
-      <div className="tds-header">
-        <div className="tds-title-search">
+      <div className="tds-header-vis">
+        <div className="tds-title-search-vis">
           <h1 className="tds-title-text">TDS DATA</h1>
           <div>
-            <div className="search-box">
+            <div className="search-box-tds">
+              <Input
+                placeholder="ค้นหา"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                prefix={<SearchOutlined />}
+                className="search-input"
+              />
             </div>
-            <Input
-              placeholder="ค้นหา"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              prefix={<SearchOutlined />}
-              className="search-input"
-            />
           </div>
         </div>
-        <button className="add-btn">เพิ่มข้อมูลใหม่</button>
+        <div className="btn-container">
+          <button className="add-btn">เพิ่มข้อมูลใหม่</button>
+        </div>
       </div>
 
       <div className="table-tdsdata">
