@@ -300,7 +300,7 @@ const TDSCentralForm: React.FC = () => {
                                     <Option value="range">ช่วง (Min - Max)</Option>
                                 </Select>
                             </Form.Item>
-
+                        
                             <div style={{ position: 'relative', top: '-15px' }}>
                                 {/* ค่าเดี่ยว */}
                                 {standardType === 'middle' && !useCustomStandard && (

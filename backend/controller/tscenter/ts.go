@@ -1,17 +1,33 @@
 package tscenter
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func CreateTS(c *gin.Context) {
-	var input entity.EnvironmentalRecord
+	fmt.Println(("Creating Environment Record"))
+
+	var input struct{
+		Data                   float64
+		Date                   time.Time
+		Note                   string
+		BeforeAfterTreatmentID uint
+		EnvironmentID          uint
+		ParameterID            uint
+		StandardID             uint
+		UnitID                 uint
+		EmployeeID             uint
+		CustomUnit             string
+	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -19,6 +35,29 @@ func CreateTS(c *gin.Context) {
 	}
 
 	db := config.DB()
+
+	if input.CustomUnit != "" {
+		var existingUnit entity.Unit
+		if err := db.Where("unit_name = ?", input.CustomUnit).First(&existingUnit).Error; err == nil {
+			// เจอ unit ที่มีอยู่แล้ว
+			input.UnitID = existingUnit.ID
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			// ไม่เจอ unit -> สร้างใหม่
+			newUnit := entity.Unit{
+				UnitName: input.CustomUnit,
+			}
+			if err := db.Create(&newUnit).Error; err != nil {
+				fmt.Println(" ไม่สามารถสร้างหน่วยใหม่ได้:", err) // แค่ขึ้น log
+				// ไม่คืน error ไปยัง frontend
+			} else {
+				input.UnitID = newUnit.ID
+			}
+		} else {
+			// เกิด error อื่นขณะเช็กหน่วย
+			fmt.Println(" เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err) // แค่ขึ้น log
+			// ไม่คืน error ไปยัง frontend
+		}
+	}
 
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?","Total Solid").First(&parameter).Error; err != nil {
@@ -51,20 +90,33 @@ func CreateTS(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "บันทึกข้อมูล TS สำเร็จ", "data": ts})
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "บันทึกข้อมูล TS สำเร็จ", 
+		"data": ts})
 }
 
 func GetTS(c *gin.Context) {
-	var ts []entity.EnvironmentalRecord
-
 	db := config.DB()
 
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?", "Total Solid").First(&parameter).Error; err != nil {
+		if err != nil {
+    		fmt.Println("Parameter not found:", err)
+		} else {
+    		fmt.Println("Parameter ID:", parameter.ID)
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Parameter TKN not found"})
+		return
+	}
+
+	var ts []entity.EnvironmentalRecord
 	result := db.Preload("BeforeAfterTreatment").
 		Preload("Environment").
 		Preload("Parameter").
 		Preload("Standard").
 		Preload("Unit").
 		Preload("Employee").
+		Where("parameter_id = ?", parameter.ID).
 		Find(&ts)
 
 	if result.Error != nil {

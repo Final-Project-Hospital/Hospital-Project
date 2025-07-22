@@ -5,11 +5,13 @@ import { ListStandardInterface } from "./IStandard";
 import { ListUnitInterface } from "./IUnit";
 import { EmployeeInterface } from "./IEmployee";
 export interface EnvironmentalRecordInterface {
+    status: number;
     ID?: number;
-    date?: string;
-    data?: number;
+    Date?: string;
+    Data?: number;
     note?: string;
 
+    BeforeAfterTreatmentID?: number;
     BeforeAfterTreatment?: ListBeforeAfterTreatmentInterface;
     Environment?: EnvironmentInterface;
     Parameter?: ParameterInterface;
@@ -20,18 +22,19 @@ export interface EnvironmentalRecordInterface {
 
 export interface CreateTKNInterface {
     ID?: number;
-    date?: string
-    data?:string;
-    note?:string;
-    beforeAfterTreatmentID?:number;
-    standardID?:number;
-    unitID?:number;
-    employeeID?:number;
+    Date?: string
+    Data?: number;
+    Note?:string;
+    BeforeAfterTreatmentID?:number;
+    StandardID?:number;
+    UnitID?:number;
+    EmployeeID?:number;
+    CustomUnit?:string;
 }
 export interface CreateTSInterface {
     ID?: number;
     date?: string
-    data?:string;
+    data?: number;
     note?:string;
     beforeAfterTreatmentID?:number;
     standardID?:number;
