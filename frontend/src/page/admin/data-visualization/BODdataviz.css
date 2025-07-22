@@ -1,11 +1,11 @@
-.title-header {
+.bod-title-header {
   background: linear-gradient(90deg, #356768, #5AEEF0);
   padding: 30px;
   border-radius: 0 0 25px 25px;
   color: white;
 }
 
-.title-header h1 {
+.bod-title-header h1 {
   font-size: 2rem;
   /* ปรับให้ responsive โดยไม่ใช้ xx-large */
   text-shadow: 0 4px 5px #000000ba;
@@ -15,27 +15,81 @@
 
 /* Responsive Behavior */
 @media (max-width: 768px) {
-  .title-header {
+  .bod-title-header {
     margin-top: 50px;
   }
 
-  .title-header h1 {
+  .bod-title-header h1 {
     font-size: 2.5rem;
     text-align: center;
   }
 
-  .title-header p {
+  .bod-title-header p {
     font-size: 1rem;
     text-align: center;
   }
 }
 
 @media (max-width: 480px) {
-  .title-header {
+  .bod-title-header {
     padding: 20px;
   }
 
-  .title-header h1 {
+  .bod-title-header h1 {
     font-size: 1.5rem;
   }
+}
+
+.bod-back-icon {
+  font-size: 1.5rem;
+  color: #007b8a;
+  cursor: pointer;
+  margin-right: 4px;
+}
+.bod-title {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 25px;
+}
+
+.bod-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.bod-title-text {
+  margin: 0;
+  font-weight: bold;
+  font-size: 1.5rem;
+  color: #6e6e76;
+}
+
+.bod-select-group {
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  
+}
+
+.bod-graph-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.bod-graph-card {
+  flex: 1 1 48%;
+  background-color: #fff;
+  padding: 10px;
+  border-radius: 10px;
+  min-height: 450px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
