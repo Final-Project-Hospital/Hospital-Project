@@ -1,26 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { DatePicker, Input, Select } from "antd";
-import ApexChart from "react-apexcharts";
-import { ApexOptions } from "apexcharts";
 import dayjs from "dayjs";
 import { EnvironmentalRecordInterface } from "../../../interface/IEnvironmentalRecord";
-import { ReadTKN } from "../../../services/enviromentrecord";
+import { GetTKN } from "../../../services/enviromentrecord";
 import './TKNdataviz.css';
 import { LeftOutlined, SearchOutlined } from "@ant-design/icons";
 import Table, { ColumnsType } from "antd/es/table";
 
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from "recharts";
+
 const TKNdataviz: React.FC = () => {
   const [chartTypeBefore, setChartTypeBefore] = useState<'line' | 'bar'>('line');
   const [chartTypeAfter, setChartTypeAfter] = useState<'line' | 'bar'>('line');
-  const [chartTypeCompare1, setChartTypeCompare1] = useState<'line' | 'bar'>('line');
-  const [chartTypeCompare2, setChartTypeCompare2] = useState<'line' | 'bar'>('line');
+  const [chartTypeCombined, setChartTypeCombined] = useState<'line' | 'bar'>('line');
 
-  const [data, setData] = useState<EnvironmentalRecordInterface[]>([]);
+  const [dataTKN, setDataTKN] = useState<EnvironmentalRecordInterface[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [compareData, setCompareData] = useState<{ date: string; before: number; after: number }[]>([]);
   const [beforeData, setBeforeData] = useState<{ date: string; data: number }[]>([]);
   const [afterData, setAfterData] = useState<{ date: string; data: number }[]>([]);
+  const [combinedData, setCombinedData] = useState<{ date: string; before: number; after: number }[]>([]);
+
+
   const [selectedMonth, setSelectedMonth] = useState<dayjs.Dayjs | null>(null);
   const [selectedYear, setSelectedYear] = useState<dayjs.Dayjs | null>(null);
   const [search, setSearch] = useState("");
@@ -28,82 +30,65 @@ const TKNdataviz: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      setError(null);
       try {
-        const response = await ReadTKN();
+        const response = await GetTKN();
+        console.log("Raw response from GetTKN:", response);
+
         if (response) {
-          setData(response);
+          setDataTKN(response);
 
           const before = response
-            .filter((item) => item.BeforeAfterTreatment?.ID === 1)
-            .map((item) => ({ date: item.date?.split("T")[0] || "", data: item.data || 0 }));
+            .filter(data => data.BeforeAfterTreatmentID === 1)
+            .map(data => ({
+              date: data.Date ? dayjs(data.Date.toString()).format("DD/MM/YYYY") : "",
+              data: data.Data != null ? Number(data.Data) : 0,
+            }));
+            console.log("Processed Before Data for Chart:", before);
 
           const after = response
-            .filter((item) => item.BeforeAfterTreatment?.ID === 2)
-            .map((item) => ({ date: item.date?.split("T")[0] || "", data: item.data || 0 }));
-
-          const combined = response
-            .filter((item) => item.BeforeAfterTreatment?.ID === 3)
-            .map((item) => ({
-              date: item.date?.split("T")[0] || "",
-              beforeData: item.note === "ก่อนบำบัด" ? item.data || 0 : null,
-              afterData: item.note === "หลังบำบัด" ? item.data || 0 : null,
+            .filter(item => item.BeforeAfterTreatmentID === 2)
+            .map(item => ({
+              date: item.Date ? dayjs(item.Date.toString()).format("DD/MM/YYYY") : "",
+              data: item.Data != null ? Number(item.Data) : 0,
             }));
-
-          const combinedMap: Record<string, { before: number; after: number }> = {};
-          combined.forEach((item) => {
-            if (!combinedMap[item.date]) {
-              combinedMap[item.date] = { before: 0, after: 0 };
+            console.log("Processed After Data for Chart:", after);
+          
+          const combined = before.map(b =>{
+            const a = after.find(x => x.date === b.date);
+            return{
+              date:b.date,
+              before:b.data,
+              after: a ? a.data : 0,
             }
-            if (item.beforeData !== null) combinedMap[item.date].before = item.beforeData;
-            if (item.afterData !== null) combinedMap[item.date].after = item.afterData;
-          });
-
-          const compare = Object.entries(combinedMap).map(([date, values]) => ({ date, before: values.before, after: values.after }));
+          })
 
           setBeforeData(before);
           setAfterData(after);
-          setCompareData(compare);
+          setCombinedData(combined);
         } else {
-          setError("ไม่พบข้อมูล TKN");
+          console.error("ไม่พบข้อมูล TKN");
         }
       } catch (err) {
         console.error("Error fetching TKN data:", err);
-        setError("เกิดข้อผิดพลาดในการดึงข้อมูล");
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
   }, []);
-
-  const getChartOptions = (categories: string[]): ApexOptions => ({
-    chart: { id: 'tkn-chart', toolbar: { show: true } },
-    xaxis: { categories, title: { text: 'วันที่' } },
-    yaxis: { title: { text: 'mg/L' } },
-    tooltip: { enabled: true },
-    dataLabels: { enabled: false },
-    stroke: { curve: "smooth" },
-  });
-
-  const beforeSeries = [{ name: "TKN", data: beforeData.map((item) => item.data) }];
-  const afterSeries = [{ name: "TKN", data: afterData.map((item) => item.data) }];
-  const compareSeries = [
-    { name: "ก่อนบำบัด", data: compareData.map(item => item.before) },
-    { name: "หลังบำบัด", data: compareData.map(item => item.after) }
-  ];
 
   const columns: ColumnsType<EnvironmentalRecordInterface> = [
     {
       title: 'วันที่',
       dataIndex: 'date',
       key: 'date',
-      render: (date) => date ? dayjs(date).format('YYYY-MM-DD') : '-',
+      render: (_, record) => record.Date ? dayjs(record.Date).format('DD/MM/YYYY') : '-',
     },
     {
       title: 'เวลา',
       key: 'time',
-      render: (_, record) => record.date ? dayjs(record.date).format('HH:mm:ss') : '-',
+      render: (_, record) => record.Date ? dayjs(record.Date).format('HH:mm') : '-',
     },
     {
       title: 'หน่วยที่วัด',
@@ -113,17 +98,17 @@ const TKNdataviz: React.FC = () => {
     {
       title: 'มาตรฐาน',
       key: 'standard',
-      render: (_, record) => record.Standard?.StandardValue || '-',
+      render: (_, record) => record.Standard?.ID || '-',
     },
     {
       title: 'ค่าก่อนเข้าระบบบำบัด',
       key: 'beforeValue',
-      render: (_, record) => (record.BeforeAfterTreatment?.ID === 1 ? record.data : '-'),
+      render: (_, record) => (record.BeforeAfterTreatmentID === 1 ? record.Data : '-'),
     },
     {
       title: 'ค่าหลังเข้าระบบบำบัด',
       key: 'afterValue',
-      render: (_, record) => (record.BeforeAfterTreatment?.ID === 2 ? record.data : '-'),
+      render: (_, record) => (record.BeforeAfterTreatmentID === 2 ? record.Data : '-'),
     },
     {
       title: 'สถานะ',
@@ -133,9 +118,70 @@ const TKNdataviz: React.FC = () => {
     {
       title: 'จัดการข้อมูล',
       key: 'action',
-      render: (_, record) => (<a href={`#edit/${record.ID}`}>แก้ไข</a>),
-    },
+      render: (_, record) => (
+        <>
+          <a href={`update-tkn/${record.ID}`} style={{ marginRight: '10px' }}>แก้ไข</a>
+          <a href={`delete-tkn/${record.ID}`} style={{ color: 'red' }}>ลบ</a>
+        </>
+      ),
+    }
   ];
+
+  // ฟังก์ชันสำหรับเลือก chart แสดง
+  const renderChart = (
+    data: { date: string; data: number }[],
+    chartType: 'line' | 'bar'
+  ) => (
+    <ResponsiveContainer width="100%" height={350}>
+      {chartType === 'line' ? (
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis label={{ value: 'mg/L', angle: -90, position: 'insideLeft' }} />
+          <Tooltip />
+          <Legend />
+          <Line type="monotone" dataKey="data" name="TKN" stroke="#8884d8" />
+        </LineChart>
+      ) : (
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis label={{ value: 'mg/L', angle: -90, position: 'insideLeft' }} />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="data" name="TKN" fill="#82ca9d" />
+        </BarChart>
+      )}
+    </ResponsiveContainer>
+  );
+const renderCombinedChart = (
+  data: { date: string; before: number; after: number }[],
+  chartType: 'line' | 'bar'
+) => (
+  <ResponsiveContainer width="100%" height={400}>
+    {chartType === 'line' ? (
+      <LineChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="date" />
+        <YAxis label={{ value: 'mg/L', angle: -90, position: 'insideLeft' }} />
+        <Tooltip />
+        <Legend />
+        <Line type="monotone" dataKey="before" name="ก่อนบำบัด" stroke="#8884d8" />
+        <Line type="monotone" dataKey="after" name="หลังบำบัด" stroke="#82ca9d" />
+      </LineChart>
+    ) : (
+      <BarChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="date" />
+        <YAxis label={{ value: 'mg/L', angle: -90, position: 'insideLeft' }} />
+        <Tooltip />
+        <Legend />
+        <Bar dataKey="before" name="ก่อนบำบัด" fill="#8884d8" />
+        <Bar dataKey="after" name="หลังบำบัด" fill="#82ca9d" />
+      </BarChart>
+    )}
+  </ResponsiveContainer>
+);
 
   return (
     <div>
@@ -145,52 +191,66 @@ const TKNdataviz: React.FC = () => {
       </div>
 
       <div className="tkn-title">
-        <h1 className="tkn-title-text"><LeftOutlined className="tkn-back-icon" />TKN-GRAPH</h1>
+        <h1 className="tkn-title-text"><LeftOutlined className="tkn-back-icon" />TKN-Central Statistics 
+        <br></br><h2>ผลการตรวจวัดค่า ปริมาณของสารต่างๆ ที่ละลายอยู่ในน้ำ บริเวณระบบบำบัดนํ้าเสียส่วนกลาง</h2></h1>
+        
         <div className="select-group">
-          <DatePicker picker="month" placeholder="เลือกเดือน" onChange={(value) => setSelectedMonth(value)} value={selectedMonth} />
-          <DatePicker picker="year" placeholder="เลือกปี" onChange={(value) => setSelectedYear(value)} value={selectedYear} />
+          <DatePicker
+            picker="month"
+            placeholder="เลือกเดือน"
+            onChange={(value) => setSelectedMonth(value)}
+            value={selectedMonth}
+          />
+          <DatePicker
+            picker="year"
+            placeholder="เลือกปี"
+            onChange={(value) => setSelectedYear(value)}
+            value={selectedYear}
+          />
         </div>
       </div>
-
       <div className="graph-container">
         <div className="graph-card">
           <h2>น้ำก่อนบำบัด</h2>
-          <Select value={chartTypeBefore} onChange={val => setChartTypeBefore(val)} style={{ marginBottom: 10 }}>
+          <Select
+            value={chartTypeBefore}
+            onChange={val => setChartTypeBefore(val)}
+            style={{ marginBottom: 10 }}
+          >
             <Select.Option value="line">กราฟเส้น (Line Chart)</Select.Option>
             <Select.Option value="bar">กราฟแท่ง (Bar Chart)</Select.Option>
           </Select>
-          <ApexChart options={getChartOptions(beforeData.map(item => item.date))} series={beforeSeries} type={chartTypeBefore} height={350} />
+          {renderChart(beforeData, chartTypeBefore)}
         </div>
 
         <div className="graph-card">
           <h2>น้ำหลังบำบัด</h2>
-          <Select value={chartTypeAfter} onChange={val => setChartTypeAfter(val)} style={{ marginBottom: 10 }}>
+          <Select
+            value={chartTypeAfter}
+            onChange={val => setChartTypeAfter(val)}
+            style={{ marginBottom: 10 }}
+          >
             <Select.Option value="line">กราฟเส้น (Line Chart)</Select.Option>
             <Select.Option value="bar">กราฟแท่ง (Bar Chart)</Select.Option>
           </Select>
-          <ApexChart options={getChartOptions(afterData.map(item => item.date))} series={afterSeries} type={chartTypeAfter} height={350} />
-        </div>
-
-        <div className="graph-card">  
-          <h2>น้ำก่อน - หลังบำบัด</h2>
-          <Select value={chartTypeCompare1} onChange={val => setChartTypeCompare1(val)} style={{ marginBottom: 10 }}>
-            <Select.Option value="line">กราฟเส้น (Line Chart)</Select.Option>
-            <Select.Option value="bar">กราฟแท่ง (Bar Chart)</Select.Option>
-          </Select>
-          <ApexChart options={getChartOptions(compareData.map(item => item.date))} series={compareSeries} type={chartTypeCompare1} height={350} />
+          {renderChart(afterData, chartTypeAfter)}
         </div>
         <div className="graph-card">
-          <h2>น้ำก่อน - หลังบำบัด</h2>
-          <Select value={chartTypeCompare2} onChange={val => setChartTypeCompare2(val)} style={{ marginBottom: 10 }}>
+          <h2>กราฟเปรียบเทียบ ก่อนและหลังบำบัด</h2>
+            <Select
+            value={chartTypeCombined}
+            onChange={val => setChartTypeCombined(val)}
+            style={{ marginBottom: 10 }}
+          >
             <Select.Option value="line">กราฟเส้น (Line Chart)</Select.Option>
             <Select.Option value="bar">กราฟแท่ง (Bar Chart)</Select.Option>
           </Select>
-          <ApexChart options={getChartOptions(compareData.map(item => item.date))} series={compareSeries} type={chartTypeCompare2} height={350} />
+          {renderCombinedChart(combinedData, chartTypeCombined)}
         </div>
       </div>
 
       <div className="tkn-data">
-        <h1 className="tkn-title-text">TDS DATA</h1>
+        <h1 className="tkn-title-text">TKN DATA</h1>
         <div className="search-box">
           <Input
             placeholder="ค้นหา"
@@ -201,13 +261,16 @@ const TKNdataviz: React.FC = () => {
           />
         </div>
         <div className="table-tkndata">
-          <Table columns={columns} dataSource={data.filter(d => dayjs(d.date).format('YYYY-MM-DD').includes(search))} rowKey="ID" loading={loading} />
+          <Table
+            columns={columns}
+            dataSource={dataTKN.filter(d => {
+              const dateStr = d.Date ? dayjs(d.Date).format('DD/MM/YYYY') : '';
+              return dateStr.includes(search);
+            })}
+            rowKey="ID"
+            loading={loading}
+          />
         </div>
-      </div>
-
-      <div className="tkn-central-statistics">
-        <h1 className="tkn-title-text">TKN-Central Statistics</h1>
-        <h2>ผลการตรวจวัดค่า ปริมาณของสารต่างๆ ที่ละลายอยู่ในน้ำ บริเวณระบบบำบัดนํ้าเสียส่วนกลาง</h2>
       </div>
     </div>
   );

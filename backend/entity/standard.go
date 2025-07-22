@@ -6,7 +6,6 @@ import (
 
 type Standard struct {
 	gorm.Model
-	//StandardValue	float32
 	MaxValue     float32 
 	MiddleValue  float32
 	MinValue     float32 

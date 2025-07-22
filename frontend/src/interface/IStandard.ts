@@ -9,8 +9,6 @@ export interface ListStandardInterface {
   MaxValue?: number;    // ค่าสูงสุด (กรณีเลือกเป็นช่วง)
 }
 
-
-
 export interface ListMiddleStandardInterface {
   ID: number;
   MiddleValue: number; // ต้องมี
