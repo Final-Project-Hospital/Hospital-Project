@@ -1,6 +1,6 @@
 import axios from "axios";
 import { BodcenterInterface } from "../interface/IBodCenter";
-const apiUrl = "http://localhost:8000";
+import {apiUrl} from "./index"
 
 // const Authorization = localStorage.getItem("token");
 

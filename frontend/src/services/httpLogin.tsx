@@ -1,8 +1,7 @@
 import axios from "axios";
 import { LoginInterface } from "../interface/Login"
 import { UsersInterface } from "../interface/IUser";
-
-const apiUrl = "http://localhost:8000";
+import {apiUrl} from "./index"
 
 export interface SignupInput {
   FirstName: string;

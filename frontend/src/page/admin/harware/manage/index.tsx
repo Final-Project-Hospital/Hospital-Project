@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Input, Button, Space, Modal, message } from "antd";
+import { Table, Input, Button, Modal, message } from "antd";
 import { SearchOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { ListRoom, DeleteRoomById } from "../../../../services/hardware";
@@ -170,10 +170,10 @@ const RoomAdminTable: React.FC = () => {
             key: "action",
             width: 140,
             render: (_, record) => (
-                <Space>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-1 w-full">
                     <Button
                         icon={<EditOutlined />}
-                        className="bg-gradient-to-r from-teal-400 to-teal-500 text-white border-none font-semibold shadow hover:scale-105"
+                        className="bg-gradient-to-r from-teal-400 to-teal-500 text-white border-none font-semibold shadow hover:scale-105 w-full sm:w-auto"
                         style={{ borderRadius: 12 }}
                         onClick={() => handleEditClick(record)}
                     >
@@ -184,17 +184,18 @@ const RoomAdminTable: React.FC = () => {
                         danger
                         type="primary"
                         style={{ borderRadius: 12 }}
+                        className="w-full sm:w-auto"
                         onClick={() => handleDeleteClick(record.ID, record.RoomName)}
                     >
                         Delete
                     </Button>
-                </Space>
+                </div>
             ),
-        },
+        }
     ];
 
     return (
-        <div className="min-h-screen bg-gray-100 mt-24 md:mt-0">
+        <div className="min-h-screen bg-gray-100 mt-16 md:mt-0">
             <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-8 py-6 rounded-b-3xl mb-6">
                 <div className="flex justify-between items-center flex-wrap gap-4">
                     <div>
@@ -267,7 +268,6 @@ const RoomAdminTable: React.FC = () => {
                 footer={null}
                 centered
                 closeIcon={false}
-                bodyStyle={{ padding: '2.5rem 2rem' }}
             >
                 <div className="flex flex-col items-center gap-4">
                     <FaHome size={54} className="text-red-400 mb-2 drop-shadow-lg" />

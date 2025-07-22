@@ -35,12 +35,12 @@ const Notification = () => { //@ts-ignore
   const { handleClick } = useStateContext();
 
   return (
-    <div className="z-50 nav-item absolute right-5 md:right-40 top-16 bg-white p-8 rounded-lg w-96 shadow">
+    <div className="z-50 nav-item absolute right-1 md:right-40 top-16 bg-white p-8 rounded-lg w-96 shadow paddings">
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-3">
           <p className="font-semibold text-lg">Report Notifications</p>
           <span
-            className="flex items-center justify-center h-6 text-white text-xs rounded-full px-3 py-1 font-semibold bg-gradient-to-r from-teal-500 to-cyan-400 shadow-sm"
+            className="flex items-center justify-center h-6 text-white text-xs rounded-full px-3 py-1 font-semibold bg-gradient-to-r from-teal-500 to-cyan-400 shadow-sm mb-4"
             style={{
               backgroundImage: "linear-gradient(to right, #14b8a6, #22d3ee)",
             }}
@@ -50,7 +50,7 @@ const Notification = () => { //@ts-ignore
         </div>
         <button
           type="button"
-          className="text-gray-400 hover:bg-gray-100 rounded-full p-2 transition"
+          className="text-gray-400 hover:bg-gray-100 rounded-full p-2 transition mb-4"
           onClick={() => handleClick("notification")}
           aria-label="Close"
         >
