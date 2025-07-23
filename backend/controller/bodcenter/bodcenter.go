@@ -73,6 +73,7 @@ func CreateBod(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
 		return
 	}
+	
 
 	environmentRecord := entity.EnvironmentalRecord{
 		Date:                   input.Date,
@@ -84,6 +85,7 @@ func CreateBod(c *gin.Context) {
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,
+		StatusID:               2,
 	}
 
 	if err := db.Create(&environmentRecord).Error; err != nil {
@@ -123,12 +125,14 @@ func GetfirstBOD(c *gin.Context) {
 		MinValue               uint      `json:"MinValue"`
 		MiddleValue            uint      `json:"MiddleValue"`
 		MaxValue               uint      `json:"MaxValue"`
+		UnitName               string      `json:"UnitName"`
 	}
 
 	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
 	result := db.Model(&entity.EnvironmentalRecord{}).
-		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note,environmental_records.before_after_treatment_id,environmental_records.environment_id ,environmental_records.parameter_id ,environmental_records.standard_id ,environmental_records.unit_id ,environmental_records.employee_id,standards.min_value,standards.middle_value,standards.max_value`).
+		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note,environmental_records.before_after_treatment_id,environmental_records.environment_id ,environmental_records.parameter_id ,environmental_records.standard_id ,environmental_records.unit_id ,environmental_records.employee_id,standards.min_value,standards.middle_value,standards.max_value,units.unit_name`).
 		Joins("inner join standards on environmental_records.standard_id = standards.id").
+		Joins("inner join units on environmental_records.unit_id = units.id").
 		Where("parameter_id = ?", parameter.ID).
 		Order("environmental_records.created_at desc").
 		Scan(&firstbod)
@@ -174,8 +178,8 @@ func ListBOD(c *gin.Context) {
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
 	var firstbod []struct {
 		ID                     uint      `json:"ID"`
-		Date                   time.Time `json:"-"`
-		FormattedDate          string    `json:"Date"`
+		Date                   time.Time `json:"Date"`
+		// FormattedDate          string    `json:"Date"`
 		Data                   float64   `json:"Data"`
 		Note                   string    `json:"Note"`
 		BeforeAfterTreatmentID uint      `json:"BeforeAfterTreatmentID"`
@@ -184,7 +188,9 @@ func ListBOD(c *gin.Context) {
 		StandardID             uint      `json:"StandardID"`
 		UnitID                 uint      `json:"UnitID"`
 		EmployeeID             uint      `json:"EmployeeID"`
-		StandardValue          float32
+		MinValue               uint      `json:"MinValue"`
+		MiddleValue            uint      `json:"MiddleValue"`
+		MaxValue               uint      `json:"MaxValue"`
 		UnitName               string
 		TreatmentName          string
 	}
@@ -192,17 +198,18 @@ func ListBOD(c *gin.Context) {
 	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
 	result := db.Model(&entity.EnvironmentalRecord{}).
 		Select(`environmental_records.id, environmental_records.date,environmental_records.data,environmental_records.note,environmental_records.before_after_treatment_id,environmental_records.environment_id ,environmental_records.parameter_id 
-		,environmental_records.standard_id ,environmental_records.unit_id ,environmental_records.employee_id,standards.standard_value,units.unit_name,before_after_treatments.treatment_name`).
+		,environmental_records.standard_id ,environmental_records.unit_id ,environmental_records.employee_id,units.unit_name,before_after_treatments.treatment_name,standards.min_value,standards.middle_value,standards.max_value`).
 		Joins("inner join standards on environmental_records.standard_id = standards.id").
 		Joins("inner join units on environmental_records.unit_id = units.id").
 		Joins("inner join before_after_treatments on environmental_records.before_after_treatment_id = before_after_treatments.id").
-		Where("environmental_records.parameter_id = ? AND environmental_records.before_after_treatment_id = ? ", parameter.ID, before.ID).
-		Order("environmental_records.created_at desc").
+		Where("environmental_records.parameter_id = ? ", parameter.ID).
+		// Where("environmental_records.parameter_id = ? AND environmental_records.before_after_treatment_id = ? ", parameter.ID, before.ID).
+		// Order("environmental_records.created_at desc").
 		Find(&firstbod)
 
-	for i := range firstbod {
-		firstbod[i].FormattedDate = formatThaiDate(firstbod[i].Date)
-	}
+	// for i := range firstbod {
+	// 	firstbod[i].FormattedDate = formatThaiDate(firstbod[i].Date)
+	// }
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
 	if result.Error != nil {

@@ -174,7 +174,30 @@ func CreateTDS(c *gin.Context) {
 		"data":    record,
 	})
 }
+//	ห้ามลบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบบ 
+// func GetTDS(c *gin.Context) {
+// 	var tds []entity.EnvironmentalRecord
 
+// 	db := config.DB()
+
+// 	result := db.Preload("BeforeAfterTreatment").
+// 		Preload("Environment").
+// 		Preload("Parameter").
+// 		Preload("Standard").
+// 		Preload("Unit").
+// 		Preload("Employee").
+// 		Preload("Status").
+// 		Find(&tds)
+
+// 	if result.Error != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+// 		return
+// 	}
+
+// 	c.JSON(http.StatusOK, tds)
+// }
+
+//อันใหม่แบบเอาแค่TDS
 func GetTDS(c *gin.Context) {
 	var tds []entity.EnvironmentalRecord
 
@@ -187,6 +210,8 @@ func GetTDS(c *gin.Context) {
 		Preload("Unit").
 		Preload("Employee").
 		Preload("Status").
+		Joins("JOIN parameters ON parameters.id = environmental_records.parameter_id").
+		Where("parameters.parameter_name = ?", "Total Dissolved Solids").
 		Find(&tds)
 
 	if result.Error != nil {
@@ -196,6 +221,7 @@ func GetTDS(c *gin.Context) {
 
 	c.JSON(http.StatusOK, tds)
 }
+
 
 func GetTDSbyID(c *gin.Context) {
 	id := c.Param("id")

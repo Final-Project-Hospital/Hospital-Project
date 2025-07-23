@@ -1,11 +1,11 @@
-.title-header {
+.bod-title-header {
   background: linear-gradient(90deg, #356768, #5AEEF0);
   padding: 30px;
   border-radius: 0 0 25px 25px;
   color: white;
 }
 
-.title-header h1 {
+.bod-title-header h1 {
   font-size: 2rem;
   /* ปรับให้ responsive โดยไม่ใช้ xx-large */
   text-shadow: 0 4px 5px #000000ba;
@@ -13,29 +13,96 @@
   margin: 0;
 }
 
+.bod-back-icon {
+  font-size: 1.5rem;
+  color: #007b8a;
+  cursor: pointer;
+  margin-right: 4px;
+}
+
+.bod-title {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 25px;
+  gap: 16px;
+}
+
+.bod-title-text {
+  margin: 0;
+  font-weight: bold;
+  font-size: 1.5rem;
+  color: #6e6e76;
+  margin-top: 10px;
+}
+
+.bod-select-group {
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+
+}
+
+.bod-graph-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+
+}
+
+.bod-graph-card {
+  flex: 0 1 calc(50% - 10px);
+  max-width: calc(50% - 10px);
+  background-color: #fff;
+  padding: 10px;
+  border-radius: 10px;
+  min-height: 450px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+}
+.bod-head-graph-card{
+  display: flex;
+  justify-content: space-between;
+}
+.bod-head-graph-card-text {
+  color: #1b4242;
+  border-radius: 2px;
+  background-image: linear-gradient(to right, #5DDFE2, #ffffff);
+  padding: 5px;
+}
+
+.bod-right-select-graph{
+  text-align: right;
+}
+
 /* Responsive Behavior */
 @media (max-width: 768px) {
-  .title-header {
+  .bod-title-header {
     margin-top: 50px;
   }
 
-  .title-header h1 {
+  .bod-title-header h1 {
     font-size: 2.5rem;
     text-align: center;
   }
 
-  .title-header p {
+  .bod-title-header p {
     font-size: 1rem;
     text-align: center;
   }
 }
 
 @media (max-width: 480px) {
-  .title-header {
+  .bod-title-header {
     padding: 20px;
   }
 
-  .title-header h1 {
+  .bod-title-header h1 {
     font-size: 1.5rem;
   }
 }
