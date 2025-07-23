@@ -24,18 +24,18 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
   const [hardwares, setHardwares] = useState<HardwareInterface[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // โหลดข้อมูลตาราง Building/Hardware แค่รอบแรกหรือเมื่อเปิด modal
   useEffect(() => {
     const fetchData = async () => {
       const b = await ListBuilding();
       const h = await ListHardware();
-
       if (b) setBuildings(b);
       if (h) setHardwares(h);
     };
-
     if (show) {
+      // Reset ค่า room ทุกครั้งที่เปิด Modal ใหม่!
+      setRoom({ RoomName: '', Floor: '', Employee: { ID: 1 } });
       fetchData();
-      setRoom((prev) => ({ ...prev, Employee: { ID: 1 } }));
     }
   }, [show]);
 
@@ -51,9 +51,7 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
       message.error('กรุณากรอกข้อมูลให้ครบทุกช่อง');
       return;
     }
-
     setLoading(true);
-
     const payload: RoomInterface = {
       RoomName: room.RoomName,
       Floor: room.Floor,
@@ -61,13 +59,12 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
       Employee: { ID: 1 },
       Hardware: hardwares.find((h) => h.ID === Number(room.Hardware?.ID)),
     };
-
     const res = await CreateRoom(payload);
     setLoading(false);
 
     if (res) {
       message.success('บันทึกสำเร็จ');
-      onCreateSuccess();  // แจ้งให้ parent โหลดข้อมูลใหม่และปิด modal
+      onCreateSuccess(); // แจ้งให้ parent โหลดข้อมูลใหม่และปิด modal
     } else {
       message.error('เกิดข้อผิดพลาดในการบันทึก');
     }
@@ -80,7 +77,7 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 paddings">
       <div className="bg-white rounded-2xl w-full max-w-2xl p-8 shadow-xl relative">
         <h2 className="text-center text-lg font-bold bg-teal-600 text-white py-2 rounded-t-lg mb-6">
           เพิ่มข้อมูลพื้นที่ติดตั้งเซนเซอร์

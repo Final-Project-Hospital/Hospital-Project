@@ -67,7 +67,7 @@ const EditRoomModal: React.FC<Props> = ({ show, onClose, onSaveSuccess, initialD
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 paddings">
       <div className="bg-white rounded-2xl w-full max-w-2xl p-8 shadow-xl relative">
         <h2 className="text-center text-lg font-bold bg-teal-600 text-white py-2 rounded-t-lg mb-6">
           แก้ไขข้อมูลพื้นที่ติดตั้งเซนเซอร์
