@@ -73,6 +73,7 @@ func CreateBod(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
 		return
 	}
+	
 
 	environmentRecord := entity.EnvironmentalRecord{
 		Date:                   input.Date,
@@ -84,6 +85,7 @@ func CreateBod(c *gin.Context) {
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,
+		StatusID:               2,
 	}
 
 	if err := db.Create(&environmentRecord).Error; err != nil {

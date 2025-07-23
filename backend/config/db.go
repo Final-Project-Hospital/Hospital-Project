@@ -422,6 +422,7 @@ func SetupDatabase() {
             StandardID:             3,
             UnitID:                 Unit.ID,
             EmployeeID:             Admin.ID,
+			StatusID:status2.ID,
         }
 
         afterRecord := entity.EnvironmentalRecord{
@@ -434,6 +435,7 @@ func SetupDatabase() {
             StandardID:             3,
             UnitID:                 Unit.ID,
             EmployeeID:             Admin.ID,
+			StatusID:status2.ID,
         }
 
         db.Create(&beforeRecord)
