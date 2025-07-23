@@ -156,6 +156,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         background: "#f7f7f8",
       }}
       title=""
+      className="paddings"
     >
       <div className="flex justify-center items-center w-full mt-5 mb-6">
         <span className="text-center text-lg font-bold bg-emerald-600 text-white py-1.5 px-7 mt-5 rounded-xl shadow select-none tracking-wide">
