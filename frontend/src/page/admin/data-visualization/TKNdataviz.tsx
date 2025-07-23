@@ -46,22 +46,24 @@ const TKNdataviz: React.FC = () => {
 
           setDataTKN(response);
           
-          
           if (response){
 
             const standardRecord = response.find(item => item.Standard);
             if(standardRecord && standardRecord.Standard){
               const std = standardRecord.Standard;
+              console.log("standard:",standardRecord)
 
               //middle
               if(std.MiddleValue && std.MinValue === 0 && std.MaxValue === 0){
                 setMiddle(std.MiddleValue);
                 setMax(undefined);
                 setMin(undefined);
+              //min-max
               } else if (std.MinValue && std.MaxValue && std.MiddleValue === 0){
                 setMiddle(undefined);
                 setMax(std.MaxValue);
                 setMin(std.MinValue);
+              //nostandard
               } else{
                 setMiddle(undefined);
                 setMax(undefined);
@@ -182,8 +184,8 @@ const TKNdataviz: React.FC = () => {
     data: { date: string; data: number }[],
     chartType: 'line' | 'bar',
     middle: number ,
-    min: number | undefined,
-    max: number | undefined
+    min: number ,
+    max: number ,
   ) => (
     <ResponsiveContainer width="100%" height={350}>
       {chartType === 'line' ? (
@@ -203,36 +205,44 @@ const TKNdataviz: React.FC = () => {
           <YAxis label={{ value: 'mg/L', angle: -90, position: 'insideLeft' }} />
           <Tooltip />
           <Legend />
-          <Bar dataKey="data" name="TKN" fill="#82ca9d" />
+          <Bar dataKey="data" name="TKN" fill="#ca8282ff" />
           {renderStandardLines(middle, min, max)}
         </BarChart>
       )}
     </ResponsiveContainer>
   );
   const renderStandardLines = (
-    middle: number,
-    min: number | undefined,
-    max: number | undefined
-  ) => (
-    <>
-      {middle !== undefined && (
+  middle: number | undefined,
+  min: number | undefined,
+  max: number | undefined 
+  ) => {
+    // ถ้ามี min และ max (และไม่มี middle หรือ middle = 0)
+    if (min !== undefined && max !== undefined) {
+      return (
+        <>
+          <ReferenceLine y={min} stroke="orange" label="Min" strokeDasharray="4 4" />
+          <ReferenceLine y={max} stroke="green" label="Max" strokeDasharray="4 4" />
+        </>
+      );
+    }
+
+    // ถ้ามีแค่ middle
+    if (middle !== undefined && middle > 0) {
+      return (
         <ReferenceLine y={middle} stroke="red" label="มาตรฐาน" strokeDasharray="3 3" />
-      )}
-      {min !== undefined && (
-        <ReferenceLine y={min} stroke="orange" label="Min" strokeDasharray="4 4" />
-      )}
-      {max !== undefined && (
-        <ReferenceLine y={max} stroke="green" label="Max" strokeDasharray="4 4" />
-      )}
-    </>
-  );
+      );
+    }
+
+    return null;
+  };
+
 
   const renderCombinedChart = (
     data: { date: string; before: number; after: number }[],
     chartType: 'line' | 'bar',
     middle: number,
-    min: number | undefined,
-    max: number | undefined
+    min: number,
+    max: number 
   ) => (
     <ResponsiveContainer width="100%" height={400}>
       {chartType === 'line' ? (
@@ -298,7 +308,7 @@ const TKNdataviz: React.FC = () => {
             <Select.Option value="line">กราฟเส้น (Line Chart)</Select.Option>
             <Select.Option value="bar">กราฟแท่ง (Bar Chart)</Select.Option>
           </Select>
-          {renderChart(beforeData, chartTypeBefore, middle ?? 0, min, max)}
+          {renderChart(beforeData, chartTypeBefore, middle ?? 0, min ?? 0, max ?? 0)}
         </div>
 
         <div className="graph-card">
@@ -311,7 +321,7 @@ const TKNdataviz: React.FC = () => {
             <Select.Option value="line">กราฟเส้น (Line Chart)</Select.Option>
             <Select.Option value="bar">กราฟแท่ง (Bar Chart)</Select.Option>
           </Select>
-          {renderChart(afterData, chartTypeAfter, middle ?? 0, min, max)}
+          {renderChart(afterData, chartTypeAfter, middle ?? 0, min ?? 0, max ?? 0)}
         </div>
         <div className="graph-card">
           <h2>กราฟเปรียบเทียบ ก่อนและหลังบำบัด</h2>
@@ -323,7 +333,7 @@ const TKNdataviz: React.FC = () => {
             <Select.Option value="line">กราฟเส้น (Line Chart)</Select.Option>
             <Select.Option value="bar">กราฟแท่ง (Bar Chart)</Select.Option>
           </Select>
-          {renderCombinedChart(combinedData, chartTypeCombined, middle ?? 0, min, max)}
+          {renderCombinedChart(combinedData, chartTypeCombined, middle ?? 0, min ?? 0, max ?? 0)}
         </div>
       </div>
 
