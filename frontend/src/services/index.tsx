@@ -5,7 +5,8 @@ import { ListBeforeAfterTreatmentInterface } from "../interface/IBeforeAfterTrea
 import { ListUnitInterface } from "../interface/IUnit";
 import { ListMiddleStandardInterface, ListRangeStandardInterface, ListStandardInterface, AddMiddleStandardInterface, AddRangeStandardInterface } from "../interface/IStandard";
 
-const apiUrl = "http://localhost:8000";
+//export const apiUrl = "http://10.0.14.228:8000";
+export const apiUrl = "http://localhost:8000";
 
 const Authorization = localStorage.getItem("token");
 
@@ -288,6 +289,27 @@ export const AddRangeStandard = async (
   } catch (error: any) {
     console.error("Error add-range-standard:", error.response?.data || error.message);
     message.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+    return null;
+  }
+};
+
+export const GetStandardByID = async (id: number): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-standard/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error fetching standard by ID:", error.response?.data || error.message);
     return null;
   }
 };

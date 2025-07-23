@@ -3,7 +3,7 @@ import { message } from 'antd';
 import { CreatePHInterface } from "../interface/IpH";
 import { UpdatePHInterface } from "../interface/IpH";
 import { DeletePHInterface } from "../interface/IpH";
-const apiUrl = "http://localhost:8000";
+import {apiUrl} from "./index"
 
 // const Authorization = localStorage.getItem("token");
 

@@ -1,12 +1,8 @@
-// export interface ListStandardInterface {
-//     ID?: number;
-//     StandardValue?: number;
-// }
 export interface ListStandardInterface {
   ID: number;
-  MiddleValue?: number; // ค่ากลาง (กรณีเลือกแบบ single)
-  MinValue?: number;    // ค่าต่ำสุด (กรณีเลือกเป็นช่วง)
-  MaxValue?: number;    // ค่าสูงสุด (กรณีเลือกเป็นช่วง)
+  MiddleValue?: number; 
+  MinValue?: number;   
+  MaxValue?: number;    
 }
 
 export interface ListMiddleStandardInterface {
@@ -21,7 +17,6 @@ export interface ListRangeStandardInterface {
   MinValue: number;    // ต้องมี
   MaxValue: number;    // ต้องมี
 }
-
 
 export interface AddMiddleStandardInterface {
   MiddleValue: number;
