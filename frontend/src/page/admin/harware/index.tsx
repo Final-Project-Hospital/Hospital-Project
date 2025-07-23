@@ -9,6 +9,7 @@ import Modal from '../harware/data/room/delete';
 import { ListRoom, DeleteRoomById, ListBuilding } from '../../../services/hardware';
 import { RoomInterface } from '../../../interface/IRoom';
 import { BuildingInterface } from '../../../interface/IBuilding';
+import { message } from 'antd';
 
 interface RoomCardProps {
   name: string;
@@ -146,6 +147,7 @@ const Index: React.FC = () => {
     const success = await DeleteRoomById(selectedRoomIdRef.current);
     if (success) {
       fetchRooms();
+      message.success('ลบข้อมูลห้องสำเร็จ');
       setOpenConfirmModal(false);
       selectedRoomIdRef.current = null;
       setSelectedRoomName("");
@@ -274,7 +276,7 @@ const Index: React.FC = () => {
                 <div>
                   <h2 className="text-lg font-semibold text-teal-700">{building.BuildingName || '-'}</h2>
                   <div className="text-gray-400 text-xs font-medium">
-                    Room ทั้งหมดในอาคารนี้: <span className="font-semibold text-teal-600">{roomInBuilding.length}</span>
+                    ห้องทั้งหมดในอาคารนี้ : <span className="font-semibold text-teal-600">{roomInBuilding.length}</span>
                   </div>
                 </div>
               </div>

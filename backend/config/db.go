@@ -136,13 +136,13 @@ func SetupDatabase() {
 	db.FirstOrCreate(&Position3, &entity.Position{Position: "unknown"})
 
 	// Building
-	Building1 := entity.Building{BuildingName: "Building1"}
-	Building2 := entity.Building{BuildingName: "Building2"}
-	Building3 := entity.Building{BuildingName: "Building3"}
+	Building1 := entity.Building{BuildingName: "รัตนเวชพัฒน์"}
+	Building2 := entity.Building{BuildingName: "ศูนย์ความเป็นเลิศทางการแพทย์"}
+	Building3 := entity.Building{BuildingName: "อาคารทันตกรรม"}
 
-	db.FirstOrCreate(&Building1, &entity.Building{BuildingName: "Building1"})
-	db.FirstOrCreate(&Building2, &entity.Building{BuildingName: "Building2"})
-	db.FirstOrCreate(&Building3, &entity.Building{BuildingName: "Building3"})
+	db.FirstOrCreate(&Building1, &entity.Building{BuildingName: "รัตนเวชพัฒน์"})
+	db.FirstOrCreate(&Building2, &entity.Building{BuildingName: "ศูนย์ความเป็นเลิศทางการแพทย์"})
+	db.FirstOrCreate(&Building3, &entity.Building{BuildingName: "อาคารทันตกรรม"})
 
 	var colorCount, graphCount, paramCount int64
 

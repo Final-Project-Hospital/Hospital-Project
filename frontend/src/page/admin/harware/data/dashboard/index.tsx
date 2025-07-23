@@ -20,6 +20,7 @@ import EditParameterModal from "./edit";
 const Index = () => {
   const location = useLocation();
   const { hardwareID } = location.state || {};
+
   const [uniqueGraphs, setUniqueGraphs] = useState<
     {
       ID: number;
@@ -31,11 +32,19 @@ const Index = () => {
   const [reloadCharts, setReloadCharts] = useState(0);
   const [reloadAverage, setReloadAverage] = useState(0);
   const [reloadBoxes, setReloadBoxes] = useState(0);
-  const [loadingAll, setLoadingAll] = useState(false);
+  const [loadingAll, setLoadingAll] = useState(true);
 
-  // โหลดข้อมูลกราฟ
+  // flags รอแต่ละ box
+  const [boxLoaded, setBoxLoaded] = useState(false);
+  const [tableLoaded, setTableLoaded] = useState(false);
+  const [averageLoaded, setAverageLoaded] = useState(false);
+
+  // โหลดข้อมูลกราฟ (ไม่เกี่ยวกับ overlay loading)
   const fetchSensorDataAndParameters = useCallback(async () => {
-    if (!hardwareID) return;
+    if (!hardwareID) {
+      setUniqueGraphs([]);
+      return;
+    }
 
     const sensorDataList = await GetSensorDataByHardwareID(hardwareID);
     if (!sensorDataList || sensorDataList.length === 0) {
@@ -88,9 +97,24 @@ const Index = () => {
     setUniqueGraphs(resultGraphs);
   }, [hardwareID]);
 
+  // ดึงข้อมูลใหม่ & set loading = true ทุกครั้งที่เข้า page หรือ reload
   useEffect(() => {
+    setLoadingAll(true);
+    setBoxLoaded(false);
+    setTableLoaded(false);
+    setAverageLoaded(false);
     fetchSensorDataAndParameters();
   }, [hardwareID, fetchSensorDataAndParameters, reloadCharts]);
+
+  // เช็ค loading overlay ทุกครั้งที่ boxLoaded, tableLoaded, averageLoaded เปลี่ยน
+  useEffect(() => {
+    if (boxLoaded && tableLoaded && averageLoaded) {
+      setLoadingAll(false);
+    }
+  }, [boxLoaded, tableLoaded, averageLoaded]);
+
+  // เมื่อ uniqueGraphs reload ไม่เกี่ยวกับ overlay loading
+  // (ไม่ต้อง setLoadingAll(false) ที่นี่อีกแล้ว)
 
   const defaultStart = new Date();
   defaultStart.setDate(defaultStart.getDate() - 6);
@@ -99,17 +123,20 @@ const Index = () => {
   // >>> Handle Success จาก Modal (Overlay Loading แล้ว fetch ใหม่)
   const handleEditSuccess = async () => {
     setLoadingAll(true);
+    setBoxLoaded(false);
+    setTableLoaded(false);
+    setAverageLoaded(false);
     await fetchSensorDataAndParameters();
     setReloadCharts(prev => prev + 1);
     setReloadAverage(prev => prev + 1);
     setReloadBoxes(prev => prev + 1);
-
-    setTimeout(() => {
-      setLoadingAll(false);
-    }, 1000); // ปรับให้เหมาะสม
+    // loading จะปิดอัตโนมัติหลังจาก child components loaded แล้ว
   };
 
-
+  // handle loading เมื่อ child components data พร้อม (ให้ Boxsdata, TableData, Avergare ส่ง callback)
+  const onBoxLoaded = () => setBoxLoaded(true);
+  const onTableLoaded = () => setTableLoaded(true);
+  const onAverageLoaded = () => setAverageLoaded(true);
 
   return (
     <div className="space-y-8 relative">
@@ -119,7 +146,7 @@ const Index = () => {
         </div>
       )}
 
-      <section className="w-full px-2 md:px-8 p-5 bg-white border border-gray-200 rounded-lg shadow-md mb-8 mt-24 md:mt-0 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center">
+      <section className="w-full px-2 md:px-8 p-5 bg-white border border-gray-200 rounded-lg shadow-md mb-8 mt-16 md:mt-0 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center">
         <div className="text-center md:text-left">
           <h1 className="text-2xl md:text-4xl font-extrabold leading-tight mb-4">
             Good Morning
@@ -136,7 +163,7 @@ const Index = () => {
               className="bg-teal-600 hover:bg-teal-800 text-white font-bold py-2 px-5 rounded-xl shadow transition"
               onClick={() => setShowEdit(true)}
             >
-              Edit Parameter
+              เเก้ไขข้อมูลพารามิเตอร์
             </button>
           </div>
         </div>
@@ -147,14 +174,13 @@ const Index = () => {
         />
       </section>
 
-
       <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-4 text-gray-700">Current Sensor Data</h2>
-        <Boxsdata hardwareID={hardwareID} reloadKey={reloadBoxes} />
+        <h2 className="text-lg font-semibold mb-4 text-gray-700">ข้อมูลเซนเซอร์ล่าสุด</h2>
+        <Boxsdata hardwareID={hardwareID} reloadKey={reloadBoxes} onLoaded={onBoxLoaded} />
       </section>
 
       <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
-        <TableData hardwareID={hardwareID} />
+        <TableData hardwareID={hardwareID} onLoaded={onTableLoaded} />
       </section>
 
       <section className="w-full px-2 md:px-8 bg-white p-6 rounded-lg shadow space-y-4">
@@ -233,7 +259,7 @@ const Index = () => {
       </section>
 
       <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
-        <Avergare hardwareID={hardwareID} reloadKey={reloadAverage} />
+        <Avergare hardwareID={hardwareID} reloadKey={reloadAverage} onLoaded={onAverageLoaded} />
       </section>
       <EditParameterModal
         open={showEdit}

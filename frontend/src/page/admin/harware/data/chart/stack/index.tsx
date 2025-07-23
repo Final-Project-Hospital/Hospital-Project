@@ -58,7 +58,7 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({
           shadow
         ">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-            <p className="text-2xl md:text-3xl font-semibold">Sensor Data (Stacked)</p>
+            <p className="text-2xl md:text-3xl font-semibold">Sensor Data</p>
             <div className="flex flex-col sm:flex-row gap-2 md:items-center">
               <div className="w-full sm:w-32 border border-gray-300 px-2 py-1 rounded-md">
                 <DropDownListComponent
