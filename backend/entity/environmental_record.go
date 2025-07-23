@@ -26,6 +26,9 @@ type EnvironmentalRecord struct {
 	UnitID uint     `gorm:"column:unit_id"`
 	Unit   *Unit    `gorm:"foreignKey:UnitID"`
 
+	StatusID uint     `gorm:"column:status_id"`
+	Status   *Status    `gorm:"foreignKey:StatusID"`
+
 	EmployeeID uint       `gorm:"column:employee_id"`
 	Employee   *Employee  `gorm:"foreignKey:EmployeeID"`
 }

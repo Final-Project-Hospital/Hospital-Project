@@ -50,6 +50,7 @@ func SetupDatabase() {
 		&entity.HardwareGraph{},
 		&entity.HardwareParameter{},
 		&entity.HardwareParameterColor{},
+		&entity.Status{},
 	)
 	// Enviroment
 	Wastewater := entity.Environment{
@@ -57,7 +58,7 @@ func SetupDatabase() {
 	}
 	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
 
-	// Standaed
+	// Standard
 	ranges := []struct {
 		min float32
 		max float32
@@ -78,7 +79,6 @@ func SetupDatabase() {
 			MiddleValue: 0,
 		})
 	}
-
 	// จำลองข้อมูลแบบ "ค่าเดี่ยว"
 	middles := []float32{20.0, 30.0, 35.0, 500.0}
 
@@ -94,6 +94,15 @@ func SetupDatabase() {
 			MaxValue:    0,
 		})
 	}
+
+	// Status
+	status1 := entity.Status{StatusName: "ตํ่ากว่าเกณฑ์มาตรฐาน"}
+	status2 := entity.Status{StatusName: "อยู่ในเกณฑ์มาตรฐาน"}
+	status3 := entity.Status{StatusName: "เกินเกณฑ์มาตรฐาน"}
+	
+	db.FirstOrCreate(&status1, entity.Status{StatusName: "ตํ่ากว่าเกณฑ์มาตรฐาน"})
+	db.FirstOrCreate(&status2, entity.Status{StatusName: "อยู่ในเกณฑ์มาตรฐาน"})
+	db.FirstOrCreate(&status3, entity.Status{StatusName: "เกินเกณฑ์มาตรฐาน"})
 
 	// Unit
 	Unit := entity.Unit{
