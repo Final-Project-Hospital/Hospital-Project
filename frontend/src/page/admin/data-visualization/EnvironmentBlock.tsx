@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { GetfirstPH } from '../../../services/phService';
 import { GetfirstTDS } from '../../../services/tdsService';
 import { GetfirstBOD } from '../../../services/bodService';
+import { GetfirstFOG } from '../../../services/fogService';
 
 import ph from '../../../../../frontend/src/assets/ph.png';
 import bod from '../../../../../frontend/src/assets/blood-analysis.png';
@@ -76,10 +77,11 @@ const EnvironmentBlock = () => {
   useEffect(() => {
     const fetchStandards = async () => {
       try {
-        const [phRes, tdsRes, bodRes] = await Promise.all([
+        const [phRes, tdsRes, bodRes,fogRes] = await Promise.all([
           GetfirstPH(),
           GetfirstTDS(),
           GetfirstBOD(),
+          GetfirstFOG(),
         ]);
 
         const getDisplayStandard = (data: any) => {
@@ -92,6 +94,7 @@ const EnvironmentBlock = () => {
         const phStandard = getDisplayStandard(phRes.data || phRes);
         const bodStandard = getDisplayStandard(bodRes.data || bodRes);
         const tdsStandard = getDisplayStandard(tdsRes.data || tdsRes);
+        const fogStandard = getDisplayStandard(fogRes.data || fogRes);
 
         setCenters(prev =>
           prev.map(center => {
@@ -101,6 +104,8 @@ const EnvironmentBlock = () => {
               return { ...center, standard: tdsStandard };
             } else if (center.name === 'BOD Center') {
               return { ...center, standard: bodStandard };
+            }else if (center.name === 'FOG Center') {
+              return { ...center, standard: fogStandard };
             }
             return center;
           })

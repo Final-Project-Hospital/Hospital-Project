@@ -7,4 +7,5 @@ export interface FogcenterInterface {
     StandardID?:number;
     UnitID?:number;
     EmployeeID?:number;
+     CustomUnit?:string;
 }
