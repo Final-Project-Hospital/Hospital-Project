@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { DatePicker, Input, Select } from "antd";
+import { DatePicker, Input, Select, Tooltip, Modal, message } from "antd";
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import ApexChart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
-import { GetTDS } from "../../../services/tdsService";
+import { GetTDS, DeleteTDS } from "../../../services/tdsService";
 import './TDSdataviz.css';
-import { LeftOutlined, SearchOutlined } from "@ant-design/icons";
+import { LeftOutlined, SearchOutlined, ExclamationCircleFilled, CloseCircleFilled, CheckCircleFilled, QuestionCircleFilled, } from "@ant-design/icons";
 import Table, { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import TDSCentralForm from '../data-management/TDScenter/TDScenter'
+import UpdateTDSCentralForm from '../data-management/TDScenter/updateTDScenter'
+import { GetTDSbyID } from '../../../services/tdsService';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -29,68 +32,81 @@ const TDSdataviz: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<dayjs.Dayjs | null>(null);
   const [selectedYear, setSelectedYear] = useState<dayjs.Dayjs | null>(null);
   const [search, setSearch] = useState("");
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [editingRecord, setEditRecord] = useState<any>(null);
+
+  const handleAddModalCancel = () => setIsModalVisible(false);
+  const handleEditModalCancel = () => setIsEditModalVisible(false);
+
+  const { confirm } = Modal;
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await GetTDS();
+      if (!response || response.length === 0) {
+        setError("ไม่พบข้อมูล TDS");
+        setLoading(false);
+        return;
+      }
+
+      const processedData = response.map((item: any) => {
+        const dt = dayjs(item.Date);
+        return {
+          ...item,
+          dateOnly: dt.format('DD-MM-YYYY'),
+          timeOnly: dt.format('HH:mm:ss'),
+        };
+      });
+
+      setData(processedData);
+
+      const before = processedData
+        .filter((item: any) => item.BeforeAfterTreatment?.ID === 1)
+        .map((item: any) => ({ date: item.dateOnly, data: item.Data || 0 }));
+
+      const after = processedData
+        .filter((item: any) => item.BeforeAfterTreatment?.ID === 2)
+        .map((item: any) => ({ date: item.dateOnly, data: item.Data || 0 }));
+
+      const combined = processedData
+        .filter((item: any) => item.BeforeAfterTreatment?.ID === 3)
+        .map((item: any) => ({
+          date: item.dateOnly,
+          beforeData: item.Note === "ก่อนบำบัด" ? item.Data || 0 : null,
+          afterData: item.Note === "หลังบำบัด" ? item.Data || 0 : null,
+        }));
+
+      const combinedMap: Record<string, { before: number; after: number }> = {};
+
+      combined.forEach((item: any) => {
+        if (!combinedMap[item.date]) combinedMap[item.date] = { before: 0, after: 0 };
+        if (item.beforeData !== null) combinedMap[item.date].before = item.beforeData;
+        if (item.afterData !== null) combinedMap[item.date].after = item.afterData;
+      });
+
+      const compare = Object.entries(combinedMap).map(([date, values]) => ({
+        date,
+        before: values.before,
+        after: values.after,
+      }));
+
+      setBeforeData(before);
+      setAfterData(after);
+      setCompareData(compare);
+
+    } catch (err) {
+      console.error("Error fetching TDS data:", err);
+      setError("เกิดข้อผิดพลาดในการดึงข้อมูล");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await GetTDS();
-        if (response) {
-          const processedData = response.map((item: any) => {
-            const dt = dayjs(item.Date);
-            return {
-              ...item,
-              dateOnly: dt.format('DD-MM-YYYY'),
-              timeOnly: dt.format('HH:mm:ss'),
-            };
-          });
-          setData(processedData);
-
-          const before = processedData
-            .filter((item: any) => item.BeforeAfterTreatment?.ID === 1)
-            .map((item: any) => ({ date: item.dateOnly, data: item.data || 0 }));
-
-          const after = processedData
-            .filter((item: any) => item.BeforeAfterTreatment?.ID === 2)
-            .map((item: any) => ({ date: item.dateOnly, data: item.data || 0 }));
-
-          const combined = processedData
-            .filter((item: any) => item.BeforeAfterTreatment?.ID === 3)
-            .map((item: any) => ({
-              date: item.dateOnly,
-              beforeData: item.note === "ก่อนบำบัด" ? item.data || 0 : null,
-              afterData: item.note === "หลังบำบัด" ? item.data || 0 : null,
-            }));
-
-          const combinedMap: Record<string, { before: number; after: number }> = {};
-          combined.forEach((item: any) => {
-            if (!combinedMap[item.date]) {
-              combinedMap[item.date] = { before: 0, after: 0 };
-            }
-            if (item.beforeData !== null) combinedMap[item.date].before = item.beforeData;
-            if (item.afterData !== null) combinedMap[item.date].after = item.afterData;
-          });
-
-          const compare = Object.entries(combinedMap).map(([date, values]) => ({
-            date,
-            before: values.before,
-            after: values.after,
-          }));
-
-          setBeforeData(before);
-          setAfterData(after);
-          setCompareData(compare);
-        } else {
-          setError("ไม่พบข้อมูล TDS");
-        }
-      } catch (err) {
-        console.error("Error fetching TDS data:", err);
-        setError("เกิดข้อผิดพลาดในการดึงข้อมูล");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
 
@@ -171,41 +187,112 @@ const TDSdataviz: React.FC = () => {
     {
       title: 'สถานะ',
       key: 'status',
-      width: 180,
+      width: 200,
       render: (_, record) => {
-        const value = record.data;
-        const standard = 500; // เปลี่ยนตาม logic จริง
-        if (value > standard) {
-          return <span className="status-badge status-bad">🚨 เกินเกณฑ์มาตรฐาน</span>;
+        const statusName = record.Status?.StatusName;
+
+        if (!statusName) {
+          return (
+            <span className="status-badge status-none">
+              <QuestionCircleFilled style={{ fontSize: 20 }} />
+              ไม่มีข้อมูล
+            </span>
+          );
         }
-        return <span className="status-badge status-good">✅ อยู่ในเกณฑ์มาตรฐาน</span>;
+
+        if (statusName.includes("ตํ่ากว่า")) {
+          return (
+            <span className="status-badge status-low">
+              <ExclamationCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
+              {statusName}
+            </span>
+          );
+        }
+
+        if (statusName.includes("เกิน")) {
+          return (
+            <span className="status-badge status-high">
+              <CloseCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
+              {statusName}
+            </span>
+          );
+        }
+
+        if (statusName.includes("อยู่ใน")) {
+          return (
+            <span className="status-badge status-good">
+              <CheckCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
+              {statusName}
+            </span>
+          );
+        }
       }
     },
     {
       title: 'จัดการข้อมูล',
       key: 'action',
+      className: 'darker-column',
       width: 120,
       render: (_: any, record: any) => (
         <div className="action-buttons">
-          <button className="circle-btn edit-btn" onClick={() => handleEdit(record)}>
-            <EditOutlined />
-          </button>
-          <button className="circle-btn delete-btn" onClick={() => handleDelete(record.ID)}>
-            <DeleteOutlined />
-          </button>
+          <Tooltip title="แก้ไข">
+            <button className="circle-btn edit-btn" onClick={() => handleEdit(record.ID)}>
+              <EditOutlined />
+            </button>
+          </Tooltip>
+          <Tooltip title="ลบ">
+            <button className="circle-btn delete-btn" onClick={() => handleDelete(record.ID)}>
+              <DeleteOutlined />
+            </button>
+          </Tooltip>
         </div>
       ),
-    },
+    }
   ];
 
-  const handleEdit = (record: any) => {
-    // ไปหน้าแก้ไขหรือเปิด Modal
-    console.log("Edit:", record);
+  const showModal = () => {
+    setEditRecord(null);
+    setIsModalVisible(true);
+  };
+ 
+  const handleEdit = async (id: number) => {
+    try {
+      const response = await GetTDSbyID(id);
+      if (response.status === 200) {
+        setEditRecord(response.data);
+        console.log(response.data);
+        setIsEditModalVisible(true);
+      } else {
+        message.error("ไม่พบข้อมูลสำหรับแก้ไข");
+      }
+    } catch (error) {
+      message.error("เกิดข้อผิดพลาดในการดึงข้อมูล");
+    }
   };
 
+  // เมื่อกดปุ่มลบ
   const handleDelete = (id: number) => {
-    // ลบข้อมูล (เช่นเรียก API)
-    console.log("Delete ID:", id);
+    confirm({
+      title: 'คุณแน่ใจหรือไม่?',
+      icon: <ExclamationCircleFilled />,
+      content: 'คุณต้องการลบข้อมูลรายการนี้ใช่หรือไม่?',
+      okText: 'ใช่, ลบเลย',
+      okType: 'danger',
+      cancelText: 'ยกเลิก',
+      onOk() {
+        deleteTDSRecord(id);
+      },
+    });
+  };
+
+  const deleteTDSRecord = async (id: number) => {
+    try {
+      await DeleteTDS(id);
+      message.success('ลบข้อมูล TDS สำเร็จ');
+      fetchData();
+    } catch (error) {
+      message.error('เกิดข้อผิดพลาดในการลบข้อมูล');
+    }
   };
 
   return (
@@ -261,6 +348,7 @@ const TDSdataviz: React.FC = () => {
         </div>
       </div>
 
+      {/*ส่วนตาราง*/}
       <div className="tds-header-vis">
         <div className="tds-title-search-vis">
           <h1 className="tds-title-text">TDS DATA</h1>
@@ -277,7 +365,7 @@ const TDSdataviz: React.FC = () => {
           </div>
         </div>
         <div className="btn-container">
-          <button className="add-btn">เพิ่มข้อมูลใหม่</button>
+          <button className="add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
         </div>
       </div>
 
@@ -299,6 +387,38 @@ const TDSdataviz: React.FC = () => {
         <h1 className="tds-title-text">TDS-Central Statistics</h1>
         <h2>ผลการตรวจวัดค่า ปริมาณของสารต่างๆ ที่ละลายอยู่ในน้ำ บริเวณระบบบำบัดนํ้าเสียส่วนกลาง</h2>
       </div>
+
+      <Modal
+        title={"เพิ่มข้อมูล TDS ใหม่"}
+        open={isModalVisible}
+        footer={null}
+        width={1100}
+        destroyOnClose
+        closable={false}
+      >
+        <TDSCentralForm onCancel={handleAddModalCancel} />
+      </Modal>
+
+      <Modal
+        title="แก้ไขข้อมูล TDS"
+        open={isEditModalVisible}
+        footer={null}
+        width={1100}
+        closable={false}
+      >
+        {editingRecord && (
+          <UpdateTDSCentralForm
+            initialValues={editingRecord}
+            onSuccess={() => {
+              setIsEditModalVisible(false);
+              setEditRecord(null);
+              fetchData();
+            }}
+            onCancel={handleEditModalCancel}
+          />
+        )}
+      </Modal>
+
     </div >
   );
 };

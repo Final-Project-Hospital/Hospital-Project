@@ -292,6 +292,27 @@ export const AddRangeStandard = async (
   }
 };
 
+export const GetStandardByID = async (id: number): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-standard/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error fetching standard by ID:", error.response?.data || error.message);
+    return null;
+  }
+};
+
 export {
   GetUsers,
 };

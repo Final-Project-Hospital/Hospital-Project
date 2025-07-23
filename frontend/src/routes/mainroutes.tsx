@@ -30,7 +30,7 @@ const DatavizTS = Loadable(lazy(() => import("../page/admin/data-visualization/T
 // data-management
 const EnvironmentTabs = Loadable(lazy(() => import("../page/admin/data-management/EnvironmentTabs")));
 const PH = Loadable(lazy(() => import("../page/admin/data-management/PHcenter")));
-const TDS = Loadable(lazy(() => import("../page/admin/data-management/TDScenter")));
+const TDS = Loadable(lazy(() => import("../page/admin/data-management/TDScenter/TDScenter")));
 const BOD = Loadable(lazy(() => import("../page/admin/data-management/BODcenter")));
 const TKN = Loadable(lazy(() => import("../page/admin/data-management/TKNcenter")));
 const TS = Loadable(lazy(() => import("../page/admin/data-management/TScenter") ));
