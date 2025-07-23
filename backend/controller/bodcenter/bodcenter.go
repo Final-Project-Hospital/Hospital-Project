@@ -176,8 +176,8 @@ func ListBOD(c *gin.Context) {
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
 	var firstbod []struct {
 		ID                     uint      `json:"ID"`
-		Date                   time.Time `json:"-"`
-		FormattedDate          string    `json:"Date"`
+		Date                   time.Time `json:"Date"`
+		// FormattedDate          string    `json:"Date"`
 		Data                   float64   `json:"Data"`
 		Note                   string    `json:"Note"`
 		BeforeAfterTreatmentID uint      `json:"BeforeAfterTreatmentID"`
@@ -205,9 +205,9 @@ func ListBOD(c *gin.Context) {
 		// Order("environmental_records.created_at desc").
 		Find(&firstbod)
 
-	for i := range firstbod {
-		firstbod[i].FormattedDate = formatThaiDate(firstbod[i].Date)
-	}
+	// for i := range firstbod {
+	// 	firstbod[i].FormattedDate = formatThaiDate(firstbod[i].Date)
+	// }
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
 	if result.Error != nil {
