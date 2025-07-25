@@ -6,6 +6,7 @@ import { ThemeProvider } from 'styled-components';
 import { theme } from './style/theme/theme';
 import 'antd/dist/reset.css';
 import { message } from 'antd';
+
 message.config({
   top: 80,
   duration: 2,

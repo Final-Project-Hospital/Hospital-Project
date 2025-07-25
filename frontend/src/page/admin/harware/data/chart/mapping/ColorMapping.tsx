@@ -13,7 +13,7 @@ import {
 } from '@syncfusion/ej2-react-charts';
 
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   GetSensorDataByHardwareID,
   GetSensorDataParametersBySensorDataID,
@@ -72,6 +72,9 @@ function groupByYearAvg(data: { x: Date, y: number, param: string }[]) {
   }).sort((a, b) => a.x.getTime() - b.x.getTime());
 }
 
+const MAX_FETCH_ATTEMPTS = 10;
+const RETRY_INTERVAL = 1200; // ms
+
 const ColorMapping: React.FC<ChartdataProps> = ({
   hardwareID,
   parameters,
@@ -83,57 +86,125 @@ const ColorMapping: React.FC<ChartdataProps> = ({
   const { currentMode } = useStateContext();
   const [seriesData, setSeriesData] = useState<{ x: Date; y: number; param: string }[]>([]);
   const [hasData, setHasData] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const mounted = useRef(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!hardwareID || !parameters?.length) return;
-      const raw = await GetSensorDataByHardwareID(hardwareID);
-      if (!Array.isArray(raw)) { setSeriesData([]); setHasData(false); return; }
-      const allData: { x: Date; y: number; param: string }[] = [];
-      for (const sensor of raw) {
-        const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
-        if (!Array.isArray(params)) continue;
-        for (const param of params) {
-          const name = param.HardwareParameter?.Parameter;
-          const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
-          const date = new Date(param.Date);
-          if (!name || !parameters.includes(name)) continue;
-          if (isNaN(value) || isNaN(date.getTime())) continue;
-          let inRange = false;
-          if (timeRangeType === 'day') {
-            if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
-            const [start, end] = selectedRange;
-            inRange = date >= new Date(start) && date <= new Date(end);
-          } else if (timeRangeType === 'month') {
-            inRange = (date.getMonth() + 1 === Number(selectedRange.month))
-              && (date.getFullYear() === Number(selectedRange.year));
-          } else if (timeRangeType === 'year') {
-            if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
-            const [start, end] = selectedRange;
-            inRange = date.getFullYear() >= +start && date.getFullYear() <= +end;
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+
+  useEffect(() => {
+    let stop = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let fetchCount = 0;
+
+    const fetchLoop = async () => {
+      setLoading(true);
+      setSeriesData([]);
+      setHasData(true);
+
+      if (!hardwareID || !parameters?.length) {
+        setLoading(false);
+        setHasData(false);
+        return;
+      }
+
+      try {
+        const raw = await GetSensorDataByHardwareID(hardwareID);
+        if (!mounted.current || stop) return;
+        if (!Array.isArray(raw)) throw new Error("No sensor data");
+
+        const allData: { x: Date; y: number; param: string }[] = [];
+        await Promise.all(
+          raw.map(async (sensor) => {
+            const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
+            if (!Array.isArray(params)) return;
+            for (const param of params) {
+              const name = param.HardwareParameter?.Parameter;
+              const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
+              const date = new Date(param.Date);
+              if (!name || !parameters.includes(name)) continue;
+              if (isNaN(value) || isNaN(date.getTime())) continue;
+              let inRange = false;
+              if (timeRangeType === 'day') {
+                if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
+                const [start, end] = selectedRange;
+                inRange = date >= new Date(start) && date <= new Date(end);
+              } else if (timeRangeType === 'month') {
+                inRange = (date.getMonth() + 1 === Number(selectedRange.month))
+                  && (date.getFullYear() === Number(selectedRange.year));
+              } else if (timeRangeType === 'year') {
+                if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
+                const [start, end] = selectedRange;
+                inRange = date.getFullYear() >= +start && date.getFullYear() <= +end;
+              }
+              if (!inRange) continue;
+              allData.push({ x: date, y: value, param: name });
+            }
+          })
+        );
+
+        let grouped: { x: Date; y: number; param: string }[] = [];
+        if (timeRangeType === 'year') {
+          const [start, end] = selectedRange;
+          if (+start === +end) {
+            grouped = groupByMonthAvg(allData.filter(d => d.x.getFullYear() === +start));
+          } else {
+            grouped = groupByYearAvg(allData.filter(d => d.x.getFullYear() >= +start && d.x.getFullYear() <= +end));
           }
-          if (!inRange) continue;
-          allData.push({ x: date, y: value, param: name });
-        }
-      }
-
-      let grouped: { x: Date; y: number; param: string }[];
-      if (timeRangeType === 'year') {
-        const [start, end] = selectedRange;
-        if (+start === +end) {
-          grouped = groupByMonthAvg(allData.filter(d => d.x.getFullYear() === +start));
         } else {
-          grouped = groupByYearAvg(allData.filter(d => d.x.getFullYear() >= +start && d.x.getFullYear() <= +end));
+          grouped = allData.sort((a, b) => a.x.getTime() - b.x.getTime());
         }
-      } else {
-        grouped = allData.sort((a, b) => a.x.getTime() - b.x.getTime());
-      }
 
-      setSeriesData(grouped);
-      setHasData(grouped.length > 0);
+        if (grouped.length > 0) {
+          if (mounted.current && !stop) {
+            setSeriesData(grouped);
+            setLoading(false);
+            setHasData(true);
+          }
+        } else {
+          // No data, retry if not exceed max
+          fetchCount++;
+          if (mounted.current && !stop) {
+            if (fetchCount < MAX_FETCH_ATTEMPTS) {
+              timeoutId = setTimeout(fetchLoop, RETRY_INTERVAL);
+            } else {
+              setSeriesData([]);
+              setLoading(false);
+              setHasData(false);
+            }
+          }
+        }
+      } catch (e) {
+        fetchCount++;
+        if (mounted.current && !stop) {
+          if (fetchCount < MAX_FETCH_ATTEMPTS) {
+            timeoutId = setTimeout(fetchLoop, RETRY_INTERVAL);
+          } else {
+            setSeriesData([]);
+            setLoading(false);
+            setHasData(false);
+          }
+        }
+      }
     };
-    fetchData();
+    fetchLoop();
+
+    return () => {
+      stop = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [hardwareID, timeRangeType, selectedRange, parameters]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-80 text-lg text-gray-500">
+        <span className="animate-spin border-4 border-teal-300 rounded-full border-t-transparent w-10 h-10 mr-4" />
+        Loading...
+      </div>
+    );
+  }
 
   if (!hasData) {
     return (
@@ -143,6 +214,7 @@ const ColorMapping: React.FC<ChartdataProps> = ({
     );
   }
 
+  // Generate color range for each parameter
   const paramRange: Record<string, { min: number, max: number }> = {};
   seriesData.forEach(d => {
     if (!paramRange[d.param]) paramRange[d.param] = { min: d.y, max: d.y };
@@ -194,6 +266,7 @@ const ColorMapping: React.FC<ChartdataProps> = ({
             end={paramRange[param]?.max ?? 99999}
             colors={[colors && colors[idx] ? colors[idx] : '#40BFB4']}
             label={param}
+            
           />
         ))}
       </RangeColorSettingsDirective>
