@@ -4,6 +4,9 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"encoding/base64"
+	"io/ioutil"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
@@ -25,7 +28,7 @@ func UpdateRole(c *gin.Context) {
 
 	validRoles := map[string]bool{
 		"Admin": true,
-		"User":  true,
+		"Employee":  true,
 		"Guest": true,
 	}
 	if !validRoles[roleName] {
@@ -168,22 +171,11 @@ func CreateEmployee(c *gin.Context) {
 	positionIDStr := c.PostForm("positionID")
 	roleIDStr := c.PostForm("roleID")
 
-	// ตรวจสอบค่าที่ต้องกรอก
 	if firstName == "" || lastName == "" || email == "" || password == "" || phone == "" || positionIDStr == "" || roleIDStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":         "Missing required fields",
-			"firstName":     firstName,
-			"lastName":      lastName,
-			"email":         email,
-			"password":      password,
-			"phone":         phone,
-			"positionID":    positionIDStr,
-			"roleID":        roleIDStr,
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
 		return
 	}
 
-	// แปลง ID จาก string เป็น uint
 	positionID, err := strconv.ParseUint(positionIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid positionID"})
@@ -195,28 +187,41 @@ func CreateEmployee(c *gin.Context) {
 		return
 	}
 
-	// อ่านไฟล์ภาพโปรไฟล์
+	// ✅ เข้ารหัสรหัสผ่าน
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถเข้ารหัสรหัสผ่านได้"})
+		return
+	}
+
+	// ✅ อ่านรูปภาพและแปลงเป็น Base64
 	file, err := c.FormFile("profile")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ต้องแนบรูปโปรไฟล์"})
 		return
 	}
-
-	// อัปโหลดไฟล์
-	path := "uploads/profile/" + file.Filename
-	if err := c.SaveUploadedFile(file, path); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปโหลดไฟล์ไม่สำเร็จ"})
+	openedFile, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถอ่านไฟล์ได้"})
 		return
 	}
+	defer openedFile.Close()
 
-	// ตรวจสอบว่ามี Position จริงหรือไม่
+	imageBytes, err := ioutil.ReadAll(openedFile)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถอ่านข้อมูลไฟล์ได้"})
+		return
+	}
+	contentType := file.Header.Get("Content-Type")
+	base64Image := "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(imageBytes)
+	
+	// ตรวจสอบความถูกต้องของตำแหน่ง และสิทธิ์
 	var position entity.Position
 	if err := db.First(&position, uint(positionID)).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ตำแหน่งไม่ถูกต้อง"})
 		return
 	}
 
-	// ตรวจสอบว่ามี Role จริงหรือไม่
 	var role entity.Role
 	if err := db.First(&role, uint(roleID)).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "บทบาทไม่ถูกต้อง"})
@@ -228,9 +233,9 @@ func CreateEmployee(c *gin.Context) {
 		FirstName:  firstName,
 		LastName:   lastName,
 		Email:      email,
-		Password:   password, // 🔐 ใน production ควรเข้ารหัส
+		Password:   string(hashedPassword), // ✅ เก็บ password แบบ hash
 		Phone:      phone,
-		Profile:    path,
+		Profile:    base64Image,            // ✅ เก็บรูปเป็น base64
 		PositionID: uint(positionID),
 		RoleID:     uint(roleID),
 	}
