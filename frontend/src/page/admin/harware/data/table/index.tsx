@@ -164,7 +164,24 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
         ),
         dataIndex: col,
         key: col,
-        render: (val: any) => val ?? "-",
+        render: (val: any) => {
+          if (
+            typeof val === "number" &&
+            col !== "Date" &&
+            col !== "rawDate"
+          ) {
+            return val.toFixed(2);
+          }
+          if (
+            typeof val === "string" &&
+            !isNaN(Number(val)) &&
+            col !== "Date" &&
+            col !== "rawDate"
+          ) {
+            return Number(val).toFixed(2);
+          }
+          return val ?? "-";
+        },
       })),
   ];
 
