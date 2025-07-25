@@ -13,12 +13,14 @@ import {
   Col,
   Upload,
 } from "antd";
-import { UploadOutlined, PlusOutlined } from "@ant-design/icons";
+import { UploadOutlined ,CameraOutlined  } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import axios from "axios";
 import { EmployeeInterface } from "../../../interface/IEmployee";
 import { PositionInterface } from "../../../interface/IPosition";
-//import { RoleInterface } from "../../../interface/IRole";
+import { FaUser } from "react-icons/fa"
+import "./UserManagement.css";
+
 
 export default function UserManagement() {
   const [data, setData] = useState<EmployeeInterface[]>([]);
@@ -30,8 +32,6 @@ export default function UserManagement() {
   const [createForm] = Form.useForm();
   const [positions, setPositions] = useState<PositionInterface[]>([]);
   const [uploadFile, setUploadFile] = useState<any>();
-  //const [Role, setRole] = useState<RoleInterface[]>([]);
-
 
   const fetchEmployees = async () => {
     setLoading(true);
@@ -39,7 +39,6 @@ export default function UserManagement() {
       const res = await axios.get("/api/employees");
       if (Array.isArray(res.data)) {
         setData(res.data);
-        console.log("Employees data:", res.data);  
       } else {
         message.error("ข้อมูลที่ได้ไม่ถูกต้อง");
         setData([]);
@@ -74,9 +73,7 @@ export default function UserManagement() {
       await axios.patch(
         `/api/employees/${id}/role`,
         { role: roleName },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       message.success("อัปเดตสิทธิ์สำเร็จ");
       fetchEmployees();
@@ -92,36 +89,35 @@ export default function UserManagement() {
       lastName: employee.LastName,
       email: employee.Email,
       phone: employee.Phone,
-      positionID: employee.Position?.ID, // ✅ ใส่แค่ ID
-      roleID: employee.Role?.ID,         // ✅ ใส่แค่ ID
+      positionID: employee.Position?.ID,
+      roleID: employee.Role?.ID,
     });
     setEditVisible(true);
   };
-  
 
   const handleEditSubmit = async () => {
     try {
       const values = await form.validateFields();
       const token = localStorage.getItem("token");
-  
+
       const formData = new FormData();
       Object.entries(values).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
           formData.append(key, value as string);
         }
       });
-  
+
       if (uploadFile) {
         formData.append("profile", uploadFile);
       }
-  
+
       await axios.put(`/api/employees/${editEmployee?.ID}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       });
-  
+
       message.success("แก้ไขข้อมูลสำเร็จ");
       setEditVisible(false);
       fetchEmployees();
@@ -129,7 +125,6 @@ export default function UserManagement() {
       message.error("แก้ไขข้อมูลไม่สำเร็จ");
     }
   };
-    
 
   const handleCreateSubmit = async () => {
     try {
@@ -225,7 +220,7 @@ export default function UserManagement() {
             onChange={(role) => handleChangeRole(record.ID!, role)}
             options={[
               { value: "admin", label: "admin" },
-              { value: "user", label: "user" },
+              { value: "employee", label: "employee" },
               { value: "guest", label: "guest" },
             ]}
           />
@@ -239,34 +234,44 @@ export default function UserManagement() {
       ),
     },
   ];
-  
 
   return (
-    <div className="p-4 sm:p-6 bg-gray-50 min-h-screen max-w-screen-xl mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl sm:text-2xl font-semibold text-gray-700">
-          จัดการสิทธิ์ผู้ใช้
-        </h1>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setCreateVisible(true)}
-        >
-          สร้างบัญชี
-        </Button>
+    <div className="bg-gray-50 min-h-screen">
+      <div className="title-header">
+        <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-semibold drop-shadow-md">
+              จัดการสิทธิ์ผู้ใช้
+            </h1>
+            <p className="text-sm drop-shadow-sm leading-snug">
+              โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
+            </p>
+          </div>
+          <Button
+            icon={<FaUser size={18} />}
+            onClick={() => setCreateVisible(true)}
+            className="w-full sm:w-auto"
+          >
+            สร้างบัญชี
+          </Button>
+        </div>
       </div>
-
-      <div className="bg-white rounded-xl shadow p-4 sm:p-6 overflow-x-auto">
-        <Table
-          rowKey="ID"
-          columns={columns}
-          dataSource={data}
-          loading={loading}
-          pagination={{ pageSize: 6 }}
-          bordered
-        />
+  
+      <div className="px-4 sm:px-8 lg:px-12 max-w-screen-xl mx-auto">
+        <div className="bg-white rounded-xl shadow p-4 sm:p-6 overflow-x-auto">
+          <Table
+            rowKey="ID"
+            columns={columns}
+            dataSource={data}
+            loading={loading}
+            pagination={{ pageSize: 6 }}
+            bordered
+            size="middle"
+            scroll={{ x: "max-content" }}
+          />
+        </div>
       </div>
-
+  
       {/* Modal แก้ไข */}
       <Modal
   title="แก้ไขข้อมูลพนักงาน"
@@ -312,7 +317,7 @@ export default function UserManagement() {
       <Select
         options={[
           { label: "Admin", value: 1 },
-          { label: "User", value: 2 },
+          { label: "Employee", value: 2 },
           { label: "Guest", value: 3 },
         ]}
       />
@@ -334,68 +339,82 @@ export default function UserManagement() {
 
       {/* Modal สร้างบัญชี */}
       <Modal
-        title="สร้างบัญชีพนักงาน"
-        open={createVisible}
-        onCancel={() => setCreateVisible(false)}
-        onOk={handleCreateSubmit}
-        okText="สร้าง"
-        cancelText="ยกเลิก"
-        destroyOnClose
-      >
-        <Form form={createForm} layout="vertical">
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="firstName" label="ชื่อ" rules={[{ required: true }]}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="lastName" label="นามสกุล" rules={[{ required: true }]}>
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item name="email" label="อีเมล" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="password" label="รหัสผ่าน" rules={[{ required: true }]}>
-            <Input.Password />
-          </Form.Item>
-          <Form.Item name="phone" label="เบอร์โทร" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="positionID" label="ตำแหน่ง" rules={[{ required: true }]}>
-            <Select
-              placeholder="เลือกตำแหน่ง"
-              options={positions.map((p) => ({
-                label: p.Position,
-                value: p.ID,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item name="roleID" label="สิทธิ์" rules={[{ required: true }]}>
-            <Select
-              options={[
-                { label: "Admin", value: 1 },
-                { label: "User", value: 2 },
-                { label: "Guest", value: 3 },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item label="รูปโปรไฟล์">
-            <Upload
-              maxCount={1}
-              beforeUpload={(file) => {
-                setUploadFile(file);
-                return false;
-              }}
-              accept="image/*"
-            >
-              <Button icon={<UploadOutlined />}>เลือกรูป</Button>
-            </Upload>
-          </Form.Item>
-        </Form>
-      </Modal>
+  title="สร้างบัญชีพนักงาน"
+  open={createVisible}
+  onCancel={() => setCreateVisible(false)}
+  onOk={handleCreateSubmit}
+  okText="สร้าง"
+  cancelText="ยกเลิก"
+  destroyOnClose
+>
+  {/* Upload Profile Preview */}
+  <div className="profile-upload-wrapper">
+    <label className="profile-upload">
+      <img
+        src={
+          uploadFile
+            ? URL.createObjectURL(uploadFile)
+            : "https://via.placeholder.com/100?text=รูป"
+        }
+        alt=""
+      />
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => {
+          if (e.target.files && e.target.files.length > 0) {
+            setUploadFile(e.target.files[0]);
+          }
+        }}
+      />
+      <div className="profile-upload-label">
+        <CameraOutlined />
+      </div>
+    </label>
+  </div>
+
+  <Form form={createForm} layout="vertical">
+    <Row gutter={16}>
+      <Col span={12}>
+        <Form.Item name="firstName" label="ชื่อ" rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+      </Col>
+      <Col span={12}>
+        <Form.Item name="lastName" label="นามสกุล" rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+      </Col>
+    </Row>
+    <Form.Item name="email" label="อีเมล" rules={[{ required: true }]}>
+      <Input />
+    </Form.Item>
+    <Form.Item name="password" label="รหัสผ่าน" rules={[{ required: true }]}>
+      <Input.Password />
+    </Form.Item>
+    <Form.Item name="phone" label="เบอร์โทร" rules={[{ required: true }]}>
+      <Input />
+    </Form.Item>
+    <Form.Item name="positionID" label="ตำแหน่ง" rules={[{ required: true }]}>
+      <Select
+        placeholder="เลือกตำแหน่ง"
+        options={positions.map((p) => ({
+          label: p.Position,
+          value: p.ID,
+        }))}
+      />
+    </Form.Item>
+    <Form.Item name="roleID" label="สิทธิ์" rules={[{ required: true }]}>
+      <Select
+        options={[
+          { label: "Admin", value: 1 },
+          { label: "Employee", value: 2 },
+          { label: "Guest", value: 3 },
+        ]}
+      />
+    </Form.Item>
+  </Form>
+</Modal>
     </div>
   );
 }

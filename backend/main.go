@@ -29,6 +29,7 @@ import (
 
 	"github.com/Tawunchai/hospital-project/controller/selectBoxAll"
 	"github.com/gin-gonic/gin"
+	"github.com/Tawunchai/hospital-project/controller/dashboard"
 
 	
 )
@@ -53,6 +54,8 @@ func main() {
 		authorized.PATCH("/api/employees/:id/role", employee.UpdateRole)
 		authorized.PUT("/api/employees/:id", employee.UpdateEmployeeInfo)
 		authorized.DELETE("/api/employees/:id", employee.DeleteEmployee)
+		authorized.GET("/dashboard/environmental", dashboard.GetEnvironmentalDashboard)
+
 	}
 
 	public := r.Group("")
@@ -151,6 +154,10 @@ func main() {
 		public.GET("/list-standard-range", selectBoxAll.ListRangeStandard)
 		public.POST("/add-middle-standard", selectBoxAll.AddMiddleStandard)
 		public.POST("/add-range-standard", selectBoxAll.AddRangeStandard)
+
+		//public.GET("/api/water-quality", dashboard.GetWaterQuality)
+		//public.GET("/dashboard/environmental", dashboard.GetEnvironmentalDashboard)
+
 	}
 
 	r.GET("/", func(c *gin.Context) {
