@@ -9,7 +9,7 @@ import {
   Tooltip
 } from '@syncfusion/ej2-react-charts';
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   GetSensorDataByHardwareID,
   GetSensorDataParametersBySensorDataID
@@ -58,6 +58,9 @@ function groupByYearAvg(data: { x: Date, y: number }[]) {
   })).sort((a, b) => a.x.getTime() - b.x.getTime());
 }
 
+const RETRY_INTERVAL = 1500; // ms
+const MAX_RETRIES = 10;      // จำนวนรอบที่ยอมให้วน fetch
+
 const Area: React.FC<ChartdataProps> = ({
   hardwareID,
   parameters,
@@ -68,133 +71,164 @@ const Area: React.FC<ChartdataProps> = ({
 }) => {
   const { currentMode } = useStateContext();
   const [seriesData, setSeriesData] = useState<any[]>([]);
-  const [hasData, setHasData] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [noData, setNoData] = useState(false);
 
-  const getXAxis = () => {
-    if (timeRangeType === 'year' && selectedRange?.[0] !== selectedRange?.[1]) {
-      return {
-        valueType: 'DateTime' as const,
-        labelFormat: 'yyyy' as const,
-        intervalType: 'Years' as const,
-        edgeLabelPlacement: 'Shift' as const,
-        majorGridLines: { width: 0 },
-        background: 'white',
-      };
-    } else if (timeRangeType === 'year') {
-      return {
-        valueType: 'DateTime' as const,
-        labelFormat: 'MMM' as const,
-        intervalType: 'Months' as const,
-        edgeLabelPlacement: 'Shift' as const,
-        majorGridLines: { width: 0 },
-        background: 'white',
-      };
-    } else if (timeRangeType === 'day') {
-      return {
-        valueType: 'DateTime' as const,
-        labelFormat: 'dd/MM' as const,
-        intervalType: 'Days' as const,
-        edgeLabelPlacement: 'Shift' as const,
-        majorGridLines: { width: 0 },
-        background: 'white',
-      };
-    }
-    // month
-    return {
-      valueType: 'DateTime' as const,
-      labelFormat: 'dd/MM' as const,
-      intervalType: 'Days' as const,
-      edgeLabelPlacement: 'Shift' as const,
-      majorGridLines: { width: 0 },
-      background: 'white',
-    };
-  };
-
-  const primaryYAxis = {
-    labelFormat: '{value}',
-    rangePadding: 'None' as const,
-    lineStyle: { width: 0 },
-    majorTickLines: { width: 0 },
-    minorTickLines: { width: 0 },
-  };
-
+  const mounted = useRef(true);
   useEffect(() => {
-    const fetchData = async () => {
-      if (!hardwareID || !parameters?.length) return;
-      const raw = await GetSensorDataByHardwareID(hardwareID);
-      if (!Array.isArray(raw)) { setSeriesData([]); setHasData(false); return; }
-      const parameterMap: Record<string, { x: Date; y: number }[]> = {};
-      for (const sensor of raw) {
-        const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
-        if (!Array.isArray(params)) continue;
-        for (const param of params) {
-          const name = param.HardwareParameter?.Parameter;
-          const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
-          const date = new Date(param.Date);
-          const include = name && parameters.includes(name) && !isNaN(value) && !isNaN(date.getTime());
-          let inRange = false;
-          if (timeRangeType === 'day') {
-            if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
-            const [start, end] = selectedRange;
-            inRange = date >= new Date(start) && date <= new Date(end);
-          } else if (timeRangeType === 'month') {
-            inRange = (date.getMonth() + 1 === Number(selectedRange.month))
-              && (date.getFullYear() === Number(selectedRange.year));
-          } else if (timeRangeType === 'year') {
-            if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
-            const [start, end] = selectedRange;
-            inRange = date.getFullYear() >= +start && date.getFullYear() <= +end;
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+
+  // --------- FETCH LOOP ---------
+  useEffect(() => {
+    let stop = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let retryCount = 0;
+
+    async function fetchLoop() {
+      setLoading(true);
+      setNoData(false);
+      setSeriesData([]);
+
+      if (!hardwareID || !parameters?.length) {
+        setLoading(true);
+        return;
+      }
+
+      try {
+        const raw = await GetSensorDataByHardwareID(hardwareID);
+        if (!mounted.current || stop) return;
+        if (!Array.isArray(raw) || raw.length === 0) throw new Error("No sensor");
+
+        const parameterMap: Record<string, { x: Date; y: number }[]> = {};
+        let foundData = false;
+
+        for (const sensor of raw) {
+          const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
+          if (!Array.isArray(params)) continue;
+          for (const param of params) {
+            const name = param.HardwareParameter?.Parameter;
+            const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
+            const date = new Date(param.Date);
+            const include = name && parameters.includes(name) && !isNaN(value) && !isNaN(date.getTime());
+            if (!include) continue;
+            let inRange = false;
+            if (timeRangeType === 'day') {
+              if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
+              const [start, end] = selectedRange;
+              inRange = date >= new Date(start) && date <= new Date(end);
+            } else if (timeRangeType === 'month') {
+              inRange = (date.getMonth() + 1 === Number(selectedRange.month))
+                && (date.getFullYear() === Number(selectedRange.year));
+            } else if (timeRangeType === 'year') {
+              if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
+              const [start, end] = selectedRange;
+              inRange = date.getFullYear() >= +start && date.getFullYear() <= +end;
+            }
+            if (!inRange) continue;
+            foundData = true;
+            parameterMap[name] ??= [];
+            parameterMap[name].push({ x: date, y: value });
           }
-          if (!include || !inRange) continue;
-          parameterMap[name] ??= [];
-          parameterMap[name].push({ x: date, y: value });
         }
-      }
-      let series;
-      if (timeRangeType === 'year') {
-        const [start, end] = selectedRange;
-        if (+start === +end) {
-          series = Object.entries(parameterMap).map(([name, data]) => ({
-            dataSource: groupByMonthAvg(data.filter(d => d.x.getFullYear() === +start)),
-            xName: 'x',
-            yName: 'y',
-            name,
-            width: 2,
-            marker: { visible: true, width: 6, height: 6 },
-            type: 'SplineArea' as const,
-            opacity: 0.4,
-          }));
+
+        let series: any[] = [];
+        if (foundData) {
+          if (timeRangeType === 'year') {
+            const [start, end] = selectedRange;
+            if (+start === +end) {
+              series = Object.entries(parameterMap).map(([name, data]) => ({
+                dataSource: groupByMonthAvg(data.filter(d => d.x.getFullYear() === +start)),
+                xName: 'x',
+                yName: 'y',
+                name,
+                width: 2,
+                marker: { visible: true, width: 6, height: 6 },
+                type: 'SplineArea' as const,
+                opacity: 0.4,
+                fill: colors && colors[parameters.indexOf(name)] ? colors[parameters.indexOf(name)] : undefined,
+              }));
+            } else {
+              series = Object.entries(parameterMap).map(([name, data]) => ({
+                dataSource: groupByYearAvg(data.filter(d => d.x.getFullYear() >= +start && d.x.getFullYear() <= +end)),
+                xName: 'x',
+                yName: 'y',
+                name,
+                width: 2,
+                marker: { visible: true, width: 6, height: 6 },
+                type: 'SplineArea' as const,
+                opacity: 0.4,
+                fill: colors && colors[parameters.indexOf(name)] ? colors[parameters.indexOf(name)] : undefined,
+              }));
+            }
+          } else {
+            series = Object.entries(parameterMap).map(([name, data]) => ({
+              dataSource: data.sort((a, b) => a.x.getTime() - b.x.getTime()),
+              xName: 'x',
+              yName: 'y',
+              name,
+              width: 2,
+              marker: { visible: true, width: 6, height: 6 },
+              type: 'SplineArea' as const,
+              opacity: 0.4,
+              fill: colors && colors[parameters.indexOf(name)] ? colors[parameters.indexOf(name)] : undefined,
+            }));
+          }
+        }
+
+        if (foundData && series.length > 0 && series.some(s => (s.dataSource?.length || 0) > 0)) {
+          if (mounted.current && !stop) {
+            setSeriesData(series);
+            setLoading(false);
+            setNoData(false);
+          }
         } else {
-          series = Object.entries(parameterMap).map(([name, data]) => ({
-            dataSource: groupByYearAvg(data.filter(d => d.x.getFullYear() >= +start && d.x.getFullYear() <= +end)),
-            xName: 'x',
-            yName: 'y',
-            name,
-            width: 2,
-            marker: { visible: true, width: 6, height: 6 },
-            type: 'SplineArea' as const,
-            opacity: 0.4,
-          }));
+          retryCount++;
+          if (retryCount >= MAX_RETRIES) {
+            if (mounted.current && !stop) {
+              setLoading(false);
+              setNoData(true);
+            }
+          } else {
+            if (mounted.current && !stop) {
+              timeoutId = setTimeout(fetchLoop, RETRY_INTERVAL);
+            }
+          }
         }
-      } else {
-        series = Object.entries(parameterMap).map(([name, data]) => ({
-          dataSource: data.sort((a, b) => a.x.getTime() - b.x.getTime()),
-          xName: 'x',
-          yName: 'y',
-          name,
-          width: 2,
-          marker: { visible: true, width: 6, height: 6 },
-          type: 'SplineArea' as const,
-          opacity: 0.4,
-        }));
+      } catch (err) {
+        retryCount++;
+        if (retryCount >= MAX_RETRIES) {
+          if (mounted.current && !stop) {
+            setLoading(false);
+            setNoData(true);
+          }
+        } else {
+          if (mounted.current && !stop) {
+            timeoutId = setTimeout(fetchLoop, RETRY_INTERVAL);
+          }
+        }
       }
-      setSeriesData(series);
-      setHasData(series.length > 0 && series.some(s => (s.dataSource?.length || 0) > 0));
+    }
+    fetchLoop();
+
+    return () => {
+      stop = true;
+      if (timeoutId) clearTimeout(timeoutId);
     };
-    fetchData();
   }, [hardwareID, timeRangeType, selectedRange, parameters]);
 
-  if (!hasData) {
+  // ----- UI -----
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-80 text-lg text-gray-500">
+        <span className="animate-spin border-4 border-teal-300 rounded-full border-t-transparent w-10 h-10 mr-4" />
+        Loading...
+      </div>
+    );
+  }
+
+  if (noData) {
     return (
       <div className="flex items-center justify-center h-80 text-lg text-gray-500">
         No Data
@@ -205,8 +239,24 @@ const Area: React.FC<ChartdataProps> = ({
   return (
     <ChartComponent
       id="area-chart"
-      primaryXAxis={getXAxis()}
-      primaryYAxis={primaryYAxis}
+      primaryXAxis={{
+        valueType: timeRangeType === 'year' && selectedRange?.[0] !== selectedRange?.[1] ? 'DateTime' : 'DateTime',
+        labelFormat: timeRangeType === 'year'
+          ? (selectedRange?.[0] !== selectedRange?.[1] ? 'yyyy' : 'MMM')
+          : 'dd/MM',
+        intervalType: timeRangeType === 'year'
+          ? (selectedRange?.[0] !== selectedRange?.[1] ? 'Years' : 'Months')
+          : 'Days',
+        edgeLabelPlacement: 'Shift',
+        majorGridLines: { width: 0 },
+      }}
+      primaryYAxis={{
+        labelFormat: '{value}',
+        rangePadding: 'None',
+        lineStyle: { width: 0 },
+        majorTickLines: { width: 0 },
+        minorTickLines: { width: 0 },
+      }}
       chartArea={{ border: { width: 0 } }}
       background={currentMode === 'Dark' ? '#33373E' : '#fff'}
       legendSettings={{ background: 'white' }}
@@ -217,11 +267,7 @@ const Area: React.FC<ChartdataProps> = ({
       <Inject services={[SplineAreaSeries, DateTime, Legend, Tooltip]} />
       <SeriesCollectionDirective>
         {seriesData.map((item, index) => (
-          <SeriesDirective
-            key={index}
-            {...item}
-            fill={colors && colors[index] ? colors[index] : undefined}
-          />
+          <SeriesDirective key={index} {...item} />
         ))}
       </SeriesCollectionDirective>
     </ChartComponent>

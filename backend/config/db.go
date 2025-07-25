@@ -169,13 +169,11 @@ func SetupDatabase() {
 		// ----- สร้างกราฟ -----
 		defaultGraph := entity.HardwareGraph{Graph: "Line"}
 		areaGraph := entity.HardwareGraph{Graph: "Area"}
-		barGraph := entity.HardwareGraph{Graph: "Bar"}
 		colorMappingGraph := entity.HardwareGraph{Graph: "Mapping"}
 		stackedGraph := entity.HardwareGraph{Graph: "Stacked"}
 
 		db.FirstOrCreate(&defaultGraph, entity.HardwareGraph{Graph: "Line"})
 		db.FirstOrCreate(&areaGraph, entity.HardwareGraph{Graph: "Area"})
-		db.FirstOrCreate(&barGraph, entity.HardwareGraph{Graph: "Bar"})
 		db.FirstOrCreate(&colorMappingGraph, entity.HardwareGraph{Graph: "Mapping"})
 		db.FirstOrCreate(&stackedGraph, entity.HardwareGraph{Graph: "Stacked"})
 

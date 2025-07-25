@@ -330,7 +330,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
               onClick={() => setShowDownloadModal(false)}
               target="_blank"
             >
-              <DownloadOutlined /> ดาวน์โหลดเฉพาะที่ค้นหา ({filteredData.length} แถว)
+              <DownloadOutlined /> ดาวน์โหลดเฉพาะที่ค้นหา
             </CSVLink>
             <CSVLink
               data={getDataForCSV(tableData)}
@@ -353,7 +353,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
               onClick={() => setShowDownloadModal(false)}
               target="_blank"
             >
-              <DownloadOutlined /> ดาวน์โหลดทั้งหมด ({tableData.length} แถว)
+              <DownloadOutlined /> ดาวน์โหลดทั้งหมด
             </CSVLink>
           </div>
         </div>
