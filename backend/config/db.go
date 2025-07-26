@@ -45,6 +45,7 @@ func SetupDatabase() {
 		&entity.SensorData{},
 		&entity.Standard{},
 		&entity.Unit{},
+		&entity.UnitHardware{},
 		&entity.Calendar{},
 		&entity.StandardHardware{},
 		&entity.HardwareGraph{},
@@ -146,12 +147,13 @@ func SetupDatabase() {
 	db.FirstOrCreate(&Building3, &entity.Building{BuildingName: "อาคารทันตกรรม"})
 
 	// เช็คว่ามีข้อมูลอยู่หรือยัง
-	var colorCount, graphCount, paramCount int64
+	var colorCount, graphCount, paramCount, unitCount int64
 	db.Model(&entity.HardwareParameterColor{}).Count(&colorCount)
 	db.Model(&entity.HardwareGraph{}).Count(&graphCount)
 	db.Model(&entity.HardwareParameter{}).Count(&paramCount)
+	db.Model(&entity.UnitHardware{}).Count(&unitCount)
 
-	if colorCount == 0 && graphCount == 0 && paramCount == 0 {
+	if colorCount == 0 && graphCount == 0 && paramCount == 0 && unitCount == 0 {
 		// ----- สร้างสี -----
 		colorPurple := entity.HardwareParameterColor{Color: "Purple", Code: "#800080"}
 		colorBlue := entity.HardwareParameterColor{Color: "Blue", Code: "#1E90FF"}
@@ -179,48 +181,66 @@ func SetupDatabase() {
 		db.FirstOrCreate(&stackedGraph, entity.HardwareGraph{Graph: "Stacked"})
 
 		// ----- สร้าง StandardHardware 5 ค่า -----
-		formaldehydeStd := entity.StandardHardware{Standard: 4.5}
-		temperatureStd := entity.StandardHardware{Standard: 50}
+		formaldehydeStd := entity.StandardHardware{Standard: 5}
+		temperatureStd := entity.StandardHardware{Standard: 30}
 		humidityStd := entity.StandardHardware{Standard: 70}
-		lightStd := entity.StandardHardware{Standard: 500}
-		gasStd := entity.StandardHardware{Standard: 600}
+		lightStd := entity.StandardHardware{Standard: 200}
+		gasStd := entity.StandardHardware{Standard: 7}
 
-		db.FirstOrCreate(&formaldehydeStd, entity.StandardHardware{Standard: 4.5})
-		db.FirstOrCreate(&temperatureStd, entity.StandardHardware{Standard: 50})
+		db.FirstOrCreate(&formaldehydeStd, entity.StandardHardware{Standard: 5})
+		db.FirstOrCreate(&temperatureStd, entity.StandardHardware{Standard: 30})
 		db.FirstOrCreate(&humidityStd, entity.StandardHardware{Standard: 70})
-		db.FirstOrCreate(&lightStd, entity.StandardHardware{Standard: 500})
-		db.FirstOrCreate(&gasStd, entity.StandardHardware{Standard: 600})
+		db.FirstOrCreate(&lightStd, entity.StandardHardware{Standard: 200})
+		db.FirstOrCreate(&gasStd, entity.StandardHardware{Standard: 7})
 
-		// ----- สร้าง Parameter พร้อมผูก StandardHardwareID -----
+		// ----- สร้าง UnitHardware -----
+		unitPPM := entity.UnitHardware{Unit: "ppm"}
+		unitCelsius := entity.UnitHardware{Unit: "°C"}
+		unitPercent := entity.UnitHardware{Unit: "%"}
+		unitLux := entity.UnitHardware{Unit: "Lux"}
+		unitGas := entity.UnitHardware{Unit: "cm"}
+
+		db.FirstOrCreate(&unitPPM, entity.UnitHardware{Unit: "ppm"})
+		db.FirstOrCreate(&unitCelsius, entity.UnitHardware{Unit: "°C"})
+		db.FirstOrCreate(&unitPercent, entity.UnitHardware{Unit: "%"})
+		db.FirstOrCreate(&unitLux, entity.UnitHardware{Unit: "Lux"})
+		db.FirstOrCreate(&unitGas, entity.UnitHardware{Unit: "cm"})
+
+		// ----- สร้าง Parameter พร้อมผูก StandardHardwareID และ UnitHardwareID -----
 		paramhardware1 := entity.HardwareParameter{
 			Parameter:                "Formaldehyde",
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       formaldehydeStd.ID,
+			UnitHardwareID:           unitPPM.ID,
 		}
 		paramhardware2 := entity.HardwareParameter{
 			Parameter:                "Temperature",
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       temperatureStd.ID,
+			UnitHardwareID:           unitCelsius.ID,
 		}
 		paramhardware3 := entity.HardwareParameter{
 			Parameter:                "Humidity",
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       humidityStd.ID,
+			UnitHardwareID:           unitPercent.ID,
 		}
 		paramhardware4 := entity.HardwareParameter{
 			Parameter:                "Light",
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       lightStd.ID,
+			UnitHardwareID:           unitLux.ID,
 		}
 		paramhardware5 := entity.HardwareParameter{
 			Parameter:                "Gas",
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       gasStd.ID,
+			UnitHardwareID:           unitGas.ID,
 		}
 
 		// บันทึก HardwareParameter ลงฐานข้อมูล
@@ -335,26 +355,31 @@ func SetupDatabase() {
 	db.FirstOrCreate(&param3, entity.Parameter{ParameterName: "Potential of Hydrogen"})
 	db.FirstOrCreate(&param4, entity.Parameter{ParameterName: "Total Dissolved Solids"})
 
-	var count int64
+	count := int64(0)
 	db.Model(&entity.SensorDataParameter{}).Count(&count)
 
 	if count == 0 {
+		formIndex := 0
+		formTotal := 12 * 20 // มี 240 วันพอดี
+
 		index := 0
 		for month := 1; month <= 12; month++ {
-			for day := 1; day <= 20; day++ {
+			for day := 1; day <= 30; day++ {
 				date := time.Date(2025, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 
-				// Formaldehyde (HardwareParameterID = 1)
+				// ✅ Formaldehyde ไล่จาก 1 ถึง 10 ไม่เกิน
+				formVal := 1 + (9.0 * float64(formIndex) / float64(formTotal-1))
 				param1 := entity.SensorDataParameter{
-					Data:                0.1 + float64(month)*0.05 + float64(day)*0.002,
+					Data:                formVal,
 					SensorDataID:        1,
 					HardwareParameterID: 1,
 					Date:                date,
 				}
 				db.Create(&param1)
+				formIndex++
 				index++
 
-				// Temperature (HardwareParameterID = 2)
+				// 🌡️ Temperature
 				param2 := entity.SensorDataParameter{
 					Data:                20 + float64(month) + float64(day)*0.3 + float64((day%5)-2),
 					SensorDataID:        1,
@@ -364,7 +389,7 @@ func SetupDatabase() {
 				db.Create(&param2)
 				index++
 
-				// Humidity (HardwareParameterID = 3)
+				// 💧 Humidity
 				param3 := entity.SensorDataParameter{
 					Data:                40 + float64(month)*2 + float64(day)*0.8 + float64((day%7)-3),
 					SensorDataID:        1,
@@ -374,7 +399,7 @@ func SetupDatabase() {
 				db.Create(&param3)
 				index++
 
-				// Light (HardwareParameterID = 4)
+				// 💡 Light
 				param4 := entity.SensorDataParameter{
 					Data:                100 + float64(month)*10 + float64(day)*2,
 					SensorDataID:        1,
@@ -384,7 +409,7 @@ func SetupDatabase() {
 				db.Create(&param4)
 				index++
 
-				// Gas (HardwareParameterID = 5)
+				// 🧪 Gas
 				param5 := entity.SensorDataParameter{
 					Data:                5 + float64(month)*0.4 + float64(day)*0.1,
 					SensorDataID:        1,
@@ -395,10 +420,11 @@ func SetupDatabase() {
 				index++
 			}
 		}
-		println("✅ เพิ่มข้อมูล SensorDataParameter ทั้งหมด", index, "records พร้อมวันที่")
+		fmt.Println("✅ เพิ่มข้อมูล SensorDataParameter ทั้งหมด", index, "records พร้อมวันที่")
 	} else {
-		println("⚠️  ข้ามการเพิ่มข้อมูล SensorDataParameter เพราะมีข้อมูลอยู่แล้ว")
+		fmt.Println("⚠️  ข้ามการเพิ่มข้อมูล SensorDataParameter เพราะมีข้อมูลอยู่แล้ว")
 	}
+
 	// environment := entity.Environment{EnvironmentName: "น้ำเสีย"}
 	// db.FirstOrCreate(&environment, &entity.Environment{EnvironmentName: "น้ำเสีย"})
 

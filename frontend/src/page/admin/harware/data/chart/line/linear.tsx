@@ -58,9 +58,8 @@ function groupByYearAvg(data: { x: Date, y: number }[]) {
   })).sort((a, b) => a.x.getTime() - b.x.getTime());
 }
 
-// ตั้งค่าตรงนี้
-const RETRY_INTERVAL = 1500; // ms
-const MAX_RETRIES = 10; // ลอง 20 รอบ (รวม 30 วินาที ถ้า 1.5 วิ/รอบ)
+const RETRY_INTERVAL = 1500;
+const MAX_RETRIES = 10;
 
 const LineChart: React.FC<LineChartProps> = ({
   hardwareID,
@@ -74,6 +73,7 @@ const LineChart: React.FC<LineChartProps> = ({
   const [seriesData, setSeriesData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [noData, setNoData] = useState<boolean>(false);
+  const [unitMap, setUnitMap] = useState<Record<string, string>>({}); // unit -> parameter
 
   const mounted = useRef(true);
   useEffect(() => {
@@ -90,6 +90,7 @@ const LineChart: React.FC<LineChartProps> = ({
       setLoading(true);
       setNoData(false);
       setSeriesData([]);
+      setUnitMap({});
 
       if (!hardwareID || !parameters?.length) {
         setLoading(true);
@@ -102,80 +103,98 @@ const LineChart: React.FC<LineChartProps> = ({
         if (!Array.isArray(raw) || raw.length === 0) throw new Error("No sensor");
 
         const parameterMap: Record<string, { x: Date; y: number }[]> = {};
+        const standardMap: Record<string, number> = {};
+        const unitMapping: Record<string, string> = {};
         let foundData = false;
+
         for (const sensor of raw) {
           const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
           if (!Array.isArray(params)) continue;
+
           for (const param of params) {
             const name = param.HardwareParameter?.Parameter;
             const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
+            const standard = param.HardwareParameter?.StandardHardware?.Standard;
+            const unit = param.HardwareParameter?.UnitHardware?.Unit;
             const date = new Date(param.Date);
             const include = name && parameters.includes(name) && !isNaN(value) && !isNaN(date.getTime());
             if (!include) continue;
+
             let inRange = false;
             if (timeRangeType === 'day') {
               if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
               const [start, end] = selectedRange;
               inRange = date >= new Date(start) && date <= new Date(end);
             } else if (timeRangeType === 'month') {
-              inRange = (date.getMonth() + 1 === Number(selectedRange.month))
-                && (date.getFullYear() === Number(selectedRange.year));
+              inRange = (date.getMonth() + 1 === Number(selectedRange.month)) && (date.getFullYear() === Number(selectedRange.year));
             } else if (timeRangeType === 'year') {
               if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
               const [start, end] = selectedRange;
               inRange = date.getFullYear() >= +start && date.getFullYear() <= +end;
             }
             if (!inRange) continue;
+
             foundData = true;
             parameterMap[name] ??= [];
             parameterMap[name].push({ x: date, y: value });
+
+            if (standard && !standardMap[name]) {
+              standardMap[name] = standard;
+            }
+
+            if (unit && name && !unitMapping[unit]) {
+              unitMapping[unit] = name; // map unit -> parameter
+            }
           }
         }
 
-        let series: any[] = [];
+        let series: any[] = [];//@ts-ignore
+        const createStandardLine = (name: string, standard: number, data: { x: Date }[]) => {
+          const sorted = [...data].sort((a, b) => a.x.getTime() - b.x.getTime());
+          return sorted.map(d => ({ x: d.x, y: standard }));
+        };
+
         if (foundData) {
-          if (timeRangeType === 'year') {
-            const [start, end] = selectedRange;
-            if (+start === +end) {
-              series = Object.entries(parameterMap).map(([name, data]) => ({
-                dataSource: groupByMonthAvg(data.filter(d => d.x.getFullYear() === +start)),
-                xName: 'x',
-                yName: 'y',
-                name,
-                width: 2,
-                marker: { visible: true, width: 8, height: 8 },
-                type: 'Line' as const,
-                fill: colors && colors[parameters.indexOf(name)] ? colors[parameters.indexOf(name)] : undefined,
-              }));
-            } else {
-              series = Object.entries(parameterMap).map(([name, data]) => ({
-                dataSource: groupByYearAvg(data.filter(d => d.x.getFullYear() >= +start && d.x.getFullYear() <= +end)),
-                xName: 'x',
-                yName: 'y',
-                name,
-                width: 2,
-                marker: { visible: true, width: 8, height: 8 },
-                type: 'Line' as const,
-                fill: colors && colors[parameters.indexOf(name)] ? colors[parameters.indexOf(name)] : undefined,
-              }));
-            }
-          } else {
-            series = Object.entries(parameterMap).map(([name, data]) => ({
-              dataSource: data.sort((a, b) => a.x.getTime() - b.x.getTime()),
+          for (const [name, data] of Object.entries(parameterMap)) {
+            const sortedData = data.sort((a, b) => a.x.getTime() - b.x.getTime());
+            const fillColor = colors && colors[parameters.indexOf(name)] ? colors[parameters.indexOf(name)] : undefined;
+            const dataSource =
+              timeRangeType === 'year'
+                ? (selectedRange[0] === selectedRange[1]
+                    ? groupByMonthAvg(sortedData.filter(d => d.x.getFullYear() === +selectedRange[0]))
+                    : groupByYearAvg(sortedData))
+                : sortedData;
+
+            series.push({
+              dataSource,
               xName: 'x',
               yName: 'y',
               name,
               width: 2,
               marker: { visible: true, width: 8, height: 8 },
-              type: 'Line' as const,
-              fill: colors && colors[parameters.indexOf(name)] ? colors[parameters.indexOf(name)] : undefined,
-            }));
-          }
-        }
+              type: 'Line',
+              fill: fillColor,
+            });
 
-        if (foundData && series.length > 0 && series.some(s => (s.dataSource?.length || 0) > 0)) {
+            if (standardMap[name]) {
+              const stdData = createStandardLine(name, standardMap[name], sortedData);
+              series.push({
+                dataSource: stdData,
+                xName: 'x',
+                yName: 'y',
+                name: `${name} (Standard)`,
+                width: 2,
+                dashArray: '5,5',
+                marker: { visible: false },
+                type: 'Line',
+                fill: '#888',
+              });
+            }
+          }
+
           if (mounted.current && !stop) {
             setSeriesData(series);
+            setUnitMap(unitMapping);
             setLoading(false);
             setNoData(false);
           }
@@ -212,7 +231,6 @@ const LineChart: React.FC<LineChartProps> = ({
       stop = true;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  // eslint-disable-next-line
   }, [hardwareID, timeRangeType, selectedRange, parameters]);
 
   if (loading) {
@@ -233,40 +251,65 @@ const LineChart: React.FC<LineChartProps> = ({
   }
 
   return (
-    <ChartComponent
-      id="line-chart"
-      height={chartHeight}
-      width="100%"
-      primaryXAxis={{
-        valueType: timeRangeType === 'year' && selectedRange?.[0] !== selectedRange?.[1] ? 'DateTime' : 'DateTime',
-        labelFormat: timeRangeType === 'year'
-          ? (selectedRange?.[0] !== selectedRange?.[1] ? 'yyyy' : 'MMM')
-          : 'dd/MM',
-        intervalType: timeRangeType === 'year'
-          ? (selectedRange?.[0] !== selectedRange?.[1] ? 'Years' : 'Months')
-          : 'Days',
-        edgeLabelPlacement: 'Shift',
-        majorGridLines: { width: 0 },
-      }}
-      primaryYAxis={{
-        labelFormat: '{value}',
-        rangePadding: 'None',
-        lineStyle: { width: 0 },
-        majorTickLines: { width: 0 },
-        minorTickLines: { width: 0 },
-      }}
-      chartArea={{ border: { width: 0 } }}
-      tooltip={{ enable: true }}
-      background={currentMode === 'Dark' ? '#33373E' : '#fff'}
-      legendSettings={{ background: 'white' }}
-    >
-      <Inject services={[LineSeries, DateTime, Legend, Tooltip]} />
-      <SeriesCollectionDirective>
-        {seriesData.map((item, idx) => (
-          <SeriesDirective key={idx} {...item} />
-        ))}
-      </SeriesCollectionDirective>
-    </ChartComponent>
+    <div style={{ position: 'relative', width: '100%', paddingTop: '40px' }}>
+      <div style={{ position: 'absolute', top: '4px', zIndex: 10 }}>
+        {Object.entries(unitMap).map(([unit, param]) => {
+          const colorIndex = parameters.indexOf(param);
+          const color = colors?.[colorIndex] || (currentMode === 'Dark' ? '#fff' : '#000');
+
+          return (
+            <span
+              key={unit}
+              style={{
+              color,
+              padding: '2px 8px',
+              backgroundColor: currentMode === 'Dark' ? '#33373E' : '#f0f0f0',
+              marginRight: 8,
+              borderRadius: 6,
+              fontWeight: 'bold'
+            }}
+            >
+              {unit}
+            </span>
+          );
+        })}
+      </div>
+
+      <ChartComponent
+        id="line-chart"
+        height={chartHeight}
+        width="100%"
+        primaryXAxis={{
+          valueType: 'DateTime',
+          labelFormat: timeRangeType === 'year'
+            ? (selectedRange?.[0] !== selectedRange?.[1] ? 'yyyy' : 'MMM')
+            : 'dd/MM',
+          intervalType: timeRangeType === 'year'
+            ? (selectedRange?.[0] !== selectedRange?.[1] ? 'Years' : 'Months')
+            : 'Days',
+          edgeLabelPlacement: 'Shift',
+          majorGridLines: { width: 0 },
+        }}
+        primaryYAxis={{
+          labelFormat: '{value}',
+          rangePadding: 'None',
+          lineStyle: { width: 0 },
+          majorTickLines: { width: 0 },
+          minorTickLines: { width: 0 },
+        }}
+        chartArea={{ border: { width: 0 } }}
+        tooltip={{ enable: true }}
+        background={currentMode === 'Dark' ? '#33373E' : '#fff'}
+        legendSettings={{ background: 'white' }}
+      >
+        <Inject services={[LineSeries, DateTime, Legend, Tooltip]} />
+        <SeriesCollectionDirective>
+          {seriesData.map((item, idx) => (
+            <SeriesDirective key={idx} {...item} />
+          ))}
+        </SeriesCollectionDirective>
+      </ChartComponent>
+    </div>
   );
 };
 
