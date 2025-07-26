@@ -9,6 +9,7 @@ import {
   Legend,
   Tooltip,
   AxisModel,
+  LineSeries
 } from '@syncfusion/ej2-react-charts';
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
 import {
@@ -46,10 +47,11 @@ const Stacked: React.FC<ChartdataProps> = ({
 }) => {
   const { currentMode } = useStateContext();
   const [stackedData, setStackedData] = useState<{ [key: string]: { x: string; y: number }[] }>({});
+  const [standardLines, setStandardLines] = useState<any[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [unitMap, setUnitMap] = useState<Record<string, string>>({});
   const [hasData, setHasData] = useState(true);
   const [loading, setLoading] = useState(false);
-
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -80,7 +82,9 @@ const Stacked: React.FC<ChartdataProps> = ({
     const fetchLoop = async () => {
       setLoading(true);
       setStackedData({});
+      setStandardLines([]);
       setCategories([]);
+      setUnitMap({});
       setHasData(true);
 
       if (!hardwareID || !parameters?.length || !selectedRange) {
@@ -99,7 +103,9 @@ const Stacked: React.FC<ChartdataProps> = ({
         if (!Array.isArray(raw)) throw new Error("No sensor data");
 
         const paramDataMap: { [param: string]: { x: string; y: number }[] } = {};
+        const standardMap: { [param: string]: number } = {};
         const xCategorySet: Set<string> = new Set();
+        const unitMapping: Record<string, string> = {};
 
         await Promise.all(
           raw.map(async (sensor) => {
@@ -114,6 +120,8 @@ const Stacked: React.FC<ChartdataProps> = ({
               const name = param.HardwareParameter?.Parameter;
               const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
               const date = new Date(param.Date);
+              const standard = param.HardwareParameter?.StandardHardware?.Standard;
+              const unit = param.HardwareParameter?.UnitHardware?.Unit;
 
               if (!name || !parameters.includes(name)) continue;
               if (isNaN(value) || isNaN(date.getTime())) continue;
@@ -141,16 +149,22 @@ const Stacked: React.FC<ChartdataProps> = ({
               if (!paramDataMap[name]) paramDataMap[name] = [];
               paramDataMap[name].push({ x: label, y: value });
               xCategorySet.add(label);
+
+              if (standard && !standardMap[name]) {
+                standardMap[name] = standard;
+              }
+
+              if (unit && !unitMapping[unit]) {
+                unitMapping[unit] = name;
+              }
             }
           })
         );
 
         const xCategoriesArr = Array.from(xCategorySet).sort((a, b) => {
-          // parse label to date for sort
           const parseDate = (str: string) => {
             const parts = str.split("/");
             if (parts.length === 2) {
-              // "15/07"
               return new Date(new Date().getFullYear(), +parts[1] - 1, +parts[0]).getTime();
             }
             if (parts.length === 3) return new Date(+parts[2], +parts[1] - 1, +parts[0]).getTime();
@@ -169,12 +183,28 @@ const Stacked: React.FC<ChartdataProps> = ({
           }));
         }
 
+        const standardSeries = Object.entries(standardMap).map(([param, std]) => {
+          return {
+            dataSource: xCategoriesArr.map(x => ({ x, y: std })),
+            xName: 'x',
+            yName: 'y',
+            type: 'Line',
+            name: `${param} (Standard)`,
+            dashArray: '5,5',
+            width: 2,
+            marker: { visible: false },
+            fill: '#888888',
+          };
+        });
+
         const hasSeries = Object.keys(paramDataMap).length > 0 && xCategoriesArr.length > 0 &&
           Object.values(paramDataMap).some(arr => arr.length > 0 && arr.some(d => d.y !== 0));
         if (hasSeries) {
           if (mounted.current && !stop) {
             setStackedData(paramDataMap);
             setCategories(xCategoriesArr);
+            setStandardLines(standardSeries);
+            setUnitMap(unitMapping);
             setHasData(true);
             setLoading(false);
           }
@@ -228,32 +258,55 @@ const Stacked: React.FC<ChartdataProps> = ({
   }
 
   return (
-    <ChartComponent
-      id="stacked-chart"
-      width="100%"
-      height={chartHeight}
-      primaryXAxis={primaryXAxis}
-      primaryYAxis={primaryYAxis}
-      chartArea={{ border: { width: 0 } }}
-      tooltip={{ enable: true }}
-      legendSettings={{ background: 'white' }}
-      background={currentMode === 'Dark' ? '#33373E' : '#fff'}
-    >
-      <Inject services={[StackingColumnSeries, Category, Legend, Tooltip]} />
-      <SeriesCollectionDirective>
-        {parameters.map((param, index) => (
-          <SeriesDirective
-            key={index}
-            dataSource={stackedData[param]}
-            xName="x"
-            yName="y"
-            name={param}
-            type="StackingColumn"
-            fill={colors && colors[index] ? colors[index] : undefined}
-          />
-        ))}
-      </SeriesCollectionDirective>
-    </ChartComponent>
+    <div>
+      <div className="text-sm font-semibold text-gray-600 mb-2 ml-2">
+        {Object.entries(unitMap).map(([unit, param]) => {
+          const idx = parameters.indexOf(param);
+          const color = colors?.[idx] ?? '#000';
+          return (
+            <span key={unit} style={{
+              color,
+              backgroundColor: currentMode === 'Dark' ? '#33373E' : '#f0f0f0',
+              padding: '2px 8px',
+              marginRight: 8,
+              borderRadius: 6,
+              fontWeight: 'bold'
+            }}>
+              {unit}
+            </span>
+          );
+        })}
+      </div>
+      <ChartComponent
+        id="stacked-chart"
+        width="100%"
+        height={chartHeight}
+        primaryXAxis={primaryXAxis}
+        primaryYAxis={primaryYAxis}
+        chartArea={{ border: { width: 0 } }}
+        tooltip={{ enable: true }}
+        legendSettings={{ background: 'white' }}
+        background={currentMode === 'Dark' ? '#33373E' : '#fff'}
+      >
+        <Inject services={[StackingColumnSeries, Category, Legend, Tooltip, LineSeries]} />
+        <SeriesCollectionDirective>
+          {parameters.map((param, index) => (
+            <SeriesDirective
+              key={index}
+              dataSource={stackedData[param]}
+              xName="x"
+              yName="y"
+              name={param}
+              type="StackingColumn"
+              fill={colors && colors[index] ? colors[index] : undefined}
+            />
+          ))}
+          {standardLines.map((line, index) => (
+            <SeriesDirective key={`std-${index}`} {...line} />
+          ))}
+        </SeriesCollectionDirective>
+      </ChartComponent>
+    </div>
   );
 };
 
