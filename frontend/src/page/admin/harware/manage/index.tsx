@@ -16,18 +16,15 @@ const RoomAdminTable: React.FC = () => {
     const [filteredData, setFilteredData] = useState<RoomInterface[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // Selector state
     const [selectedBuilding, setSelectedBuilding] = useState<string | number>("");
     const [selectedFloor, setSelectedFloor] = useState<string>("");
 
-    // Modal states
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedRoom, setSelectedRoom] = useState<RoomInterface | null>(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [roomToDelete, setRoomToDelete] = useState<{ id: number, name: string } | null>(null);
 
-    // For selector
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
     const fetchRooms = async () => {
@@ -41,10 +38,8 @@ const RoomAdminTable: React.FC = () => {
         fetchRooms();
     }, []);
 
-    // กรองข้อมูลด้วย search, building, floor
     useEffect(() => {
         let data = rooms;
-
         if (selectedBuilding) {
             data = data.filter(r => r.Building?.ID === selectedBuilding);
         }
@@ -67,7 +62,6 @@ const RoomAdminTable: React.FC = () => {
         setFilteredData(data);
     }, [rooms, searchText, selectedBuilding, selectedFloor]);
 
-    // Selector options
     const buildingOptions = [
         ...Array.from(
             new Map(rooms.map(r => [r.Building?.ID, r.Building?.BuildingName])).entries()
@@ -78,13 +72,11 @@ const RoomAdminTable: React.FC = () => {
         ...Array.from(new Set(rooms.map(r => r.Floor))).sort((a: any, b: any) => a - b)
     ].filter(f => f);
 
-    // Modal AddRoom
     const handleAddRoomSuccess = () => {
         setShowAddModal(false);
         fetchRooms();
     };
 
-    // Modal EditRoom
     const handleEditClick = (room: RoomInterface) => {
         setSelectedRoom(room);
         setShowEditModal(true);
@@ -95,7 +87,6 @@ const RoomAdminTable: React.FC = () => {
         fetchRooms();
     };
 
-    // Modal DeleteRoom
     const handleDeleteClick = (id?: number, name?: string) => {
         if (!id) return;
         setRoomToDelete({ id, name: name || "ไม่ทราบชื่อห้อง" });
@@ -115,7 +106,6 @@ const RoomAdminTable: React.FC = () => {
         }
     };
 
-    // เพิ่ม: ลบที่เลือก (multiple)
     const handleDeleteSelected = async () => {
         Modal.confirm({
             title: "ยืนยันการลบ",
@@ -141,7 +131,6 @@ const RoomAdminTable: React.FC = () => {
         });
     };
 
-    // columns สำหรับ Table
     const columns: ColumnsType<RoomInterface> = [
         {
             title: (
@@ -240,7 +229,6 @@ const RoomAdminTable: React.FC = () => {
         }
     ];
 
-    // Selector Column (Checkbox)
     const rowSelection = {
         selectedRowKeys,
         onChange: (newSelectedRowKeys: React.Key[]) => {
@@ -251,7 +239,7 @@ const RoomAdminTable: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-100 mt-16 md:mt-0">
-            <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-8 py-6 rounded-b-3xl mb-6">
+            <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-4 sm:px-8 py-5 sm:py-6 rounded-b-3xl mb-6">
                 <div className="flex justify-between items-center flex-wrap gap-4">
                     <div>
                         <h1 className="text-2xl font-bold drop-shadow-md">จัดการข้อมูลเซนเซอร์</h1>
@@ -269,8 +257,9 @@ const RoomAdminTable: React.FC = () => {
                 </div>
             </div>
 
-            <div className="paddings">
-                <div className="bg-white rounded-2xl shadow-xl p-6 ">
+            <div className="px-2 sm:px-4 md:px-10 py-2">
+                <div className="bg-white rounded-2xl shadow-xl p-3 sm:p-6 ">
+                    {/* Toolbar */}
                     <div className="flex flex-col sm:flex-row justify-between mb-4 gap-3 items-center">
                         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                             {/* Selector อาคาร */}
@@ -322,32 +311,35 @@ const RoomAdminTable: React.FC = () => {
                             </Button>
                         )}
                     </div>
-                    <Table
-                        rowSelection={rowSelection}
-                        columns={columns}
-                        dataSource={filteredData}
-                        rowKey="ID"
-                        loading={loading}
-                        pagination={{
-                            pageSize: 5,
-                            showSizeChanger: true,
-                            pageSizeOptions: [5, 10, 20, 50],
-                            position: ["bottomCenter"],
-                        }}
-                        className="rounded-2xl overflow-hidden"
-                        scroll={{ x: "max-content" }} // ให้ scroll แนวนอนบนจอแคบ
-                    />
+                    {/* Table Responsive */}
+                    <div className="w-full overflow-x-auto" style={{ scrollbarWidth: "thin", maxWidth: "100vw" }}>
+                        <Table
+                            rowSelection={rowSelection}
+                            columns={columns}
+                            dataSource={filteredData}
+                            rowKey="ID"
+                            loading={loading}
+                            pagination={{
+                                pageSize: 5,
+                                showSizeChanger: true,
+                                pageSizeOptions: [5, 10, 20, 50],
+                                position: ["bottomCenter"],
+                                responsive: true,
+                            }}
+                            className="rounded-2xl overflow-x-auto"
+                            scroll={{ x: 600 }}
+                            style={{ minWidth: 350 }}
+                        />
+                    </div>
                 </div>
             </div>
 
-            {/* Modal เพิ่มห้อง */}
             <AddRoomModal
                 show={showAddModal}
                 onClose={() => setShowAddModal(false)}
                 onCreateSuccess={handleAddRoomSuccess}
             />
 
-            {/* Modal Edit ห้อง */}
             {selectedRoom && (
                 <EditRoomModal
                     show={showEditModal}
@@ -357,7 +349,6 @@ const RoomAdminTable: React.FC = () => {
                 />
             )}
 
-            {/* Modal Delete ห้อง */}
             <Modal
                 open={showDeleteModal}
                 onCancel={() => setShowDeleteModal(false)}

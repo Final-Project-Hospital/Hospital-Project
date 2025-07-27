@@ -12,7 +12,6 @@ import {
 } from "../../../../../services/hardware";
 import LineChart from "../chart/line/index";
 import Area from "../chart/area/index";
-import Bar from "../chart/bar/index";
 import ColorMapping from "../chart/mapping/index";
 import Stacked from "../chart/stack/index";
 import EditParameterModal from "./edit";
@@ -216,8 +215,6 @@ const Index = () => {
                     return <LineChart {...commonProps} />;
                   case "Area":
                     return <Area {...commonProps} />;
-                  case "Bar":
-                    return <Bar {...commonProps} />;
                   case "Mapping":
                     return <ColorMapping {...commonProps} />;
                   case "Stacked":

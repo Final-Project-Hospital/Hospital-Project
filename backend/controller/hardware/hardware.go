@@ -233,3 +233,61 @@ func ListColors(c *gin.Context) {
 
 	c.JSON(http.StatusOK, colors)
 }
+
+func UpdateUnitHardwareByID(c *gin.Context) {
+	id := c.Param("id")
+	var unit entity.UnitHardware
+
+	db := config.DB()
+	if err := db.First(&unit, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "UnitHardware not found"})
+		return
+	}
+
+	var input struct {
+		Unit string `json:"unit" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	unit.Unit = input.Unit
+
+	if err := db.Save(&unit).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, unit)
+}
+
+func UpdateStandardHardwareByID(c *gin.Context) {
+	id := c.Param("id")
+	var standard entity.StandardHardware
+
+	db := config.DB()
+	if err := db.First(&standard, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "StandardHardware not found"})
+		return
+	}
+
+	var input struct {
+		Standard float64 `json:"standard" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	standard.Standard = input.Standard
+
+	if err := db.Save(&standard).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, standard)
+}

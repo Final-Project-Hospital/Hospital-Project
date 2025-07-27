@@ -8,6 +8,11 @@ type HardwareParameter struct {
 	gorm.Model
 	Parameter	string
 
+	StandardHardwareID uint
+	StandardHardware *StandardHardware `gorm:"foreignKey: StandardHardwareID"`
+
+	UnitHardwareID uint
+	UnitHardware *UnitHardware `gorm:"foreignKey: UnitHardwareID"`
 	
 	HardwareGraphID uint
 	HardwareGraph   *HardwareGraph `gorm:"foreignKey: HardwareGraphID"`

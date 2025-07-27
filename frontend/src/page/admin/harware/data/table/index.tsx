@@ -70,18 +70,22 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
           parameters.forEach((param: any) => {
             const name = param.HardwareParameter?.Parameter;
             const value = param.Data;
+            const standard = param.HardwareParameter?.StandardHardware?.Standard ?? null;
+
             let sensorDate = "ไม่ทราบวันที่";
             let rawDate = "";
             if (param?.Date && !isNaN(new Date(param.Date).getTime())) {
               rawDate = param.Date;
               sensorDate = dayjs(param.Date).format("DD/MM/YYYY HH:mm");
             }
+
             if (name) {
               paramDetails.push({
                 ParameterName: name,
                 Date: sensorDate,
                 rawDate: rawDate,
                 [name]: value,
+                [`${name}_standard`]: standard,
               });
             }
           });
@@ -94,16 +98,18 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
       setUniqueColumns(["Date", ...uniqueParams]);
       setSelectedColumns(["Date", ...uniqueParams]);
 
-      // group by date
       const groupedRows: Record<string, any> = {};
       paramDetails.forEach((p) => {
         const date = p.Date;
         if (!groupedRows[date]) groupedRows[date] = { Date: date, rawDate: p.rawDate };
-        groupedRows[date] = { ...groupedRows[date], ...p };
-        delete groupedRows[date].ParameterName;
+        Object.entries(p).forEach(([key, val]) => {
+          if (key !== "ParameterName" && key !== "rawDate") {
+            groupedRows[date][key] = val;
+          }
+        });
       });
-      const finalTableData = Object.values(groupedRows);
 
+      const finalTableData = Object.values(groupedRows);
       setTableData(finalTableData);
       setLoading(false);
       onLoaded?.();
@@ -115,7 +121,6 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
   useEffect(() => {
     let data = tableData;
 
-    // Filter by date range (แก้ให้รวมวันแรก-วันสุดท้ายจริง)
     if (dateRange[0] && dateRange[1]) {
       data = data.filter((item) => {
         const d = dayjs(item.rawDate);
@@ -127,7 +132,6 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
       });
     }
 
-    // Filter by text search
     if (searchText.trim() !== "") {
       data = data.filter((item) =>
         selectedColumns.some((col) =>
@@ -164,9 +168,36 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
         ),
         dataIndex: col,
         key: col,
-        render: (val: any) => val ?? "-",
+        render: (val: any, row: any) => {
+          if (col === "Date" || col === "rawDate") return val;
+
+          const standard = row[`${col}_standard`];
+          const numericVal = typeof val === "number" ? val : parseFloat(val);
+
+          if (!isNaN(numericVal) && standard !== null) {
+            const threshold = standard * 0.9;
+            if (numericVal > standard) {
+              return (
+                <span style={{ color: "red", fontWeight: "bold" }}>
+                  {numericVal.toFixed(2)}
+                </span>
+              );
+            } else if (numericVal >= threshold) {
+              return (
+                <span style={{ color: "orange", fontWeight: "bold" }}>
+                  {numericVal.toFixed(2)}
+                </span>
+              );
+            } else {
+              return numericVal.toFixed(2);
+            }
+          }
+
+          return val ?? "-";
+        },
       })),
   ];
+
 
   const getDataForCSV = (data: any[]) =>
     data.map((row: any, idx: number) => {
@@ -197,71 +228,45 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
   return (
     <div className="w-full mt-6">
       <div className="p-0 sm:p-3">
-        <div
-          className="bg-white rounded-2xl shadow-xl p-2 sm:p-6"
-          style={{ minHeight: 320 }}
-        >
-          {/* Toolbar: Desktop = row, Mobile = col */}
+        <div className="bg-white rounded-2xl shadow-xl p-2 sm:p-6" style={{ minHeight: 320 }}>
           <div className="flex sm:flex-row flex-col gap-2 w-full sm:items-center sm:justify-between mb-3">
             <div className="flex sm:flex-row flex-col gap-2 w-full items-center">
-              <div className="sm:w-auto w-full">
-                <Input
-                  allowClear
-                  prefix={<SearchOutlined className="text-teal-700" />}
-                  placeholder="ค้นหาในตาราง..."
-                  className="rounded-lg border-teal-200 focus:border-teal-400 shadow"
-                  style={{
-                    fontSize: 16,
-                    width: "100%",
-                    background: "#f0fdfa",
-                  }}
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                />
-              </div>
-              <div className="sm:w-auto w-full">
-                <RangePicker
-                  className="rounded-lg border border-teal-200 shadow w-full"
-                  format="DD/MM/YYYY"
-                  style={{ background: "#f0fdfa", width: "100%" }}
-                  allowClear={true}
-                  onChange={(dates) =>
-                    setDateRange(dates ? (dates as [Dayjs, Dayjs]) : [null, null])
-                  }
-                  value={dateRange}
-                  placeholder={["วันที่เริ่มต้น", "วันที่สิ้นสุด"]}
-                  suffixIcon={<CalendarOutlined className="text-teal-500" />}
-                />
-              </div>
-              <div className="sm:w-auto w-full">
-                <Dropdown
-                  overlay={columnSelectMenu}
-                  trigger={["click"]}
-                  placement="bottomRight"
-                  arrow
-                >
-                  <Button icon={<FilterOutlined />} className="w-full sm:w-auto">
-                    เลือกคอลัมน์ <DownOutlined />
-                  </Button>
-                </Dropdown>
-              </div>
-              <div className="sm:w-auto w-full">
-                <Button
-                  icon={<DownloadOutlined />}
-                  onClick={() => setShowDownloadModal(true)}
-                  className="flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-500 to-teal-400 text-white border-none shadow transition w-full sm:w-auto"
-                  style={{ fontWeight: 600 }}
-                >
-                  Download CSV
+              <Input
+                allowClear
+                prefix={<SearchOutlined className="text-teal-700" />}
+                placeholder="ค้นหาในตาราง..."
+                className="rounded-lg border-teal-200 focus:border-teal-400 shadow"
+                style={{ fontSize: 16, background: "#f0fdfa" }}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+              <RangePicker
+                className="rounded-lg border border-teal-200 shadow"
+                format="DD/MM/YYYY"
+                allowClear={true}
+                onChange={(dates) =>
+                  setDateRange(dates ? (dates as [Dayjs, Dayjs]) : [null, null])
+                }
+                value={dateRange}
+                placeholder={["วันที่เริ่มต้น", "วันที่สิ้นสุด"]}
+                suffixIcon={<CalendarOutlined className="text-teal-500" />}
+              />
+              <Dropdown overlay={columnSelectMenu} trigger={["click"]} placement="bottomRight" arrow>
+                <Button icon={<FilterOutlined />}>
+                  เลือกคอลัมน์ <DownOutlined />
                 </Button>
-              </div>
+              </Dropdown>
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={() => setShowDownloadModal(true)}
+                className="flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-500 to-teal-400 text-white border-none shadow transition"
+                style={{ fontWeight: 600 }}
+              >
+                Download CSV
+              </Button>
             </div>
           </div>
-          {/* Table: responsive overflow & scroll */}
-          <div
-            className="w-full overflow-x-auto"
-            style={{ scrollbarWidth: "thin", maxWidth: "100vw" }}
-          >
+          <div className="w-full overflow-x-auto" style={{ scrollbarWidth: "thin", maxWidth: "100vw" }}>
             <Table
               columns={columns}
               dataSource={filteredData}
@@ -283,7 +288,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
         </div>
       </div>
 
-      {/* Modal Download CSV */}
+      {/* Modal for Download CSV */}
       <Modal
         open={showDownloadModal}
         onCancel={() => setShowDownloadModal(false)}
@@ -330,7 +335,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
               onClick={() => setShowDownloadModal(false)}
               target="_blank"
             >
-              <DownloadOutlined /> ดาวน์โหลดเฉพาะที่ค้นหา ({filteredData.length} แถว)
+              <DownloadOutlined /> ดาวน์โหลดเฉพาะที่ค้นหา
             </CSVLink>
             <CSVLink
               data={getDataForCSV(tableData)}
@@ -353,7 +358,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
               onClick={() => setShowDownloadModal(false)}
               target="_blank"
             >
-              <DownloadOutlined /> ดาวน์โหลดทั้งหมด ({tableData.length} แถว)
+              <DownloadOutlined /> ดาวน์โหลดทั้งหมด
             </CSVLink>
           </div>
         </div>

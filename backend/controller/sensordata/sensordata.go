@@ -80,7 +80,7 @@ func GetSensorDataParametersBySensorDataID(c *gin.Context) {
 	var parameters []entity.SensorDataParameter
 
 	db := config.DB()
-	if err := db.Preload("SensorData").Preload("HardwareParameter").
+	if err := db.Preload("SensorData").Preload("HardwareParameter").Preload("HardwareParameter.StandardHardware").Preload("HardwareParameter.UnitHardware").
 		Where("sensor_data_id = ?", sensorDataID).
 		Find(&parameters).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
