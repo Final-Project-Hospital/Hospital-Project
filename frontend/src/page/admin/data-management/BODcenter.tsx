@@ -13,7 +13,7 @@ import { ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStand
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../interface/IStandard';
 
 const { Option } = Select;
-const TDSCentralForm: React.FC = () => {
+const TDSCentralForm: React.FC <{ onCancel: () => void }> = ({ onCancel }) =>  {
     const [form] = Form.useForm();
     const [beforeAfterOptions, setBeforeAfterOptions] = useState<ListBeforeAfterTreatmentInterface[]>([]);
     const [unitOptions, setUnitOptions] = useState<ListUnitInterface[]>([]);
@@ -98,6 +98,12 @@ const TDSCentralForm: React.FC = () => {
 
     const handleClear = () => {
         form.resetFields();
+    };
+
+    
+    const handleCancelClick = () => {
+        form.resetFields();
+        onCancel();
     };
 
     const handleStandardGroupChange = (value: string) => {
@@ -447,7 +453,7 @@ const TDSCentralForm: React.FC = () => {
                     </div>
                     <Form.Item className="bod-form-actions" >
                         {/* <div > */}
-                        <Button className="bod-cancel" htmlType="button" >
+                        <Button className="bod-cancel" htmlType="button" onClick={handleCancelClick} >
                             ยกเลิก
                         </Button>
                         <Button htmlType="reset" className="bod-reset" onClick={handleClear} >
