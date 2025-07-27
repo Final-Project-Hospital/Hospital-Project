@@ -138,6 +138,8 @@ func ListHardwareParameterByHardwareID(c *gin.Context) {
 	if err := config.DB().
 		Preload("HardwareGraph").
 		Preload("HardwareParameterColor").
+		Preload("StandardHardware").
+		Preload("UnitHardware").
 		Find(&hardwareParameters, hardwareParameterIDs).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
