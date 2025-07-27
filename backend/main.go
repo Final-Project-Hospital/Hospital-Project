@@ -99,6 +99,8 @@ func main() {
 		public.POST("/create-bod", bodcenter.CreateBod)
 		public.GET("/get-first-bod", bodcenter.GetfirstBOD)
 		public.GET("/list-bod", bodcenter.ListBOD)
+		public.GET("/get-bod/:id", bodcenter.GetBODbyID)
+		public.DELETE("/delete-bod/:id",bodcenter.DeleterBOD)
 		
 		//FOG
 		public.POST("/create-fog", fogcenter.CreateFog)
