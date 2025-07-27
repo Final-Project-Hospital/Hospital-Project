@@ -17,21 +17,26 @@ interface HardwareStat {
 interface AveragedataProps {
   hardwareID: number;
   reloadKey?: any;
+  onLoaded?: () => void; // เพิ่มตรงนี้
 }
 
-const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey }) => {
+const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }) => {
   const [hardwareStats, setHardwareStats] = useState<HardwareStat[]>([]);
   const [parameterColors, setParameterColors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    setParameterColors({}); // สำคัญ! รีเซ็ตสี parameter ทันทีที่ reloadKey/hardwareID เปลี่ยน
+    setParameterColors({});
     const fetchAndCalculateAverages = async () => {
-      if (!hardwareID) return;
+      if (!hardwareID) {
+        onLoaded?.();
+        return;
+      }
 
       try {
         const sensorData = await GetSensorDataByHardwareID(hardwareID);
         if (!Array.isArray(sensorData) || sensorData.length === 0) {
           setHardwareStats([]);
+          onLoaded?.();
           return;
         }
 
@@ -62,7 +67,6 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey }) => {
           }
         }
 
-        // ดึงสีใหม่ทุกครั้ง!
         const paramsArr = Array.from(allParamsSet);
         const colorsMap: Record<string, string> = {};
         await Promise.all(
@@ -77,7 +81,6 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey }) => {
         );
         setParameterColors(colorsMap);
 
-        // เตรียมข้อมูลแสดงผล
         const avgData = Object.keys(sums).map((key, idx) => {
           const avg = counts[key] > 0 ? sums[key] / counts[key] : 0;
           const maxValue = maxValues[key] || 100;
@@ -91,13 +94,15 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey }) => {
         });
 
         setHardwareStats(avgData);
+        onLoaded?.(); // <<< ตรงนี้
       } catch (error) {
-        console.error("Error fetching sensor data:", error);
+        setHardwareStats([]);
+        onLoaded?.(); // <<< ตรงนี้
       }
     };
 
     fetchAndCalculateAverages();
-  }, [hardwareID, reloadKey]);
+  }, [hardwareID, reloadKey, onLoaded]);
 
   return (
     <TopProductsWrap>

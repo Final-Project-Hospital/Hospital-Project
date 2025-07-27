@@ -19,6 +19,7 @@ export interface UpdateTDSInterface {
   UnitID: number;
   EmployeeID: number;
   Note?: string;
+  CustomUnit?: string;
 }
 
 export interface DeleteTDSInterface {

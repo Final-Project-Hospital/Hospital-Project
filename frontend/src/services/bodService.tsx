@@ -67,3 +67,46 @@ export const GetfirstBOD = async (
     return null;
   }
 };
+
+export const GetlistBOD = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/list-bod`,{
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating BOD record:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const DeleteBOD = async (id: number): Promise<any | null> => {
+  try {
+    const response = await axios.delete(`${apiUrl}/delete-bod/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error deleting BOD record:", error.response?.data || error.message);
+    return null;
+  }
+};

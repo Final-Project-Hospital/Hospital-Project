@@ -2,6 +2,7 @@ package selectBoxAll
 
 import (
 	"net/http"
+    "strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/Tawunchai/hospital-project/config"
@@ -144,4 +145,23 @@ func AddRangeStandard(c *gin.Context) {
         "MinValue":    std.MinValue,
         "MaxValue":    std.MaxValue,
     })
+}
+
+// GetStandardByID ดึงข้อมูล Standard ตาม ID
+func GetStandardByID(c *gin.Context) {
+    var standard entity.Standard
+
+    idParam := c.Param("id")
+    id, err := strconv.Atoi(idParam)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid standard ID"})
+        return
+    }
+
+    if err := config.DB().First(&standard, id).Error; err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูลมาตรฐาน"})
+        return
+    }
+
+    c.JSON(http.StatusOK, standard)
 }

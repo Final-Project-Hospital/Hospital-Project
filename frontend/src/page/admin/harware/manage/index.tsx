@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Input, Button, Modal, message } from "antd";
+import { Table, Input, Button, Modal, message, Select } from "antd";
 import { SearchOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { ListRoom, DeleteRoomById } from "../../../../services/hardware";
@@ -8,22 +8,24 @@ import AddRoomModal from '../data/room/create';
 import EditRoomModal from '../data/room/edit';
 import { FaHome } from "react-icons/fa";
 
+const { Option } = Select;
+
 const RoomAdminTable: React.FC = () => {
     const [rooms, setRooms] = useState<RoomInterface[]>([]);
     const [searchText, setSearchText] = useState("");
     const [filteredData, setFilteredData] = useState<RoomInterface[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // สำหรับ modal add room
-    const [showAddModal, setShowAddModal] = useState(false);
+    const [selectedBuilding, setSelectedBuilding] = useState<string | number>("");
+    const [selectedFloor, setSelectedFloor] = useState<string>("");
 
-    // สำหรับ modal edit room
+    const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedRoom, setSelectedRoom] = useState<RoomInterface | null>(null);
-
-    // สำหรับ modal delete
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [roomToDelete, setRoomToDelete] = useState<{ id: number, name: string } | null>(null);
+
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
     const fetchRooms = async () => {
         setLoading(true);
@@ -37,31 +39,44 @@ const RoomAdminTable: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (!searchText) {
-            setFilteredData(rooms);
-        } else {
-            setFilteredData(
-                rooms.filter((room) => {
-                    const bName = room.Building?.BuildingName ?? "";
-                    const hardwareName = room.Hardware?.Name ?? "";
-                    return (
-                        (room.RoomName ?? "").toString().toLowerCase().includes(searchText.toLowerCase()) ||
-                        (room.Floor ?? "").toString().toLowerCase().includes(searchText.toLowerCase()) ||
-                        bName.toString().toLowerCase().includes(searchText.toLowerCase()) ||
-                        hardwareName.toString().toLowerCase().includes(searchText.toLowerCase())
-                    );
-                })
-            );
+        let data = rooms;
+        if (selectedBuilding) {
+            data = data.filter(r => r.Building?.ID === selectedBuilding);
         }
-    }, [rooms, searchText]);
+        if (selectedFloor) {
+            data = data.filter(r => r.Floor?.toString() === selectedFloor);
+        }
+        if (searchText) {
+            const q = searchText.toLowerCase();
+            data = data.filter((room) => {
+                const bName = room.Building?.BuildingName ?? "";
+                const hardwareName = room.Hardware?.Name ?? "";
+                return (
+                    (room.RoomName ?? "").toString().toLowerCase().includes(q) ||
+                    (room.Floor ?? "").toString().toLowerCase().includes(q) ||
+                    bName.toString().toLowerCase().includes(q) ||
+                    hardwareName.toString().toLowerCase().includes(q)
+                );
+            });
+        }
+        setFilteredData(data);
+    }, [rooms, searchText, selectedBuilding, selectedFloor]);
 
-    // Modal AddRoom
+    const buildingOptions = [
+        ...Array.from(
+            new Map(rooms.map(r => [r.Building?.ID, r.Building?.BuildingName])).entries()
+        )
+    ].filter(([id, name]) => !!id && !!name);
+
+    const floorOptions = [
+        ...Array.from(new Set(rooms.map(r => r.Floor))).sort((a: any, b: any) => a - b)
+    ].filter(f => f);
+
     const handleAddRoomSuccess = () => {
         setShowAddModal(false);
         fetchRooms();
     };
 
-    // Modal EditRoom
     const handleEditClick = (room: RoomInterface) => {
         setSelectedRoom(room);
         setShowEditModal(true);
@@ -72,7 +87,6 @@ const RoomAdminTable: React.FC = () => {
         fetchRooms();
     };
 
-    // Modal DeleteRoom
     const handleDeleteClick = (id?: number, name?: string) => {
         if (!id) return;
         setRoomToDelete({ id, name: name || "ไม่ทราบชื่อห้อง" });
@@ -92,7 +106,31 @@ const RoomAdminTable: React.FC = () => {
         }
     };
 
-    // columns สำหรับ Table
+    const handleDeleteSelected = async () => {
+        Modal.confirm({
+            title: "ยืนยันการลบ",
+            content: `คุณแน่ใจหรือไม่ว่าต้องการลบห้องที่เลือก (${selectedRowKeys.length} รายการ)?`,
+            okText: "ลบ",
+            okType: "danger",
+            cancelText: "ยกเลิก",
+            centered: true,
+            async onOk() {
+                let successCount = 0;
+                for (const id of selectedRowKeys) {
+                    const res = await DeleteRoomById(Number(id));
+                    if (res) successCount += 1;
+                }
+                if (successCount > 0) {
+                    message.success(`ลบสำเร็จ ${successCount} รายการ`);
+                    setSelectedRowKeys([]);
+                    fetchRooms();
+                } else {
+                    message.error("ลบข้อมูลไม่สำเร็จ");
+                }
+            }
+        });
+    };
+
     const columns: ColumnsType<RoomInterface> = [
         {
             title: (
@@ -108,7 +146,7 @@ const RoomAdminTable: React.FC = () => {
         {
             title: (
                 <span className="bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 bg-clip-text text-transparent font-bold">
-                    Room Name
+                    ชื่อห้อง
                 </span>
             ),
             dataIndex: "RoomName",
@@ -118,7 +156,7 @@ const RoomAdminTable: React.FC = () => {
         {
             title: (
                 <span className="bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 bg-clip-text text-transparent font-bold">
-                    Floor
+                    ชั้น
                 </span>
             ),
             dataIndex: "Floor",
@@ -132,22 +170,20 @@ const RoomAdminTable: React.FC = () => {
                 }
                 return fa.toString().localeCompare(fb.toString());
             },
-            responsive: ["md"],
         },
         {
             title: (
                 <span className="bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 bg-clip-text text-transparent font-bold">
-                    Building
+                    อาคาร
                 </span>
             ),
             key: "Building",
             render: (_, record) => record.Building?.BuildingName ?? "-",
-            responsive: ["md"],
         },
         {
             title: (
                 <span className="bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 bg-clip-text text-transparent font-bold">
-                    Hardware Name
+                    ชื่ออุปกรณ์เซนเซอร์
                 </span>
             ),
             key: "Hardware",
@@ -159,12 +195,11 @@ const RoomAdminTable: React.FC = () => {
                     {record.Hardware?.Name ?? "-"}
                 </span>
             ),
-            responsive: ["md"],
         },
         {
             title: (
                 <span className="bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 bg-clip-text text-transparent font-bold">
-                    Action
+                    จัดการ
                 </span>
             ),
             key: "action",
@@ -194,9 +229,17 @@ const RoomAdminTable: React.FC = () => {
         }
     ];
 
+    const rowSelection = {
+        selectedRowKeys,
+        onChange: (newSelectedRowKeys: React.Key[]) => {
+            setSelectedRowKeys(newSelectedRowKeys);
+        },
+        preserveSelectedRowKeys: true
+    };
+
     return (
         <div className="min-h-screen bg-gray-100 mt-16 md:mt-0">
-            <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-8 py-6 rounded-b-3xl mb-6">
+            <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-4 sm:px-8 py-5 sm:py-6 rounded-b-3xl mb-6">
                 <div className="flex justify-between items-center flex-wrap gap-4">
                     <div>
                         <h1 className="text-2xl font-bold drop-shadow-md">จัดการข้อมูลเซนเซอร์</h1>
@@ -204,7 +247,6 @@ const RoomAdminTable: React.FC = () => {
                             โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
                         </p>
                     </div>
-
                     <button
                         onClick={() => setShowAddModal(true)}
                         className="flex items-center gap-2 bg-white text-teal-800 px-4 py-2 rounded-full hover:bg-teal-100 transition whitespace-nowrap"
@@ -215,43 +257,89 @@ const RoomAdminTable: React.FC = () => {
                 </div>
             </div>
 
-
-            <div className="paddings">
-                <div className="bg-white rounded-2xl shadow-xl p-6 ">
-                    <div className="mb-4 w-full md:w-1/3">
-                        <Input
-                            allowClear
-                            prefix={<SearchOutlined className="text-teal-400" />}
-                            placeholder="Search all columns..."
-                            className="rounded-xl border-teal-200 focus:border-teal-400 shadow"
-                            value={searchText}
-                            onChange={e => setSearchText(e.target.value)}
+            <div className="px-2 sm:px-4 md:px-10 py-2">
+                <div className="bg-white rounded-2xl shadow-xl p-3 sm:p-6 ">
+                    {/* Toolbar */}
+                    <div className="flex flex-col sm:flex-row justify-between mb-4 gap-3 items-center">
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                            {/* Selector อาคาร */}
+                            <Select
+                                allowClear
+                                placeholder="ทุกอาคาร"
+                                className="w-full sm:w-40"
+                                value={selectedBuilding}
+                                onChange={(val) => setSelectedBuilding(val)}
+                            >
+                                <Option value="">ทุกอาคาร</Option>
+                                {buildingOptions.map(([id, name]) => (
+                                    <Option key={id} value={id}>{name}</Option>
+                                ))}
+                            </Select>
+                            {/* Selector ชั้น */}
+                            <Select
+                                allowClear
+                                placeholder="ทุกชั้น"
+                                className="w-full sm:w-32"
+                                value={selectedFloor}
+                                onChange={(val) => setSelectedFloor(val)}
+                            >
+                                <Option value="">ทุกชั้น</Option>
+                                {floorOptions.map((floor) => (
+                                    <Option key={floor} value={String(floor)}>{`ชั้น ${floor}`}</Option>
+                                ))}
+                            </Select>
+                            {/* Search */}
+                            <Input
+                                allowClear
+                                prefix={<SearchOutlined className="text-teal-400" />}
+                                placeholder="ค้นหาทุกคอลัมน์..."
+                                className="rounded-xl border-teal-200 focus:border-teal-400 shadow w-full sm:w-60"
+                                value={searchText}
+                                onChange={e => setSearchText(e.target.value)}
+                            />
+                        </div>
+                        {/* ปุ่มลบที่เลือก */}
+                        {selectedRowKeys.length > 0 && (
+                            <Button
+                                type="primary"
+                                danger
+                                icon={<DeleteOutlined />}
+                                className="w-full sm:w-auto"
+                                onClick={handleDeleteSelected}
+                            >
+                                ลบที่เลือก ({selectedRowKeys.length})
+                            </Button>
+                        )}
+                    </div>
+                    {/* Table Responsive */}
+                    <div className="w-full overflow-x-auto" style={{ scrollbarWidth: "thin", maxWidth: "100vw" }}>
+                        <Table
+                            rowSelection={rowSelection}
+                            columns={columns}
+                            dataSource={filteredData}
+                            rowKey="ID"
+                            loading={loading}
+                            pagination={{
+                                pageSize: 5,
+                                showSizeChanger: true,
+                                pageSizeOptions: [5, 10, 20, 50],
+                                position: ["bottomCenter"],
+                                responsive: true,
+                            }}
+                            className="rounded-2xl overflow-x-auto"
+                            scroll={{ x: 600 }}
+                            style={{ minWidth: 350 }}
                         />
                     </div>
-                    <Table
-                        columns={columns}
-                        dataSource={filteredData}
-                        rowKey="ID"
-                        loading={loading}
-                        pagination={{
-                            pageSize: 5,
-                            showSizeChanger: true,
-                            pageSizeOptions: [5, 10, 20, 50],
-                            position: ["bottomCenter"],
-                        }}
-                        className="rounded-2xl overflow-hidden"
-                    />
                 </div>
             </div>
 
-            {/* Modal เพิ่มห้อง */}
             <AddRoomModal
                 show={showAddModal}
                 onClose={() => setShowAddModal(false)}
                 onCreateSuccess={handleAddRoomSuccess}
             />
 
-            {/* Modal Edit ห้อง */}
             {selectedRoom && (
                 <EditRoomModal
                     show={showEditModal}
@@ -261,7 +349,6 @@ const RoomAdminTable: React.FC = () => {
                 />
             )}
 
-            {/* Modal Delete ห้อง */}
             <Modal
                 open={showDeleteModal}
                 onCancel={() => setShowDeleteModal(false)}

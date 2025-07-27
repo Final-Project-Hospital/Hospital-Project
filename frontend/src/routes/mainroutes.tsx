@@ -22,6 +22,7 @@ const ManageRoom = Loadable(lazy(() => import("../page/admin/harware/manage")));
 // data-visualization
 const EnvironmentBlock = Loadable(lazy(() => import("../page/admin/data-visualization/EnvironmentBlock")));
 const DatavizPH = Loadable(lazy(() => import("../page/admin/data-visualization/PHdataviz")));
+const DatavizTDS = Loadable(lazy(() => import("../page/admin/data-visualization/TDSdataviz")));
 const DatavizBOD = Loadable(lazy(() => import("../page/admin/data-visualization/BODdataviz")));
 const DatavizTKN = Loadable(lazy(() => import("../page/admin/data-visualization/TKNdataviz")));
 const DatavizTS = Loadable(lazy(() => import("../page/admin/data-visualization/TSdataviz")))
@@ -29,7 +30,7 @@ const DatavizTS = Loadable(lazy(() => import("../page/admin/data-visualization/T
 // data-management
 const EnvironmentTabs = Loadable(lazy(() => import("../page/admin/data-management/EnvironmentTabs")));
 const PH = Loadable(lazy(() => import("../page/admin/data-management/PHcenter")));
-const TDS = Loadable(lazy(() => import("../page/admin/data-management/TDScenter")));
+const TDS = Loadable(lazy(() => import("../page/admin/data-management/TDScenter/TDScenter")));
 const BOD = Loadable(lazy(() => import("../page/admin/data-management/BODcenter")));
 const TKN = Loadable(lazy(() => import("../page/admin/data-management/TKNcenter")));
 const TS = Loadable(lazy(() => import("../page/admin/data-management/TScenter") ));
@@ -75,7 +76,7 @@ const AdminRoutes = (): RouteObject[] => [
           { path: "datavizPH", element: <DatavizPH /> },
           { path: "datavizBOD", element: <DatavizBOD /> },
           { path: "datavizTS", element: <DatavizTS /> },
-          // { path: "datavizTDS", element: <DatavizTDS /> },
+          { path: "datavizTDS", element: <DatavizTDS /> },
           // { path: "datavizFOG", element: <DatavizFOG /> },
           { path: "datavizTKN", element: <DatavizTKN /> },
         ]

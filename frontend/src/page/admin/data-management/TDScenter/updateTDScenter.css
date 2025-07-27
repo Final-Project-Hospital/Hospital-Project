@@ -1,0 +1,151 @@
+.up-tds-container {
+  background: white;
+  padding: 20px 30px;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px #7b61ff3b;
+  max-width: 80%;
+  margin: 0 auto;
+  margin-bottom: 40px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+.up-tds-container .ant-input,
+.up-tds-container .ant-input-number,
+.up-tds-container .ant-picker,
+.up-tds-container .ant-select-selector {
+  border-radius: 50px !important;
+}
+
+.up-tds-container .ant-input-number-handler-wrap {
+  border-radius: 0 50px 50px 0 !important;
+  overflow: hidden;
+}
+
+.up-form-group-tds {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.up-form-group-tds .ant-form-item {
+  flex: 1 1 300px;
+}
+
+.up-form-group-mini-tds {
+  width: 48%;
+}
+
+.full-width-tds {
+  width: 100%;
+}
+
+.red-text-tds {
+  color: red;
+  font-weight: bold;
+}
+
+.up-form-actions-tds {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 9px;
+  margin-bottom: 9px;
+}
+
+.cancel-up-tds,
+.reset-up-tds,
+.submit-up-tds {
+  padding: 10px 10px;
+  min-width: 80px;
+  height: inherit;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 50px;
+  border: none;
+  margin-top: -15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* ปุ่มแต่ละแบบ */
+.cancel-up-tds {
+  background-color: #949494;
+  color: white;
+  margin-right: 10px;
+  transition: all 0.2s ease-in-out;
+}
+
+.reset-up-tds {
+  background-color: #ffffff;
+  color: #326667;
+  margin-right: 10px;
+  transition: all 0.2s ease-in-out;
+}
+
+.submit-up-tds {
+  background-color: #326667;
+  color: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.submit-up-tds:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #358788 !important;
+  transform: scale(1.05) !important;
+}
+
+.reset-up-tds:hover {
+  color: #326667 !important;
+  background-color: #ffffff !important;
+  transform: scale(1.05) !important;
+}
+
+.cancel-up-tds:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #646464 !important;
+  transform: scale(1.05) !important;
+}
+.up-tds-fornt-small {
+  display: flex;
+  gap: 16px;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+  .up-form-group-tds {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .up-form-group-tds .ant-form-item {
+    flex: 1 1 100%;
+  }
+
+  .up-form-actions-tds {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cancel-up-tds,
+  .reset-up-tds,
+  .submit-up-tds {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .up-from-mini-tds {
+    width: 100%;
+  }
+  .up-fornt-small-tds .ant-form-item-label > label {
+  font-size: small !important;}
+  
+}
+
+@media (max-width: 1024px) {
+  .up-from-mini-tds {
+    width: 100%;
+  }
+}

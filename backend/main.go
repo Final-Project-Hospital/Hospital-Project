@@ -23,14 +23,12 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/employee"
 	"github.com/Tawunchai/hospital-project/controller/position"
 
-
 	"github.com/Tawunchai/hospital-project/controller/users"
 	"github.com/Tawunchai/hospital-project/middlewares"
 
+	"github.com/Tawunchai/hospital-project/controller/dashboard"
 	"github.com/Tawunchai/hospital-project/controller/selectBoxAll"
 	"github.com/gin-gonic/gin"
-
-	
 )
 
 const PORT = "8000"
@@ -53,6 +51,8 @@ func main() {
 		authorized.PATCH("/api/employees/:id/role", employee.UpdateRole)
 		authorized.PUT("/api/employees/:id", employee.UpdateEmployeeInfo)
 		authorized.DELETE("/api/employees/:id", employee.DeleteEmployee)
+		authorized.GET("/dashboard/environmental", dashboard.GetEnvironmentalDashboard)
+
 	}
 
 	public := r.Group("")
@@ -62,7 +62,6 @@ func main() {
 		public.GET("/user-data/:EmployeeID", user.GetDataByUserID)
 		public.PATCH("/employees/:EmployeeID", user.UpdateEmployeeByID)
 		public.POST("/signup", user.SignUpByUser)
-
 
 		//PH
 		public.POST("/create-ph", phcenter.CreatePH)
@@ -99,16 +98,17 @@ func main() {
 		public.POST("/create-bod", bodcenter.CreateBod)
 		public.GET("/get-first-bod", bodcenter.GetfirstBOD)
 		public.GET("/list-bod", bodcenter.ListBOD)
-		
+		public.GET("/get-bod/:id", bodcenter.GetBODbyID)
+		public.DELETE("/delete-bod/:id",bodcenter.DeleterBOD)
+
 		//FOG
 		public.POST("/create-fog", fogcenter.CreateFog)
 		public.GET("/get-first-fog", fogcenter.GetfirstFOG)
 
-
 		//Room
 		public.GET("/rooms", room.ListRoom)
 		public.POST("/create-rooms", room.CreateRoom)
-		public.PATCH("/update-room/:id", room.UpdateRoom) 
+		public.PATCH("/update-room/:id", room.UpdateRoom)
 		public.DELETE("/delete-room/:id", room.DeleteRoomById)
 
 		//Hardware
@@ -117,6 +117,10 @@ func main() {
 		public.POST("/hardware/receive", hardware.ReceiveSensorData)
 		public.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID) // test system
 		public.PATCH("/update-hardware-parameter/:id", hardware.UpdateHardwareParameterByID)
+
+		//standard
+		public.PUT("/update-unit-hardware/:id", hardware.UpdateUnitHardwareByID)
+		public.PUT("/update-standard-hardware/:id", hardware.UpdateStandardHardwareByID)
 
 		//Graph
 		public.GET("/hardware-graphs", graph.ListDataGraph)
@@ -139,18 +143,21 @@ func main() {
 		public.GET("/api/employees", employee.GetEmployees)
 		public.POST("/api/employees", employee.CreateEmployee)
 
-		
 		//SelectBoxAll
 		public.GET("/list-BeforeAfterTreatment", selectBoxAll.ListBeforeAfterTreatment)
 		public.GET("/list-unit", selectBoxAll.ListUnit)
 		public.GET("/api/positions", position.GetPositions)
 
-		public.GET("/list-standard", selectBoxAll.ListStandard)   //เก่า
+		public.GET("/list-standard", selectBoxAll.ListStandard) //เก่า
 
 		public.GET("/list-standard-middle", selectBoxAll.ListMiddleStandard)
 		public.GET("/list-standard-range", selectBoxAll.ListRangeStandard)
 		public.POST("/add-middle-standard", selectBoxAll.AddMiddleStandard)
 		public.POST("/add-range-standard", selectBoxAll.AddRangeStandard)
+
+		//public.GET("/api/water-quality", dashboard.GetWaterQuality)
+		//public.GET("/dashboard/environmental", dashboard.GetEnvironmentalDashboard)
+
 	}
 
 	r.GET("/", func(c *gin.Context) {
@@ -158,7 +165,7 @@ func main() {
 	})
 
 	r.Run("localhost:" + PORT)
-	//r.Run("0.0.0.0:" + PORT)
+	// r.Run("0.0.0.0:" + PORT)
 
 }
 

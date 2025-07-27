@@ -4,25 +4,21 @@ import dayjs from 'dayjs';
 import './BODcenter.css';
 import { BodcenterInterface } from '../../../interface/IBodCenter';
 import { createBOD } from '../../../services/bodService';
-import { ListBeforeAfterTreatment, ListStandard, ListUnit } from '../../../services/index';
+import { ListBeforeAfterTreatment, ListUnit } from '../../../services/index';
 import { ListBeforeAfterTreatmentInterface } from '../../../interface/IBeforeAfterTreatment';
 // import { ListStandardInterface } from '../../../interface/IStandard';
 import { ListUnitInterface } from '../../../interface/IUnit';
 import { GetfirstBOD } from '../../../services/bodService';
-import {ListMiddleStandard,ListRangeStandard,AddMiddleStandard,AddRangeStandard,} from '../../../services/index';
+import { ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, } from '../../../services/index';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../interface/IStandard';
 
-
 const { Option } = Select;
-const TDSCentralForm: React.FC = () => {
+const TDSCentralForm: React.FC <{ onCancel: () => void }> = ({ onCancel }) =>  {
     const [form] = Form.useForm();
     const [beforeAfterOptions, setBeforeAfterOptions] = useState<ListBeforeAfterTreatmentInterface[]>([]);
     const [unitOptions, setUnitOptions] = useState<ListUnitInterface[]>([]);
-    // const [standardOptions, setStandardOptions] = useState<ListStandardInterface[]>([]);
     const [selectedTreatmentID, setSelectedTreatmentID] = useState<number | null>(null);
     const [messageApi, contextHolder] = message.useMessage();
-    // const [firstBOD, setfirstBOD] = useState<BodcenterInterface | null>(null);
-    // const [BodData, setBodData] = useState<BodcenterInterface | null>(null);
     const [isOtherUnitSelected, setIsOtherunitSelected] = useState(false);
     const [middleStandards, setMiddleStandards] = useState<ListMiddleStandardInterface[]>([]);
     const [rangeStandards, setRangeStandards] = useState<ListRangeStandardInterface[]>([]);
@@ -31,6 +27,9 @@ const TDSCentralForm: React.FC = () => {
     const [customSingleValue, setCustomSingleValue] = useState<number | undefined>(undefined);
     const [customMinValue, setCustomMinValue] = useState<number | undefined>(undefined);
     const [customMaxValue, setCustomMaxValue] = useState<number | undefined>(undefined);
+    // const [standardOptions, setStandardOptions] = useState<ListStandardInterface[]>([]);
+    // const [firstBOD, setfirstBOD] = useState<BodcenterInterface | null>(null);
+    // const [BodData, setBodData] = useState<BodcenterInterface | null>(null);
 
     const renderCustomTreatmentLabel = (text: string) => {
         const colored = (
@@ -65,11 +64,12 @@ const TDSCentralForm: React.FC = () => {
                 const responfirstBOD = await GetfirstBOD();
                 if (responfirstBOD.status === 200) {
                     const data = responfirstBOD.data;
-                    // setfirstBOD(data);
-                    console.log(data);
+                    const isMiddle = data.MinValue === 0 && data.MaxValue === 0;
+                    setStandardType(isMiddle ? 'middle' : 'range');
                     form.setFieldsValue({
                         unit: data.UnitID,
-                        standard: data.StandardID,
+                        standardType: isMiddle ? 'middle' : 'range',
+                        standardID: data.StandardID,
                     });
                 } else {
                     message.error("ไม่สามารถดึงข้อมูลการนัดหมายได้ สถานะ: " + responfirstBOD.status);
@@ -98,6 +98,12 @@ const TDSCentralForm: React.FC = () => {
 
     const handleClear = () => {
         form.resetFields();
+    };
+
+    
+    const handleCancelClick = () => {
+        form.resetFields();
+        onCancel();
     };
 
     const handleStandardGroupChange = (value: string) => {
@@ -152,7 +158,6 @@ const TDSCentralForm: React.FC = () => {
                 }
             }
         }
-
         // เช็คว่ามี standardID หรือไม่
         if (!standardID) {
             message.error('กรุณาเลือกหรือกำหนดมาตรฐานก่อนบันทึก');
@@ -448,7 +453,7 @@ const TDSCentralForm: React.FC = () => {
                     </div>
                     <Form.Item className="bod-form-actions" >
                         {/* <div > */}
-                        <Button className="bod-cancel" htmlType="button" >
+                        <Button className="bod-cancel" htmlType="button" onClick={handleCancelClick} >
                             ยกเลิก
                         </Button>
                         <Button htmlType="reset" className="bod-reset" onClick={handleClear} >

@@ -9,6 +9,7 @@ import Modal from '../harware/data/room/delete';
 import { ListRoom, DeleteRoomById, ListBuilding } from '../../../services/hardware';
 import { RoomInterface } from '../../../interface/IRoom';
 import { BuildingInterface } from '../../../interface/IBuilding';
+import { message } from 'antd';
 
 interface RoomCardProps {
   name: string;
@@ -62,10 +63,10 @@ const RoomCard: React.FC<RoomCardProps> = ({
             <FaTrash size={15} />
           </button>
         </div>
-        {/* Floor & Building (ติดกับ Name) */}
+        {/* Floor & Building */}
         <div className="mt-1 ml-1">
-          <div className="text-gray-700 text-[15px] font-medium">Floor {floor.replace("Floor ", "")}</div>
-          <div className="text-gray-500 text-[15px] font-medium">{building}</div>
+          <div className="text-gray-700 text-[15px] font-medium">ชั้น : {floor.replace("Floor ", "")}</div>
+          <div className="text-gray-500 text-[15px] font-medium">อาคาร : {building}</div>
         </div>
       </div>
       {/* Image right side */}
@@ -80,11 +81,13 @@ const RoomCard: React.FC<RoomCardProps> = ({
   );
 };
 
-
-
 const Index: React.FC = () => {
   const [buildings, setBuildings] = useState<BuildingInterface[]>([]);
   const [rooms, setRooms] = useState<RoomInterface[]>([]);
+  // loading states
+  const [loadingBuildings, setLoadingBuildings] = useState(false);
+  const [loadingRooms, setLoadingRooms] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
 
   // filter state
   const [queryBuilding, setQueryBuilding] = useState<number | "">("");
@@ -99,17 +102,36 @@ const Index: React.FC = () => {
   const [selectedRoomName, setSelectedRoomName] = useState<string>("");
   const [selectedRoom, setSelectedRoom] = useState<RoomInterface | null>(null);
 
+  // Mobile paging state
+  const [roomStartIndex, setRoomStartIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // ดึงข้อมูล Building
   const fetchBuildings = async () => {
-    const data = await ListBuilding();
-    if (data && data.length > 0) {
-      setBuildings(data);
+    setLoadingBuildings(true);
+    try {
+      const data = await ListBuilding();
+      if (data && data.length > 0) setBuildings(data);
+    } finally {
+      setLoadingBuildings(false);
     }
   };
   // ดึงข้อมูล Room
   const fetchRooms = async () => {
-    const data = await ListRoom();
-    if (data) setRooms(data);
+    setLoadingRooms(true);
+    try {
+      const data = await ListRoom();
+      if (data) setRooms(data);
+    } finally {
+      setLoadingRooms(false);
+    }
   };
 
   useEffect(() => {
@@ -134,9 +156,12 @@ const Index: React.FC = () => {
   };
   const confirmDelete = async () => {
     if (selectedRoomIdRef.current === null) return;
+    setLoadingDelete(true);
     const success = await DeleteRoomById(selectedRoomIdRef.current);
+    setLoadingDelete(false);
     if (success) {
       fetchRooms();
+      message.success('ลบข้อมูลห้องสำเร็จ');
       setOpenConfirmModal(false);
       selectedRoomIdRef.current = null;
       setSelectedRoomName("");
@@ -165,7 +190,17 @@ const Index: React.FC = () => {
 
   // ==== MAIN RENDER ====
   return (
-    <div className="min-h-screen bg-gray-100 mt-16 md:mt-0">
+    <div className="min-h-screen bg-gray-100 mt-16 md:mt-0 relative">
+      {/* Overlay loading ทั้งหน้าตอน fetch ข้อมูล */}
+      {(loadingBuildings || loadingRooms) && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-white bg-opacity-70">
+          <div className="flex flex-col items-center">
+            <span className="animate-spin border-4 border-teal-400 rounded-full border-t-transparent w-12 h-12 mb-4" />
+            <div className="text-lg font-semibold text-teal-700">กำลังโหลดข้อมูล...</div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-8 py-6 rounded-b-3xl mb-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center flex-wrap gap-4">
           <div>
@@ -184,7 +219,7 @@ const Index: React.FC = () => {
         </div>
       </div>
 
-      {/* Query Section ขวาสุด */}
+      {/* Query Section */}
       <div className="flex md:justify-end mb-6 mx-2 md:mx-8">
         <div className="bg-white rounded-2xl shadow px-6 py-4 flex flex-col md:flex-row gap-4 md:items-center w-full md:w-fit">
           <div className="flex items-center gap-2 w-full md:w-auto">
@@ -240,11 +275,14 @@ const Index: React.FC = () => {
         </div>
       </div>
 
-      {/* --- Group by Building Card --- */}
       <div className="px-2 md:px-8 pb-12">
         {buildings.map((building) => {
           const roomInBuilding = filterRooms.filter(r => r.Building?.ID === building.ID);
           if (roomInBuilding.length === 0) return null;
+          const pagedRoom = isMobile
+            ? roomInBuilding.slice(roomStartIndex, roomStartIndex + 3)
+            : roomInBuilding;
+
           return (
             <div
               key={building.ID}
@@ -262,13 +300,13 @@ const Index: React.FC = () => {
                 <div>
                   <h2 className="text-lg font-semibold text-teal-700">{building.BuildingName || '-'}</h2>
                   <div className="text-gray-400 text-xs font-medium">
-                    Room ทั้งหมดในอาคารนี้: <span className="font-semibold text-teal-600">{roomInBuilding.length}</span>
+                    ห้องทั้งหมดในอาคารนี้ : <span className="font-semibold text-teal-600">{roomInBuilding.length}</span>
                   </div>
                 </div>
               </div>
               {/* Room Cards Grid */}
               <div className="flex flex-wrap gap-6 justify-start p-1">
-                {roomInBuilding.map((room, idx) => (
+                {pagedRoom.map((room, idx) => (
                   <RoomCard
                     key={room.ID ?? idx}
                     name={room.RoomName || 'No Data'}
@@ -281,6 +319,25 @@ const Index: React.FC = () => {
                   />
                 ))}
               </div>
+              {/* ปุ่ม Pagination เฉพาะ Mobile */}
+              {isMobile && roomInBuilding.length > 3 && (
+                <div className="flex justify-center gap-3 mt-4">
+                  <button
+                    disabled={roomStartIndex === 0}
+                    onClick={() => setRoomStartIndex(Math.max(0, roomStartIndex - 3))}
+                    className="px-3 py-1 rounded bg-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
+                  >
+                    ก่อนหน้า
+                  </button>
+                  <button
+                    disabled={roomStartIndex + 3 >= roomInBuilding.length}
+                    onClick={() => setRoomStartIndex(roomStartIndex + 3)}
+                    className="px-3 py-1 rounded bg-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
+                  >
+                    ถัดไป
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
@@ -311,20 +368,27 @@ const Index: React.FC = () => {
               คุณแน่ใจว่าต้องการลบรายการนี้ใช่หรือไม่?
             </p>
           </div>
-          <div className="flex gap-4">
-            <button
-              className="btn btn-danger w-full"
-              onClick={confirmDelete}
-            >
-              ลบ
-            </button>
-            <button
-              className="btn btn-light w-full"
-              onClick={cancelDelete}
-            >
-              ยกเลิก
-            </button>
-          </div>
+          {loadingDelete ? (
+            <div className="flex justify-center items-center my-3">
+              <span className="animate-spin border-4 border-teal-400 rounded-full border-t-transparent w-8 h-8 mr-2" />
+              <span className="text-teal-700">กำลังลบ...</span>
+            </div>
+          ) : (
+            <div className="flex gap-4">
+              <button
+                className="btn btn-danger w-full"
+                onClick={confirmDelete}
+              >
+                ลบ
+              </button>
+              <button
+                className="btn btn-light w-full"
+                onClick={cancelDelete}
+              >
+                ยกเลิก
+              </button>
+            </div>
+          )}
         </div>
       </Modal>
     </div>
@@ -332,4 +396,3 @@ const Index: React.FC = () => {
 };
 
 export default Index;
- 

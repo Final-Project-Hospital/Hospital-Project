@@ -1,12 +1,15 @@
 package fogcenter
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
+
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func CreateFog(c *gin.Context) {
@@ -22,6 +25,7 @@ func CreateFog(c *gin.Context) {
 		StandardID             uint
 		UnitID                 uint
 		EmployeeID             uint
+		CustomUnit             string
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -32,6 +36,29 @@ func CreateFog(c *gin.Context) {
 
 	db := config.DB()
 
+		if input.CustomUnit != "" {
+		var existingUnit entity.Unit
+		if err := db.Where("unit_name = ?", input.CustomUnit).First(&existingUnit).Error; err == nil {
+			// เจอ unit ที่มีอยู่แล้ว
+			input.UnitID = existingUnit.ID
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			// ไม่เจอ unit -> สร้างใหม่
+			newUnit := entity.Unit{
+				UnitName: input.CustomUnit,
+			}
+			if err := db.Create(&newUnit).Error; err != nil {
+				fmt.Println(" ไม่สามารถสร้างหน่วยใหม่ได้:", err) // แค่ขึ้น log
+				// ไม่คืน error ไปยัง frontend
+			} else {
+				input.UnitID = newUnit.ID
+			}
+		} else {
+			// เกิด error อื่นขณะเช็กหน่วย
+			fmt.Println(" เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err) // แค่ขึ้น log
+			// ไม่คืน error ไปยัง frontend
+		}
+	}
+	
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?","Fat Oil and Grease").First(&parameter).Error; err != nil {
 		fmt.Println("Error fetching parameter:", err)
@@ -81,7 +108,7 @@ func GetfirstFOG(c *gin.Context) {
 	}
 
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
-	var firstbod struct {
+	var last_fog struct {
 		ID                     uint      `json:"ID"`
 		Date                   time.Time `json:"Date"`
 		Data                   float64   `json:"Data"`
@@ -92,14 +119,18 @@ func GetfirstFOG(c *gin.Context) {
 		StandardID             uint      `json:"StandardID"`
 		UnitID                 uint      `json:"UnitID"`
 		EmployeeID             uint      `json:"EmployeeID"`
+		MinValue               uint      `json:"MinValue"`
+		MiddleValue            uint      `json:"MiddleValue"`
+		MaxValue               uint      `json:"MaxValue"`
 	}
 
 	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
 	result := db.Model(&entity.EnvironmentalRecord{}).
-		Select(`id, date, data, note,before_after_treatment_id,environment_id ,parameter_id ,standard_id ,unit_id ,employee_id`).
+		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note,environmental_records.before_after_treatment_id,environmental_records.environment_id ,environmental_records.parameter_id ,environmental_records.standard_id ,environmental_records.unit_id ,environmental_records.employee_id,standards.min_value,standards.middle_value,standards.max_value`).
+		Joins("inner join standards on environmental_records.standard_id = standards.id").
 		Where("parameter_id = ?", parameter.ID).
-		Order("created_at desc").
-		Scan(&firstbod)
+		Order("environmental_records.created_at desc").
+		Scan(&last_fog)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
 	if result.Error != nil {
@@ -108,5 +139,5 @@ func GetfirstFOG(c *gin.Context) {
 	}
 
 	// ส่งข้อมูลกลับในรูปแบบ JSON
-	c.JSON(http.StatusOK, firstbod)
+	c.JSON(http.StatusOK, last_fog)
 }

@@ -32,6 +32,7 @@ const iconMap: Record<string, [ReactNode, ReactNode]> = {
 interface BoxsdataProps {
   hardwareID: number;
   reloadKey?: any;
+  onLoaded?: () => void; // เพิ่มตรงนี้
 }
 interface SensorParameter {
   id: number;
@@ -43,13 +44,12 @@ interface ParameterColorMap {
 }
 const MAX_SHOW = 4;
 
-const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey }) => {
+const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) => {
   const [parameters, setParameters] = useState<SensorParameter[]>([]);
   const [parameterColors, setParameterColors] = useState<ParameterColorMap>({});
   const [slideIndex, setSlideIndex] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // รีเซ็ตเมื่อ reloadKey เปลี่ยน
   useEffect(() => {
     setParameterColors({});
     setParameters([]);
@@ -62,6 +62,7 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey }) => {
       setLoading(true);
       if (!hardwareID) {
         setLoading(false);
+        onLoaded?.();
         return;
       }
       const sensorDataList = await GetSensorDataByHardwareID(hardwareID);
@@ -81,7 +82,6 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey }) => {
           const latestParamsArray = Array.from(latestParamsMap.values());
           if (mounted) setParameters(latestParamsArray);
 
-          // สี parameter
           const colorsMap: ParameterColorMap = {};
           await Promise.all(
             latestParamsArray.map(async (p) => {
@@ -101,13 +101,14 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey }) => {
         if (mounted) setParameters([]);
       }
       setLoading(false);
+      onLoaded?.(); // <<< ตรงนี้
     };
 
     fetchSensorAndParameters();
     return () => {
       mounted = false;
     };
-  }, [hardwareID, reloadKey]);
+  }, [hardwareID, reloadKey, onLoaded]);
 
   function withIconColor(icon: ReactNode, color: string): ReactNode {
     if (React.isValidElement(icon)) {
@@ -122,7 +123,6 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey }) => {
     return icon;
   }
 
-  // Slide Logic
   const totalSlide = parameters.length > MAX_SHOW ? Math.ceil(parameters.length / MAX_SHOW) : 1;
   const showParams = parameters.slice(slideIndex * MAX_SHOW, slideIndex * MAX_SHOW + MAX_SHOW);
 
@@ -134,92 +134,86 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey }) => {
   };
 
   return (
-  <div className="w-full px-1">
-    <div className="flex flex-col items-center">
-      <div className="flex items-center w-full">
-        {/* Arrow Left */}
-        {totalSlide > 1 && (
-          <button
-            onClick={handlePrev}
-            className="hidden sm:flex w-8 h-8 rounded-full bg-white border border-gray-200 shadow items-center justify-center transition hover:bg-blue-50 active:scale-95 active:bg-blue-100 text-blue-500 hover:text-blue-700 mr-2"
-            aria-label="Slide Left"
-          >
-            <AiOutlineLeft size={22} />
-          </button>
-        )}
-        {/* Cards */}
-        <div className="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {loading ? (
-            <div className="col-span-4 flex justify-center items-center min-h-[110px]">
-              <p>Loading data...</p>
-            </div>
-          ) : showParams.length > 0 ? (
-            showParams.map((param) => {
-              const color = parameterColors[param.name] || "#999999";
-              return (
-                <div
-                  key={param.id}
-                  className="flex flex-col items-center justify-center bg-white border-2 rounded-2xl shadow-sm h-[100px] min-h-[110px] w-full transition hover:bg-gray-50"
-                  style={{ borderColor: color, minWidth: 0 }}
-                >
-                  <div>
-                    {withIconColor(iconMap[param.name]?.[0] || <GiChemicalDrop className="text-4xl" />, color)}
-                  </div>
-                  <div className="text-center mt-1">
-                    <h3 className="text-sm font-semibold text-gray-700">{param.name}</h3>
-                    <b className="text-xl flex items-center justify-center mt-1">
-                      {param.value.toFixed(2)}
-                      {param.name === "Temperature" && <RiCelsiusFill className="ml-1 w-5 h-5" />}
-                      {param.name === "Formaldehyde" && " ppm"}
-                      {param.name === "Humidity" && "%"}
-                    </b>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="col-span-4 flex justify-center items-center min-h-[110px]">
-              <p>No data</p>
-            </div>
-          )}
-        </div>
-        {/* Arrow Right */}
-        {totalSlide > 1 && (
-          <button
-            onClick={handleNext}
-            className="hidden sm:flex w-8 h-8 rounded-full bg-white border border-gray-200 shadow items-center justify-center transition hover:bg-blue-50 active:scale-95 active:bg-blue-100 text-blue-500 hover:text-blue-700 ml-2"
-            aria-label="Slide Right"
-          >
-            <AiOutlineRight size={22} />
-          </button>
-        )}
-      </div>
-      {/* Mobile arrow & page index */}
-      <div className="flex justify-center items-center gap-3 mt-2 sm:hidden">
-        {totalSlide > 1 && (
-          <>
-            <button onClick={handlePrev} className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-blue-500">
+    <div className="w-full px-1">
+      <div className="flex flex-col items-center">
+        <div className="flex items-center w-full">
+          {totalSlide > 1 && (
+            <button
+              onClick={handlePrev}
+              className="hidden sm:flex w-8 h-8 rounded-full bg-white border border-gray-200 shadow items-center justify-center transition hover:bg-blue-50 active:scale-95 active:bg-blue-100 text-blue-500 hover:text-blue-700 mr-2"
+              aria-label="Slide Left"
+            >
               <AiOutlineLeft size={22} />
             </button>
-            <span className="text-xs text-gray-500">
-              {slideIndex + 1} / {totalSlide}
-            </span>
-            <button onClick={handleNext} className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-blue-500">
+          )}
+          <div className="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {loading ? (
+              <div className="col-span-4 flex justify-center items-center min-h-[110px]">
+                <p>Loading data...</p>
+              </div>
+            ) : showParams.length > 0 ? (
+              showParams.map((param) => {
+                const color = parameterColors[param.name] || "#999999";
+                return (
+                  <div
+                    key={param.id}
+                    className="flex flex-col items-center justify-center bg-white border-2 rounded-2xl shadow-sm h-[100px] min-h-[110px] w-full transition hover:bg-gray-50"
+                    style={{ borderColor: color, minWidth: 0 }}
+                  >
+                    <div>
+                      {withIconColor(iconMap[param.name]?.[0] || <GiChemicalDrop className="text-4xl" />, color)}
+                    </div>
+                    <div className="text-center mt-1">
+                      <h3 className="text-sm font-semibold text-gray-700">{param.name}</h3>
+                      <b className="text-xl flex items-center justify-center mt-1">
+                        {param.value.toFixed(2)}
+                        {param.name === "Temperature" && <RiCelsiusFill className="ml-1 w-5 h-5" />}
+                        {param.name === "Formaldehyde" && " ppm"}
+                        {param.name === "Humidity" && "%"}
+                      </b>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="col-span-4 flex justify-center items-center min-h-[110px]">
+                <p>No data</p>
+              </div>
+            )}
+          </div>
+          {totalSlide > 1 && (
+            <button
+              onClick={handleNext}
+              className="hidden sm:flex w-8 h-8 rounded-full bg-white border border-gray-200 shadow items-center justify-center transition hover:bg-blue-50 active:scale-95 active:bg-blue-100 text-blue-500 hover:text-blue-700 ml-2"
+              aria-label="Slide Right"
+            >
               <AiOutlineRight size={22} />
             </button>
-          </>
+          )}
+        </div>
+        <div className="flex justify-center items-center gap-3 mt-2 sm:hidden">
+          {totalSlide > 1 && (
+            <>
+              <button onClick={handlePrev} className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-blue-500">
+                <AiOutlineLeft size={22} />
+              </button>
+              <span className="text-xs text-gray-500">
+                {slideIndex + 1} / {totalSlide}
+              </span>
+              <button onClick={handleNext} className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-blue-500">
+                <AiOutlineRight size={22} />
+              </button>
+            </>
+          )}
+        </div>
+        {totalSlide > 1 && (
+          <div className="hidden sm:block text-center mt-3 text-xs text-gray-500">
+            {slideIndex + 1} / {totalSlide}
+          </div>
         )}
       </div>
-      {/* Desktop index */}
-      {totalSlide > 1 && (
-        <div className="hidden sm:block text-center mt-3 text-xs text-gray-500">
-          {slideIndex + 1} / {totalSlide}
-        </div>
-      )}
     </div>
-  </div>
-);
-
+  );
 };
 
 export default Boxsdata;

@@ -7,7 +7,7 @@
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box; */
-    background: white;
+  background: white;
   padding: 20px 30px;
   border-radius: 20px;
   box-shadow: 0 2px 12px #7b61ff3b;
@@ -18,8 +18,8 @@
   width: 100%;
   box-sizing: border-box;
   font-size: 14px;
-  
 }
+
 /* .bod-container label{
   color:#000000 !important;
   font-size: medium !important;
@@ -36,6 +36,7 @@
 .fog-container .ant-select-selector {
   border-radius: 50px !important;
 }
+
 .fog-container .ant-input-number-handler-wrap {
   border-radius: 0 50px 50px 0 !important;
   overflow: hidden;
@@ -43,10 +44,10 @@
 
 .fog-form-group {
   display: flex;
-  gap: 24px;
+  gap: 30px;
   flex-wrap: wrap;
+  /* min-width:initial; */
 }
-
 
 .fog-form-group .ant-form-item {
   flex: 1 1 300px;
@@ -54,11 +55,16 @@
 
 }
 
+
+.fog-from-mini {
+  width: 48%;
+}
+
 .fog-full-width {
   width: 100%;
 }
 
-.fog-red-text {
+.bfogod-red-text {
   color: red;
   font-weight: bold;
 }
@@ -68,34 +74,37 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 9px;
+  margin-bottom: 9px;
 }
 
 .fog-cancel,
 .fog-reset,
 .fog-submit {
-  padding: 10px 20px;
+  padding: 10px 10px;
   min-width: 80px;
   height: inherit;
   text-align: center;
-  font-weight: bolder;
+  font-weight: bold;
   cursor: pointer;
   border-radius: 50px;
   border: none;
+  margin-top: -15px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-  font-size:medium;
 }
 
 /* ปุ่มแต่ละแบบ */
 .fog-cancel {
   background-color: #949494;
   color: white;
+  margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
 .fog-reset {
   background-color: #ffffff;
   color: #326667;
+  margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
@@ -110,15 +119,21 @@
   background-color: #358788 !important;
   transform: scale(1.05) !important;
 }
+
 .fog-reset:hover {
-  color: #326667!important;
+  color: #326667 !important;
   background-color: #ffffff !important;
   transform: scale(1.05) !important;
 }
+
 .fog-cancel:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #646464 !important;
   transform: scale(1.05) !important;
+}
+.fog-fornt-small {
+  display: flex;
+  gap: 16px;
 }
 
 /* Responsive behavior */
@@ -140,6 +155,20 @@
   .fog-cancel,
   .fog-reset,
   .fog-submit {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .fog-from-mini {
+    width: 100%;
+  }
+  .fog-fornt-small .ant-form-item-label > label {
+  font-size: small !important;}
+  
+}
+
+@media (max-width: 1024px) {
+  .fog-from-mini {
     width: 100%;
   }
 }

@@ -34,3 +34,10 @@
 .paddings {
   padding: 1.5rem;
 }
+
+.ant-message,
+.ant-message-wrapper {
+  z-index: 15000 !important;
+}
+
+
