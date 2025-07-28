@@ -394,6 +394,39 @@ export const UpdateUnitHardwareByID = async (
   }
 };
 
+export interface HardwareParameterIDResponse {
+  hardware_id: string;
+  parameters: {
+    id: number;
+    parameter: string;
+    graph_id: number;
+    graph: string;
+  }[];
+}
+
+export const ListHardwareParameterIDsByHardwareID = async (
+  hardwareID: number
+): Promise<HardwareParameterIDResponse | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/hardware-parameter-ids`, {
+      params: { hardware_id: hardwareID },
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data as HardwareParameterIDResponse;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching hardware parameter IDs:", error);
+    return null;
+  }
+};
 async function ListDataHardware() {
 
   return await axios

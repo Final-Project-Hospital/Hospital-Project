@@ -183,6 +183,19 @@ const RoomAdminTable: React.FC = () => {
         {
             title: (
                 <span className="bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 bg-clip-text text-transparent font-bold">
+                    IP Address
+                </span>
+            ),
+            key: "HardwareIP",
+            render: (_, record) => (
+                <span className="text-cyan-600 font-semibold">
+                    {record.Hardware?.IpAddress ?? "-"}
+                </span>
+            ),
+        },
+        {
+            title: (
+                <span className="bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 bg-clip-text text-transparent font-bold">
                     ชื่ออุปกรณ์เซนเซอร์
                 </span>
             ),

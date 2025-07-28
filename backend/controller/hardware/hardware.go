@@ -293,3 +293,76 @@ func UpdateStandardHardwareByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, standard)
 }
+
+type ParamWithGraphResponse struct {
+	ID        uint    `json:"id"`        // HardwareParameter.ID
+	Parameter string  `json:"parameter"` // HardwareParameter.Parameter
+	GraphID   uint    `json:"graph_id"`  // HardwareGraph.ID
+	Graph     string  `json:"graph"`     // HardwareGraph.Graph
+	Color     string  `json:"color"`     // HardwareParameterColor.Code
+	Unit      string  `json:"unit"`      // 👈 เพิ่ม
+	Standard  float64 `json:"standard"`  // 👈 เพิ่ม
+}
+
+func GetHardwareParametersWithGraph(c *gin.Context) {
+	hardwareID := c.Query("hardware_id")
+	if hardwareID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing hardware_id"})
+		return
+	}
+
+	db := config.DB()
+
+	// 1. หาพารามิเตอร์ที่มีข้อมูล sensor จริง
+	var hardwareParamIDs []uint
+	err := db.
+		Table("sensor_data_parameters").
+		Joins("JOIN sensor_data ON sensor_data.id = sensor_data_parameters.sensor_data_id").
+		Where("sensor_data.hardware_id = ?", hardwareID).
+		Select("DISTINCT sensor_data_parameters.hardware_parameter_id").
+		Pluck("hardware_parameter_id", &hardwareParamIDs).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch hardware parameter IDs"})
+		return
+	}
+
+	if len(hardwareParamIDs) == 0 {
+		c.JSON(http.StatusOK, gin.H{"hardware_id": hardwareID, "parameters": []ParamWithGraphResponse{}})
+		return
+	}
+
+	// 2. โหลด HardwareParameter พร้อมกราฟและสี
+	var parameters []entity.HardwareParameter
+	err = db.
+		Preload("HardwareGraph").
+		Preload("HardwareParameterColor").
+		Preload("UnitHardware").
+		Preload("StandardHardware").
+		Where("id IN ?", hardwareParamIDs).
+		Find(&parameters).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load parameters"})
+		return
+	}
+
+	// 3. map response
+	var result []ParamWithGraphResponse
+	for _, p := range parameters {
+		result = append(result, ParamWithGraphResponse{
+			ID:        p.ID,
+			Parameter: p.Parameter,
+			GraphID:   p.HardwareGraph.ID,
+			Graph:     p.HardwareGraph.Graph,
+			Color:     p.HardwareParameterColor.Code,
+			Unit:      p.UnitHardware.Unit,
+			Standard:  p.StandardHardware.Standard,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"hardware_id": hardwareID,
+		"parameters":  result,
+	})
+}

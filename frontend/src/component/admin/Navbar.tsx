@@ -9,7 +9,7 @@ import { UserProfile } from '.';
 import { Notification } from './Notification';
 import { useStateContext } from '../../contexts/ContextProvider';
 import { GetUserDataByUserID } from '../../services/httpLogin';
-import { useRefresh } from './RefreshContext'; // <-- context ที่สร้างไว้
+import { useRefresh } from './RefreshContext';
 
 const NavButton = ({ title, customFunc, icon, color, dotColor }: any) => (
   <TooltipComponent content={title} position="BottomCenter">
@@ -40,10 +40,10 @@ const Navbar = () => {
   } = useStateContext();
 
   const [fullName, setFullName] = useState('');
-  const [profileImg, setProfileImg] = useState<string>(avatar); //@ts-ignore
+  const [firstName, setFirstName] = useState('');
+  const [profileImg, setProfileImg] = useState<string>(avatar);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // ใช้ refreshKey จาก context
   const { refreshKey } = useRefresh();
 
   useEffect(() => {
@@ -53,11 +53,16 @@ const Navbar = () => {
         setLoading(false);
         setProfileImg(avatar);
         setFullName("");
+        setFirstName("");
         return;
       }
+
       const res = await GetUserDataByUserID(id);
       if (res !== false && res) {
-        setFullName(`${res.FirstName} ${res.LastName}`);
+        const fname = res.FirstName || '';
+        const lname = res.LastName || '';
+        setFullName(`${fname} ${lname}`);
+        setFirstName(fname);
         if (res.Profile && typeof res.Profile === "string" && res.Profile.length > 10) {
           setProfileImg(res.Profile);
         } else {
@@ -66,12 +71,13 @@ const Navbar = () => {
       } else {
         setProfileImg(avatar);
         setFullName("");
+        setFirstName("");
       }
       setLoading(false);
     };
 
     fetchUser();
-  }, [refreshKey]); // <<== refresh เมื่อค่าเปลี่ยน
+  }, [refreshKey]);
 
   useEffect(() => {
     const handleResize = () => setScreenSize(window.innerWidth);
@@ -118,7 +124,7 @@ const Navbar = () => {
               onError={(e) => { (e.target as HTMLImageElement).src = avatar }}
             />
             <span className="text-gray-400 font-bold ml-1 text-14">
-              {fullName || 'ผู้ใช้'}
+              {screenSize! <= 768 ? firstName || 'ผู้ใช้' : fullName || 'ผู้ใช้'}
             </span>
             <MdKeyboardArrowDown className="text-gray-400 text-14" />
           </div>

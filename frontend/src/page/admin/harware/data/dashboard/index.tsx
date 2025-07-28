@@ -8,14 +8,27 @@ import Avergare from "../footer/index";
 import {
   GetSensorDataByHardwareID,
   GetSensorDataParametersBySensorDataID,
-  ListDataHardwareParameterByParameter,
+  ListHardwareParameterIDsByHardwareID,
 } from "../../../../../services/hardware";
 import LineChart from "../chart/line/index";
 import Area from "../chart/area/index";
 import ColorMapping from "../chart/mapping/index";
 import Stacked from "../chart/stack/index";
 import EditParameterModal from "./edit";
-import EditStandardUnitModal from "../standard/index"; // <<<< ใส่ตรงนี้
+import EditStandardUnitModal from "../standard/index";
+
+interface ParameterWithColor {
+  parameter: string;
+  color: string;
+}
+
+interface HardwareParameterResponse {
+  id: number;
+  parameter: string;
+  graph_id: number;
+  graph: string;
+  color: string;
+}
 
 const Index = () => {
   const location = useLocation();
@@ -25,11 +38,11 @@ const Index = () => {
     {
       ID: number;
       Graph: string;
-      ParametersWithColor: { parameter: string; color: string }[];
+      ParametersWithColor: ParameterWithColor[];
     }[]
   >([]);
   const [showEdit, setShowEdit] = useState(false);
-  const [showEditStandard, setShowEditStandard] = useState(false); // <<<< modal ใหม่
+  const [showEditStandard, setShowEditStandard] = useState(false);
   const [reloadCharts, setReloadCharts] = useState(0);
   const [reloadAverage, setReloadAverage] = useState(0);
   const [reloadBoxes, setReloadBoxes] = useState(0);
@@ -45,55 +58,47 @@ const Index = () => {
       return;
     }
 
+    const allParamsFromSensorData: string[] = [];
     const sensorDataList = await GetSensorDataByHardwareID(hardwareID);
     if (!sensorDataList || sensorDataList.length === 0) {
       setUniqueGraphs([]);
       return;
     }
-
-    const allParams: string[] = [];
     for (const sensorData of sensorDataList) {
       const parameters = await GetSensorDataParametersBySensorDataID(sensorData.ID);
       if (parameters) {
         const paramNames = parameters
           .map((p) => p.HardwareParameter?.Parameter)
           .filter(Boolean);
-        allParams.push(...paramNames);
+        allParamsFromSensorData.push(...paramNames);
       }
     }
 
-    const uniqueParams = Array.from(new Set(allParams));
-    const graphMap: {
+    const response = await ListHardwareParameterIDsByHardwareID(hardwareID);
+    if (!response?.parameters || !Array.isArray(response.parameters)) return;
+
+    const filteredGraphMap: {
       [graphID: number]: {
         ID: number;
         Graph: string;
-        ParametersWithColor: { parameter: string; color: string }[];
+        ParametersWithColor: ParameterWithColor[];
       };
     } = {};
 
-    for (const param of uniqueParams) {
-      const hardwareParams = await ListDataHardwareParameterByParameter(param);
-      if (hardwareParams) {
-        for (const hp of hardwareParams) {
-          const graph = hp.HardwareGraph;
-          const colorCode = hp.HardwareParameterColor?.Code ?? "#000000";
-          if (graph && graph.ID) {
-            if (!graphMap[graph.ID]) {
-              graphMap[graph.ID] = {
-                ID: graph.ID,
-                Graph: graph.Graph ?? "Unknown",
-                ParametersWithColor: [],
-              };
-            }
-            if (!graphMap[graph.ID].ParametersWithColor.find(p => p.parameter === param)) {
-              graphMap[graph.ID].ParametersWithColor.push({ parameter: param, color: colorCode });
-            }
-          }
-        }
+    for (const paramObj of response.parameters as HardwareParameterResponse[]) {
+      const { parameter, graph_id, graph, color } = paramObj;
+      if (!allParamsFromSensorData.includes(parameter)) continue;
+      if (!filteredGraphMap[graph_id]) {
+        filteredGraphMap[graph_id] = {
+          ID: graph_id,
+          Graph: graph || "Unknown",
+          ParametersWithColor: [],
+        };
       }
+      filteredGraphMap[graph_id].ParametersWithColor.push({ parameter, color });
     }
 
-    setUniqueGraphs(Object.values(graphMap));
+    setUniqueGraphs(Object.values(filteredGraphMap));
   }, [hardwareID]);
 
   useEffect(() => {
@@ -120,9 +125,9 @@ const Index = () => {
     setTableLoaded(false);
     setAverageLoaded(false);
     await fetchSensorDataAndParameters();
-    setReloadCharts(prev => prev + 1);
-    setReloadAverage(prev => prev + 1);
-    setReloadBoxes(prev => prev + 1);
+    setReloadCharts((prev) => prev + 1);
+    setReloadAverage((prev) => prev + 1);
+    setReloadBoxes((prev) => prev + 1);
   };
 
   const onBoxLoaded = () => setBoxLoaded(true);
@@ -140,14 +145,15 @@ const Index = () => {
       <section className="w-full px-2 md:px-8 p-5 bg-white border border-gray-200 rounded-lg shadow-md mb-8 mt-16 md:mt-0 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center">
         <div className="text-center md:text-left">
           <h1 className="text-2xl md:text-4xl font-extrabold leading-tight mb-4">
-            Good Morning
+            สวัสดีตอนเช้า
             <br />
             <span className="inline-flex items-center gap-2 text-teal-700 justify-center md:justify-start">
-              Environmental Engineering
+              วิศวกรรมสิ่งแวดล้อม
             </span>
           </h1>
           <p className="text-xs md:text-base text-gray-700 mb-6 max-w-xl mx-auto md:mx-0">
-            Environmental engineers monitor temperature, humidity, and formaldehyde levels to assess air quality and ensure a safe and healthy environment!
+            วิศวกรสิ่งแวดล้อมมีหน้าที่ตรวจสอบอุณหภูมิ ความชื้น และระดับฟอร์มาลดีไฮด์
+            เพื่อประเมินคุณภาพอากาศและรับรองความปลอดภัยต่อสุขภาพ!
           </p>
           <div className="mb-6 flex flex-col md:flex-row justify-center md:justify-start gap-3">
             <button
@@ -160,7 +166,7 @@ const Index = () => {
               className="bg-teal-600 hover:bg-teal-800 text-white font-bold py-2 px-5 rounded-xl shadow transition"
               onClick={() => setShowEditStandard(true)}
             >
-              แก้ไขข้อมูลสแตนดาร์ดเเละหน่วย
+              แก้ไขข้อมูลสแตนดาร์ดและหน่วย
             </button>
           </div>
         </div>
@@ -183,7 +189,7 @@ const Index = () => {
 
       <section className="w-full px-2 md:px-8 bg-white p-6 rounded-lg shadow space-y-4">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">Charts</h2>
-        {uniqueGraphs.length === 0 ? (
+        {uniqueGraphs.filter((g) => g.ParametersWithColor.length > 0).length === 0 ? (
           <div className="text-center text-red-500 font-semibold">No Data</div>
         ) : (
           <div
@@ -194,6 +200,8 @@ const Index = () => {
             }
           >
             {uniqueGraphs.map((g, index, arr) => {
+              if (!g.ParametersWithColor?.length) return null;
+
               const totalCharts = uniqueGraphs.length;
               const isLastAndOdd =
                 index === arr.length - 1 && totalCharts % 2 === 1 && totalCharts !== 1;
@@ -232,20 +240,6 @@ const Index = () => {
                   }
                 >
                   {ChartComponent}
-                  <p className="text-sm mt-2 flex flex-wrap items-center gap-2">
-                    {g.ParametersWithColor.map((p, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2 py-1 text-xs rounded-full"
-                        style={{
-                          backgroundColor: p.color ?? "#ccc",
-                          color: "#fff",
-                        }}
-                      >
-                        {p.parameter}
-                      </span>
-                    ))}
-                  </p>
                 </div>
               );
             })}
