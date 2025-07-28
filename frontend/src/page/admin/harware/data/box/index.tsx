@@ -11,37 +11,52 @@ import { RiCelsiusFill } from "react-icons/ri";
 import {
   GetSensorDataByHardwareID,
   GetSensorDataParametersBySensorDataID,
-  ListDataHardwareParameterByParameter
+  ListHardwareParameterIDsByHardwareID
 } from "../../../../../services/hardware";
 
 const iconMap: Record<string, [ReactNode, ReactNode]> = {
-  Formaldehyde: [
-    <GiChemicalDrop className="text-4xl" />,
-    <AiOutlineDotChart className="text-4xl" />
-  ],
-  Temperature: [
-    <FaTemperatureHigh className="text-4xl" />,
-    <FaChartPie className="text-4xl" />
-  ],
-  Humidity: [
-    <IoWater className="text-4xl" />,
-    <LuChartSpline className="text-4xl" />
-  ],
+  Formaldehyde: [<GiChemicalDrop className="text-4xl" />, <AiOutlineDotChart className="text-4xl" />],
+  Temperature: [<FaTemperatureHigh className="text-4xl" />, <FaChartPie className="text-4xl" />],
+  Humidity: [<IoWater className="text-4xl" />, <LuChartSpline className="text-4xl" />],
 };
 
 interface BoxsdataProps {
   hardwareID: number;
   reloadKey?: any;
-  onLoaded?: () => void; // เพิ่มตรงนี้
+  onLoaded?: () => void;
 }
+
 interface SensorParameter {
   id: number;
   name: string;
   value: number;
 }
-interface ParameterColorMap {
-  [parameter: string]: string;
+
+interface ParameterMeta {
+  color: string;
+  unit?: string;
+  standard?: number;
 }
+
+interface ParameterColorMap {
+  [parameter: string]: ParameterMeta;
+}
+
+interface HardwareParameterWithColor {
+  id: number;
+  parameter: string;
+  graph_id: number;
+  graph: string;
+  color?: string;
+  unit?: string;
+  standard?: number;
+}
+
+interface ListHardwareParameterResponse {
+  hardware_id: string;
+  parameters: HardwareParameterWithColor[];
+}
+
 const MAX_SHOW = 4;
 
 const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) => {
@@ -65,10 +80,34 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
         onLoaded?.();
         return;
       }
-      const sensorDataList = await GetSensorDataByHardwareID(hardwareID);
-      if (sensorDataList && sensorDataList.length > 0) {
+
+      const [sensorDataListRaw, paramInfoRaw] = await Promise.all([
+        GetSensorDataByHardwareID(hardwareID),
+        ListHardwareParameterIDsByHardwareID(hardwareID),
+      ]);
+
+      const sensorDataList: any[] = sensorDataListRaw || [];
+      const paramInfo: ListHardwareParameterResponse = paramInfoRaw || {
+        hardware_id: String(hardwareID),
+        parameters: [],
+      };
+
+      const colorsMap: ParameterColorMap = {};
+      if (paramInfo?.parameters) {
+        for (const p of paramInfo.parameters) {
+          colorsMap[p.parameter] = {
+            color: p.color || "#999999",
+            unit: p.unit || "",
+            standard: p.standard,
+          };
+        }
+        if (mounted) setParameterColors(colorsMap);
+      }
+
+      if (sensorDataList.length > 0) {
         const latestSensorDataID = sensorDataList[sensorDataList.length - 1].ID;
         const params = await GetSensorDataParametersBySensorDataID(latestSensorDataID);
+
         if (params && params.length > 0) {
           const latestParamsMap = new Map<string, SensorParameter>();
           params.forEach((param: any) => {
@@ -79,29 +118,18 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
               value: Number(param.Data),
             });
           });
+
           const latestParamsArray = Array.from(latestParamsMap.values());
           if (mounted) setParameters(latestParamsArray);
-
-          const colorsMap: ParameterColorMap = {};
-          await Promise.all(
-            latestParamsArray.map(async (p) => {
-              const res = await ListDataHardwareParameterByParameter(p.name);
-              if (res && res.length > 0) {
-                colorsMap[p.name] = res[0].HardwareParameterColor?.Code || "#999999";
-              } else {
-                colorsMap[p.name] = "#999999";
-              }
-            })
-          );
-          if (mounted) setParameterColors(colorsMap);
         } else {
           if (mounted) setParameters([]);
         }
       } else {
         if (mounted) setParameters([]);
       }
+
       setLoading(false);
-      onLoaded?.(); // <<< ตรงนี้
+      onLoaded?.();
     };
 
     fetchSensorAndParameters();
@@ -133,19 +161,25 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
     setSlideIndex(slideIndex === totalSlide - 1 ? 0 : slideIndex + 1);
   };
 
+  const getValueColor = (value: number, standard?: number): string => {
+    if (standard === undefined) return "text-black";
+    const thresholdOrange = standard * 0.9;
+    if (value >= standard) return "text-red-500";
+    if (value >= thresholdOrange) return "text-orange-500";
+    return "text-black";
+  };
+
+
   return (
     <div className="w-full px-1">
       <div className="flex flex-col items-center">
         <div className="flex items-center w-full">
           {totalSlide > 1 && (
-            <button
-              onClick={handlePrev}
-              className="hidden sm:flex w-8 h-8 rounded-full bg-white border border-gray-200 shadow items-center justify-center transition hover:bg-blue-50 active:scale-95 active:bg-blue-100 text-blue-500 hover:text-blue-700 mr-2"
-              aria-label="Slide Left"
-            >
+            <button onClick={handlePrev} className="hidden sm:flex w-8 h-8 rounded-full bg-white border border-gray-200 shadow items-center justify-center text-blue-500 hover:text-blue-700 mr-2">
               <AiOutlineLeft size={22} />
             </button>
           )}
+
           <div className="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {loading ? (
               <div className="col-span-4 flex justify-center items-center min-h-[110px]">
@@ -153,23 +187,24 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
               </div>
             ) : showParams.length > 0 ? (
               showParams.map((param) => {
-                const color = parameterColors[param.name] || "#999999";
+                const meta = parameterColors[param.name] || { color: "#999999", unit: "", standard: undefined };
+                const color = meta.color;
+                const unit = meta.unit || "";
+                const standard = meta.standard;
+
                 return (
-                  <div
-                    key={param.id}
-                    className="flex flex-col items-center justify-center bg-white border-2 rounded-2xl shadow-sm h-[100px] min-h-[110px] w-full transition hover:bg-gray-50"
-                    style={{ borderColor: color, minWidth: 0 }}
-                  >
+                  <div key={param.id} className="flex flex-col items-center justify-center bg-white border-2 rounded-2xl shadow-sm h-[100px] min-h-[110px] w-full transition hover:bg-gray-50" style={{ borderColor: color }}>
                     <div>
                       {withIconColor(iconMap[param.name]?.[0] || <GiChemicalDrop className="text-4xl" />, color)}
                     </div>
                     <div className="text-center mt-1">
                       <h3 className="text-sm font-semibold text-gray-700">{param.name}</h3>
-                      <b className="text-xl flex items-center justify-center mt-1">
+                      <b className={`text-xl flex items-center justify-center mt-1 ${getValueColor(param.value, standard)}`}>
                         {param.value.toFixed(2)}
                         {param.name === "Temperature" && <RiCelsiusFill className="ml-1 w-5 h-5" />}
                         {param.name === "Formaldehyde" && " ppm"}
-                        {param.name === "Humidity" && "%"}
+                        {param.name === "Humidity" && " %"}
+                        {!["Formaldehyde", "Temperature", "Humidity"].includes(param.name) && ` ${unit}`}
                       </b>
                     </div>
                   </div>
@@ -181,35 +216,29 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
               </div>
             )}
           </div>
+
           {totalSlide > 1 && (
-            <button
-              onClick={handleNext}
-              className="hidden sm:flex w-8 h-8 rounded-full bg-white border border-gray-200 shadow items-center justify-center transition hover:bg-blue-50 active:scale-95 active:bg-blue-100 text-blue-500 hover:text-blue-700 ml-2"
-              aria-label="Slide Right"
-            >
+            <button onClick={handleNext} className="hidden sm:flex w-8 h-8 rounded-full bg-white border border-gray-200 shadow items-center justify-center text-blue-500 hover:text-blue-700 ml-2">
               <AiOutlineRight size={22} />
             </button>
           )}
         </div>
-        <div className="flex justify-center items-center gap-3 mt-2 sm:hidden">
-          {totalSlide > 1 && (
-            <>
+
+        {totalSlide > 1 && (
+          <>
+            <div className="flex justify-center items-center gap-3 mt-2 sm:hidden">
               <button onClick={handlePrev} className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-blue-500">
                 <AiOutlineLeft size={22} />
               </button>
-              <span className="text-xs text-gray-500">
-                {slideIndex + 1} / {totalSlide}
-              </span>
+              <span className="text-xs text-gray-500">{slideIndex + 1} / {totalSlide}</span>
               <button onClick={handleNext} className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-blue-500">
                 <AiOutlineRight size={22} />
               </button>
-            </>
-          )}
-        </div>
-        {totalSlide > 1 && (
-          <div className="hidden sm:block text-center mt-3 text-xs text-gray-500">
-            {slideIndex + 1} / {totalSlide}
-          </div>
+            </div>
+            <div className="hidden sm:block text-center mt-3 text-xs text-gray-500">
+              {slideIndex + 1} / {totalSlide}
+            </div>
+          </>
         )}
       </div>
     </div>

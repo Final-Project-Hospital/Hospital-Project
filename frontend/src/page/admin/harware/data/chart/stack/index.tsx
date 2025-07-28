@@ -3,6 +3,7 @@ import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
 import Stacked from './Stacked';
 import TimeRangeSelector from './TimeRangeSelector';
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
+import { ListHardwareParameterIDsByHardwareID } from '../../../../../../services/hardware';
 
 const dropdownData = [
   { Id: 'day', Time: 'Day(s)' },
@@ -16,25 +17,54 @@ interface StackedChartIndexProps {
   colors?: string[];
 }
 
-const StackedChartIndex: React.FC<StackedChartIndexProps> = ({
-  hardwareID,
-  parameters,
+interface ParamWithColor {
+  parameter: string;
+  color: string;
+}
+
+const StackedChartIndex: React.FC<StackedChartIndexProps> = ({ //@ts-ignore
+  hardwareID,//@ts-ignore
+  parameters,//@ts-ignore
   colors = [],
 }) => {
   const { currentMode } = useStateContext();
   const [timeRangeType, setTimeRangeType] = useState<'day' | 'month' | 'year'>('day');
   const [selectedRange, setSelectedRange] = useState<any>(null);
+  const [stackedParameters, setStackedParameters] = useState<ParamWithColor[]>([]);
 
-  // Responsive: ใช้ window width < 640 (mobile)
   const isMobile = typeof window !== "undefined" ? window.innerWidth < 640 : false;
+
+  useEffect(() => {
+    const loadStackedParams = async () => {
+      if (!hardwareID) return;
+
+      const response = await ListHardwareParameterIDsByHardwareID(hardwareID);
+      console.log("Stacked Raw response:", response);
+
+      if (response && Array.isArray(response.parameters)) {
+        const filteredParams = (response.parameters as any[])
+          .filter((item) => item.graph_id === 4)
+          .map((item) => ({
+            parameter: item.parameter,
+            color: item.color,
+          }));
+
+        setStackedParameters(filteredParams);
+      } else {
+        console.warn("response.parameters is not an array");
+      }
+    };
+
+    loadStackedParams();
+  }, [hardwareID]);
 
   useEffect(() => {
     if (timeRangeType === 'day') {
       const today = new Date();
-      today.setHours(23,59,59,999);
+      today.setHours(23, 59, 59, 999);
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(today.getDate() - 6);
-      sevenDaysAgo.setHours(0,0,0,0);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
       setSelectedRange([sevenDaysAgo, today]);
     } else if (timeRangeType === 'month') {
       const now = new Date();
@@ -58,15 +88,46 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({
           shadow
         ">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-            <p className="text-2xl md:text-3xl font-semibold">Sensor Data</p>
+            <div>
+              {stackedParameters.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {stackedParameters.map((param, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-1 text-xs rounded-full"
+                      style={{
+                        backgroundColor: param.color,
+                        color: '#fff',
+                        boxShadow: '0 0 4px rgba(0,0,0,0.2)',
+                      }}
+                    >
+                      {param.parameter}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-2 md:items-center">
-              <div className="w-full sm:w-32 border border-gray-300 px-2 py-1 rounded-md">
+              <div
+                className={`
+      w-full sm:w-40 rounded-xl transition
+      bg-white dark:bg-gray-800
+      border border-teal-500 dark:border-teal-400
+      focus-within:ring-2 focus-within:ring-teal-400
+      px-2 py-1
+      shadow-sm
+    `}
+              >
                 <DropDownListComponent
                   id="time"
                   fields={{ text: 'Time', value: 'Id' }}
                   style={{
                     border: 'none',
-                    color: currentMode === 'Dark' ? 'white' : undefined,
+                    background: 'transparent',
+                    fontWeight: 500,
+                    padding: '4px 0',
+                    color: currentMode === 'Dark' ? 'white' : '#0f766e', // teal-700
                   }}
                   value={timeRangeType}
                   dataSource={dropdownData}
@@ -75,6 +136,7 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({
                   change={(e) => setTimeRangeType(e.value)}
                 />
               </div>
+
               <TimeRangeSelector
                 timeRangeType={timeRangeType}
                 onChange={setSelectedRange}
@@ -82,12 +144,13 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({
               />
             </div>
           </div>
+
           <div className="w-full flex justify-center">
             <div className="w-full">
               <Stacked
                 hardwareID={hardwareID}
-                parameters={parameters}
-                colors={colors}
+                parameters={stackedParameters.map(p => p.parameter)}
+                colors={stackedParameters.map(p => p.color)}
                 timeRangeType={timeRangeType}
                 selectedRange={selectedRange}
                 chartHeight={isMobile ? "300px" : "420px"}

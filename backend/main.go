@@ -117,6 +117,10 @@ func main() {
 		public.POST("/hardware/receive", hardware.ReceiveSensorData)
 		public.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID) // test system
 		public.PATCH("/update-hardware-parameter/:id", hardware.UpdateHardwareParameterByID)
+		public.GET("/hardware-parameter-ids", hardware.GetHardwareParametersWithGraph)
+
+		//ESP32
+		public.POST("/hardware/read", hardware.ReadDataForHardware)
 
 		//standard
 		public.PUT("/update-unit-hardware/:id", hardware.UpdateUnitHardwareByID)
@@ -164,8 +168,8 @@ func main() {
 		c.String(http.StatusOK, "API RUNNING... PORT: %s", PORT)
 	})
 
-	r.Run("localhost:" + PORT)
-	// r.Run("0.0.0.0:" + PORT)
+	//r.Run("localhost:" + PORT)
+	r.Run("0.0.0.0:" + PORT)
 
 }
 

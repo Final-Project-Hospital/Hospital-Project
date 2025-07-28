@@ -6,6 +6,8 @@ import { SensorDataParameterInterface } from "../interface/ISensorDataParameter"
 import { HardwareGraphInterface } from "../interface/IHardwareGraph"
 import { HardwareParameterColorInterface } from "../interface/IHardwareColor"
 import { HardwareParameterInterface } from "../interface/IHardwareParameter"
+import { StandardHardwareInterface } from "../interface/IStandardHardware";
+import { UnitHardwareInterface } from "../interface/IUnitHardware";
 import {apiUrl} from "./index"
 
 const getAuthHeader = () => {
@@ -345,7 +347,86 @@ export const ListHardwareParameterByHardwareID = async (
   }
 };
 
+export const UpdateStandardHardwareByID = async (
+  id: number,
+  data: StandardHardwareInterface
+): Promise<any | null> => {
+  try {
+    const response = await axios.put(`${apiUrl}/update-standard-hardware/${id}`, data, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
 
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error updating standard hardware:", error);
+    return null;
+  }
+};
+export const UpdateUnitHardwareByID = async (
+  id: number,
+  data: UnitHardwareInterface
+): Promise<any | null> => {
+  try {
+    const response = await axios.put(`${apiUrl}/update-unit-hardware/${id}`, data, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error updating unit hardware:", error);
+    return null;
+  }
+};
+
+export interface HardwareParameterIDResponse {
+  hardware_id: string;
+  parameters: {
+    id: number;
+    parameter: string;
+    graph_id: number;
+    graph: string;
+  }[];
+}
+
+export const ListHardwareParameterIDsByHardwareID = async (
+  hardwareID: number
+): Promise<HardwareParameterIDResponse | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/hardware-parameter-ids`, {
+      params: { hardware_id: hardwareID },
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data as HardwareParameterIDResponse;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching hardware parameter IDs:", error);
+    return null;
+  }
+};
 async function ListDataHardware() {
 
   return await axios
