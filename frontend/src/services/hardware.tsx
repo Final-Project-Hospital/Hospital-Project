@@ -289,6 +289,34 @@ export const ListHardwareColors = async (): Promise<HardwareParameterColorInterf
   }
 };
 
+export const UpdateIconByHardwareParameterID = async (
+  id: number,
+  icon: string
+): Promise<boolean> => {
+  try {
+    const response = await axios.patch(
+      `${apiUrl}/hardware-parameters/${id}/icon`,
+      { icon },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      return true;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return false;
+    }
+  } catch (error) {
+    console.error("Error updating icon:", error);
+    return false;
+  }
+};
+
 // ฟังก์ชันสำหรับอัปเดต HardwareParameter
 export const UpdateHardwareParameterByID = async (
   id: number,
@@ -424,6 +452,27 @@ export const ListHardwareParameterIDsByHardwareID = async (
     }
   } catch (error) {
     console.error("Error fetching hardware parameter IDs:", error);
+    return null;
+  }
+};
+
+export const ListReportHardware = async (): Promise<SensorDataParameterInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/report-hardware`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching report hardware data:", error);
     return null;
   }
 };

@@ -16,6 +16,7 @@ interface ColorMappingIndexProps {
   hardwareID: number;
   parameters: string[];
   colors?: string[];
+  reloadKey?: number;
 }
 
 interface ColorParamWithColor {
@@ -27,13 +28,15 @@ const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
   hardwareID,
   parameters,
   colors = [],
+  reloadKey,
 }) => {
   const { currentMode } = useStateContext();
   const [timeRangeType, setTimeRangeType] = useState<'day' | 'month' | 'year'>('day');
   const [selectedRange, setSelectedRange] = useState<any>(null);
   const [colorMappingParameters, setColorMappingParameters] = useState<ColorParamWithColor[]>([]);
   const isMobile = typeof window !== "undefined" ? window.innerWidth < 640 : false;
-
+  const [reloadCharts, setReloadCharts] = useState(0);
+  
   const getDefaultRange = (type: 'day' | 'month' | 'year') => {
     const now = new Date();
     if (type === 'day') {
@@ -64,12 +67,13 @@ const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
         const colorParams = (response.parameters as any[])
           .filter((item) => item.graph_id === 3)
           .map((item) => ({ parameter: item.parameter, color: item.color }));
+        setReloadCharts(prev => prev + 1);
         setColorMappingParameters(colorParams);
       }
     };
 
     loadColorMappingParameters();
-  }, [hardwareID]);
+  }, [hardwareID, reloadKey]);
 
   // 🛠 อัปเดต default range ทันทีที่ timeRangeType เปลี่ยน
   useEffect(() => {
@@ -159,6 +163,7 @@ const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
                 timeRangeType={timeRangeType}
                 selectedRange={selectedRange}
                 chartHeight={isMobile ? "300px" : "420px"}
+                reloadKey={reloadCharts}
               />
             </div>
           </div>

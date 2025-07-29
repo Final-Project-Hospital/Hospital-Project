@@ -47,10 +47,13 @@ const Index = () => {
   const [reloadAverage, setReloadAverage] = useState(0);
   const [reloadBoxes, setReloadBoxes] = useState(0);
   const [loadingAll, setLoadingAll] = useState(true);
-
   const [boxLoaded, setBoxLoaded] = useState(false);
   const [tableLoaded, setTableLoaded] = useState(false);
   const [averageLoaded, setAverageLoaded] = useState(false);
+
+  const defaultStart = new Date();
+  defaultStart.setDate(defaultStart.getDate() - 6);
+  const defaultEnd = new Date();
 
   const fetchSensorDataAndParameters = useCallback(async () => {
     if (!hardwareID) {
@@ -58,19 +61,20 @@ const Index = () => {
       return;
     }
 
-    const allParamsFromSensorData: string[] = [];
+    const allParamIDsFromSensorData: number[] = [];
     const sensorDataList = await GetSensorDataByHardwareID(hardwareID);
     if (!sensorDataList || sensorDataList.length === 0) {
       setUniqueGraphs([]);
       return;
     }
+
     for (const sensorData of sensorDataList) {
       const parameters = await GetSensorDataParametersBySensorDataID(sensorData.ID);
       if (parameters) {
-        const paramNames = parameters
-          .map((p) => p.HardwareParameter?.Parameter)
-          .filter(Boolean);
-        allParamsFromSensorData.push(...paramNames);
+        const paramIDs = parameters
+          .map((p) => p.HardwareParameter?.ID)
+          .filter((id): id is number => typeof id === "number");
+        allParamIDsFromSensorData.push(...paramIDs);
       }
     }
 
@@ -86,8 +90,9 @@ const Index = () => {
     } = {};
 
     for (const paramObj of response.parameters as HardwareParameterResponse[]) {
-      const { parameter, graph_id, graph, color } = paramObj;
-      if (!allParamsFromSensorData.includes(parameter)) continue;
+      const { id, parameter, graph_id, graph, color } = paramObj;
+      if (!allParamIDsFromSensorData.includes(id)) continue;
+
       if (!filteredGraphMap[graph_id]) {
         filteredGraphMap[graph_id] = {
           ID: graph_id,
@@ -99,6 +104,7 @@ const Index = () => {
     }
 
     setUniqueGraphs(Object.values(filteredGraphMap));
+    setReloadCharts((prev) => prev + 1); // Reload charts here when uniqueGraphs are ready
   }, [hardwareID]);
 
   useEffect(() => {
@@ -107,7 +113,7 @@ const Index = () => {
     setTableLoaded(false);
     setAverageLoaded(false);
     fetchSensorDataAndParameters();
-  }, [hardwareID, fetchSensorDataAndParameters, reloadCharts]);
+  }, [hardwareID, fetchSensorDataAndParameters]);
 
   useEffect(() => {
     if (boxLoaded && tableLoaded && averageLoaded) {
@@ -115,17 +121,12 @@ const Index = () => {
     }
   }, [boxLoaded, tableLoaded, averageLoaded]);
 
-  const defaultStart = new Date();
-  defaultStart.setDate(defaultStart.getDate() - 6);
-  const defaultEnd = new Date();
-
   const handleEditSuccess = async () => {
     setLoadingAll(true);
     setBoxLoaded(false);
     setTableLoaded(false);
     setAverageLoaded(false);
     await fetchSensorDataAndParameters();
-    setReloadCharts((prev) => prev + 1);
     setReloadAverage((prev) => prev + 1);
     setReloadBoxes((prev) => prev + 1);
   };
@@ -145,8 +146,7 @@ const Index = () => {
       <section className="w-full px-2 md:px-8 p-5 bg-white border border-gray-200 rounded-lg shadow-md mb-8 mt-16 md:mt-0 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center">
         <div className="text-center md:text-left">
           <h1 className="text-2xl md:text-4xl font-extrabold leading-tight mb-4">
-            สวัสดีตอนเช้า
-            <br />
+            สวัสดีตอนเช้า<br />
             <span className="inline-flex items-center gap-2 text-teal-700 justify-center md:justify-start">
               วิศวกรรมสิ่งแวดล้อม
             </span>
@@ -176,7 +176,6 @@ const Index = () => {
           className="hidden md:block w-36 md:w-60 max-w-full object-contain mx-auto md:mx-0"
         />
       </section>
-
 
       <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">ข้อมูลเซนเซอร์ล่าสุด</h2>
@@ -214,6 +213,7 @@ const Index = () => {
                 colors,
                 timeRangeType: "day" as "day",
                 selectedRange: [defaultStart, defaultEnd],
+                reloadKey: reloadCharts,
               };
 
               const ChartComponent = (() => {

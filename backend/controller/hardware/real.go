@@ -96,6 +96,7 @@ func ReadDataForHardware(c *gin.Context) {
 				UnitHardwareID:           unit.ID,
 				HardwareGraphID:          1,
 				HardwareParameterColorID: 1,
+				Icon:                     "GiChemicalDrop",
 			}
 			if err := db.Create(&hp).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create hardware parameter"})

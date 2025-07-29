@@ -8,6 +8,7 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/building"
 	"github.com/Tawunchai/hospital-project/controller/calendar"
 	"github.com/Tawunchai/hospital-project/controller/fogcenter"
+	"github.com/Tawunchai/hospital-project/controller/report"
 
 	"github.com/Tawunchai/hospital-project/controller/graph"
 	"github.com/Tawunchai/hospital-project/controller/hardware"
@@ -115,9 +116,13 @@ func main() {
 		public.GET("/hardwares", hardware.ListHardware)
 		public.GET("/hardware-colors", hardware.ListColors)
 		public.POST("/hardware/receive", hardware.ReceiveSensorData)
-		public.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID) // test system
+		public.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID)
 		public.PATCH("/update-hardware-parameter/:id", hardware.UpdateHardwareParameterByID)
 		public.GET("/hardware-parameter-ids", hardware.GetHardwareParametersWithGraph)
+		public.PATCH("/hardware-parameters/:id/icon", hardware.UpdateIconByHardwareParameterID)
+
+		//report hardware
+		public.GET("/report-hardware", report.ListReportHardware)
 
 		//ESP32
 		public.POST("/hardware/read", hardware.ReadDataForHardware)

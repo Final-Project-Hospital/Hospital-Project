@@ -26,6 +26,7 @@ interface ChartdataProps {
   timeRangeType: 'day' | 'month' | 'year';
   selectedRange: any;
   chartHeight?: string;
+  reloadKey?: number;
 }
 
 function getDayLabel(date: Date) {
@@ -85,6 +86,7 @@ const ColorMappingBarChart: React.FC<ChartdataProps> = ({
   selectedRange,
   colors = [],
   chartHeight = '420px',
+  reloadKey,
 }) => {
   const { currentMode } = useStateContext();
   const [seriesData, setSeriesData] = useState<any[]>([]);
@@ -102,7 +104,7 @@ const ColorMappingBarChart: React.FC<ChartdataProps> = ({
     return () => {
       mounted.current = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   useEffect(() => {
     const fetchBarParameters = async () => {
@@ -119,7 +121,7 @@ const ColorMappingBarChart: React.FC<ChartdataProps> = ({
     };
 
     if (hardwareID) fetchBarParameters();
-  }, [hardwareID]);
+  }, [hardwareID,reloadKey]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -255,7 +257,7 @@ const ColorMappingBarChart: React.FC<ChartdataProps> = ({
     };
 
     fetchData();
-  }, [hardwareID, timeRangeType, selectedRange, barParameters]);
+  }, [hardwareID, timeRangeType, selectedRange, barParameters,reloadKey]);
 
   if (loading) return <div className="flex justify-center items-center h-80 text-gray-500 text-lg">Loading...</div>;
   if (noData) return <div className="flex justify-center items-center h-80 text-gray-500 text-lg">No Data</div>;

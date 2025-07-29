@@ -6,7 +6,7 @@ import { TooltipComponent } from '@syncfusion/ej2-react-popups';
 import avatar from '../../assets/admin/avatar3.png';
 import { RiNotification3Line } from 'react-icons/ri';
 import { UserProfile } from '.';
-import { Notification } from './Notification';
+import  Notification  from './report/Notification';
 import { useStateContext } from '../../contexts/ContextProvider';
 import { GetUserDataByUserID } from '../../services/httpLogin';
 import { useRefresh } from './RefreshContext';
@@ -41,7 +41,7 @@ const Navbar = () => {
 
   const [fullName, setFullName] = useState('');
   const [firstName, setFirstName] = useState('');
-  const [profileImg, setProfileImg] = useState<string>(avatar);
+  const [profileImg, setProfileImg] = useState<string>(avatar);//@ts-ignore
   const [loading, setLoading] = useState<boolean>(true);
 
   const { refreshKey } = useRefresh();
