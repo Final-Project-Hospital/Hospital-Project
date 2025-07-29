@@ -25,6 +25,7 @@ interface ChartdataProps {
   timeRangeType: 'day' | 'month' | 'year';
   selectedRange: any;
   chartHeight?: string;
+  reloadKey?: number;
 }
 
 function getMonthLabel(date: Date) {
@@ -55,6 +56,7 @@ const Stacked: React.FC<ChartdataProps> = ({
   timeRangeType,
   selectedRange,
   chartHeight = "420px",
+  reloadKey,
 }) => {
   const { currentMode } = useStateContext();
   const [stackedData, setStackedData] = useState<{ [key: string]: { x: string; y: number }[] }>({});
@@ -69,7 +71,7 @@ const Stacked: React.FC<ChartdataProps> = ({
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; };
-  }, []);
+  }, [reloadKey]);
 
   const primaryXAxis: AxisModel = {
     valueType: 'Category',
@@ -265,7 +267,7 @@ const Stacked: React.FC<ChartdataProps> = ({
       stop = true;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [hardwareID, parameters, timeRangeType, selectedRange]);
+  }, [hardwareID, parameters, timeRangeType, selectedRange,reloadKey]);
 
   if (loading) {
     return (

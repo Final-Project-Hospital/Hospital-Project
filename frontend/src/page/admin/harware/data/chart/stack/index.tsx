@@ -15,6 +15,7 @@ interface StackedChartIndexProps {
   hardwareID: number;
   parameters: string[];
   colors?: string[];
+  reloadKey?: number;
 }
 
 interface ParamWithColor {
@@ -26,12 +27,13 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({ //@ts-ignore
   hardwareID,//@ts-ignore
   parameters,//@ts-ignore
   colors = [],
+  reloadKey,
 }) => {
   const { currentMode } = useStateContext();
   const [timeRangeType, setTimeRangeType] = useState<'day' | 'month' | 'year'>('day');
   const [selectedRange, setSelectedRange] = useState<any>(null);
   const [stackedParameters, setStackedParameters] = useState<ParamWithColor[]>([]);
-
+  const [reloadCharts, setReloadCharts] = useState(0);
   const isMobile = typeof window !== "undefined" ? window.innerWidth < 640 : false;
 
   useEffect(() => {
@@ -39,7 +41,6 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({ //@ts-ignore
       if (!hardwareID) return;
 
       const response = await ListHardwareParameterIDsByHardwareID(hardwareID);
-      console.log("Stacked Raw response:", response);
 
       if (response && Array.isArray(response.parameters)) {
         const filteredParams = (response.parameters as any[])
@@ -48,7 +49,7 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({ //@ts-ignore
             parameter: item.parameter,
             color: item.color,
           }));
-
+        setReloadCharts(prev => prev + 1);
         setStackedParameters(filteredParams);
       } else {
         console.warn("response.parameters is not an array");
@@ -56,7 +57,7 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({ //@ts-ignore
     };
 
     loadStackedParams();
-  }, [hardwareID]);
+  }, [hardwareID,reloadKey]);
 
   useEffect(() => {
     if (timeRangeType === 'day') {
@@ -154,6 +155,7 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({ //@ts-ignore
                 timeRangeType={timeRangeType}
                 selectedRange={selectedRange}
                 chartHeight={isMobile ? "300px" : "420px"}
+                reloadKey={reloadCharts}
               />
             </div>
           </div>

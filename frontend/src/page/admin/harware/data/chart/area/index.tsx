@@ -18,20 +18,21 @@ interface AreaParamWithColor {
 
 interface ChartdataProps {
   hardwareID: number;
+  reloadKey?: number;
 }
 
-const AreaChartIndex: React.FC<ChartdataProps> = ({ hardwareID }) => {
+const AreaChartIndex: React.FC<ChartdataProps> = ({ hardwareID, reloadKey }) => {
   const { currentMode } = useStateContext();
   const [timeRangeType, setTimeRangeType] = useState<'day' | 'month' | 'year'>('day');
   const [selectedRange, setSelectedRange] = useState<any>(null);
   const [areaChartParameters, setAreaChartParameters] = useState<AreaParamWithColor[]>([]);
+  const [reloadCharts, setReloadCharts] = useState(0);
 
   useEffect(() => {
     const loadAreaChartParameters = async () => {
       if (!hardwareID) return;
 
       const response = await ListHardwareParameterIDsByHardwareID(hardwareID);
-      console.log("Raw response (Area):", response);
 
       if (response && Array.isArray(response.parameters)) {
         const filtered = (response.parameters as any[])
@@ -40,6 +41,7 @@ const AreaChartIndex: React.FC<ChartdataProps> = ({ hardwareID }) => {
             parameter: item.parameter,
             color: item.color || '#999999',
           }));
+        setReloadCharts(prev => prev + 1);
         setAreaChartParameters(filtered);
       } else {
         console.warn("response.parameters is not an array");
@@ -47,7 +49,7 @@ const AreaChartIndex: React.FC<ChartdataProps> = ({ hardwareID }) => {
     };
 
     loadAreaChartParameters();
-  }, [hardwareID]);
+  }, [hardwareID, reloadKey]);
 
   useEffect(() => {
     if (timeRangeType === 'day') {
@@ -145,6 +147,7 @@ const AreaChartIndex: React.FC<ChartdataProps> = ({ hardwareID }) => {
                 timeRangeType={timeRangeType}
                 selectedRange={selectedRange}
                 chartHeight={isMobile ? "300px" : "420px"}
+                reloadKey={reloadCharts}
               />
             </div>
           </div>

@@ -1,24 +1,30 @@
 import React, { ReactNode, useEffect, useState } from "react";
-import {
-  FaChartPie,
-  FaTemperatureHigh
-} from "react-icons/fa";
-import { AiOutlineDotChart, AiOutlineLeft, AiOutlineRight } from "react-icons/ai";
-import { LuChartSpline } from "react-icons/lu";
-import { IoWater } from "react-icons/io5";
-import { GiChemicalDrop } from "react-icons/gi";
-import { RiCelsiusFill } from "react-icons/ri";
+import { AiOutlineLeft, AiOutlineRight } from "react-icons/ai";
 import {
   GetSensorDataByHardwareID,
   GetSensorDataParametersBySensorDataID,
-  ListHardwareParameterIDsByHardwareID
+  ListHardwareParameterIDsByHardwareID,
 } from "../../../../../services/hardware";
 
-const iconMap: Record<string, [ReactNode, ReactNode]> = {
-  Formaldehyde: [<GiChemicalDrop className="text-4xl" />, <AiOutlineDotChart className="text-4xl" />],
-  Temperature: [<FaTemperatureHigh className="text-4xl" />, <FaChartPie className="text-4xl" />],
-  Humidity: [<IoWater className="text-4xl" />, <LuChartSpline className="text-4xl" />],
-};
+import * as GiIcons from "react-icons/gi";
+import * as FaIcons from "react-icons/fa";
+import * as IoIcons from "react-icons/io5";
+import * as AiIcons from "react-icons/ai";
+import * as LuIcons from "react-icons/lu";
+import * as RiIcons from "react-icons/ri";
+
+function getIconComponentByName(name: string): ReactNode {
+  const allIcons = {
+    ...GiIcons,
+    ...FaIcons,
+    ...IoIcons,
+    ...AiIcons,
+    ...LuIcons,
+    ...RiIcons,
+  };
+  const IconComponent = allIcons[name as keyof typeof allIcons];
+  return IconComponent ? <IconComponent className="text-4xl" /> : <GiIcons.GiChemicalDrop className="text-4xl" />;
+}
 
 interface BoxsdataProps {
   hardwareID: number;
@@ -36,6 +42,7 @@ interface ParameterMeta {
   color: string;
   unit?: string;
   standard?: number;
+  icon?: string;
 }
 
 interface ParameterColorMap {
@@ -50,6 +57,8 @@ interface HardwareParameterWithColor {
   color?: string;
   unit?: string;
   standard?: number;
+  icon?: string;
+  Icon?: string;
 }
 
 interface ListHardwareParameterResponse {
@@ -95,10 +104,11 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
       const colorsMap: ParameterColorMap = {};
       if (paramInfo?.parameters) {
         for (const p of paramInfo.parameters) {
-          colorsMap[p.parameter] = {
+          colorsMap[p.parameter.toLowerCase()] = {
             color: p.color || "#999999",
             unit: p.unit || "",
             standard: p.standard,
+            icon: p.icon || "",
           };
         }
         if (mounted) setParameterColors(colorsMap);
@@ -107,11 +117,10 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
       if (sensorDataList.length > 0) {
         const latestSensorDataID = sensorDataList[sensorDataList.length - 1].ID;
         const params = await GetSensorDataParametersBySensorDataID(latestSensorDataID);
-
         if (params && params.length > 0) {
           const latestParamsMap = new Map<string, SensorParameter>();
           params.forEach((param: any) => {
-            const paramName = param.HardwareParameter?.Parameter || "Unknown";
+            const paramName = (param.HardwareParameter?.Parameter || "Unknown").toLowerCase();
             latestParamsMap.set(paramName, {
               id: param.ParameterID,
               name: paramName,
@@ -141,11 +150,9 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
   function withIconColor(icon: ReactNode, color: string): ReactNode {
     if (React.isValidElement(icon)) {
       const elem = icon as React.ReactElement<any, any>;
-      const style = elem.props && typeof elem.props === "object" && "style" in elem.props
-        ? elem.props.style
-        : {};
+      const style = elem.props && typeof elem.props === "object" && "style" in elem.props ? elem.props.style : {};
       return React.cloneElement(elem, {
-        style: { ...style, color, fontSize: "2rem" }
+        style: { ...style, color, fontSize: "2rem" },
       });
     }
     return icon;
@@ -157,6 +164,7 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
   const handlePrev = () => {
     setSlideIndex(slideIndex === 0 ? totalSlide - 1 : slideIndex - 1);
   };
+
   const handleNext = () => {
     setSlideIndex(slideIndex === totalSlide - 1 ? 0 : slideIndex + 1);
   };
@@ -168,7 +176,6 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
     if (value >= thresholdOrange) return "text-orange-500";
     return "text-black";
   };
-
 
   return (
     <div className="w-full px-1">
@@ -187,24 +194,23 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
               </div>
             ) : showParams.length > 0 ? (
               showParams.map((param) => {
-                const meta = parameterColors[param.name] || { color: "#999999", unit: "", standard: undefined };
+                const meta = parameterColors[param.name.toLowerCase()] || {
+                  color: "#999999",
+                  unit: "",
+                  standard: undefined,
+                  icon: "",
+                };
                 const color = meta.color;
                 const unit = meta.unit || "";
                 const standard = meta.standard;
-
+                const icon = getIconComponentByName(meta.icon || "GiChemicalDrop");
                 return (
                   <div key={param.id} className="flex flex-col items-center justify-center bg-white border-2 rounded-2xl shadow-sm h-[100px] min-h-[110px] w-full transition hover:bg-gray-50" style={{ borderColor: color }}>
-                    <div>
-                      {withIconColor(iconMap[param.name]?.[0] || <GiChemicalDrop className="text-4xl" />, color)}
-                    </div>
+                    <div>{withIconColor(icon, color)}</div>
                     <div className="text-center mt-1">
                       <h3 className="text-sm font-semibold text-gray-700">{param.name}</h3>
                       <b className={`text-xl flex items-center justify-center mt-1 ${getValueColor(param.value, standard)}`}>
-                        {param.value.toFixed(2)}
-                        {param.name === "Temperature" && <RiCelsiusFill className="ml-1 w-5 h-5" />}
-                        {param.name === "Formaldehyde" && " ppm"}
-                        {param.name === "Humidity" && " %"}
-                        {!["Formaldehyde", "Temperature", "Humidity"].includes(param.name) && ` ${unit}`}
+                        {param.value.toFixed(2)} {unit}
                       </b>
                     </div>
                   </div>

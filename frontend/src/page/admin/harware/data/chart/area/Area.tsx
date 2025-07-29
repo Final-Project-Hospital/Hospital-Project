@@ -23,6 +23,7 @@ interface ChartdataProps {
   timeRangeType: 'day' | 'month' | 'year';
   selectedRange: any;
   chartHeight?: string;
+  reloadKey?: number;
 }
 
 function getMonthStartDate(year: number, month: number) {
@@ -80,7 +81,8 @@ const Area: React.FC<ChartdataProps> = ({
   colors,
   timeRangeType,
   selectedRange,
-  chartHeight = "420px"
+  chartHeight = "420px",
+  reloadKey,
 }) => {
   const { currentMode } = useStateContext();
   const [seriesData, setSeriesData] = useState<any[]>([]);
@@ -92,7 +94,7 @@ const Area: React.FC<ChartdataProps> = ({
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; };
-  }, []);
+  }, [reloadKey]);
 
   useEffect(() => {
     let stop = false;
@@ -136,7 +138,7 @@ const Area: React.FC<ChartdataProps> = ({
               inRange = start && end && date >= new Date(start) && date <= new Date(end);
             } else if (timeRangeType === 'month') {
               inRange = date.getMonth() + 1 === +selectedRange?.month &&
-                        date.getFullYear() === +selectedRange?.year;
+                date.getFullYear() === +selectedRange?.year;
             } else if (timeRangeType === 'year') {
               const [start, end] = selectedRange || [];
               inRange = date.getFullYear() >= +start && date.getFullYear() <= +end;
@@ -163,8 +165,8 @@ const Area: React.FC<ChartdataProps> = ({
           const dataSource =
             timeRangeType === 'year'
               ? (selectedRange?.[0] === selectedRange?.[1]
-                  ? groupByMonthAvg(groupByDayAvg(sorted.filter(d => d.x.getFullYear() === +selectedRange[0])))
-                  : groupByYearAvg(sorted))
+                ? groupByMonthAvg(groupByDayAvg(sorted.filter(d => d.x.getFullYear() === +selectedRange[0])))
+                : groupByYearAvg(sorted))
               : timeRangeType === 'month'
                 ? groupByDayAvg(sorted)
                 : groupByDayAvg(sorted);
@@ -217,7 +219,7 @@ const Area: React.FC<ChartdataProps> = ({
       stop = true;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [hardwareID, parameters, colors, timeRangeType, selectedRange]);
+  }, [hardwareID, parameters, colors, timeRangeType, selectedRange,reloadKey]);
 
   if (loading) {
     return <div className="flex justify-center items-center h-80">Loading...</div>;

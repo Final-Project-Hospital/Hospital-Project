@@ -23,6 +23,7 @@ interface LineChartProps {
   parameters: string[];
   colors?: string[];
   chartHeight?: string;
+  reloadKey?: number;
 }
 
 function getMonthStartDate(year: number, month: number) {
@@ -76,6 +77,7 @@ const LineChart: React.FC<LineChartProps> = ({
   timeRangeType,
   selectedRange,
   chartHeight = "420px",
+  reloadKey,
 }) => {
   const { currentMode } = useStateContext();
   const [seriesData, setSeriesData] = useState<any[]>([]);
@@ -89,7 +91,7 @@ const LineChart: React.FC<LineChartProps> = ({
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; };
-  }, []);
+  }, [reloadKey]);
 
   useEffect(() => {
     const fetchLineParameters = async () => {
@@ -112,7 +114,7 @@ const LineChart: React.FC<LineChartProps> = ({
     if (hardwareID) {
       fetchLineParameters();
     }
-  }, [hardwareID]);
+  }, [hardwareID,reloadKey]);
 
   useEffect(() => {
     let stop = false;
@@ -263,7 +265,7 @@ const LineChart: React.FC<LineChartProps> = ({
       stop = true;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [hardwareID, timeRangeType, selectedRange, lineParameters]);
+  }, [hardwareID, timeRangeType, selectedRange, lineParameters,reloadKey]);
 
   if (loading) {
     return (

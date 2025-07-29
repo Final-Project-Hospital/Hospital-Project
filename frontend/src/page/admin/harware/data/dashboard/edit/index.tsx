@@ -5,12 +5,10 @@ import {
   ListHardwareParameterByHardwareID,
   ListHardwareColors,
 } from "../../../../../../services/hardware";
-
 import LineChartingImg from "../../../../../../assets/chart/LineCharting.png";
 import AreaChartingImg from "../../../../../../assets/chart/AreaCharting.png";
 import MappingImg from "../../../../../../assets/chart/Mapping.png";
 import StackChartingImg from "../../../../../../assets/chart/StackCharting.png";
-
 import "./ColorSelectNoArrow.css";
 
 interface EditParameterModalProps {

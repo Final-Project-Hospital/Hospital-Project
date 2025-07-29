@@ -15,6 +15,7 @@ interface ChartdataProps {
   hardwareID: number;
   parameters: string[];
   colors?: string[];
+  reloadKey?:number;
 }
 
 interface LineParamWithColor {
@@ -26,33 +27,34 @@ const Index: React.FC<ChartdataProps> = ({
   hardwareID,
   parameters,
   colors = [],
+  reloadKey,
 }) => {
   const { currentMode } = useStateContext();
   const [timeRangeType, setTimeRangeType] = useState<'day' | 'month' | 'year'>('day');
   const [selectedRange, setSelectedRange] = useState<any>(null);
-  const [lineChartParameters, setLineChartParameters] = useState<LineParamWithColor[]>([]); // graph_id = 1
+  const [lineChartParameters, setLineChartParameters] = useState<LineParamWithColor[]>([]);
+  const [reloadCharts, setReloadCharts] = useState(0);
 
   useEffect(() => {
     const loadLineChartParameters = async () => {
       if (!hardwareID) return;
 
       const response = await ListHardwareParameterIDsByHardwareID(hardwareID);
-      console.log("Raw response:", response);
 
       if (response && Array.isArray(response.parameters)) {
         const lineParams = (response.parameters as any[])
           .filter((item) => item.graph_id === 1)
           .map((item) => ({ parameter: item.parameter, color: item.color }));
 
-        console.log("LineChart Parameters:", lineParams);
         setLineChartParameters(lineParams);
+        setReloadCharts(prev => prev + 1); // Trigger reload after update
       } else {
         console.warn("response.parameters is not an array");
       }
     };
 
     loadLineChartParameters();
-  }, [hardwareID]);
+  }, [hardwareID,reloadKey]);
 
   useEffect(() => {
     if (timeRangeType === 'day') {
@@ -125,7 +127,7 @@ const Index: React.FC<ChartdataProps> = ({
                     background: 'transparent',
                     fontWeight: 500,
                     padding: '4px 0',
-                    color: currentMode === 'Dark' ? 'white' : '#0f766e', // teal-700
+                    color: currentMode === 'Dark' ? 'white' : '#0f766e',
                   }}
                   value={timeRangeType}
                   dataSource={dropdownData}
@@ -153,6 +155,7 @@ const Index: React.FC<ChartdataProps> = ({
                 parameters={parameters}
                 colors={colors}
                 chartHeight={isMobile ? "300px" : "420px"}
+                reloadKey={reloadCharts}
               />
             </div>
           </div>

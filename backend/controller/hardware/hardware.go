@@ -300,8 +300,9 @@ type ParamWithGraphResponse struct {
 	GraphID   uint    `json:"graph_id"`  // HardwareGraph.ID
 	Graph     string  `json:"graph"`     // HardwareGraph.Graph
 	Color     string  `json:"color"`     // HardwareParameterColor.Code
-	Unit      string  `json:"unit"`      // 👈 เพิ่ม
-	Standard  float64 `json:"standard"`  // 👈 เพิ่ม
+	Unit      string  `json:"unit"`      // UnitHardware.Unit
+	Standard  float64 `json:"standard"`  // StandardHardware.Standard
+	Icon      string  `json:"icon"`      // ✅ เพิ่ม icon ตรงนี้
 }
 
 func GetHardwareParametersWithGraph(c *gin.Context) {
@@ -328,11 +329,14 @@ func GetHardwareParametersWithGraph(c *gin.Context) {
 	}
 
 	if len(hardwareParamIDs) == 0 {
-		c.JSON(http.StatusOK, gin.H{"hardware_id": hardwareID, "parameters": []ParamWithGraphResponse{}})
+		c.JSON(http.StatusOK, gin.H{
+			"hardware_id": hardwareID,
+			"parameters":  []ParamWithGraphResponse{},
+		})
 		return
 	}
 
-	// 2. โหลด HardwareParameter พร้อมกราฟและสี
+	// 2. โหลด HardwareParameter พร้อมความสัมพันธ์ทั้งหมดที่จำเป็น
 	var parameters []entity.HardwareParameter
 	err = db.
 		Preload("HardwareGraph").
@@ -347,7 +351,7 @@ func GetHardwareParametersWithGraph(c *gin.Context) {
 		return
 	}
 
-	// 3. map response
+	// 3. map เป็น response ที่ frontend ต้องการ
 	var result []ParamWithGraphResponse
 	for _, p := range parameters {
 		result = append(result, ParamWithGraphResponse{
@@ -358,11 +362,46 @@ func GetHardwareParametersWithGraph(c *gin.Context) {
 			Color:     p.HardwareParameterColor.Code,
 			Unit:      p.UnitHardware.Unit,
 			Standard:  p.StandardHardware.Standard,
+			Icon:      p.Icon, // ✅ เอา icon ที่บันทึกไว้ส่งออกมาด้วย
 		})
 	}
 
+	// 4. ส่ง response
 	c.JSON(http.StatusOK, gin.H{
 		"hardware_id": hardwareID,
 		"parameters":  result,
 	})
 }
+
+func UpdateIconByHardwareParameterID(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	var payload struct {
+		Icon string `json:"icon"`
+	}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	db := config.DB()
+	var hardwareParam entity.HardwareParameter
+	if err := db.First(&hardwareParam, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "HardwareParameter not found"})
+		return
+	}
+
+	hardwareParam.Icon = payload.Icon
+	if err := db.Save(&hardwareParam).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update icon"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Icon updated successfully", "id": id, "icon": payload.Icon})
+}
+
