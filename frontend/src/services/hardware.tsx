@@ -54,6 +54,7 @@ export const ListRoom = async (): Promise<RoomInterface[] | null> => {
   }
 };
 
+// services/hardware.ts
 export const CreateRoom = async (room: RoomInterface): Promise<RoomInterface | null> => {
   try {
     const payload = {
@@ -62,6 +63,7 @@ export const CreateRoom = async (room: RoomInterface): Promise<RoomInterface | n
       BuildingID: room.Building?.ID,
       EmployeeID: room.Employee?.ID,
       HardwareID: room.Hardware?.ID,
+      Icon: room.Icon, 
     };
 
     const response = await axios.post(`${apiUrl}/create-rooms`, payload, {
@@ -83,6 +85,7 @@ export const CreateRoom = async (room: RoomInterface): Promise<RoomInterface | n
   }
 };
 
+
 export const UpdateRoom = async (
   id: number,
   room: Partial<RoomInterface>
@@ -95,6 +98,7 @@ export const UpdateRoom = async (
     if (room.Building?.ID !== undefined) payload.BuildingID = room.Building.ID;
     if (room.Employee?.ID !== undefined) payload.EmployeeID = room.Employee.ID;
     if (room.Hardware?.ID !== undefined) payload.HardwareID = room.Hardware.ID;
+    if (room.Icon !== undefined) payload.Icon = room.Icon; // ✅ เพิ่มตรงนี้
 
     const response = await axios.patch(`${apiUrl}/update-room/${id}`, payload, {
       headers: {
@@ -103,12 +107,7 @@ export const UpdateRoom = async (
       },
     });
 
-    if (response.status === 200) {
-      return response.data;
-    } else {
-      console.error("Unexpected response status:", response.status);
-      return null;
-    }
+    return response.status === 200 ? response.data : null;
   } catch (error) {
     console.error("Error updating room:", error);
     return null;

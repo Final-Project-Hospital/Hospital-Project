@@ -1,11 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { Input, Select, Button, message } from 'antd';
+import {
+  FaMicroscope,
+  FaVial,
+  FaFlask,
+  FaLaptopMedical,
+  FaBiohazard,
+  FaDna,
+  FaSyringe,
+  FaNotesMedical,
+  FaProcedures,
+  FaBriefcaseMedical,
+} from 'react-icons/fa';
+import { IconType } from 'react-icons';
 import { UpdateRoom, ListBuilding, ListHardware } from '../../../../../../services/hardware';
 import { RoomInterface } from '../../../../../../interface/IRoom';
 import { BuildingInterface } from '../../../../../../interface/IBuilding';
 import { HardwareInterface } from '../../../../../../interface/IHardware';
 
 const { Option } = Select;
+
+const iconOptions: { name: string; component: IconType }[] = [
+  { name: 'FaMicroscope', component: FaMicroscope },
+  { name: 'FaVial', component: FaVial },
+  { name: 'FaFlask', component: FaFlask },
+  { name: 'FaLaptopMedical', component: FaLaptopMedical },
+  { name: 'FaBiohazard', component: FaBiohazard },
+  { name: 'FaDna', component: FaDna },
+  { name: 'FaSyringe', component: FaSyringe },
+  { name: 'FaNotesMedical', component: FaNotesMedical },
+  { name: 'FaProcedures', component: FaProcedures },
+  { name: 'FaBriefcaseMedical', component: FaBriefcaseMedical },
+];
 
 interface Props {
   show: boolean;
@@ -19,6 +45,8 @@ const EditRoomModal: React.FC<Props> = ({ show, onClose, onSaveSuccess, initialD
   const [buildings, setBuildings] = useState<BuildingInterface[]>([]);
   const [hardwares, setHardwares] = useState<HardwareInterface[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const selectedIcon = iconOptions.find(i => i.name === room.Icon)?.component;
 
   useEffect(() => {
     if (show) {
@@ -40,7 +68,7 @@ const EditRoomModal: React.FC<Props> = ({ show, onClose, onSaveSuccess, initialD
   };
 
   const handleSubmit = async () => {
-    if (!room.RoomName || !room.Floor || !room.Building?.ID || !room.Hardware?.ID) {
+    if (!room.RoomName || !room.Floor || !room.Building?.ID || !room.Hardware?.ID || !room.Icon) {
       message.error('กรุณากรอกข้อมูลให้ครบทุกช่อง');
       return;
     }
@@ -52,6 +80,7 @@ const EditRoomModal: React.FC<Props> = ({ show, onClose, onSaveSuccess, initialD
       Floor: room.Floor,
       Building: room.Building,
       Hardware: room.Hardware,
+      Icon: room.Icon,
     });
 
     setLoading(false);
@@ -67,15 +96,22 @@ const EditRoomModal: React.FC<Props> = ({ show, onClose, onSaveSuccess, initialD
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 paddings">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 p-4">
       <div className="bg-white rounded-2xl w-full max-w-2xl p-8 shadow-xl relative">
-        <h2 className="text-center text-lg font-bold bg-teal-600 text-white py-2 rounded-t-lg mb-6">
+        <h2 className="text-center text-lg font-bold bg-teal-600 text-white py-3 rounded-t-lg mb-6 shadow">
           แก้ไขข้อมูลพื้นที่ติดตั้งเซนเซอร์
         </h2>
 
+        {/* Icon Preview */}
+        <div className="flex justify-center mb-6">
+          <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-md border border-teal-600">
+            {selectedIcon ? React.createElement(selectedIcon, { size: 40, className: "text-teal-600" }) : null}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <Input
-            placeholder="ห้องผู้ป่วยนอก"
+            placeholder="ชื่อห้อง"
             name="RoomName"
             value={room.RoomName}
             onChange={(e) => handleChange('RoomName', e.target.value)}
@@ -120,11 +156,33 @@ const EditRoomModal: React.FC<Props> = ({ show, onClose, onSaveSuccess, initialD
               </Option>
             ))}
           </Select>
+
+          {/* Icon Select */}
+          <Select
+            placeholder="เลือกไอคอน"
+            value={room.Icon || undefined}
+            onChange={(val) => handleChange('Icon', val)}
+            allowClear
+            className="w-full col-span-2"
+            showSearch
+            optionLabelProp="label"
+          >
+            {iconOptions.map(({ name, component: Icon }) => (
+              <Option key={name} value={name} label={name}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white border border-teal-600 flex items-center justify-center shadow">
+                    <Icon size={20} className="text-teal-600" />
+                  </div>
+                  <span className="text-gray-800 font-medium">{name}</span>
+                </div>
+              </Option>
+            ))}
+          </Select>
         </div>
 
         <div className="flex justify-end gap-4">
           <Button onClick={onClose}>ยกเลิก</Button>
-          <Button type="primary" loading={loading} onClick={handleSubmit}>
+          <Button type="primary" loading={loading} onClick={handleSubmit} className="bg-teal-600 hover:bg-teal-700">
             บันทึก
           </Button>
         </div>

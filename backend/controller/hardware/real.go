@@ -1,6 +1,9 @@
 package hardware
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -20,6 +23,35 @@ type HardwareInput struct {
 	Parameters []ParameterWithData `json:"parameters" binding:"required"`
 }
 
+// LINE config (ควรเก็บใน ENV จริง ๆ)
+const LineToken = "gvki3Wyt+y/sZKER+Gaex2EpillRDRDHvXq4+sYNE5jlLUcy2N2YIIONKwvMhqn8RxcaME5vQ3I1BW82d1/ZYezvWklVMUk+EGGfXRmI4jxn5I1vVbOsctQ7xNqB9n9A+Q/SRhEtXviKFCF9WOI/ZgdB04t89/1O/w1cDnyilFU="
+const LineUserID = "U3af93a2f92b1048757172584d47571c8"
+
+// ฟังก์ชันส่งข้อความ LINE
+func SendWarningToLINE(message string) error {
+	url := "https://api.line.me/v2/bot/message/push"
+	body := map[string]interface{}{
+		"to": LineUserID,
+		"messages": []map[string]string{
+			{"type": "text", "text": message},
+		},
+	}
+
+	jsonBody, _ := json.Marshal(body)
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+LineToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return nil
+}
+
 func ReadDataForHardware(c *gin.Context) {
 	var input HardwareInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -29,7 +61,6 @@ func ReadDataForHardware(c *gin.Context) {
 
 	db := config.DB()
 
-	// 1. หา/สร้าง Hardware
 	var hardware entity.Hardware
 	if err := db.Where("name = ? AND ip_address = ?", input.Name, input.IpAddress).First(&hardware).Error; err != nil {
 		hardware = entity.Hardware{Name: input.Name, IpAddress: input.IpAddress}
@@ -39,7 +70,6 @@ func ReadDataForHardware(c *gin.Context) {
 		}
 	}
 
-	// 2. หา/สร้าง SensorData
 	var sensorData entity.SensorData
 	if err := db.Where("hardware_id = ?", hardware.ID).First(&sensorData).Error; err != nil {
 		sensorData = entity.SensorData{Date: time.Now(), HardwareID: hardware.ID}
@@ -49,15 +79,15 @@ func ReadDataForHardware(c *gin.Context) {
 		}
 	}
 
-	// 3. ดึง HardwareParameter ทั้งหมด
 	var allParams []entity.HardwareParameter
-	if err := db.Find(&allParams).Error; err != nil {
+	if err := db.Preload("StandardHardware").Find(&allParams).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch hardware parameters"})
 		return
 	}
 
 	var createdSDPs []entity.SensorDataParameter
 	var createdParamIDs []uint
+	var messageParts []string
 
 	for _, p := range input.Parameters {
 		var hp entity.HardwareParameter
@@ -65,7 +95,6 @@ func ReadDataForHardware(c *gin.Context) {
 
 		for _, ap := range allParams {
 			if ap.Parameter == p.Parameter {
-				// ตรวจว่าใช้ใน SensorData ของ Hardware อื่นหรือไม่
 				var count int64
 				db.Model(&entity.SensorDataParameter{}).
 					Joins("JOIN sensor_data ON sensor_data.id = sensor_data_parameters.sensor_data_id").
@@ -105,7 +134,6 @@ func ReadDataForHardware(c *gin.Context) {
 			allParams = append(allParams, hp)
 		}
 
-		// เพิ่มข้อมูลใหม่เสมอ แม้จะมี SensorDataParameter เดิม
 		sdp := entity.SensorDataParameter{
 			Date:                time.Now(),
 			Data:                p.Data,
@@ -118,6 +146,21 @@ func ReadDataForHardware(c *gin.Context) {
 		}
 		createdParamIDs = append(createdParamIDs, hp.ID)
 		createdSDPs = append(createdSDPs, sdp)
+
+		var std entity.StandardHardware
+		if err := db.First(&std, hp.StandardHardwareID).Error; err == nil {
+			if p.Data > std.Standard {
+				part := fmt.Sprintf("- %s: %.2f (เกณฑ์ %.2f)", hp.Parameter, p.Data, std.Standard)
+				messageParts = append(messageParts, part)
+			}
+		}
+	}
+
+	// ส่ง LINE ถ้ามีอย่างน้อย 1 ตัวเกินเกณฑ์
+	if len(messageParts) > 0 {
+		fullMessage := fmt.Sprintf("☣️ แจ้งเตือนสารเคมีเกินมาตรฐาน!\n📡 ฮาร์ดแวร์: %s\n🌐 IP: %s\n\nพบค่าที่เกิน:\n%s",
+			hardware.Name, hardware.IpAddress, joinLines(messageParts))
+		go SendWarningToLINE(fullMessage)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -126,4 +169,17 @@ func ReadDataForHardware(c *gin.Context) {
 		"created_parameter_ids":  createdParamIDs,
 		"sensor_data_parameters": createdSDPs,
 	})
+}
+
+// joinLines แปลง slice ให้ขึ้นบรรทัดใหม่
+func joinLines(lines []string) string {
+	return fmt.Sprintf("%s", string(bytes.Join(mapToBytes(lines), []byte("\n"))))
+}
+
+func mapToBytes(lines []string) [][]byte {
+	out := make([][]byte, len(lines))
+	for i, l := range lines {
+		out[i] = []byte(l)
+	}
+	return out
 }

@@ -1,9 +1,7 @@
-// ...import ทั้งหมดเหมือนเดิม
+// imports
 import React, { useEffect, useState, useRef } from 'react';
-import { FaHome, FaEdit, FaTrash, FaBuilding, FaSearch, FaLayerGroup } from 'react-icons/fa';
+import { FaHome, FaBuilding, FaSearch, FaLayerGroup } from 'react-icons/fa';
 import { Trash2 } from 'react-feather';
-import { useNavigate } from 'react-router-dom';
-import Image from "../../../assets/operating-room_4246637.png";
 import AddRoomModal from './data/room/create';
 import EditRoomModal from './data/room/edit';
 import Modal from '../harware/data/room/delete';
@@ -12,58 +10,13 @@ import { RoomInterface } from '../../../interface/IRoom';
 import { BuildingInterface } from '../../../interface/IBuilding';
 import { message } from 'antd';
 
-interface RoomCardProps {
-  name: string;
-  floor: string;
-  building: string;
-  image: string;
-  onUpdate: () => void;
-  onDelete: () => void;
-  hardwareID: number;
-}
-
-const RoomCard: React.FC<RoomCardProps> = ({
-  name,
-  floor,
-  building,
-  image,
-  onUpdate,
-  onDelete,
-  hardwareID,
-}) => {
-  const navigate = useNavigate();
-  return (
-    <div
-      onClick={() => navigate('/admin/Room', { state: { hardwareID } })}
-      className="bg-white rounded-2xl shadow p-4 flex flex-row items-center w-[375px] min-h-[120px] cursor-pointer transition hover:shadow-lg"
-    >
-      <div className="flex flex-col flex-1 justify-center h-full">
-        <div className="flex items-center gap-2">
-          <div className="bg-teal-100 text-teal-800 font-bold px-3 py-1 rounded text-sm">
-            {name}
-          </div>
-          <button onClick={(e) => { e.stopPropagation(); onUpdate(); }} className="ml-1 text-gray-500 hover:text-blue-600">
-            <FaEdit size={15} />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="ml-1 text-gray-500 hover:text-red-600">
-            <FaTrash size={15} />
-          </button>
-        </div>
-        <div className="mt-1 ml-1">
-          <div className="text-gray-700 text-[15px] font-medium">ชั้น : {floor.replace("Floor ", "")}</div>
-          <div className="text-gray-500 text-[15px] font-medium">อาคาร : {building}</div>
-        </div>
-      </div>
-      <img
-        src={image}
-        alt={name}
-        className="w-20 h-20 object-contain ml-5"
-        draggable={false}
-        style={{ minWidth: 80, minHeight: 80 }}
-      />
-    </div>
-  );
-};
+import * as GiIcons from 'react-icons/gi';
+import * as FaIcons from 'react-icons/fa';
+import * as IoIcons from 'react-icons/io5';
+import * as AiIcons from 'react-icons/ai';
+import * as LuIcons from 'react-icons/lu';
+import * as RiIcons from 'react-icons/ri';
+import RoomCard from './data/room/index';
 
 const Index: React.FC = () => {
   const [buildings, setBuildings] = useState<BuildingInterface[]>([]);
@@ -91,8 +44,8 @@ const Index: React.FC = () => {
     const handleResize = () => {
       const width = window.innerWidth;
       if (width < 768) setPageSize(3);
-      else if (width >= 768 && width < 1200) setPageSize(4);
-      else if (width >= 1200 && width < 1800) setPageSize(6);
+      else if (width < 1200) setPageSize(4);
+      else if (width < 1800) setPageSize(6);
       else setPageSize(8);
     };
     handleResize();
@@ -169,13 +122,19 @@ const Index: React.FC = () => {
     setShowEditModal(true);
   };
 
-  const allFloors = Array.from(new Set(rooms.map((r) => r.Floor))).sort();
-  const filterRooms = rooms.filter((room) => {
+  const allFloors = Array.from(new Set(rooms.map(r => r.Floor))).sort();
+  const filterRooms = rooms.filter(room => {
     if (queryBuilding && room.Building?.ID !== queryBuilding) return false;
     if (queryFloor && String(room.Floor) !== queryFloor) return false;
     if (queryName && !room.RoomName?.toLowerCase().includes(queryName.toLowerCase())) return false;
     return true;
   });
+
+  const getIconComponent = (iconName?: string) => {
+    if (!iconName) return FaIcons.FaQuestionCircle;
+    const pools = { ...GiIcons, ...FaIcons, ...IoIcons, ...AiIcons, ...LuIcons, ...RiIcons };
+    return (pools as any)[iconName] ?? FaIcons.FaQuestionCircle;
+  };
 
   const handlePrevPage = (buildingID: number) => {
     setRoomStartIndices(prev => ({
@@ -188,16 +147,12 @@ const Index: React.FC = () => {
     setRoomStartIndices(prev => {
       const current = prev[buildingID] || 0;
       if (current + pageSize >= totalRooms) return prev;
-      return {
-        ...prev,
-        [buildingID]: current + pageSize
-      };
+      return { ...prev, [buildingID]: current + pageSize };
     });
   };
 
   return (
     <div className="min-h-screen bg-gray-100 mt-16 md:mt-0 relative">
-      {/* Loading Spinner */}
       {(loadingBuildings || loadingRooms) && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-white bg-opacity-70">
           <div className="flex flex-col items-center">
@@ -207,7 +162,6 @@ const Index: React.FC = () => {
         </div>
       )}
 
-      {/* Header */}
       <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-8 py-6 rounded-b-3xl mb-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center flex-wrap gap-4">
           <div>
@@ -224,75 +178,41 @@ const Index: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Section */}
       <div className="flex md:justify-end mb-6 mx-2 md:mx-8">
         <div className="bg-white rounded-2xl shadow px-6 py-4 flex flex-col md:flex-row gap-4 md:items-center w-full md:w-fit">
-          {/* Building Filter */}
           <div className="flex items-center gap-2 w-full md:w-auto">
             <FaBuilding className="text-teal-700" />
-            <select
-              value={queryBuilding}
-              onChange={(e) => setQueryBuilding(e.target.value === "" ? "" : Number(e.target.value))}
-              className="rounded-lg border border-teal-200 px-3 py-2 bg-teal-50 focus:outline-none"
-            >
+            <select value={queryBuilding} onChange={e => setQueryBuilding(e.target.value === "" ? "" : Number(e.target.value))}
+              className="rounded-lg border border-teal-200 px-3 py-2 bg-teal-50 focus:outline-none">
               <option value="">ทุกอาคาร</option>
-              {buildings.map((b) => (
-                <option key={b.ID} value={b.ID}>
-                  {b.BuildingName}
-                </option>
-              ))}
+              {buildings.map(b => <option key={b.ID} value={b.ID}>{b.BuildingName}</option>)}
             </select>
           </div>
-          {/* Floor Filter */}
           <div className="flex items-center gap-2 w-full md:w-auto">
             <FaLayerGroup className="text-teal-700" />
-            <select
-              value={queryFloor}
-              onChange={(e) => setQueryFloor(e.target.value)}
-              className="rounded-lg border border-teal-200 px-3 py-2 bg-teal-50 focus:outline-none"
-            >
+            <select value={queryFloor} onChange={e => setQueryFloor(e.target.value)}
+              className="rounded-lg border border-teal-200 px-3 py-2 bg-teal-50 focus:outline-none">
               <option value="">ทุกชั้น</option>
-              {allFloors.map((floor) => (
-                <option key={floor} value={String(floor)}>
-                  ชั้น {floor}
-                </option>
-              ))}
+              {allFloors.map(f => <option key={f} value={String(f)}>ชั้น {f}</option>)}
             </select>
           </div>
-          {/* Name Filter */}
           <div className="flex items-center gap-2 flex-1">
             <FaSearch className="text-teal-700" />
-            <input
-              type="text"
-              value={queryName}
-              onChange={e => setQueryName(e.target.value)}
-              placeholder="ค้นหาชื่อห้อง..."
-              className="rounded-lg border border-teal-200 px-3 py-2 w-full bg-teal-50 focus:outline-none"
-            />
+            <input type="text" value={queryName} onChange={e => setQueryName(e.target.value)}
+              placeholder="ค้นหาชื่อห้อง..." className="rounded-lg border border-teal-200 px-3 py-2 w-full bg-teal-50 focus:outline-none" />
           </div>
-          {/* Reset Button */}
-          <button
-            className="text-teal-600 underline text-xs"
-            onClick={() => {
-              setQueryBuilding("");
-              setQueryFloor("");
-              setQueryName("");
-            }}
-          >
+          <button className="text-teal-600 underline text-xs" onClick={() => { setQueryBuilding(""); setQueryFloor(""); setQueryName(""); }}>
             ล้างตัวกรอง
           </button>
         </div>
       </div>
 
-      {/* Room List by Building */}
       <div className="px-2 md:px-8 pb-12">
-        {buildings.map((building) => {
+        {buildings.map(building => {
           const roomInBuilding = filterRooms.filter(r => r.Building?.ID === building.ID);
           if (roomInBuilding.length === 0) return null;
-
           const startIndex = roomStartIndices[building.ID!] || 0;
           const pagedRoom = roomInBuilding.slice(startIndex, startIndex + pageSize);
-
           return (
             <div key={building.ID} className="bg-white rounded-3xl shadow-md mb-10 p-5 flex flex-col transition hover:shadow-lg">
               <div className="flex items-center gap-3 mb-4">
@@ -308,36 +228,30 @@ const Index: React.FC = () => {
               </div>
 
               <div className="flex flex-wrap gap-6 justify-start p-1">
-                {pagedRoom.map((room, idx) => (
-                  <RoomCard
-                    key={room.ID ?? idx}
-                    name={room.RoomName || 'No Data'}
-                    floor={`Floor ${room.Floor !== undefined ? room.Floor : '-'}`}
-                    building={building.BuildingName || 'No Data'}
-                    image={Image}
-                    onUpdate={() => handleEditClick(room)}
-                    onDelete={() => handleDelete(room.ID!, room.RoomName || 'No Data')}
-                    hardwareID={room.Hardware?.ID!}
-                  />
-                ))}
+                {pagedRoom.map((room, idx) => {
+                  const IconComp = getIconComponent(room.Icon);
+                  return (
+                    <RoomCard
+                      key={room.ID ?? idx}
+                      name={room.RoomName || 'No Data'}
+                      floor={`Floor ${room.Floor ?? '-'}`}
+                      building={building.BuildingName || 'No Data'}
+                      IconComponent={IconComp}
+                      onUpdate={() => handleEditClick(room)}
+                      onDelete={() => handleDelete(room.ID!, room.RoomName || 'No Data')}
+                      hardwareID={room.Hardware?.ID!}
+                    />
+                  );
+                })}
               </div>
 
               {roomInBuilding.length > pageSize && (
                 <div className="flex justify-center gap-3 mt-4">
-                  <button
-                    disabled={startIndex === 0}
-                    onClick={() => handlePrevPage(building.ID!)}
-                    className="px-3 py-1 rounded bg-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
-                  >
-                    ก่อนหน้า
-                  </button>
-                  <button
-                    disabled={startIndex + pageSize >= roomInBuilding.length}
+                  <button disabled={startIndex === 0} onClick={() => handlePrevPage(building.ID!)}
+                    className="px-3 py-1 rounded bg-gray-200 disabled:bg-gray-100 disabled:text-gray-400">ก่อนหน้า</button>
+                  <button disabled={startIndex + pageSize >= roomInBuilding.length}
                     onClick={() => handleNextPage(building.ID!, roomInBuilding.length)}
-                    className="px-3 py-1 rounded bg-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
-                  >
-                    ถัดไป
-                  </button>
+                    className="px-3 py-1 rounded bg-gray-200 disabled:bg-gray-100 disabled:text-gray-400">ถัดไป</button>
                 </div>
               )}
             </div>
@@ -345,7 +259,6 @@ const Index: React.FC = () => {
         })}
       </div>
 
-      {/* Modals */}
       <AddRoomModal show={showAddModal} onClose={() => setShowAddModal(false)} onCreateSuccess={handleCreateSuccess} />
       {selectedRoom && (
         <EditRoomModal show={showEditModal} onClose={() => setShowEditModal(false)} onSaveSuccess={handleUpdateSuccess} initialData={selectedRoom} />

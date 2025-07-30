@@ -314,7 +314,7 @@ func SetupDatabase() {
 	Room1 := entity.Room{
 		RoomName:   "ห้องตรวจวิเคราะห์อากาศ",
 		Floor:      1,
-		Icon: "icon1",
+		Icon: "FaVial",
 		EmployeeID: eid1,
 		HardwareID: hid1,
 		BuildingID: bid1,
