@@ -34,8 +34,8 @@ const UserProfile = () => {
   const userProfileData = [
     {
       icon: <AiOutlineUser />,
-      title: 'My Profile',
-      desc: 'Account Settings',
+      title: 'ข้อมูลส่วนตัว',
+      desc: 'เเก้ไขข้อมูล',
       iconColor: '#03C9D7',
       iconBg: '#E5FAFB',
     },
@@ -74,7 +74,7 @@ const UserProfile = () => {
   return (
     <div className="nav-item absolute right-1 top-16 bg-white dark:bg-[#42464D] p-8 rounded-lg w-96">
       <div className="flex justify-between items-center">
-        <p className="font-semibold text-lg dark:text-gray-200">
+        <p className="font-semibold text-lg text-white px-3 py-1 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-500 dark:text-gray-200">
           {roleName || 'User Profile'}
         </p>
         <Button
@@ -94,9 +94,8 @@ const UserProfile = () => {
         />
         <div>
           <p className="font-semibold text-xl dark:text-gray-200"> {fullName || 'ผู้ใช้'} </p>
-          <p className="text-gray-500 text-sm dark:text-gray-400">  {roleName || 'ไม่มีพบตำแหน่ง'} </p>
-          <p className="text-gray-500 text-sm dark:text-gray-400">  {positionName || 'ไม่มีพบอาชีพ'} </p>
-          <p className="text-gray-500 text-sm font-semibold dark:text-gray-400"> {emailUser || 'ไม่มีพบอีเมล'} </p>
+          <p className="text-gray-500 text-sm dark:text-gray-400">ตำเเหน่ง :  {positionName || 'ไม่มีพบอาชีพ'} </p>
+          <p className="text-gray-500 text-sm font-semibold dark:text-gray-400">อีเมลล์ : {emailUser || 'ไม่มีพบอีเมล'} </p>
         </div>
       </div>
       <div>

@@ -8,6 +8,7 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/building"
 	"github.com/Tawunchai/hospital-project/controller/calendar"
 	"github.com/Tawunchai/hospital-project/controller/fogcenter"
+	"github.com/Tawunchai/hospital-project/controller/report"
 
 	"github.com/Tawunchai/hospital-project/controller/graph"
 	"github.com/Tawunchai/hospital-project/controller/hardware"
@@ -100,6 +101,8 @@ func main() {
 		public.POST("/create-bod", bodcenter.CreateBod)
 		public.GET("/get-first-bod", bodcenter.GetfirstBOD)
 		public.GET("/list-bod", bodcenter.ListBOD)
+		public.GET("/get-bod/:id", bodcenter.GetBODbyID)
+		public.DELETE("/delete-bod/:id",bodcenter.DeleterBOD)
 
 		//FOG
 		public.POST("/create-fog", fogcenter.CreateFog)
@@ -115,8 +118,16 @@ func main() {
 		public.GET("/hardwares", hardware.ListHardware)
 		public.GET("/hardware-colors", hardware.ListColors)
 		public.POST("/hardware/receive", hardware.ReceiveSensorData)
-		public.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID) // test system
+		public.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID)
 		public.PATCH("/update-hardware-parameter/:id", hardware.UpdateHardwareParameterByID)
+		public.GET("/hardware-parameter-ids", hardware.GetHardwareParametersWithGraph)
+		public.PATCH("/hardware-parameters/:id/icon", hardware.UpdateIconByHardwareParameterID)
+
+		//report hardware
+		public.GET("/report-hardware", report.ListReportHardware)
+
+		//ESP32
+		public.POST("/hardware/read", hardware.ReadDataForHardware)
 
 		//standard
 		public.PUT("/update-unit-hardware/:id", hardware.UpdateUnitHardwareByID)
@@ -165,7 +176,7 @@ func main() {
 	})
 
 	r.Run("localhost:" + PORT)
-	// r.Run("0.0.0.0:" + PORT)
+	//r.Run("0.0.0.0:" + PORT)
 
 }
 

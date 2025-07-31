@@ -8,6 +8,7 @@ type Room struct {
 	gorm.Model
 	RoomName string
 	Floor    int
+	Icon     string `gorm:"type:text"`
 
 	BuildingID uint
 	Building   *Building `gorm:"foreignKey: BuildingID"`
