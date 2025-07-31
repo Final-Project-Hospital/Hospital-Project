@@ -77,7 +77,9 @@ func main() {
 		public.GET("/get-tds", tdscenter.GetTDS)
 		public.GET("/get-tds/:id", tdscenter.GetTDSbyID)
 		public.PATCH("/update-tds/:id", tdscenter.UpdateTDS)
+		public.POST("/update-or-create-tds", tdscenter.UpdateOrCreateTDS) //เพิ่ม
 		public.DELETE("/delete-tds/:id", tdscenter.DeleteTDS)
+		public.DELETE("/delete-tds-day/:id", tdscenter.DeleteAllTDSRecordsByDate) //เพิ่ม
 		public.GET("/get-first-tds", tdscenter.GetfirstTDS)
 
 		//TKN
