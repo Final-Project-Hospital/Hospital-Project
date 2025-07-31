@@ -9,7 +9,7 @@ import {
   Legend,
   Tooltip,
   AxisModel,
-  LineSeries
+  LineSeries,
 } from '@syncfusion/ej2-react-charts';
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
 import {
@@ -25,6 +25,7 @@ interface ChartdataProps {
   timeRangeType: 'day' | 'month' | 'year';
   selectedRange: any;
   chartHeight?: string;
+  reloadKey?: number;
 }
 
 function getMonthLabel(date: Date) {
@@ -32,6 +33,17 @@ function getMonthLabel(date: Date) {
 }
 function getDayLabel(date: Date) {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+}
+function groupByAvg(data: { x: string; y: number }[]) {
+  const map: { [key: string]: number[] } = {};
+  data.forEach(d => {
+    if (!map[d.x]) map[d.x] = [];
+    map[d.x].push(d.y);
+  });
+  return Object.entries(map).map(([x, ys]) => ({
+    x,
+    y: ys.reduce((a, b) => a + b, 0) / ys.length,
+  }));
 }
 
 const MAX_ATTEMPTS = 10;
@@ -44,12 +56,14 @@ const Stacked: React.FC<ChartdataProps> = ({
   timeRangeType,
   selectedRange,
   chartHeight = "420px",
+  reloadKey,
 }) => {
   const { currentMode } = useStateContext();
   const [stackedData, setStackedData] = useState<{ [key: string]: { x: string; y: number }[] }>({});
   const [standardLines, setStandardLines] = useState<any[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [unitMap, setUnitMap] = useState<Record<string, string>>({});
+  const [sortedParams, setSortedParams] = useState<string[]>([]);
   const [hasData, setHasData] = useState(true);
   const [loading, setLoading] = useState(false);
   const mounted = useRef(true);
@@ -57,7 +71,7 @@ const Stacked: React.FC<ChartdataProps> = ({
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; };
-  }, []);
+  }, [reloadKey]);
 
   const primaryXAxis: AxisModel = {
     valueType: 'Category',
@@ -85,6 +99,7 @@ const Stacked: React.FC<ChartdataProps> = ({
       setStandardLines([]);
       setCategories([]);
       setUnitMap({});
+      setSortedParams([]);
       setHasData(true);
 
       if (!hardwareID || !parameters?.length || !selectedRange) {
@@ -131,7 +146,9 @@ const Stacked: React.FC<ChartdataProps> = ({
               if (timeRangeType === 'day') {
                 if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
                 const [start, end] = selectedRange;
-                inRange = date >= new Date(start) && date <= new Date(end);
+                const endOfDay = new Date(end);
+                endOfDay.setHours(23, 59, 59, 999);
+                inRange = date >= new Date(start) && date <= endOfDay;
                 if (inRange) label = getDayLabel(date);
               } else if (timeRangeType === 'month') {
                 inRange = (date.getMonth() + 1 === Number(selectedRange.month)) &&
@@ -167,7 +184,6 @@ const Stacked: React.FC<ChartdataProps> = ({
             if (parts.length === 2) {
               return new Date(new Date().getFullYear(), +parts[1] - 1, +parts[0]).getTime();
             }
-            if (parts.length === 3) return new Date(+parts[2], +parts[1] - 1, +parts[0]).getTime();
             if (str.match(/^[A-Za-z]{3}\s\d{4}$/)) return new Date(str).getTime();
             return 0;
           };
@@ -176,12 +192,24 @@ const Stacked: React.FC<ChartdataProps> = ({
 
         for (const param of parameters) {
           if (!paramDataMap[param]) paramDataMap[param] = [];
-          const existing = new Map(paramDataMap[param].map(d => [d.x, d.y]));
+          const averaged = groupByAvg(paramDataMap[param]);
+          const existing = new Map(averaged.map(d => [d.x, d.y]));
           paramDataMap[param] = xCategoriesArr.map(cat => ({
             x: cat,
             y: existing.get(cat) ?? 0,
           }));
         }
+
+        // ✅ Sort parameters by total value ascending (for proper stacked order)
+        const paramTotalMap = Object.fromEntries(
+          parameters.map(p => [
+            p,
+            paramDataMap[p]?.reduce((sum, d) => sum + d.y, 0) ?? 0
+          ])
+        );
+        const sorted = [...parameters].sort(
+          (a, b) => paramTotalMap[a] - paramTotalMap[b]
+        );
 
         const standardSeries = Object.entries(standardMap).map(([param, std]) => {
           return {
@@ -205,6 +233,7 @@ const Stacked: React.FC<ChartdataProps> = ({
             setCategories(xCategoriesArr);
             setStandardLines(standardSeries);
             setUnitMap(unitMapping);
+            setSortedParams(sorted); // ✅ set sorted order
             setHasData(true);
             setLoading(false);
           }
@@ -238,7 +267,7 @@ const Stacked: React.FC<ChartdataProps> = ({
       stop = true;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [hardwareID, parameters, timeRangeType, selectedRange]);
+  }, [hardwareID, parameters, timeRangeType, selectedRange,reloadKey]);
 
   if (loading) {
     return (
@@ -290,7 +319,7 @@ const Stacked: React.FC<ChartdataProps> = ({
       >
         <Inject services={[StackingColumnSeries, Category, Legend, Tooltip, LineSeries]} />
         <SeriesCollectionDirective>
-          {parameters.map((param, index) => (
+          {sortedParams.map((param, index) => (
             <SeriesDirective
               key={index}
               dataSource={stackedData[param]}
@@ -298,7 +327,7 @@ const Stacked: React.FC<ChartdataProps> = ({
               yName="y"
               name={param}
               type="StackingColumn"
-              fill={colors && colors[index] ? colors[index] : undefined}
+              fill={colors && colors[parameters.indexOf(param)]}
             />
           ))}
           {standardLines.map((line, index) => (

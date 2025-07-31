@@ -6,19 +6,20 @@ import (
 
 type HardwareParameter struct {
 	gorm.Model
-	Parameter	string
+	Parameter string
+	Icon      string `gorm:"type:text"`
 
 	StandardHardwareID uint
-	StandardHardware *StandardHardware `gorm:"foreignKey: StandardHardwareID"`
+	StandardHardware   *StandardHardware `gorm:"foreignKey: StandardHardwareID"`
 
 	UnitHardwareID uint
-	UnitHardware *UnitHardware `gorm:"foreignKey: UnitHardwareID"`
-	
+	UnitHardware   *UnitHardware `gorm:"foreignKey: UnitHardwareID"`
+
 	HardwareGraphID uint
 	HardwareGraph   *HardwareGraph `gorm:"foreignKey: HardwareGraphID"`
 
 	HardwareParameterColorID uint
 	HardwareParameterColor   *HardwareParameterColor `gorm:"foreignKey: HardwareParameterColorID"`
 
-	SensorDataParameter	[]SensorDataParameter `gorm:"foreignKey: HardwareParameterID"`
+	SensorDataParameter []SensorDataParameter `gorm:"foreignKey: HardwareParameterID"`
 }

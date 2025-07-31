@@ -209,6 +209,7 @@ func SetupDatabase() {
 		// ----- สร้าง Parameter พร้อมผูก StandardHardwareID และ UnitHardwareID -----
 		paramhardware1 := entity.HardwareParameter{
 			Parameter:                "Formaldehyde",
+			Icon: "icon1",
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       formaldehydeStd.ID,
@@ -216,6 +217,7 @@ func SetupDatabase() {
 		}
 		paramhardware2 := entity.HardwareParameter{
 			Parameter:                "Temperature",
+			Icon: "icon2",
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       temperatureStd.ID,
@@ -223,6 +225,7 @@ func SetupDatabase() {
 		}
 		paramhardware3 := entity.HardwareParameter{
 			Parameter:                "Humidity",
+			Icon: "icon3",
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       humidityStd.ID,
@@ -230,6 +233,7 @@ func SetupDatabase() {
 		}
 		paramhardware4 := entity.HardwareParameter{
 			Parameter:                "Light",
+			Icon: "icon4",
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       lightStd.ID,
@@ -237,6 +241,7 @@ func SetupDatabase() {
 		}
 		paramhardware5 := entity.HardwareParameter{
 			Parameter:                "Gas",
+			Icon: "icon5",
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       gasStd.ID,
@@ -309,6 +314,7 @@ func SetupDatabase() {
 	Room1 := entity.Room{
 		RoomName:   "ห้องตรวจวิเคราะห์อากาศ",
 		Floor:      1,
+		Icon: "FaVial",
 		EmployeeID: eid1,
 		HardwareID: hid1,
 		BuildingID: bid1,

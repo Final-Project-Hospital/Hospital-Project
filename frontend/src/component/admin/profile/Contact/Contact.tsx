@@ -52,7 +52,7 @@ const Contact = ({ refreshKey = 0 }: { refreshKey?: number }) => {
           </span>
           <div className="flex-1">
             <Text type="secondary" className="text-xs block">
-              Email
+              อีเมลล์
             </Text>
             <Link href={`mailto:${email}`} target="_blank">
               {email || "-"}
@@ -65,7 +65,7 @@ const Contact = ({ refreshKey = 0 }: { refreshKey?: number }) => {
           </span>
           <div className="flex-1">
             <Text type="secondary" className="text-xs block">
-              Position
+              ตำเเหน่ง
             </Text>
             <span className="text-md text-gray-700 font-semibold">{position || "-"}</span>
           </div>
@@ -76,7 +76,7 @@ const Contact = ({ refreshKey = 0 }: { refreshKey?: number }) => {
           </span>
           <div className="flex-1">
             <Text type="secondary" className="text-xs block">
-              Phone
+              เบอร์โทรศัพท์
             </Text>
             <Link href={`tel:${phone}`} target="_blank">
               {phone || "-"}

@@ -1,23 +1,22 @@
+import React, { useEffect, useState, useRef } from 'react';
 import {
   ChartComponent,
   SeriesCollectionDirective,
   SeriesDirective,
   Inject,
   ColumnSeries,
-  Category,
-  Tooltip,
   Legend,
-  DateTime,
+  Tooltip,
+  LineSeries,
+  Category,
   RangeColorSettingsDirective,
   RangeColorSettingDirective,
-  LineSeries,
 } from '@syncfusion/ej2-react-charts';
-
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
-import { useEffect, useState, useRef } from 'react';
 import {
   GetSensorDataByHardwareID,
   GetSensorDataParametersBySensorDataID,
+  ListHardwareParameterIDsByHardwareID,
 } from '../../../../../../services/hardware';
 
 interface ChartdataProps {
@@ -27,113 +26,128 @@ interface ChartdataProps {
   timeRangeType: 'day' | 'month' | 'year';
   selectedRange: any;
   chartHeight?: string;
+  reloadKey?: number;
 }
 
-function getMonthStartDate(year: number, month: number) {
-  return new Date(year, month, 1);
+function getDayLabel(date: Date) {
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
 }
-function getYearStartDate(year: number) {
-  return new Date(year, 0, 1);
+function getMonthLabel(date: Date) {
+  return date.toLocaleString('default', { month: 'short' });
 }
 
-function groupByMonthAvg(data: { x: Date, y: number, param: string }[]) {
-  const groups: { [key: string]: { param: string, y: number[] }[] } = {};
+function groupByDay(data: { x: Date; y: number; param: string }[]) {
+  const map: { [key: string]: number[] } = {};
+  const labelMap: { [key: string]: string } = {};
+
   data.forEach(d => {
-    const key = `${d.param}_${d.x.getFullYear()}-${d.x.getMonth() + 1}`;
-    if (!groups[key]) groups[key] = [];
-    if (!groups[key][0]) groups[key][0] = { param: d.param, y: [] };
-    groups[key][0].y.push(d.y);
+    const label = getDayLabel(d.x);
+    const key = `${d.param}_${label}`;
+    map[key] ??= [];
+    map[key].push(d.y);
+    labelMap[key] = label;
   });
-  return Object.entries(groups).map(([key, arr]) => {
-    const [param, ym] = key.split('_');
-    const [year, month] = ym.split('-').map(Number);
-    const values = arr[0].y;
+
+  return Object.entries(map).map(([key, values]) => {
+    const [param] = key.split('_');
     return {
-      x: getMonthStartDate(year, month - 1),
-      y: values.reduce((sum, val) => sum + val, 0) / values.length,
       param,
+      x: labelMap[key],
+      y: values.reduce((sum, val) => sum + val, 0) / values.length,
     };
-  }).sort((a, b) => a.x.getTime() - b.x.getTime());
+  });
 }
 
-function groupByYearAvg(data: { x: Date, y: number, param: string }[]) {
-  const groups: { [key: string]: { param: string, y: number[] }[] } = {};
+function groupByMonth(data: { x: Date; y: number; param: string }[]) {
+  const map: { [key: string]: number[] } = {};
+  const labelMap: { [key: string]: string } = {};
+
   data.forEach(d => {
-    const key = `${d.param}_${d.x.getFullYear()}`;
-    if (!groups[key]) groups[key] = [];
-    if (!groups[key][0]) groups[key][0] = { param: d.param, y: [] };
-    groups[key][0].y.push(d.y);
+    const label = getMonthLabel(d.x);
+    const key = `${d.param}_${label}`;
+    map[key] ??= [];
+    map[key].push(d.y);
+    labelMap[key] = label;
   });
-  return Object.entries(groups).map(([key, arr]) => {
-    const [param, year] = key.split('_');
-    const values = arr[0].y;
+
+  return Object.entries(map).map(([key, values]) => {
+    const [param] = key.split('_');
     return {
-      x: getYearStartDate(Number(year)),
-      y: values.reduce((sum, val) => sum + val, 0) / values.length,
       param,
+      x: labelMap[key],
+      y: values.reduce((sum, val) => sum + val, 0) / values.length,
     };
-  }).sort((a, b) => a.x.getTime() - b.x.getTime());
+  });
 }
 
-function getDateRange(start: Date, end: Date): Date[] {
-  const dates: Date[] = [];
-  const current = new Date(start);
-  while (current <= end) {
-    dates.push(new Date(current));
-    current.setDate(current.getDate() + 1);
-  }
-  return dates;
-}
-
-const ColorMapping: React.FC<ChartdataProps> = ({
+const ColorMappingBarChart: React.FC<ChartdataProps> = ({
   hardwareID,
-  parameters,
-  colors,
   timeRangeType,
   selectedRange,
-  chartHeight = "420px"
+  colors = [],
+  chartHeight = '420px',
+  reloadKey,
 }) => {
   const { currentMode } = useStateContext();
   const [seriesData, setSeriesData] = useState<any[]>([]);
-  const [paramRange, setParamRange] = useState<Record<string, { min: number, max: number }>>({});
   const [standardLines, setStandardLines] = useState<any[]>([]);
   const [unitMap, setUnitMap] = useState<Record<string, string>>({});
+  const [parameterInfo, setParameterInfo] = useState<Record<string, string>>({});
+  const [barParameters, setBarParameters] = useState<string[]>([]);
+  const [paramRange, setParamRange] = useState<Record<string, { min: number; max: number }>>({});
   const [loading, setLoading] = useState(true);
-  const [hasData, setHasData] = useState(true);
+  const [noData, setNoData] = useState(false);
   const mounted = useRef(true);
 
   useEffect(() => {
     mounted.current = true;
-    return () => { mounted.current = false; };
-  }, []);
+    return () => {
+      mounted.current = false;
+    };
+  }, [reloadKey]);
 
   useEffect(() => {
-    let stop = false;
+    const fetchBarParameters = async () => {
+      const result = await ListHardwareParameterIDsByHardwareID(hardwareID);
+      if (!result || !result.parameters) return;
+      const filtered = (result.parameters as any[]).filter((p) => p.graph_id === 3);
+      const names = filtered.map((p: any) => p.parameter);
+      const info: Record<string, string> = {};
+      filtered.forEach(p => {
+        info[p.parameter] = p.color || '#999999';
+      });
+      setBarParameters(names);
+      setParameterInfo(info);
+    };
 
+    if (hardwareID) fetchBarParameters();
+  }, [hardwareID,reloadKey]);
+
+  useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      setHasData(true);
+      setNoData(false);
       setSeriesData([]);
-      setParamRange({});
       setStandardLines([]);
       setUnitMap({});
+      setParamRange({});
 
-      if (!hardwareID || !parameters?.length) {
+      if (!hardwareID || !barParameters.length) {
         setLoading(false);
-        setHasData(false);
         return;
       }
 
       const raw = await GetSensorDataByHardwareID(hardwareID);
-      if (!mounted.current || stop || !Array.isArray(raw) || raw.length === 0) {
+      if (!mounted.current || !Array.isArray(raw) || raw.length === 0) {
         setLoading(false);
-        setHasData(false);
+        setNoData(true);
         return;
       }
 
       const allData: { x: Date; y: number; param: string }[] = [];
-      const standards: Record<string, number> = {};
+      const standardMap: Record<string, number> = {};
       const unitMapping: Record<string, string> = {};
+      const rangeMap: Record<string, number[]> = {};
 
       for (const sensor of raw) {
         const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
@@ -142,138 +156,117 @@ const ColorMapping: React.FC<ChartdataProps> = ({
         for (const param of params) {
           const name = param.HardwareParameter?.Parameter;
           const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
-          const date = new Date(param.Date);
           const standard = param.HardwareParameter?.StandardHardware?.Standard;
           const unit = param.HardwareParameter?.UnitHardware?.Unit;
+          const date = new Date(param.Date);
 
-          if (!name || !parameters.includes(name)) continue;
-          if (isNaN(value) || isNaN(date.getTime())) continue;
+          if (!name || !barParameters.includes(name) || isNaN(value) || isNaN(date.getTime())) continue;
 
-          let inRange = false;
+          let include = false;
           if (timeRangeType === 'day') {
-            if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
-            const [start, end] = selectedRange;
-            inRange = date >= new Date(start) && date <= new Date(end);
+            const [start, end] = selectedRange || [];
+            include = date >= new Date(start) && date <= new Date(end);
           } else if (timeRangeType === 'month') {
-            if (!selectedRange?.month || !selectedRange?.year) continue;
-            inRange = (date.getMonth() + 1 === Number(selectedRange.month))
-              && (date.getFullYear() === Number(selectedRange.year));
+            include =
+              date.getMonth() + 1 === Number(selectedRange?.month) &&
+              date.getFullYear() === Number(selectedRange?.year);
           } else if (timeRangeType === 'year') {
-            if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
-            const [start, end] = selectedRange;
-            inRange = date.getFullYear() >= +start && date.getFullYear() <= +end;
+            const [start, end] = selectedRange || [];
+            include = date.getFullYear() >= +start && date.getFullYear() <= +end;
           }
 
-          if (!inRange) continue;
+          if (!include) continue;
 
           allData.push({ x: date, y: value, param: name });
-          if (standard && !standards[name]) standards[name] = standard;
-          if (unit && !unitMapping[unit]) unitMapping[unit] = name;
+          if (standard && !standardMap[name]) standardMap[name] = standard;
+          if (unit && name && !unitMapping[unit]) unitMapping[unit] = name;
+
+          rangeMap[name] ??= [];
+          rangeMap[name].push(value);
         }
       }
 
-      let grouped: { x: Date; y: number; param: string }[] = [];
-      if (timeRangeType === 'year') {
-        const [start, end] = selectedRange;
-        if (+start === +end) {
-          grouped = groupByMonthAvg(allData.filter(d => d.x.getFullYear() === +start));
-        } else {
-          grouped = groupByYearAvg(allData.filter(d => d.x.getFullYear() >= +start && d.x.getFullYear() <= +end));
-        }
+      let grouped: { x: string; y: number; param: string }[] = [];
+      if (timeRangeType === 'month') {
+        grouped = groupByDay(allData);
+      } else if (timeRangeType === 'year') {
+        grouped = groupByMonth(allData);
       } else {
-        grouped = allData.sort((a, b) => a.x.getTime() - b.x.getTime());
+        grouped = groupByDay(allData);
       }
 
       if (grouped.length === 0) {
         setLoading(false);
-        setHasData(false);
+        setNoData(true);
         return;
       }
 
-      const rangeMap: Record<string, { min: number, max: number }> = {};
+      const groupedByParam: Record<string, { x: string; y: number }[]> = {};
       grouped.forEach(d => {
-        if (!rangeMap[d.param]) rangeMap[d.param] = { min: d.y, max: d.y };
-        else {
-          rangeMap[d.param].min = Math.min(rangeMap[d.param].min, d.y);
-          rangeMap[d.param].max = Math.max(rangeMap[d.param].max, d.y);
+        groupedByParam[d.param] ??= [];
+        groupedByParam[d.param].push({ x: d.x, y: d.y });
+      });
+
+      const series: any[] = [];
+      const standards: any[] = [];
+      const rangeResult: Record<string, { min: number; max: number }> = {};
+
+      Object.entries(groupedByParam).forEach(([param, data]) => {
+        const color = parameterInfo[param] || '#999999';
+        series.push({
+          dataSource: data,
+          xName: 'x',
+          yName: 'y',
+          name: param,
+          type: 'Column',
+          fill: color,
+          columnSpacing: 0.1,
+          width: 0.5,
+          cornerRadius: { topLeft: 5, topRight: 5 },
+        });
+
+        const values = rangeMap[param];
+        if (values?.length) {
+          rangeResult[param] = {
+            min: Math.min(...values),
+            max: Math.max(...values),
+          };
+        }
+
+        if (standardMap[param]) {
+          const std = data.map(d => ({ x: d.x, y: standardMap[param] }));
+          standards.push({
+            dataSource: std,
+            xName: 'x',
+            yName: 'y',
+            name: `${param} (Standard)`,
+            type: 'Line',
+            dashArray: '5,5',
+            width: 2,
+            fill: '#888',
+            marker: { visible: false },
+          });
         }
       });
 
-      let standardSeries: any[] = [];
-      if (timeRangeType === 'day') {
-        const [start, end] = selectedRange;
-        const dateList = getDateRange(new Date(start), new Date(end));
-        standardSeries = Object.entries(standards).map(([param, value]) => {
-          const data = dateList.map(d => ({ x: d, y: value }));
-          return {
-            dataSource: data,
-            xName: 'x',
-            yName: 'y',
-            type: 'Line',
-            name: `${param} (Standard)`,
-            width: 2,
-            dashArray: '5,5',
-            marker: { visible: false },
-            fill: '#999999',
-          };
-        });
-      } else {
-        const xListByParam: Record<string, Date[]> = {};
-        grouped.forEach(d => {
-          if (!xListByParam[d.param]) xListByParam[d.param] = [];
-          xListByParam[d.param].push(d.x);
-        });
-
-        standardSeries = Object.entries(standards).map(([param, value]) => {
-          const xList = xListByParam[param] || [];
-          const data = xList.map(x => ({ x, y: value }));
-          return {
-            dataSource: data,
-            xName: 'x',
-            yName: 'y',
-            type: 'Line',
-            name: `${param} (Standard)`,
-            width: 2,
-            dashArray: '5,5',
-            marker: { visible: false },
-            fill: '#999999',
-          };
-        });
-      }
-
-      setSeriesData(grouped);
-      setParamRange(rangeMap);
-      setStandardLines(standardSeries);
+      setSeriesData(series);
+      setStandardLines(standards);
       setUnitMap(unitMapping);
+      setParamRange(rangeResult);
       setLoading(false);
-      setHasData(true);
     };
 
     fetchData();
-    return () => { stop = true; };
-  }, [hardwareID, timeRangeType, selectedRange, parameters]);
+  }, [hardwareID, timeRangeType, selectedRange, barParameters,reloadKey]);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-80 text-lg text-gray-500">
-        Loading...
-      </div>
-    );
-  }
-
-  if (!hasData) {
-    return (
-      <div className="flex justify-center items-center h-80 text-lg text-gray-500">
-        No Data
-      </div>
-    );
-  }
+  if (loading) return <div className="flex justify-center items-center h-80 text-gray-500 text-lg">Loading...</div>;
+  if (noData) return <div className="flex justify-center items-center h-80 text-gray-500 text-lg">No Data</div>;
 
   return (
     <div>
       <div className="text-sm font-semibold text-gray-600 mb-2 ml-2">
         {Object.entries(unitMap).map(([unit, param]) => {
-          const idx = parameters.indexOf(param);
+          const idx = barParameters.indexOf(param);
           const color = colors?.[idx] ?? '#000';
           return (
             <span key={unit} style={{
@@ -283,20 +276,16 @@ const ColorMapping: React.FC<ChartdataProps> = ({
               marginRight: 8,
               borderRadius: 6,
               fontWeight: 'bold'
-            }}>
-              {unit}
-            </span>
+            }}>{unit}</span>
           );
         })}
       </div>
       <ChartComponent
         id="color-mapping-chart"
         primaryXAxis={{
-          valueType: 'DateTime',
-          labelFormat: (timeRangeType === 'year' ? 'MMM' : 'dd/MM'),
-          intervalType: (timeRangeType === 'year' ? 'Months' : 'Days'),
-          majorGridLines: { width: 0 },
-          edgeLabelPlacement: 'Shift',
+          valueType: 'Category',
+          labelIntersectAction: 'Rotate45',
+          interval: 1,
         }}
         primaryYAxis={{
           labelFormat: '{value}',
@@ -311,27 +300,22 @@ const ColorMapping: React.FC<ChartdataProps> = ({
         width="100%"
         height={chartHeight}
       >
-        <Inject services={[ColumnSeries, Tooltip, Category, Legend, DateTime, LineSeries]} />
+        <Inject services={[ColumnSeries, Tooltip, Category, Legend, LineSeries]} />
         <SeriesCollectionDirective>
-          <SeriesDirective
-            dataSource={seriesData}
-            xName="x"
-            yName="y"
-            type="Column"
-            name="Sensor"
-            cornerRadius={{ topLeft: 10, topRight: 10 }}
-          />
+          {seriesData.map((series, idx) => (
+            <SeriesDirective key={idx} {...series} />
+          ))}
           {standardLines.map((line, i) => (
-            <SeriesDirective key={i} {...line} />
+            <SeriesDirective key={`std-${i}`} {...line} />
           ))}
         </SeriesCollectionDirective>
         <RangeColorSettingsDirective>
-          {parameters.map((param, idx) => (
+          {barParameters.map((param: string, idx: number) => (
             <RangeColorSettingDirective
               key={param}
               start={paramRange[param]?.min ?? 0}
-              end={paramRange[param]?.max ?? 99999}
-              colors={[colors && colors[idx] ? colors[idx] : '#40BFB4']}
+              end={paramRange[param]?.max ?? 100}
+              colors={[colors?.[idx] ?? '#40BFB4']}
               label={param}
             />
           ))}
@@ -341,4 +325,4 @@ const ColorMapping: React.FC<ChartdataProps> = ({
   );
 };
 
-export default ColorMapping;
+export default ColorMappingBarChart;

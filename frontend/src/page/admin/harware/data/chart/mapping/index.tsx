@@ -3,6 +3,7 @@ import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
 import ColorMapping from './ColorMapping';
 import TimeRangeSelector from './TimeRangeSelector';
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
+import { ListHardwareParameterIDsByHardwareID } from '../../../../../../services/hardware';
 
 const dropdownData = [
   { Id: 'day', Time: 'Day(s)' },
@@ -10,42 +11,74 @@ const dropdownData = [
   { Id: 'year', Time: 'Year(s)' },
 ];
 
+
 interface ColorMappingIndexProps {
   hardwareID: number;
   parameters: string[];
   colors?: string[];
+  reloadKey?: number;
+}
+
+interface ColorParamWithColor {
+  parameter: string;
+  color: string;
 }
 
 const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
   hardwareID,
   parameters,
   colors = [],
+  reloadKey,
 }) => {
   const { currentMode } = useStateContext();
   const [timeRangeType, setTimeRangeType] = useState<'day' | 'month' | 'year'>('day');
   const [selectedRange, setSelectedRange] = useState<any>(null);
-
-  // Responsive: ใช้ window width < 640 (mobile)
+  const [colorMappingParameters, setColorMappingParameters] = useState<ColorParamWithColor[]>([]);
   const isMobile = typeof window !== "undefined" ? window.innerWidth < 640 : false;
-
-  useEffect(() => {
-    if (timeRangeType === 'day') {
-      const today = new Date();
-      today.setHours(23,59,59,999);
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(today.getDate() - 6);
-      sevenDaysAgo.setHours(0,0,0,0);
-      setSelectedRange([sevenDaysAgo, today]);
-    } else if (timeRangeType === 'month') {
-      const now = new Date();
-      setSelectedRange({
+  const [reloadCharts, setReloadCharts] = useState(0);
+  
+  const getDefaultRange = (type: 'day' | 'month' | 'year') => {
+    const now = new Date();
+    if (type === 'day') {
+      const end = new Date();
+      end.setHours(23, 59, 59, 999);
+      const start = new Date();
+      start.setDate(start.getDate() - 6);
+      start.setHours(0, 0, 0, 0);
+      return [start, end];
+    } else if (type === 'month') {
+      return {
         month: (now.getMonth() + 1).toString().padStart(2, '0'),
         year: now.getFullYear().toString(),
-      });
-    } else if (timeRangeType === 'year') {
-      const y = new Date().getFullYear();
-      setSelectedRange([y, y]);
+      };
+    } else if (type === 'year') {
+      const year = now.getFullYear();
+      return [year, year];
     }
+    return null;
+  };
+
+  useEffect(() => {
+    const loadColorMappingParameters = async () => {
+      if (!hardwareID) return;
+
+      const response = await ListHardwareParameterIDsByHardwareID(hardwareID);
+      if (response && Array.isArray(response.parameters)) {
+        const colorParams = (response.parameters as any[])
+          .filter((item) => item.graph_id === 3)
+          .map((item) => ({ parameter: item.parameter, color: item.color }));
+        setReloadCharts(prev => prev + 1);
+        setColorMappingParameters(colorParams);
+      }
+    };
+
+    loadColorMappingParameters();
+  }, [hardwareID, reloadKey]);
+
+  // 🛠 อัปเดต default range ทันทีที่ timeRangeType เปลี่ยน
+  useEffect(() => {
+    const defaultRange = getDefaultRange(timeRangeType);
+    setSelectedRange(defaultRange);
   }, [timeRangeType]);
 
   return (
@@ -57,25 +90,61 @@ const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
           flex flex-col gap-4
           shadow
         ">
-          {/* Header & Selector */}
+          {/* Header & Parameter Tags */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-            <p className="text-2xl md:text-3xl font-semibold">Sensor Data</p>
+            <div>
+              {colorMappingParameters.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {colorMappingParameters.map((param, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-1 text-xs rounded-full"
+                      style={{
+                        backgroundColor: param.color,
+                        color: '#fff',
+                        boxShadow: '0 0 4px rgba(0,0,0,0.2)',
+                      }}
+                    >
+                      {param.parameter}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* DropDown + Time Selector */}
             <div className="flex flex-col sm:flex-row gap-2 md:items-center">
-              <div className="w-full sm:w-32 border border-gray-300 px-2 py-1 rounded-md">
+              <div className={`
+                w-full sm:w-40 rounded-xl transition
+                bg-white dark:bg-gray-800
+                border border-teal-500 dark:border-teal-400
+                focus-within:ring-2 focus-within:ring-teal-400
+                px-2 py-1
+                shadow-sm
+              `}>
                 <DropDownListComponent
                   id="time"
                   fields={{ text: 'Time', value: 'Id' }}
                   style={{
                     border: 'none',
-                    color: currentMode === 'Dark' ? 'white' : undefined,
+                    background: 'transparent',
+                    fontWeight: 500,
+                    padding: '4px 0',
+                    color: currentMode === 'Dark' ? 'white' : '#0f766e',
                   }}
                   value={timeRangeType}
                   dataSource={dropdownData}
                   popupHeight="220px"
                   popupWidth="160px"
-                  change={(e) => setTimeRangeType(e.value)}
+                  change={(e) => {
+                    const newType = e.value;
+                    setTimeRangeType(newType);
+                    const defaultRange = getDefaultRange(newType);
+                    setSelectedRange(defaultRange);
+                  }}
                 />
               </div>
+
               <TimeRangeSelector
                 timeRangeType={timeRangeType}
                 onChange={setSelectedRange}
@@ -83,6 +152,7 @@ const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
               />
             </div>
           </div>
+
           {/* Chart */}
           <div className="w-full flex justify-center">
             <div className="w-full">
@@ -93,6 +163,7 @@ const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
                 timeRangeType={timeRangeType}
                 selectedRange={selectedRange}
                 chartHeight={isMobile ? "300px" : "420px"}
+                reloadKey={reloadCharts}
               />
             </div>
           </div>

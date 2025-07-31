@@ -1,0 +1,95 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <time.h>
+
+// WiFi config
+const char *ssid = "vivo Y33T";
+const char *password = "0935096372";
+
+// Backend API endpoint (เปลี่ยนเป็น IP หรือ domain จริงถ้ามี)
+const char *serverName = "http://192.168.53.128:8000/hardware/read";
+
+// NTP Time config
+const char *ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = 7 * 3600;
+const int daylightOffset_sec = 0;
+
+void getCurrentDateTime(String &dateStr, String &timeStr) {
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo)) {
+    char dateBuf[11], timeBuf[9];
+    strftime(dateBuf, sizeof(dateBuf), "%Y-%m-%d", &timeinfo);
+    strftime(timeBuf, sizeof(timeBuf), "%H:%M:%S", &timeinfo);
+    dateStr = String(dateBuf);
+    timeStr = String(timeBuf);
+  } else {
+    dateStr = "0000-00-00";
+    timeStr = "00:00:00";
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Connect to WiFi
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected");
+  Serial.println("IP address: " + WiFi.localIP().toString());
+
+  // Sync NTP time
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Failed to obtain time");
+  } else {
+    Serial.println(&timeinfo, "Time acquired: %Y-%m-%d %H:%M:%S");
+  }
+}
+
+void loop() {
+  // Generate random sensor data
+  float temperature = random(200, 350) / 10.0;   // 20.0 - 35.0 °C
+  float humidity = random(300, 800) / 10.0;      // 30% - 80%
+
+  String dateStr, timeStr;
+  getCurrentDateTime(dateStr, timeStr);
+
+  // Build JSON payload
+  String json = "{";
+  json += "\"name\": \"ESP32-001\",";
+  json += "\"ip_address\": \"" + WiFi.localIP().toString() + "\",";
+  json += "\"parameters\": [";
+  json += "{\"parameter\": \"Temperature\", \"data\": " + String(temperature, 2) + "},";
+  json += "{\"parameter\": \"Humidity\", \"data\": " + String(humidity, 2) + "}";
+  json += "]}";
+
+  // Print debug
+  Serial.println("------------------------");
+  Serial.println("Date: " + dateStr);
+  Serial.println("Time: " + timeStr);
+  Serial.println("Sending to backend: " + json);
+
+  // Send POST request
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin(serverName);
+    http.addHeader("Content-Type", "application/json");
+
+    int httpResponseCode = http.POST(json);
+
+    if (httpResponseCode == 200) {
+      Serial.println("✅ Data sent to backend successfully!");
+    } else {
+      Serial.println("❌ Failed to send data. Response code: " + String(httpResponseCode));
+    }
+
+    http.end();
+  }
+
+  delay(120000); 
+}

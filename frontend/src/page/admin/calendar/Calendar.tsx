@@ -14,7 +14,6 @@ import {
 } from '@syncfusion/ej2-react-schedule';
 import { DatePickerComponent } from '@syncfusion/ej2-react-calendars';
 import type { ScheduleComponent as ScheduleType } from '@syncfusion/ej2-react-schedule';
-import  Header  from '../../../component/admin/Header';
 import type { View } from '@syncfusion/ej2-react-schedule';
 
 import { ListCalendars, CreateCalendar, UpdateCalendar, DeleteCalendar } from '../../../services/index';
@@ -118,7 +117,12 @@ const Scheduler = () => {
 
   return (
     <div className="m-2 md:m-10 mt-24 p-2 md:p-10 bg-white rounded-3xl">
-      <Header category="WORK" title="Calendar" />
+      <div className="mb-10">
+        <p className="text-lg text-gray-400"> </p>
+        <p className="text-3xl font-extrabold tracking-tight text-white px-4 py-2 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-500 shadow-md w-fit">
+          Calendar
+        </p>
+      </div>
       <ScheduleComponent
         height="650px"
         ref={(schedule: any) => setScheduleObj(schedule)}
