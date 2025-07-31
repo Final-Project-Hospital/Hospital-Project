@@ -10,13 +10,13 @@ export interface CreateTDSInterface {
 }
 
 export interface UpdateTDSInterface {
-  ID: number; 
-  Date: Date | string;
+  ID: number;
+  Date: string; 
   Data: number;
   BeforeAfterTreatmentID: number;
-  ParameterID: number; 
+  ParameterID: number;
   StandardID: number;
-  UnitID: number;
+  UnitID: number | null;
   EmployeeID: number;
   Note?: string;
   CustomUnit?: string;

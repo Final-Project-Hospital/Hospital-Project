@@ -3,7 +3,7 @@ import { DatePicker, Input, Select, Tooltip, Modal, message } from "antd";
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import ApexChart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
-import { GetTDS, DeleteTDS } from "../../../services/tdsService";
+import { GetTDS, DeleteAllTDSRecordsByDate } from "../../../services/tdsService";
 import './TDSdataviz.css';
 import { LeftOutlined, SearchOutlined, ExclamationCircleFilled, CloseCircleFilled, CheckCircleFilled, QuestionCircleFilled, } from "@ant-design/icons";
 import Table, { ColumnsType } from "antd/es/table";
@@ -42,6 +42,7 @@ const TDSdataviz: React.FC = () => {
 
   const { confirm } = Modal;
 
+  // อันใหม่
   const fetchData = async () => {
     setLoading(true);
     setError(null);
@@ -49,43 +50,51 @@ const TDSdataviz: React.FC = () => {
       const response = await GetTDS();
       if (!response || response.length === 0) {
         setError("ไม่พบข้อมูล TDS");
+        console.log(error);
         setLoading(false);
         return;
       }
-
       const processedData = response.map((item: any) => {
-        const dt = dayjs(item.Date);
+        const dt = dayjs(item.date);
         return {
           ...item,
-          dateOnly: dt.format('DD-MM-YYYY'),
-          timeOnly: dt.format('HH:mm:ss'),
+          dateOnly: dt.format("DD-MM-YYYY"),
+          timeOnly: dt.format("HH:mm:ss"),
+
+          // ใช้ before_note และ after_note ที่ได้จาก backend เลย
+          before_note: item.before_note || '',
+          after_note: item.after_note || '',
         };
       });
+
+      // เรียงวันที่ใหม่ → เก่า
+      processedData.sort((a: any, b: any) =>
+        dayjs(b.date).diff(dayjs(a.date))
+      );
 
       setData(processedData);
 
       const before = processedData
-        .filter((item: any) => item.BeforeAfterTreatment?.ID === 1)
-        .map((item: any) => ({ date: item.dateOnly, data: item.Data || 0 }));
+        .filter((item: any) => item.before_value !== undefined && item.before_value !== null)
+        .map((item: any) => ({ date: item.dateOnly, data: item.before_value || 0 }));
 
       const after = processedData
-        .filter((item: any) => item.BeforeAfterTreatment?.ID === 2)
-        .map((item: any) => ({ date: item.dateOnly, data: item.Data || 0 }));
-
-      const combined = processedData
-        .filter((item: any) => item.BeforeAfterTreatment?.ID === 3)
-        .map((item: any) => ({
-          date: item.dateOnly,
-          beforeData: item.Note === "ก่อนบำบัด" ? item.Data || 0 : null,
-          afterData: item.Note === "หลังบำบัด" ? item.Data || 0 : null,
-        }));
+        .filter((item: any) => item.after_value !== undefined && item.after_value !== null)
+        .map((item: any) => ({ date: item.dateOnly, data: item.after_value || 0 }));
 
       const combinedMap: Record<string, { before: number; after: number }> = {};
 
-      combined.forEach((item: any) => {
-        if (!combinedMap[item.date]) combinedMap[item.date] = { before: 0, after: 0 };
-        if (item.beforeData !== null) combinedMap[item.date].before = item.beforeData;
-        if (item.afterData !== null) combinedMap[item.date].after = item.afterData;
+      // รวมข้อมูล before & after โดยใช้ date เป็น key
+      processedData.forEach((item: any) => {
+        if (!combinedMap[item.dateOnly]) {
+          combinedMap[item.dateOnly] = { before: 0, after: 0 };
+        }
+        if (item.before_value !== undefined && item.before_value !== null) {
+          combinedMap[item.dateOnly].before = item.before_value;
+        }
+        if (item.after_value !== undefined && item.after_value !== null) {
+          combinedMap[item.dateOnly].after = item.after_value;
+        }
       });
 
       const compare = Object.entries(combinedMap).map(([date, values]) => ({
@@ -126,70 +135,84 @@ const TDSdataviz: React.FC = () => {
     { name: "หลังบำบัด", data: compareData.map(item => item.after) },
   ];
 
+  // อันใหม่
   const columns: ColumnsType<any> = [
     {
       title: 'วันที่',
-      dataIndex: 'dateOnly',
-      key: 'dateOnly',
-      width: 125,
-    },
-    {
-      title: 'เวลา',
-      dataIndex: 'timeOnly',
-      key: 'timeOnly',
-      width: 55,
+      dataIndex: 'date',
+      key: 'date',
+      width: 130,
     },
     {
       title: 'หน่วยที่วัด',
+      dataIndex: 'unit',
       key: 'unit',
       width: 145,
-      render: (_, record: any) => record.Unit?.UnitName || '-',
+      render: (unit: string) => unit || '-',
     },
     {
-      title: 'มาตรฐาน',
-      key: 'standard',
-      width: 100,
-      render: (_: any, record: any) => {
-        const std = record.Standard;
-        if (std) {
-          if (typeof std.MiddleValue === 'number' && std.MiddleValue > 0) {
-            return std.MiddleValue;
-          }
-          if (
-            typeof std.MinValue === 'number' &&
-            typeof std.MaxValue === 'number' &&
-            (std.MinValue !== 0 || std.MaxValue !== 0)
-          ) {
-            return `${std.MinValue} - ${std.MaxValue}`;
-          }
-        }
-        return '-';
-      }
+      title: 'ค่ามาตรฐาน',
+      dataIndex: 'standard_value',
+      key: 'standard_value',
+      width: 130,
+      render: (val: number) => val ?? '-',
     },
     {
       title: 'ค่าก่อนเข้าระบบบำบัด',
-      key: 'beforeValue',
-      width: 100,
-      render: (_, record: any) => (record.BeforeAfterTreatment?.ID === 1 ? record.Data : '-'),
+      dataIndex: 'before_value',
+      key: 'before_value',
+      width: 120,
+      render: (val: number | null) => val ?? '-',
     },
     {
       title: 'ค่าหลังเข้าระบบบำบัด',
-      key: 'afterValue',
-      width: 100,
-      render: (_, record: any) => (record.BeforeAfterTreatment?.ID === 2 ? record.Data : '-'),
+      dataIndex: 'after_value',
+      key: 'after_value',
+      width: 120,
+      render: (val: number | null) => val ?? '-',
     },
     {
-      title: 'หมายเหตุ',
+      title: (
+        <>
+          หมายเหตุ
+          <br />
+          ( ก่อน / หลัง )
+        </>
+      ),
+      dataIndex: 'note',
       key: 'note',
+      width: 150,
+      render: (_: any, record: any) => {
+        const beforeNote = record.before_note || '-';
+        const afterNote = record.after_note || '-';
+        return [beforeNote, afterNote].filter(Boolean).join(' / ');
+      },
+    },
+    {
+      title: (
+        <>
+          ประสิทธิภาพ
+          <br />
+          ( % )
+        </>
+      ),
+      key: 'efficiency',
       width: 120,
-      render: (_, record: any) => record.Note || '-',
+      render: (_: any, record: any) => {
+        const { efficiency } = record;
+        if (typeof efficiency === 'number') {
+          const safeEff = efficiency < 0 ? 0 : efficiency; // ✅ ถ้าติดลบให้เป็น 0
+          return safeEff.toFixed(2);
+        }
+        return '-';
+      },
     },
     {
       title: 'สถานะ',
       key: 'status',
       width: 200,
       render: (_, record) => {
-        const statusName = record.Status?.StatusName;
+        const statusName = record.status;  // 👈 เปลี่ยนตรงนี้
 
         if (!statusName) {
           return (
@@ -200,7 +223,7 @@ const TDSdataviz: React.FC = () => {
           );
         }
 
-        if (statusName.includes("ตํ่ากว่า")) {
+        if (statusName.includes("ต่ำกว่า")) {
           return (
             <span className="status-badge status-low">
               <ExclamationCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
@@ -228,25 +251,35 @@ const TDSdataviz: React.FC = () => {
         }
       }
     },
+
     {
       title: 'จัดการข้อมูล',
       key: 'action',
       className: 'darker-column',
       width: 120,
-      render: (_: any, record: any) => (
-        <div className="action-buttons">
-          <Tooltip title="แก้ไข">
-            <button className="circle-btn edit-btn" onClick={() => handleEdit(record.ID)}>
-              <EditOutlined />
-            </button>
-          </Tooltip>
-          <Tooltip title="ลบ">
-            <button className="circle-btn delete-btn" onClick={() => handleDelete(record.ID)}>
-              <DeleteOutlined />
-            </button>
-          </Tooltip>
-        </div>
-      ),
+      render: (_: any, record: any) => {
+        console.log('record:', record);
+        return (
+          <div className="action-buttons">
+            <Tooltip title="แก้ไข">
+              <button
+                className="circle-btn edit-btn"
+                onClick={() => handleEdit([record.before_id, record.after_id])}
+              >
+                <EditOutlined />
+              </button>
+            </Tooltip>
+            <Tooltip title="ลบ">
+              <button
+                className="circle-btn delete-btn"
+                onClick={() => handleDelete([record.before_id, record.after_id])}  // ✅ ส่ง ID เดียว
+              >
+                <DeleteOutlined />
+              </button>
+            </Tooltip>
+          </div>
+        );
+      }
     }
   ];
 
@@ -254,45 +287,72 @@ const TDSdataviz: React.FC = () => {
     setEditRecord(null);
     setIsModalVisible(true);
   };
- 
-  const handleEdit = async (id: number) => {
+
+  // อันใหม่
+  const handleEdit = async (ids: (number | undefined)[]) => {
+    console.log("IDs:", ids);
+
+    // กรองเอาเฉพาะ id ที่ไม่ undefined และไม่ null
+    const filteredIds = ids.filter((id): id is number => typeof id === 'number');
+
+    if (filteredIds.length === 0) {
+      message.error("ไม่พบ ID สำหรับแก้ไข");
+      return;
+    }
+
     try {
-      const response = await GetTDSbyID(id);
-      if (response.status === 200) {
-        setEditRecord(response.data);
-        console.log(response.data);
-        setIsEditModalVisible(true);
-      } else {
+      const responses = await Promise.all(filteredIds.map((id) => GetTDSbyID(id)));
+      const validData = responses
+        .filter((res) => res && res.status === 200)
+        .map((res) => res.data);
+
+      if (validData.length === 0) {
         message.error("ไม่พบข้อมูลสำหรับแก้ไข");
+        return;
       }
+
+      setEditRecord(validData);
+      setIsEditModalVisible(true);
     } catch (error) {
+      console.error("Error fetching TDS data:", error);
       message.error("เกิดข้อผิดพลาดในการดึงข้อมูล");
     }
   };
 
-  // เมื่อกดปุ่มลบ
-  const handleDelete = (id: number) => {
+  // ใหม่
+  const handleDelete = (ids: (number | null | undefined)[] | number | null | undefined) => {
+    let validIds: number[] = [];
+
+    if (Array.isArray(ids)) {
+      validIds = ids.filter((id): id is number => typeof id === "number" && id !== null);
+    } else if (typeof ids === "number") {
+      validIds = [ids];
+    }
+
+    if (validIds.length === 0) {
+      message.error("ไม่มี ID ที่จะลบ");
+      return;
+    }
+
+    const firstId = validIds[0];
+
     confirm({
-      title: 'คุณแน่ใจหรือไม่?',
+      title: "คุณแน่ใจหรือไม่?",
       icon: <ExclamationCircleFilled />,
-      content: 'คุณต้องการลบข้อมูลรายการนี้ใช่หรือไม่?',
-      okText: 'ใช่, ลบเลย',
-      okType: 'danger',
-      cancelText: 'ยกเลิก',
-      onOk() {
-        deleteTDSRecord(id);
+      content: "คุณต้องการลบข้อมูลรายการนี้ใช่หรือไม่?",
+      okText: "ใช่, ลบเลย",
+      okType: "danger",
+      cancelText: "ยกเลิก",
+      async onOk() {
+        try {
+          await DeleteAllTDSRecordsByDate(firstId);
+          message.success("ลบข้อมูลสำเร็จ");
+          await fetchData();
+        } catch (error) {
+          message.error("ลบข้อมูลไม่สำเร็จ");
+        }
       },
     });
-  };
-
-  const deleteTDSRecord = async (id: number) => {
-    try {
-      await DeleteTDS(id);
-      message.success('ลบข้อมูล TDS สำเร็จ');
-      fetchData();
-    } catch (error) {
-      message.error('เกิดข้อผิดพลาดในการลบข้อมูล');
-    }
   };
 
   return (
@@ -378,7 +438,11 @@ const TDSdataviz: React.FC = () => {
           )}
           rowKey="ID"
           loading={loading}
-          pagination={{ pageSize: 8 }}
+          pagination={{
+            defaultPageSize: 10,
+            showSizeChanger: true,
+            pageSizeOptions: ['7', '10', '15', '30', '100'],
+          }}
           bordered
         />
       </div>
