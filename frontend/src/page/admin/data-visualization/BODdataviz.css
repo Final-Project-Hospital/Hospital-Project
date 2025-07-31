@@ -89,12 +89,12 @@
   text-align: right;
 }
 
-.bod-select-filter{
+.bod-select-filter {
   width: fit-content;
-  min-width:120px;
+  min-width: 120px;
 }
 
-.bod-select-date{
+.bod-select-date {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
@@ -106,25 +106,20 @@
   font-size: 24px;
   font-weight: bold;
   color: #333;
+  margin-top: 20px;
 }
 
 .bod-title-search-vis {
   align-items: center;
-  margin: 20px 45px;
   width: 25%;
 }
 
-.bod-title-text-vis {
-  font-size: 24px;
-  font-weight: bold;
-  margin: 100px 0px;
-  color: #333;
-}
 .bod-title-text-vis {
   margin: 0;
   font-weight: bold;
   font-size: 1.5rem;
   color: #6e6e76;
+  margin-top: 10px;
 }
 
 .bod-search-box {
@@ -155,8 +150,9 @@
   font-size: 14px;
   font-weight: 500;
   transition: 0.2s;
-  
+
 }
+
 .bod-add-btn:hover {
   background-color: #49d4d7;
 }
@@ -166,7 +162,7 @@
   border-radius: 25px;
   padding: 20px;
   box-shadow: 0px 2px 15px rgba(162, 162, 162, 0.5);
-  
+
   margin-bottom: 20px;
   position: relative;
   z-index: 5;
@@ -184,7 +180,7 @@
   overflow: hidden;
 }
 
-.bod-table-tdsdata .ant-table-tbody > tr > td {
+.bod-table-tdsdata .ant-table-tbody>tr>td {
   text-align: center;
   vertical-align: middle;
 }
@@ -210,8 +206,9 @@
 /*จัดการ*/
 
 /* ทำให้คอลัมน์จัดการข้อมูลดูทึบกว่า */
-.bod-table-tdsdata .ant-table-tbody > tr > td.darker-column {
-  background-color: #f5f5f5; /* เทาอ่อนทึบ */
+.bod-table-tdsdata .ant-table-tbody>tr>td.darker-column {
+  background-color: #f5f5f5;
+  /* เทาอ่อนทึบ */
   font-weight: 500;
   border-right: 0.5px solid #D9D9D9;
   border-bottom: 0.5px solid #D9D9D9;
@@ -291,6 +288,22 @@
   color: #ff6b6b;
 }
 
+.expand-chat {
+  color: #8d8a8a !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.expand-chat:hover {
+  transform: scale(1.1);
+  color: #666 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
 /* Responsive for tablets (max-width: 1024px) */
 @media (max-width: 1025px) {
   .bod-graph-card {
@@ -314,11 +327,11 @@
     text-align: left;
   }
 
-   .bod-select-date{
-  display: flex;
-  gap: 10px;
-   margin-left: auto;
-}
+  .bod-select-date {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+  }
 }
 
 /* Responsive for medium screens (max-width: 768px) */
@@ -340,18 +353,21 @@
   .bod-select-group {
     flex-direction: column;
   }
+
   .bod-table-tdsdata {
     overflow-x: auto;
     padding: 10px;
   }
 
   .bod-table-tdsdata .ant-table {
-    min-width: 600px !important; /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
+    min-width: 600px !important;
+    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
   }
 
-  .bod-table-tdsdata .ant-table-thead > tr > th,
-  .bod-table-tdsdata .ant-table-tbody > tr > td {
-    white-space: nowrap !important; /* บรรทัดไม่ตัด */
+  .bod-table-tdsdata .ant-table-thead>tr>th,
+  .bod-table-tdsdata .ant-table-tbody>tr>td {
+    white-space: nowrap !important;
+    /* บรรทัดไม่ตัด */
     padding: 8px !important;
     font-size: 12px !important;
   }
@@ -401,13 +417,14 @@
     text-align: left;
     width: 100%;
   }
-    .width25 {
-  width: 40%;
-}
 
-.width40 {
-  width: 60%;
-}
+  .width25 {
+    width: 40%;
+  }
+
+  .width40 {
+    width: 60%;
+  }
 
   .bod-table-tdsdata {
     overflow-x: auto;
@@ -415,12 +432,14 @@
   }
 
   .bod-table-tdsdata .ant-table {
-    min-width: 600px !important; /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
+    min-width: 600px !important;
+    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
   }
 
-  .bod-table-tdsdata .ant-table-thead > tr > th,
-  .bod-table-tdsdata .ant-table-tbody > tr > td {
-    white-space: nowrap !important; /* บรรทัดไม่ตัด */
+  .bod-table-tdsdata .ant-table-thead>tr>th,
+  .bod-table-tdsdata .ant-table-tbody>tr>td {
+    white-space: nowrap !important;
+    /* บรรทัดไม่ตัด */
     padding: 8px !important;
     font-size: 5px !important;
   }
@@ -432,13 +451,14 @@
     padding: 15px;
     max-width: 100%;
   }
-  .width25 {
-  width: 40%;
-}
 
-.width40 {
-  width: 60%;
-}
+  .width25 {
+    width: 40%;
+  }
+
+  .width40 {
+    width: 60%;
+  }
 
   .bod-title-header h1 {
     font-size: 1rem;
@@ -464,36 +484,38 @@
     width: 100%;
   }
 
-    .bod-table-tdsdata {
+  .bod-table-tdsdata {
     overflow-x: auto;
     padding: 10px;
   }
 
   .bod-table-tdsdata .ant-table {
-    min-width: 600px !important; /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
+    min-width: 600px !important;
+    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
   }
 
-  .bod-table-tdsdata .ant-table-thead > tr > th,
-  .bod-table-tdsdata .ant-table-tbody > tr > td {
-    white-space: nowrap !important; /* บรรทัดไม่ตัด */
+  .bod-table-tdsdata .ant-table-thead>tr>th,
+  .bod-table-tdsdata .ant-table-tbody>tr>td {
+    white-space: nowrap !important;
+    /* บรรทัดไม่ตัด */
     padding: 5px !important;
     font-size: 7px !important;
   }
 
   .circle-btn {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid #d9d9d9;
-  background-color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
-}
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #d9d9d9;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+  }
 
-.circle-btn:hover {
-  background-color: #f5f5f5;
-}
+  .circle-btn:hover {
+    background-color: #f5f5f5;
+  }
 }

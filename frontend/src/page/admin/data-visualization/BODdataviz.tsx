@@ -1,22 +1,31 @@
+//ใช้ทั้งกราฟและตาราง
 import React, { useEffect, useState } from "react";
-import { Input, Select, DatePicker, Modal, message, Tooltip } from "antd";
-import ApexChart from "react-apexcharts";
-import { ApexOptions } from "apexcharts";
-import dayjs, { Dayjs } from "dayjs";
+import { Input, Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { LeftOutlined, SearchOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled, CloseCircleFilled, CheckCircleFilled, QuestionCircleFilled } from "@ant-design/icons";
-import Table, { ColumnsType } from "antd/es/table";
+import { useNavigate } from "react-router-dom";
+import './BODdataviz.css';
+import dayjs, { Dayjs } from "dayjs";
+import { GetlistBOD, GetfirstBOD, DeleteBOD } from "../../../services/bodService";
+
+// ใช้กับกราฟ
+import ApexChart from "react-apexcharts";
+import { ApexOptions } from "apexcharts";
 import { ColorPicker } from "antd";
 import type { Color } from "antd/es/color-picker";
-import { useNavigate } from "react-router-dom";
-import { BarChart3, LineChart } from "lucide-react";
-import { GetlistBOD, GetfirstBOD,DeleteBOD } from "../../../services/bodService"; // ใช้ BOD service
-import { GetTDSbyID } from "../../../services/tdsService"; // สำหรับแก้ไข/ลบ TDS (ถ้าต้องการ)
+import { BarChart3, LineChart, Maximize2 } from "lucide-react";
+
+//ใช้กับตาราง
+import Table, { ColumnsType } from "antd/es/table";
+import { GetTDSbyID } from "../../../services/tdsService";
 import UpdateTDSCentralForm from '../data-management/TDScenter/updateTDScenter';
-import './BODdataviz.css';
 import BODCentralForm from "../data-management/BODcenter"
 
+//ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
+import 'dayjs/locale/th';
+import th_TH from 'antd/es/date-picker/locale/th_TH';
+dayjs.locale('th');
 dayjs.extend(customParseFormat);
 dayjs.extend(isBetween);
 
@@ -25,50 +34,59 @@ const { RangePicker } = DatePicker;
 const BODdataviz: React.FC = () => {
   const navigate = useNavigate();
 
-  // --- State กราฟ BOD ---
-  const [chartTypeBefore, setChartTypeBefore] = useState<'bar' | 'line'>('bar');
-  const [chartTypeAfter, setChartTypeAfter] = useState<'bar' | 'line'>('bar');
-  const [chartTypeCompare, setChartTypeCompare] = useState<'bar' | 'line'>('bar');
+  //ใช้ทั้งกราฟและตาราง
   const [data, setData] = useState<any[]>([]); // ดึง BOD ทั้งหมด
   const [loading, setLoading] = useState<boolean>(false);
   const [, setError] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
+  const [filterMode, setFilterMode] = useState<"dateRange" | "month" | "year">("year");
+
+  //ใช้กับกราฟ
+  const [chartTypeBefore, setChartTypeBefore] = useState<'bar' | 'line'>('line');
+  const [chartTypeAfter, setChartTypeAfter] = useState<'bar' | 'line'>('line');
+  const [chartTypeCompare, setChartTypeCompare] = useState<'bar' | 'line'>('line');
+  const [chartpercentChange, setpercentChange] = useState<'bar' | 'line'>('line');
   const [compareData, setCompareData] = useState<{ date: string; before: number; after: number }[]>([]);
   const [beforeData, setBeforeData] = useState<{ date: string; data: number }[]>([]);
   const [afterData, setAfterData] = useState<{ date: string; data: number }[]>([]);
-  const [search, setSearch] = useState("");
   const [colorBefore, setColorBefore] = useState<string>("#7B61FF");
   const [colorAfter, setColorAfter] = useState<string>("#33E944");
   const [colorCompareBefore, setColorCompareBefore] = useState<string>("#FF4560");
   const [colorCompareAfter, setColorCompareAfter] = useState<string>("#775DD0");
   const [unit, setUnit] = useState<string>("-");
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
-  const [filterMode, setFilterMode] = useState<"dateRange" | "month" | "year">("year");
   const [middlestandard, setMiddleStandard] = useState<number | undefined>(undefined);
   const [minstandard, setMinStandard] = useState<number | undefined>(undefined);
   const [maxstandard, setMaxStandard] = useState<number | undefined>(undefined);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalGraphType, setModalGraphType] = useState<"before" | "after" | "compare" | "percentChange" | null>(null);
+  const [percentChangeData, setPercentChangeData] = useState<{ date: string; percent: number }[]>([]);
+  const [colorPercentChange, setcolorPercentChange] = useState<string>("#FF4560");
 
-  // // --- State ตาราง (เดิมชื่อ data2 แต่เราใช้ข้อมูล BOD แทน) ---
-  // const [data2, setData2] = useState<any[]>([]);
 
-  // --- Modal สำหรับเพิ่ม/แก้ไข TDS (ถ้าต้องการใช้) ---
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  //ใช้กับตาราง
+  const [search, setSearch] = useState("");
+  const [isModalVisible, setIsModalVisible] = useState(false);  // --- Modal สำหรับเพิ่ม/แก้ไข TDS (ถ้าต้องการใช้) ---
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingRecord, setEditRecord] = useState<any>(null);
   const { confirm } = Modal;
 
-  // --- โหลดสีจาก localStorage ---
+
+
+  //ใช้กับกราฟ ---โหลดสีจาก localStorage----
   useEffect(() => {
     const storedColorBefore = localStorage.getItem('colorBefore');
     const storedColorAfter = localStorage.getItem('colorAfter');
     const storedColorCompareBefore = localStorage.getItem('colorCompareBefore');
     const storedColorCompareAfter = localStorage.getItem('colorCompareAfter');
+    const storedcolorPercentChange = localStorage.getItem('colorPercentChange');
     if (storedColorBefore) setColorBefore(storedColorBefore);
     if (storedColorAfter) setColorAfter(storedColorAfter);
     if (storedColorCompareBefore) setColorCompareBefore(storedColorCompareBefore);
     if (storedColorCompareAfter) setColorCompareAfter(storedColorCompareAfter);
+    if (storedcolorPercentChange) setcolorPercentChange(storedcolorPercentChange);
   }, []);
 
-  // --- ฟังก์ชันโหลดข้อมูล BOD สำหรับกราฟและตาราง ---
+  //ฟังก์ชันโหลดข้อมูล BOD สำหรับกราฟและตาราง
   const fetchData = async () => {
     setLoading(true);
     setError(null);
@@ -76,9 +94,10 @@ const BODdataviz: React.FC = () => {
       const lastbod = await GetfirstBOD();
       const response = await GetlistBOD();
       if (response) {
+        //ใช้กับตาราง
         setData(response.data);
 
-        // จัดกลุ่มข้อมูลสำหรับกราฟ
+        //ใช้กับกราฟ ---จัดกลุ่มข้อมูลสำหรับกราฟ---
         const grouped: Record<string, { before: number[]; after: number[] }> = {};
         response.data.forEach((item: any) => {
           const key = filterMode === "year"
@@ -89,19 +108,28 @@ const BODdataviz: React.FC = () => {
           if (item.BeforeAfterTreatmentID === 1) grouped[key].before.push(item.Data);
           else if (item.BeforeAfterTreatmentID === 2) grouped[key].after.push(item.Data);
         });
-
+        //ใช้กับกราฟ
         const createDateRange = (start: Dayjs, end: Dayjs): string[] => {
           const arr: string[] = [];
           if (filterMode === "year") {
-            let curr = start.startOf('month');
-            const last = end.startOf('month');
+            let curr = start.startOf('month'); // เริ่มที่เดือนแรกของปีแรก
+            const last = end.endOf('month');   // จบที่เดือนสุดท้ายของปีสุดท้าย
             while (curr.isBefore(last) || curr.isSame(last)) {
-              arr.push(curr.format("YYYY-MM"));
-              curr = curr.add(1, 'month');
+              arr.push(curr.format("YYYY-MM")); // เก็บรายเดือน
+              curr = curr.add(1, 'month');      // เพิ่มทีละเดือน
+            }
+          } else if (filterMode === "month") {
+            // ถ้าคุณอยากแยกเดือนกับวัน (เดือนคือเดือนเดียว)
+            let curr = start.startOf('day');
+            const last = end.endOf('day');
+            while (curr.isBefore(last) || curr.isSame(last)) {
+              arr.push(curr.format("YYYY-MM-DD"));
+              curr = curr.add(1, 'day');
             }
           } else {
+            // กรณี dateRange เลือกวัน
             let curr = start.startOf('day');
-            const last = end.startOf('day');
+            const last = end.endOf('day');
             while (curr.isBefore(last) || curr.isSame(last)) {
               arr.push(curr.format("YYYY-MM-DD"));
               curr = curr.add(1, 'day');
@@ -110,19 +138,30 @@ const BODdataviz: React.FC = () => {
           return arr;
         };
 
+
         let allDates: string[] = [];
         if (dateRange) {
           allDates = createDateRange(dateRange[0], dateRange[1]);
         } else {
           const allDatesInData = Object.keys(grouped).sort();
           if (allDatesInData.length > 0) {
-            const last5Dates = allDatesInData.slice(-5);
-            const start = dayjs(last5Dates[0]);
-            const end = dayjs(last5Dates[last5Dates.length - 1]);
+            const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
+
+            let start;
+            let end = latestDate;
+
+            if (filterMode === "year") {
+              start = latestDate.subtract(3, "year").startOf("month");
+            } else if (filterMode === "month") {
+              start = latestDate.startOf("month");
+              end = latestDate.endOf("month");
+            } else {
+              start = latestDate.subtract(6, "day").startOf("day"); // รวมวันนี้ด้วย = 7 วัน
+            }
+
             allDates = createDateRange(start, end);
           }
         }
-
         const before: { date: string; data: number }[] = [];
         const after: { date: string; data: number }[] = [];
         const compare: { date: string; before: number; after: number }[] = [];
@@ -146,22 +185,46 @@ const BODdataviz: React.FC = () => {
           setMaxStandard(lastbod.data.MaxValue);
           setMinStandard(lastbod.data.MinValue);
         }
+
+        // ✅ คำนวณเปอร์เซ็นต์การเปลี่ยนแปลง (กราฟที่ 4)
+        const percentageChangeData: { date: string; percent: number }[] = compare.map(item => {
+          const rawPercent = item.before !== 0
+            ? ((item.before - item.after) / item.before) * 100
+            : 0;
+          const percent = rawPercent < 0 ? 0 : rawPercent;
+          return { date: item.date, percent };
+        });
+
+
+        if (lastbod.data.MiddleValue !== 0) {
+          setMiddleStandard(lastbod.data.MiddleValue);
+        } else {
+          setMaxStandard(lastbod.data.MaxValue);
+          setMinStandard(lastbod.data.MinValue);
+        }
         setUnit(lastbod.data.UnitName);
         setBeforeData(before);
         setAfterData(after);
         setCompareData(compare);
+        setPercentChangeData(percentageChangeData); // <-- เพิ่ม state ถ้าจำเป็น
+        //สิ้นสุดการใช้กราฟ
 
-        // แปลงข้อมูลสำหรับตาราง BOD ให้มี dateOnly, timeOnly สำหรับแสดงในตาราง
-        const tableData = response.data.map((item: any) => {
-          const dt = dayjs(item.Date);
-          return {
-            ...item,
-            dateOnly: dt.format("YYYY-MM-DD"),
-            timeOnly: dt.format("HH:mm"),
-          };
-        });
-        console.log(tableData)
+        //ใช้กับตาราง ---แปลงข้อมูลสำหรับตาราง BOD ให้มี dateOnly, timeOnly สำหรับแสดงในตาราง---
+        const tableData = response.data
+          .map((item: any) => {
+            const dt = dayjs(item.Date);
+            const thaiYear = dt.year() + 543;
+            const thaiMonth = monthShortNames[dt.month()];
+            return {
+              ...item,
+              dateOnly: `${dt.date()} ${thaiMonth} ${thaiYear}`,
+              timeOnly: dt.format("HH:mm"),
+            };
+          })
+          .sort((a: any, b: any) => dayjs(b.Date).valueOf() - dayjs(a.Date).valueOf());
+
         setData(tableData);
+        //สิ้นสุดการใช้ตาราง
 
       } else {
         setError("ไม่พบข้อมูล BOD");
@@ -178,7 +241,146 @@ const BODdataviz: React.FC = () => {
     fetchData();
   }, [dateRange, filterMode]);
 
-  // --- คอลัมน์ตาราง (เหมือนของเดิม) ---
+  //ใช้กับกราฟ
+  const getChartOptions = (
+    categories: string[],
+    chartType: 'line' | 'bar',
+    isYearMode = false,
+    dataSeries: number[],
+    enableZoom = false, //ใช้บอกว่ากราฟนี้จะเปิดการซูมไหม
+    isPercentChart = false //ใช้บอกว่าคือกราฟประสิทธิภาพไหม
+  ): ApexOptions => {
+    const categoriesFormatted = isYearMode
+      ? categories.map((month) => formatMonthLabel(month))
+      : categories;
+
+    const maxValueInData = Math.max(...dataSeries);
+    const isStandardRange = minstandard !== undefined && maxstandard !== undefined && minstandard !== maxstandard;
+
+    const standardCeil = middlestandard !== undefined && middlestandard !== 0 ? middlestandard : maxstandard ?? 0;
+    const adjustedMax = Math.max(maxValueInData, standardCeil) * 1.1;
+
+    return {
+      chart: {
+        id: "bod-chart",
+        toolbar: { show: true },
+        zoom: { enabled: enableZoom, type: 'x', autoScaleYaxis: true },
+        fontFamily: "Prompt, 'Prompt', sans-serif",
+      },
+      annotations: {
+        yaxis: isPercentChart
+          ? []   // 👉 ถ้าเป็นกราฟเปอร์เซ็นต์ จะไม่มีเส้นมาตรฐานเลย
+          : (isStandardRange
+            ? [
+              {
+                y: minstandard ?? 0,
+                borderColor: "#CF1F2A",
+                label: { text: `Min Standard ${minstandard ?? 0}`, style: { background: "#CF1F2A", color: "#fff" } },
+              },
+              {
+                y: maxstandard ?? 0,
+                borderColor: "#035303ff",
+                label: { text: `Max Standard ${maxstandard ?? 0}`, style: { background: "#035303ff", color: "#fff" } },
+              },
+            ]
+            : middlestandard !== undefined && middlestandard !== 0
+              ? [
+                {
+                  y: middlestandard,
+                  borderColor: "#CF1F2A",
+                  label: { text: `มาตรฐาน ${middlestandard}`, style: { background: "#CF1F2A", color: "#fff" } },
+                },
+              ]
+              : []
+          )
+      },
+      xaxis: {
+        categories: categoriesFormatted,
+        tickAmount: 6, // ให้แสดงประมาณ 6 จุดบนแกน X (ปรับได้ เช่น 4, 5)
+        labels: {
+          rotate: -45, // เอียงวันที่เล็กน้อยให้อ่านง่าย
+          formatter: (value: string, _timestamp?: number) => {
+            // ถ้าเป็น mode รายปี => แสดงเป็น เดือน ปี (เช่น ก.ค. 2568)
+            if (filterMode === "year") {
+              return value;
+            }
+            // ถ้าเป็น mode รายวัน => แสดงเฉพาะวัน/เดือนสั้น
+            return dayjs(value).format("D MMM");
+          },
+        },
+      },
+
+      yaxis: {
+        min: 0,
+        max: isPercentChart ? 100 : adjustedMax,
+        title: {
+          text: isPercentChart ? "%" : (unit || "mg/L"),
+        },
+        labels: {
+          formatter: (value: number) => isPercentChart ? `${value.toFixed(2)}%` : value.toFixed(2)
+        },
+      },
+      tooltip: {
+        y: {
+          formatter: (val: number) => isPercentChart ? `${val.toFixed(2)}%` : `${val.toFixed(2)} ${unit}`,
+        },
+      },
+      dataLabels: {
+        enabled: false,
+      },
+      stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
+      markers: chartType === "line"
+        ? {
+          size: 4.5,
+          shape: ["circle", "triangle"],
+          hover: { sizeOffset: 3 },
+        }
+        : { size: 0 },
+
+    };
+  };
+  const beforeSeries = [
+    { name: "BOD", data: beforeData.map(item => item.data), color: colorBefore }
+  ];
+  const afterSeries = [
+    { name: "BOD", data: afterData.map(item => item.data), color: colorAfter }
+  ];
+  const compareSeries = [
+    { name: "ก่อนบำบัด", data: compareData.map(item => item.before), color: colorCompareBefore },
+    { name: "หลังบำบัด", data: compareData.map(item => item.after), color: colorCompareAfter },
+  ];
+  const combinedCompareData = [
+    ...compareSeries[0].data,
+    ...compareSeries[1].data,
+  ];
+  const percentChangeSeries = [
+    {
+      name: "เปอร์เซ็นต์การเปลี่ยนแปลง",
+      data: percentChangeData.map(item => item.percent),
+      color: colorPercentChange,
+    },
+  ];
+  //ใช้กับกราฟ
+  const openModal = (type: "before" | "after" | "compare" | "percentChange") => {
+    setModalGraphType(type);
+    setModalVisible(true);
+  };
+  //ใช้กับกราฟ
+  const closeModal = () => {
+    setModalVisible(false);
+    setModalGraphType(null);
+  };
+
+  //ใช้กับกราฟ --- ฟังก์ชันช่วยแปลงชื่อเดือนไทย ---
+  const monthShortNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  const formatMonthLabel = (monthStr: string) => {
+    const [year, month] = monthStr.split("-");
+    const monthIndex = parseInt(month, 10) - 1;
+    const thaiYear = parseInt(year) + 543;
+    return `${monthShortNames[monthIndex]} ${thaiYear}`;
+  };
+
+  //ใช้กับตาราง
   const columns: ColumnsType<any> = [
     {
       title: 'วันที่',
@@ -302,7 +504,7 @@ const BODdataviz: React.FC = () => {
     }
   ];
 
-  // --- ฟังก์ชันแก้ไขข้อมูล (ยังใช้ GetTDSbyID อยู่ ถ้าอยากแก้ BOD ต้องเปลี่ยน service ด้วย) ---
+  //ใช้กับตาราง
   const handleEdit = async (id: number) => {
     try {
       const response = await GetTDSbyID(id);
@@ -317,7 +519,7 @@ const BODdataviz: React.FC = () => {
     }
   };
 
-  // --- ฟังก์ชันลบข้อมูล ---
+  //ใช้กับตาราง
   const handleDelete = (id: number) => {
     confirm({
       title: 'คุณแน่ใจหรือไม่?',
@@ -342,165 +544,15 @@ const BODdataviz: React.FC = () => {
     }
   };
 
-  // --- ฟังก์ชันเปิด modal เพิ่มข้อมูล ---
+  //ใช้กับตาราง
   const showModal = () => {
     setEditRecord(null);
     setIsModalVisible(true);
   };
 
-  // --- ฟังก์ชันยกเลิก modal ---
+  //ใช้กับตาราง ฟังก์ชันยกเลิก modal 
   const handleAddModalCancel = () => setIsModalVisible(false);
   const handleEditModalCancel = () => setIsEditModalVisible(false);
-
-  // --- ฟังก์ชันช่วยแปลงชื่อเดือนไทย ---
-  const monthShortNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-  const formatMonthLabel = (monthStr: string) => {
-    const [year, month] = monthStr.split("-");
-    const monthIndex = parseInt(month, 10) - 1;
-    return `${monthShortNames[monthIndex]} ${year}`;
-  };
-
-  // const STANDARD_VALUE = middlestandard ?? 0;
-
-  const getChartOptions = (
-    categories: string[],
-    chartType: 'line' | 'bar',
-    isYearMode = false,
-    dataSeries: number[]
-  ): ApexOptions => {
-    const categoriesFormatted = isYearMode
-      ? categories.map((month) => formatMonthLabel(month))
-      : categories;
-
-    const maxValueInData = Math.max(...dataSeries);
-    const isStandardRange = minstandard !== undefined && maxstandard !== undefined && minstandard !== maxstandard;
-
-    const standardCeil = middlestandard !== undefined && middlestandard !== 0 ? middlestandard : maxstandard ?? 0;
-    const adjustedMax = Math.max(maxValueInData, standardCeil) * 1.1;
-
-    return {
-      chart: {
-        id: "bod-chart",
-        toolbar: { show: true },
-        zoom: { enabled: false },
-      },
-      annotations: {
-        yaxis: [
-          ...(isStandardRange
-            ? [
-              {
-                y: minstandard ?? 0,
-                borderColor: "#CF1F2A",
-                label: {
-                  text: `Min Standard ${minstandard ?? 0}`,
-                  style: { background: "#CF1F2A", color: "#fff" },
-                },
-              },
-              {
-                y: maxstandard ?? 0,
-                borderColor: "#035303ff",
-                label: {
-                  text: `Max Standard ${maxstandard ?? 0}`,
-                  style: { background: "#035303ff", color: "#fff" },
-                },
-              },
-            ]
-            : middlestandard !== undefined && middlestandard !== 0
-              ? [
-                {
-                  y: middlestandard,
-                  borderColor: "#CF1F2A",
-                  label: {
-                    text: `มาตรฐาน ${middlestandard}`,
-                    style: { background: "#CF1F2A", color: "#fff" },
-                  },
-                },
-              ]
-              : []),
-        ],
-      },
-      xaxis: {
-        categories: categoriesFormatted,
-      },
-      yaxis: {
-        min: 0,
-        max: adjustedMax,
-        title: {
-          text: unit || "mg/L",
-        },
-        labels: {
-          formatter: (value: number) => value.toFixed(2),
-        },
-      },
-      tooltip: {
-        y: {
-          formatter: (val: number) => `${val.toFixed(2)} ${unit}`,
-        },
-      },
-      dataLabels: {
-        enabled: false,
-      },
-      stroke: chartType === "line" ? { show: true, curve: "smooth" } : { show: false },
-    };
-  };
-
-
-
-
-
-  const beforeSeries = [
-    { name: "BOD", data: beforeData.map(item => item.data), color: colorBefore }
-  ];
-  const afterSeries = [
-    { name: "BOD", data: afterData.map(item => item.data), color: colorAfter }
-  ];
-  const compareSeries = [
-    { name: "ก่อนบำบัด", data: compareData.map(item => item.before), color: colorCompareBefore },
-    { name: "หลังบำบัด", data: compareData.map(item => item.after), color: colorCompareAfter },
-  ];
-  const combinedCompareData = [
-    ...compareSeries[0].data,
-    ...compareSeries[1].data,
-  ];
-
-  // const columns: ColumnsType<listBODInterface> = [
-  //   {
-  //     title: 'วันที่',
-  //     dataIndex: 'Date',
-  //     key: 'date',
-  //     render: (date) => dayjs(date).format('YYYY-MM-DD'),
-  //   },
-  //   {
-  //     title: 'หน่วยที่วัด',
-  //     dataIndex: 'UnitName',
-  //     key: 'unit',
-  //   },
-  //   {
-  //     title: 'มาตรฐาน',
-  //     dataIndex: 'StandardID',
-  //     key: 'standard',
-  //   },
-  //   {
-  //     title: 'ค่าที่วัดได้',
-  //     dataIndex: 'Data',
-  //     key: 'data',
-  //   },
-  //   {
-  //     title: 'สถานะ',
-  //     dataIndex: 'TreatmentName',
-  //     key: 'treatment',
-  //   },
-  //   {
-  //     title: 'หมายเหตุ',
-  //     dataIndex: 'Note',
-  //     key: 'note',
-  //   },
-  //   {
-  //     title: 'จัดการ',
-  //     key: 'action',
-  //     render: (_, record) => (<a href={`#edit/${record.ID}`}>แก้ไข</a>),
-  //   },
-  // ];
 
 
   return (
@@ -549,8 +601,9 @@ const BODdataviz: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
+                  locale={th_TH}
                   allowClear={false}
-                  format="YYYY-MM-DD"
+                  format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
                   placeholder={["วันเริ่มต้น", "วันสิ้นสุด"]}
                 />
@@ -568,29 +621,32 @@ const BODdataviz: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
+                  locale={th_TH}
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={false}
                   value={dateRange ? dayjs(dateRange[0]) : null}
+                  format={(value) => value ? `${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                 />
               )}
-
               {filterMode === "year" && (
-                <DatePicker
+                <DatePicker.RangePicker
                   picker="year"
-                  onChange={(date) => {
-                    if (date) {
-                      const start = date.startOf('year');
-                      const end = date.endOf('year');
+                  onChange={(dates) => {
+                    if (dates && dates[0] && dates[1]) {
+                      const start = dates[0].startOf('year');
+                      const end = dates[1].endOf('year');
                       setDateRange([start, end]);
                     } else {
                       setDateRange(null);
                     }
                   }}
-                  placeholder="เลือกปี"
-                  style={{ width: 150 }}
+                  locale={th_TH}
+                  placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
+                  style={{ width: 300 }}
                   allowClear={false}
-                  value={dateRange ? dayjs(dateRange[0]) : null}
+                  value={dateRange}
+                  format={(value) => value ? `${value.year() + 543}` : ''}
                 />
               )}
             </div>
@@ -612,6 +668,7 @@ const BODdataviz: React.FC = () => {
                     localStorage.setItem('colorBefore', hex);
                   }}
                 />
+                <Button className="expand-chat" onClick={() => openModal("before")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="bod-right-select-graph">
@@ -662,6 +719,7 @@ const BODdataviz: React.FC = () => {
                     localStorage.setItem('colorAfter', hex);
                   }}
                 />
+                <Button className="expand-chat" onClick={() => openModal("after")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="bod-right-select-graph">
@@ -719,6 +777,7 @@ const BODdataviz: React.FC = () => {
                     localStorage.setItem('colorCompareAfter', hex);
                   }}
                 />
+                <Button className="expand-chat" onClick={() => openModal("compare")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="bod-right-select-graph">
@@ -754,26 +813,57 @@ const BODdataviz: React.FC = () => {
               height={350}
             />
           </div>
-        </div>
-        {/* <div className="bod-data">
-          <h1 className="bod-title-text">BOD DATA</h1>
-          <div className="bod-search-box">
-            <Input
-              placeholder="ค้นหา"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              prefix={<SearchOutlined />}
-              style={{ width: 200, marginBottom: 10 }}
+          <div className="bod-graph-card">
+            <div className="bod-head-graph-card">
+              <div className="width40">
+                <h2 className="bod-head-graph-card-text" >เปอร์เซ็นต์การเปลี่ยนแปลง</h2>
+              </div>
+              <div>
+                <ColorPicker
+                  value={colorPercentChange}
+                  onChange={(color: Color) => {
+                    const hex = color.toHexString();
+                    setcolorPercentChange(hex);
+                    localStorage.setItem('colorPercentChange', hex);
+                  }}
+                />
+              </div>
+            </div>
+            <div className="bod-right-select-graph">
+              <Select
+                value={chartpercentChange}
+                onChange={val => setpercentChange(val)}
+                style={{ marginBottom: 10 }}
+              >
+                <Select.Option value="line">
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <LineChart size={16} style={{ marginRight: 6 }} />
+                    <span>กราฟเส้น</span>
+                  </div>
+                </Select.Option>
+                <Select.Option value="bar">
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <BarChart3 size={16} style={{ marginRight: 6 }} />
+                    <span>กราฟแท่ง</span>
+                  </div>
+                </Select.Option>
+              </Select>
+            </div>
+            <ApexChart
+              options={getChartOptions(
+                percentChangeData.map(item => item.date),
+                "line",
+                filterMode === "year",
+                percentChangeSeries[0].data,
+                false,
+                true
+              )}
+              series={percentChangeSeries}
+              type={chartpercentChange}
+              height={350}
             />
           </div>
-          <Table
-            columns={columns}
-            dataSource={data.filter(d => dayjs(d.Date).format('YYYY-MM-DD').includes(search))}
-            rowKey="ID"
-            loading={loading}
-          />
-        </div> */}
-
+        </div>
         <div className="bod-header-vis">
           <div className="bod-title-search-vis">
             <h1 className="bod-title-text-vis">BOD DATA</h1>
@@ -845,6 +935,152 @@ const BODdataviz: React.FC = () => {
             />
           )}
         </Modal>
+
+        <Modal
+          visible={modalVisible}
+          onCancel={closeModal}
+          footer={null}
+          width="90%"
+          style={{ maxWidth: 1200 }}
+          bodyStyle={{ height: '80vh' }}
+          centered
+          destroyOnClose
+          maskClosable={true}
+        >
+          {modalGraphType === "before" && (
+            <div className="bod-chat-modal" >
+              <div className="bod-head-graph-card">
+                <div className="width25">
+                  <h2 className="bod-head-graph-card-text">น้ำก่อนบำบัด</h2>
+                </div>
+              </div>
+              <div className="bod-right-select-graph">
+                <Select
+                  value={chartTypeBefore}
+                  onChange={val => setChartTypeBefore(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <ApexChart
+                  key={chartTypeBefore}
+                  options={getChartOptions(
+                    beforeData.map(item => item.date),
+                    chartTypeBefore,
+                    filterMode === "year",
+                    beforeSeries[0]?.data || [], //  ส่ง data เพื่อใช้หาค่าสูงสุด
+                    true
+                  )}
+                  series={beforeSeries}
+                  type={chartTypeBefore}
+                  height="100%"
+                />
+              </div>
+            </div>
+          )}
+          {modalGraphType === "after" && (
+            <div className="bod-chat-modal">
+              <div className="bod-head-graph-card">
+                <div className="width25">
+                  <h2 className="bod-head-graph-card-text">น้ำหลังบำบัด</h2>
+                </div>
+              </div>
+              <div className="bod-right-select-graph">
+                <Select
+                  value={chartTypeAfter}
+                  onChange={val => setChartTypeAfter(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <ApexChart
+                  key={chartTypeAfter}
+                  options={getChartOptions(
+                    afterData.map(item => item.date),
+                    chartTypeAfter,
+                    filterMode === "year",
+                    afterSeries[0]?.data || [],
+                    true
+                  )}
+                  series={afterSeries}
+                  type={chartTypeAfter}
+                  height={350}
+                />
+              </div>
+            </div>
+          )}
+          {modalGraphType === "compare" && (
+            <div className="bod-chat-modal">
+              <div className="bod-head-graph-card" >
+                <div className="width40">
+                  <h2 className="bod-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
+                </div>
+              </div>
+              <div className="bod-right-select-graph">
+                <Select
+                  value={chartTypeCompare}
+                  onChange={val => setChartTypeCompare(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <ApexChart
+                  key={chartTypeCompare}
+                  options={getChartOptions(
+                    compareData.map(item => item.date),
+                    chartTypeCompare,
+                    filterMode === "year",
+                    combinedCompareData,
+                    true
+                  )}
+                  series={compareSeries}
+                  type={chartTypeCompare}
+                  height="100%"
+                />
+              </div>
+            </div>
+          )}
+        </Modal>
+
       </div>
     </div>
   );

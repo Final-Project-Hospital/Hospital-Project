@@ -73,7 +73,32 @@ func CreateBod(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
 		return
 	}
+
+		var standard entity.Standard
+	if err := db.First(&standard, input.StandardID).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูลเกณฑ์มาตรฐาน"})
+		return
+	}
 	
+	getStatusID := func(value float64) uint {
+		var status entity.Status
+		if standard.MiddleValue != 0 {
+			if value <= float64(standard.MiddleValue) {
+				db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
+			} else {
+				db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
+			}
+		} else {
+			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
+				db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
+			} else if value > float64(standard.MaxValue) {
+				db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
+			} else {
+				db.Where("status_name = ?", "ตํ่ากว่าเกณฑ์มาตรฐาน").First(&status)
+			}
+		}
+		return status.ID
+	}
 
 	environmentRecord := entity.EnvironmentalRecord{
 		Date:                   input.Date,
@@ -85,7 +110,7 @@ func CreateBod(c *gin.Context) {
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,
-		StatusID:               2,
+		StatusID:               getStatusID(input.Data),
 	}
 
 	if err := db.Create(&environmentRecord).Error; err != nil {
