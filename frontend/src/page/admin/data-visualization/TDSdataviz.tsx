@@ -10,8 +10,8 @@ import Table, { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import TDSCentralForm from '../data-management/TDScenter/TDScenter'
-import UpdateTDSCentralForm from '../data-management/TDScenter/updateTDScenter'
+import TDSCentralForm from '../data-management/wastewater/TDScenter/TDScenter'
+import UpdateTDSCentralForm from '../data-management/wastewater/TDScenter/updateTDScenter'
 import { GetTDSbyID } from '../../../services/tdsService';
 
 dayjs.extend(utc);

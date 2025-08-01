@@ -2,15 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input, message } from 'antd';
 import dayjs from 'dayjs';
 import './BODcenter.css';
-import { BodcenterInterface } from '../../../interface/IBodCenter';
-import { createBOD } from '../../../services/bodService';
-import { ListBeforeAfterTreatment, ListUnit } from '../../../services/index';
-import { ListBeforeAfterTreatmentInterface } from '../../../interface/IBeforeAfterTreatment';
+import { BodcenterInterface } from '../../../../../interface/IBodCenter';
+import { createBOD } from '../../../../../services/bodService';
+import { ListBeforeAfterTreatment, ListUnit } from '../../../../../services/index';
+import { ListBeforeAfterTreatmentInterface } from '../../../../../interface/IBeforeAfterTreatment';
 // import { ListStandardInterface } from '../../../interface/IStandard';
-import { ListUnitInterface } from '../../../interface/IUnit';
-import { GetfirstBOD } from '../../../services/bodService';
-import { ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, } from '../../../services/index';
-import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../interface/IStandard';
+import { ListUnitInterface } from '../../../../../interface/IUnit';
+import { GetfirstBOD } from '../../../../../services/bodService';
+import { ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, } from '../../../../../services/index';
+import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';
 
 const { Option } = Select;
 const TDSCentralForm: React.FC <{ onCancel: () => void }> = ({ onCancel }) =>  {

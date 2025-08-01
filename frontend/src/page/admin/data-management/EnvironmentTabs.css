@@ -16,7 +16,7 @@
   width: 80%;
   margin: 0 auto;
   display: flex;
-  flex-wrap: wrap;
+  /* flex-wrap: wrap; */
   justify-content: center;
   gap: 8px;
   padding: 10px 20px;
@@ -38,10 +38,10 @@
   .tds-header{
     margin-top: 50px;
   }
-  .tds-header h1 {
+  /* .tds-header h1 {
     font-size: 2.5rem;
     text-align: center;
-  }
+  } */
   .tds-header p{
     font-size: 1rem;
     text-align: center;

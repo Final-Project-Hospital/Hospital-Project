@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input, message } from 'antd';
 import dayjs from 'dayjs';
 import './FOGcenter.css';
-import { FogcenterInterface } from '../../../interface/IFogCenter';
-import { createFOG } from '../../../services/fogService';
-import { ListBeforeAfterTreatment, ListUnit } from '../../../services/index';
-import { ListBeforeAfterTreatmentInterface } from '../../../interface/IBeforeAfterTreatment';
-import { ListUnitInterface } from '../../../interface/IUnit';
-import { GetfirstFOG } from '../../../services/fogService';
-import { ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, } from '../../../services/index';
-import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../interface/IStandard';
+import { FogcenterInterface } from '../../../../../interface/IFogCenter';
+import { createFOG } from '../../../../../services/fogService';
+import { ListBeforeAfterTreatment, ListUnit } from '../../../../../services/index';
+import { ListBeforeAfterTreatmentInterface } from '../../../../../interface/IBeforeAfterTreatment';
+import { ListUnitInterface } from '../../../../../interface/IUnit';
+import { GetfirstFOG } from '../../../../../services/fogService';
+import { ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, } from '../../../../../services/index';
+import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';
 
 const { Option } = Select;
 const TDSCentralForm: React.FC = () => {

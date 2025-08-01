@@ -54,10 +54,13 @@ func SetupDatabase() {
 		&entity.Status{},
 	)
 	// Enviroment
-	Wastewater := entity.Environment{
-		EnvironmentName: "น้ำเสีย",
-	}
+	Wastewater := entity.Environment{EnvironmentName: "น้ำเสีย",}
+	Drinkwater := entity.Environment{EnvironmentName: "น้ำดื่ม",}
+	Tapwater := entity.Environment{EnvironmentName: "น้ำประปา"}
 	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
+	db.FirstOrCreate(&Drinkwater, &entity.Environment{EnvironmentName: "น้ำดื่ม"})
+	db.FirstOrCreate(&Tapwater, &entity.Environment{EnvironmentName: "น้ำประปา"})
+	
 
 	// Standard
 	ranges := []struct {

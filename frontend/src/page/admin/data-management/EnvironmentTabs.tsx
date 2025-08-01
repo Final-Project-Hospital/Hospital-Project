@@ -4,12 +4,17 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import './EnvironmentTabs.css';
 
 const tabs = [
-  { label: 'pH-Central', path: '/admin/data-management/water/ph' },
-  { label: 'BOD-Central', path: '/admin/data-management/water/bod' },
-  { label: 'TS-Central', path: '/admin/data-management/water/ts' },
-  { label: 'TDS-Central', path: '/admin/data-management/water/tds' },
-  { label: 'FOG-Central', path: '/admin/data-management/water/fog' },
-  { label: 'TKN-Central', path: '/admin/data-management/water/tkn' },
+  { label: 'pH-Central', path: '/admin/data-management/wastewater/ph' },
+  { label: 'BOD-Central', path: '/admin/data-management/wastewater/bod' },
+  { label: 'SS-Central', path: '/admin/data-management/wastewater/ts' },
+  { label: 'TDS-Central', path: '/admin/data-management/wastewater/tds' },
+  { label: 'FOG-Central', path: '/admin/data-management/wastewater/fog' },
+  { label: 'TKN-Central', path: '/admin/data-management/wastewater/tkn' },
+  { label: 'COD-Central', path: '/admin/data-management/wastewater/cod' },
+  { label: 'FCB-Central', path: '/admin/data-management/wastewater/fcb' },
+  { label: 'Residule-Central', path: '/admin/data-management/wastewater/residule' },
+  { label: 'Sulfid-Central', path: '/admin/data-management/wastewater/sulfid' },
+  { label: 'TCB-Central', path: '/admin/data-management/wastewater/tcb' },
 ];
 
 const EnvironmentLayout: React.FC = () => {
@@ -27,15 +32,6 @@ const EnvironmentLayout: React.FC = () => {
       <br />
       <div
         className="tabs"
-      // style={{
-      //   width: '80%',
-      //   margin: '0 auto',
-      //   display: 'flex',
-      //   justifyContent: 'center',
-      //   gap: 8,
-      //   padding: '10px 20px',
-      //   borderBottom: '5px solid #A1EFF0',
-      // }}
       >
         {tabs.map(({ label, path }) => {
           const active = pathname === path;
@@ -51,7 +47,7 @@ const EnvironmentLayout: React.FC = () => {
           );
         })}
       </div>
-      
+
       <br />
       <Outlet />
     </div>

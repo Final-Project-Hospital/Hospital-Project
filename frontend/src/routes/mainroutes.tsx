@@ -25,16 +25,17 @@ const DatavizPH = Loadable(lazy(() => import("../page/admin/data-visualization/P
 const DatavizTDS = Loadable(lazy(() => import("../page/admin/data-visualization/TDSdataviz")));
 const DatavizBOD = Loadable(lazy(() => import("../page/admin/data-visualization/BODdataviz")));
 const DatavizTKN = Loadable(lazy(() => import("../page/admin/data-visualization/TKNdataviz")));
-const DatavizTS = Loadable(lazy(() => import("../page/admin/data-visualization/TSdataviz")))
+const DatavizTS = Loadable(lazy(() => import("../page/admin/data-visualization/TSdataviz")));
+const DatavizFOG = Loadable(lazy(() => import("../page/admin/data-visualization/FOGdataviz")));
 
 // data-management
 const EnvironmentTabs = Loadable(lazy(() => import("../page/admin/data-management/EnvironmentTabs")));
-const PH = Loadable(lazy(() => import("../page/admin/data-management/PHcenter")));
-const TDS = Loadable(lazy(() => import("../page/admin/data-management/TDScenter/TDScenter")));
-const BOD = Loadable(lazy(() => import("../page/admin/data-management/BODcenter")));
-const TKN = Loadable(lazy(() => import("../page/admin/data-management/TKNcenter")));
-const TS = Loadable(lazy(() => import("../page/admin/data-management/TScenter") ));
-const FOG = Loadable(lazy(() => import("../page/admin/data-management/FOGcenter")));
+const PH = Loadable(lazy(() => import("../page/admin/data-management/wastewater/PHcenter/PHcenter")));
+const TDS = Loadable(lazy(() => import("../page/admin/data-management/wastewater/TDScenter/TDScenter")));
+const BOD = Loadable(lazy(() => import("../page/admin/data-management/wastewater/BODcenter/BODcenter")));
+const TKN = Loadable(lazy(() => import("../page/admin/data-management/wastewater/TKNcenter/TKNcenter")));
+const SS = Loadable(lazy(() => import("../page/admin/data-management/wastewater/SScenter/SScenter") ));
+const FOG = Loadable(lazy(() => import("../page/admin/data-management/wastewater/FOGcenter/FOGcenter")));
 
 
 const UserRoutes = (): RouteObject[] => [
@@ -77,19 +78,19 @@ const AdminRoutes = (): RouteObject[] => [
           { path: "datavizBOD", element: <DatavizBOD /> },
           { path: "datavizTS", element: <DatavizTS /> },
           { path: "datavizTDS", element: <DatavizTDS /> },
-          // { path: "datavizFOG", element: <DatavizFOG /> },
+          { path: "datavizFOG", element: <DatavizFOG /> },
           { path: "datavizTKN", element: <DatavizTKN /> },
         ]
       },
       {
-        path: "data-management/water",
+        path: "data-management/wastewater",
         element: <EnvironmentTabs />, // Header + Tabs
         children: [
           { index: true, element: <PH /> },         // /admin/environment
           { path: "ph", element: <PH /> },            
           { path: "bod", element: <BOD /> },          // /admin/environment/bod
           { path: "tds", element: <TDS /> },          
-          { path: "ts", element: <TS /> },
+          { path: "ss", element: <SS /> },
           { path: "fog", element: <FOG /> },
           { path: "tkn", element: <TKN /> },
         ],

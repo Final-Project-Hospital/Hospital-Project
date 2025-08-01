@@ -1,23 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
-import './updateTDScenter.css';
+import './PHcenter.css';
 import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input, message } from 'antd';
-import { ListBeforeAfterTreatment, ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, ListUnit } from '../../../../services/index';
-import { UpdateTDS, GetTDSbyID } from '../../../../services/tdsService';
+import { ListBeforeAfterTreatment, ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, ListUnit } from '../../../../../services/index';
+import { CreatePH, GetfirstPH } from '../../../../../services/phService';
 
-import { ListBeforeAfterTreatmentInterface } from '../../../../interface/IBeforeAfterTreatment';
-import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../interface/IStandard';
-import { ListUnitInterface } from '../../../../interface/IUnit';
+import { ListBeforeAfterTreatmentInterface } from '../../../../../interface/IBeforeAfterTreatment';
+import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';
+import { ListUnitInterface } from '../../../../../interface/IUnit';
+import { CreatePHInterface } from '../../../../../interface/IpH';
 
 const { Option } = Select;
 
-interface UpdateTDSCentralFormProps {
-    initialValues: any; // หรือจะใช้ interface ที่เจาะจงกว่านี้ก็ได้
-    onSuccess?: () => void;
-    onCancel: () => void;
-}
-
-const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({ initialValues, onSuccess, onCancel }) => {
+const PHCentralForm: React.FC = () => {
     const [form] = Form.useForm();
 
     const [beforeAfterOptions, setBeforeAfterOptions] = useState<ListBeforeAfterTreatmentInterface[]>([]);
@@ -32,39 +27,15 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({ initialValu
     const [customMaxValue, setCustomMaxValue] = useState<number | undefined>(undefined);
     const [isOtherUnitSelected, setIsOtherunitSelected] = useState(false);
     const [messageApi, contextHolder] = message.useMessage();
-    const [recordID] = useState<number | null>(null);
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
 
 
     const renderCustomTreatmentLabel = (text: string) => (
         <>
-            ค่า TDS บริเวณบ่อพักน้ำทิ้ง
+            ค่า pH บริเวณบ่อพักน้ำทิ้ง
             <span style={{ color: '#f45415ff', fontWeight: 'bold' }}>{text}</span>
             เข้าระบบบำบัด
         </>
     );
-
-    useEffect(() => {
-        if (initialValues?.ID) {
-            GetTDSbyIDFetch(initialValues.ID); // ✅ เรียกที่นี่แทน
-        }
-    }, [initialValues]);
-    console.log("ok", initialValues);
-    // useEffect(() => {
-    //     const fetchInitialData = async () => {
-    //         if (initialValues?.ID) {
-    //             const response = await GetTDSbyID(initialValues.ID);
-    //             if (response?.data) {
-    //                 form.setFieldsValue({
-    //                     ...response.data, // ตั้งค่าให้ตรงกับ field name ในฟอร์ม
-    //                     Date: dayjs(response.data.Date),
-    //                     Time: dayjs(response.data.Date), // ถ้าใช้ TimePicker
-    //                 });
-    //             }
-    //         }
-    //     };
-    //     fetchInitialData();
-    // }, [initialValues]);
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -81,35 +52,34 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({ initialValu
             if (standardsRange) setRangeStandards(standardsRange);
         };
 
-        fetchInitialData();
-    }, []);
+        const GetfirstrowPH = async () => {
+            try {
+                const responfirstPH = await GetfirstPH();
+                if (responfirstPH.status === 200) {
+                    const data = responfirstPH.data;
 
-    const GetTDSbyIDFetch = async (id: number) => {
-        try {
-            const responfirstTDS = await GetTDSbyID(id);
-            if (responfirstTDS.status === 200) {
-                const data = responfirstTDS.data;
+                    console.log(data.StandardID)
+                    const isMiddle = data.MinValue === 0 && data.MaxValue === 0;
+                    setStandardType(isMiddle ? 'middle' : 'range');
+                    form.setFieldsValue({
+                        unit: data.UnitID ?? 'other',
+                        standardType: isMiddle ? 'middle' : 'range',
+                        standardID: data.StandardID,
+                    });
 
-                const isMiddle = data.MinValue === 0 && data.MaxValue === 0;
-                setStandardType(isMiddle ? 'middle' : 'range');
-                form.setFieldsValue({
-                    unit: data.UnitID ?? 'other',
-                    standardType: isMiddle ? 'middle' : 'range',
-                    standardID: data.StandardID,
-                    beforeAfterTreatmentID: data.BeforeAfterTreatmentID,
-                    data: data.Data,
-                    note: data.Note,
-                });
-
-                setSelectedTreatmentID(data.BeforeAfterTreatmentID);
-            } else {
-                message.error("ไม่สามารถดึงข้อมูล TDS ล่าสุดได้");
+                    // เผื่อใช้กับตัวแสดงผลหรือกรณีอื่น
+                    setSelectedTreatmentID(data.BeforeAfterTreatmentID);
+                } else {
+                    message.error("ไม่สามารถดึงข้อมูล pH ล่าสุดได้");
+                }
+            } catch (error) {
+                console.error("Error fetching first PH:", error);
+                message.error("เกิดข้อผิดพลาดในการโหลดค่าล่าสุด");
             }
-        } catch (error) {
-            console.error("Error fetching first TDS:", error);
-            message.error("เกิดข้อผิดพลาดในการโหลดค่าล่าสุด");
-        }
-    };
+        };
+        fetchInitialData();
+        GetfirstrowPH();
+    }, []);
 
     const handleStandardGroupChange = (value: string) => {
         setStandardType(value);
@@ -130,12 +100,11 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({ initialValu
             setUseCustomStandard(false);
         }
     };
-
     const handleFinish = async (values: any) => {
         try {
             let standardID = values.standardID ?? null;
 
-            // กรณีใช้ค่ากำหนดเอง
+            // กรณีใช้ค่ากำหนดเอง (custom standard)
             if (useCustomStandard) {
                 if (standardType === 'middle' && values.customSingle !== undefined) {
                     const res = await AddMiddleStandard({
@@ -166,102 +135,129 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({ initialValu
                 }
             }
 
+            // เช็คว่ามี standardID หรือไม่
             if (!standardID) {
                 message.error('กรุณาเลือกหรือกำหนดมาตรฐานก่อนบันทึก');
                 return;
             }
 
-            // รวมวันที่และเวลาเป็น ISO String
-            const combinedDateTime = dayjs(values.date)
-                .hour(dayjs(values.time).hour())
-                .minute(dayjs(values.time).minute())
-                .second(dayjs(values.time).second())
-                .toISOString();
+            // รวมวันที่และเวลา
+            const dateValue = values.date ?? dayjs();
+            const timeValue = values.time ?? dayjs();
+            const combinedDate = dateValue.set('hour', timeValue.hour()).set('minute', timeValue.minute());
 
-            const employeeID = user?.ID ?? Number(localStorage.getItem('employeeid'));
-
+            // ดึง employeeID จาก localStorage
+            const employeeID = Number(localStorage.getItem('employeeid'));
             const isOther = values.unit === 'other';
             const unitID = isOther ? null : values.unit;
-            const customUnitValue = isOther ? values.customUnit : null;
+            const customUintValue = isOther ? values.customUnit : null;
 
-            // Debug log
-            console.log('Payload to update:', {
-                ID: initialValues.ID,
-                Date: combinedDateTime,
-                Data: values.data,
-                Note: values.note,
-                BeforeAfterTreatmentID: values.beforeAfterTreatmentID,
-                UnitID: unitID,
-                StandardID: standardID,
-                ParameterID: values.parameterID || undefined,
-                EmployeeID: employeeID,
-                CustomUnit: customUnitValue,
-            });
+            if (selectedTreatmentID === 3) {
+                // กรณี "ก่อนและหลังบำบัด" ส่งข้อมูล 2 ชุด
+                const payloadBefore: CreatePHInterface = {
+                    Date: combinedDate.toISOString(),
+                    Data: values.valueBefore,
+                    BeforeAfterTreatmentID: 1,
+                    StandardID: standardID,
+                    UnitID: unitID,
+                    CustomUnit: customUintValue,
+                    EmployeeID: employeeID,
+                    Note: values.note,
+                };
 
-            const payload = {
-                ID: initialValues.ID,
-                Date: combinedDateTime,
-                Data: values.data,
-                Note: values.note,
-                BeforeAfterTreatmentID: values.beforeAfterTreatmentID,
-                UnitID: unitID,
-                StandardID: standardID,
-                ParameterID: values.parameterID || undefined,
-                EmployeeID: employeeID,
-                CustomUnit: customUnitValue,
-            };
+                const payloadAfter: CreatePHInterface = {
+                    Date: combinedDate.toISOString(),
+                    Data: values.valueAfter,
+                    BeforeAfterTreatmentID: 2,
+                    StandardID: standardID,
+                    UnitID: unitID,
+                    CustomUnit: customUintValue,
+                    EmployeeID: employeeID,
+                    Note: values.note,
+                };
 
-            const response = await UpdateTDS(payload);
+                const res1 = await CreatePH(payloadBefore);
+                const res2 = await CreatePH(payloadAfter);
 
-            if ((response as any)?.status === 200) {
-                message.success('อัปเดตข้อมูล TDS สำเร็จ');
-                form.resetFields();
-                setSelectedTreatmentID(null);
-                setUseCustomStandard(false);
-                setCustomSingleValue(undefined);
-                setCustomMinValue(undefined);
-                setCustomMaxValue(undefined);
-                setIsOtherunitSelected(false);
-                if (onSuccess) onSuccess();
+                if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
+                    messageApi.success('บันทึกข้อมูล pH ก่อนและหลังบำบัดสำเร็จ');
+                    form.resetFields();
+                    setSelectedTreatmentID(null);
+                    setUseCustomStandard(false);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    message.error('ไม่สามารถบันทึกข้อมูลก่อนหรือหลังได้');
+                }
             } else {
-                message.error('ไม่สามารถอัปเดตข้อมูลได้');
+                // กรณีทั่วไป ส่งข้อมูลครั้งเดียว
+                const payload: CreatePHInterface = {
+                    Date: combinedDate.toISOString(),
+                    Data: values.data,
+                    BeforeAfterTreatmentID: values.beforeAfterTreatmentID,
+                    StandardID: standardID,
+                    UnitID: unitID,
+                    CustomUnit: customUintValue,
+                    EmployeeID: employeeID,
+                    Note: values.note,
+                };
+
+                const response = await CreatePH(payload);
+
+                if ((response as any)?.status === 201) {
+                    messageApi.success('บันทึกข้อมูล pH สำเร็จ');
+                    form.resetFields();
+                    setSelectedTreatmentID(null);
+                    setUseCustomStandard(false);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    message.error('ไม่สามารถบันทึกข้อมูลได้');
+                }
             }
+
+            // รีเซ็ตค่ากำหนดเอง
+            setCustomSingleValue(undefined);
+            setCustomMinValue(undefined);
+            setCustomMaxValue(undefined);
         } catch (error) {
-            console.error('Error updating TDS:', error);
-            message.error('เกิดข้อผิดพลาดในการอัปเดตข้อมูล');
+            console.error('Error creating pH:', error);
+            message.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
         }
     };
 
-    const handleCancelClick = () => {
+    const handleCancel = () => {
         form.resetFields();
-        onCancel();
+        setSelectedTreatmentID(null);
+        setUseCustomStandard(false);
     };
 
     return (
-        <div className="up-tds-container">
+        <div className="ph-container">
             {contextHolder}
             <Form
                 form={form}
                 layout="vertical"
                 onFinish={handleFinish}
                 initialValues={{
-                    ID: recordID ?? undefined,
                     date: dayjs(),
                     time: dayjs(),
                     standardType: 'middle',
                 }}
             >
-                <div className="up-form-group-tds">
+                <div className="form-group-ph">
                     <Form.Item label="วันที่บันทึกข้อมูล" name="date">
-                        <DatePicker format="DD/MM/YYYY" className="full-width-tds" placeholder="เลือกวัน" />
+                        <DatePicker format="DD/MM/YYYY" className="full-width-ph" placeholder="เลือกวัน" />
                     </Form.Item>
                     <Form.Item label="เวลาที่บันทึกข้อมูล" name="time">
-                        <TimePicker format="HH:mm" className="full-width-tds" placeholder="เลือกเวลา" />
+                        <TimePicker format="HH:mm" className="full-width-ph" placeholder="เลือกเวลา" />
                     </Form.Item>
                 </div>
 
-                <div className="up-form-group-tds">
-                    <div className="up-form-group-mini-tds">
+                <div className="form-group-ph">
+                    <div className="form-group-mini-ph">
                         <Form.Item
                             label="หน่วยที่วัด"
                             required
@@ -304,7 +300,7 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({ initialValu
                         </Form.Item>
                     </div>
 
-                    <div className="up-form-group-mini-tds">
+                    <div className="form-group-mini-ph">
                         <Form.Item label="ประเภทมาตรฐาน" name="standardType">
                             <Select defaultValue="middle" onChange={handleStandardGroupChange}>
                                 <Option value="middle">ค่าเดี่ยว</Option>
@@ -367,7 +363,7 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({ initialValu
 
                             {/* ===== ช่วง Min - Max แบบกรอกเอง ===== */}
                             {standardType === 'range' && useCustomStandard && (
-                                <div className="up-tds-fornt-small" style={{ display: 'flex', gap: '16px' }}>
+                                <div className="ph-fornt-small" style={{ display: 'flex', gap: '16px' }}>
                                     <Form.Item
                                         label="ค่าต่ำสุด (Min)"
                                         name="customMin"
@@ -400,8 +396,8 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({ initialValu
                     </div>
                 </div>
 
-                <div className="up-form-group-tds">
-                    <div className="up-form-group-mini-tds">
+                <div className="form-group-ph">
+                    <div className="form-group-mini-ph">
                         <Form.Item
                             label="ก่อน / หลัง / ก่อนและหลังบำบัด"
                             name="beforeAfterTreatmentID"
@@ -416,7 +412,7 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({ initialValu
                             </Select>
                         </Form.Item>
                     </div>
-                    <div className="up-form-group-mini-tds">
+                    <div className="form-group-mini-ph">
                         {selectedTreatmentID === 3 ? (
                             <div style={{ display: 'flex', gap: '30px' }}>
                                 <Form.Item
@@ -449,20 +445,20 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({ initialValu
                     </div>
                 </div>
 
-                <div className="up-form-group-tds">
+                <div className="form-group-ph">
                     <Form.Item label="หมายเหตุ" name="note">
                         <Input.TextArea rows={2} placeholder="กรอกหมายเหตุ (ถ้ามี)" />
                     </Form.Item>
                 </div>
 
-                <Form.Item className="up-form-actions-tds">
-                    <Button className="cancel-up-tds" htmlType="button" onClick={handleCancelClick}>
+                <Form.Item className="form-actions-ph">
+                    <Button className="cancel-ph" htmlType="button" onClick={handleCancel}>
                         ยกเลิก
                     </Button>
-                    <Button htmlType="reset" className="reset-up-tds">
+                    <Button htmlType="reset" className="reset-ph">
                         รีเซ็ต
                     </Button>
-                    <Button type="primary" htmlType="submit" className="submit-up-tds">
+                    <Button type="primary" htmlType="submit" className="submit-ph">
                         บันทึก
                     </Button>
                 </Form.Item>
@@ -471,4 +467,4 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({ initialValu
     );
 };
 
-export default UpdateTDSCentralForm;
+export default PHCentralForm;

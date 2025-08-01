@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import "./TScenter.css";
+import "./SScenter.css";
 import {
   Form,
   InputNumber,
@@ -11,16 +11,16 @@ import {
   Input,
   message,
 } from "antd";
-import { ListBeforeAfterTreatment, ListStandard, ListUnit } from "../../../services/index";
-import { CreateTS } from "../../../services/enviromentrecord";
-import { ListBeforeAfterTreatmentInterface } from "../../../interface/IBeforeAfterTreatment";
-import { ListStandardInterface } from "../../../interface/IStandard";
-import { ListUnitInterface } from "../../../interface/IUnit";
-import { CreateTSInterface } from "../../../interface/IEnvironmentalRecord";
+import { ListBeforeAfterTreatment, ListStandard, ListUnit } from "../../../../../services/index";
+import { CreateTS } from "../../../../../services/enviromentrecord";
+import { ListBeforeAfterTreatmentInterface } from "../../../../../interface/IBeforeAfterTreatment";
+import { ListStandardInterface } from "../../../../../interface/IStandard";
+import { ListUnitInterface } from "../../../../../interface/IUnit";
+import { CreateTSInterface } from "../../../../../interface/IEnvironmentalRecord";
 
 const { Option } = Select;
 
-const TSCenterForm: React.FC = () => {
+const SSCenterForm: React.FC = () => {
   const [form] = Form.useForm();
   const [beforeAfterOptions, setBeforeAfterOptions] = useState<ListBeforeAfterTreatmentInterface[]>([]);
   const [unitOptions, setUnitOptions] = useState<ListUnitInterface[]>([]);
@@ -162,4 +162,4 @@ const TSCenterForm: React.FC = () => {
   );
 };
 
-export default TSCenterForm;
+export default SSCenterForm;

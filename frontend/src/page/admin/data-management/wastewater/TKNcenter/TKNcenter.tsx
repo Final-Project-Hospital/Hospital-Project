@@ -11,12 +11,12 @@ import {
   Input,
   message,
 } from "antd";
-import { ListBeforeAfterTreatment, ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, ListUnit } from '../../../services/index';
-import { CreateTKN, GetfirstTKN } from "../../../services/enviromentrecord";
-import { ListBeforeAfterTreatmentInterface } from "../../../interface/IBeforeAfterTreatment";
-import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../interface/IStandard';
-import { ListUnitInterface } from "../../../interface/IUnit";
-import { CreateTKNInterface } from "../../../interface/IEnvironmentalRecord";
+import { ListBeforeAfterTreatment, ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, ListUnit } from '../../../../../services/index';
+import { CreateTKN, GetfirstTKN } from "../../../../../services/enviromentrecord";
+import { ListBeforeAfterTreatmentInterface } from "../../../../../interface/IBeforeAfterTreatment";
+import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';
+import { ListUnitInterface } from "../../../../../interface/IUnit";
+import { CreateTKNInterface } from "../../../../../interface/IEnvironmentalRecord";
 
 const { Option } = Select;
 

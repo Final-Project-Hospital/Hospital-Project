@@ -83,6 +83,7 @@ func CreateTKN(c *gin.Context) {
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,
+		StatusID: 				2,
 	}
 
 	if err := db.Create(&tkn).Error; err != nil {

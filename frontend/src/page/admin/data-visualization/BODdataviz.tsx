@@ -13,9 +13,9 @@ import { useNavigate } from "react-router-dom";
 import { BarChart3, LineChart } from "lucide-react";
 import { GetlistBOD, GetfirstBOD,DeleteBOD } from "../../../services/bodService"; // ใช้ BOD service
 import { GetTDSbyID } from "../../../services/tdsService"; // สำหรับแก้ไข/ลบ TDS (ถ้าต้องการ)
-import UpdateTDSCentralForm from '../data-management/TDScenter/updateTDScenter';
+import UpdateTDSCentralForm from '../data-management/wastewater/TDScenter/updateTDScenter';
 import './BODdataviz.css';
-import BODCentralForm from "../data-management/BODcenter"
+import BODCentralForm from "../data-management/wastewater/BODcenter/BODcenter";
 
 dayjs.extend(customParseFormat);
 dayjs.extend(isBetween);
