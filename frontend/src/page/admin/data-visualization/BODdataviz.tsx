@@ -7,7 +7,7 @@ import { LeftOutlined, SearchOutlined, EditOutlined, DeleteOutlined, Exclamation
 import { useNavigate } from "react-router-dom";
 import './BODdataviz.css';
 import dayjs, { Dayjs } from "dayjs";
-import { GetlistBOD, GetfirstBOD, DeleteBOD } from "../../../services/bodService";
+import { GetlistBOD, GetfirstBOD } from "../../../services/bodService";
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -21,6 +21,8 @@ import Table, { ColumnsType } from "antd/es/table";
 import { GetTDSbyID } from "../../../services/tdsService";
 import UpdateTDSCentralForm from '../data-management/TDScenter/updateTDScenter';
 import BODCentralForm from "../data-management/BODcenter"
+import { DeleteAllTDSRecordsByDate } from "../../../services/tdsService";
+import { GetBODTABLE } from "../../../services/bodService";
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';
@@ -91,8 +93,12 @@ const BODdataviz: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const lastbod = await GetfirstBOD();
-      const response = await GetlistBOD();
+      const [lastbod, response, response2] = await Promise.all([
+        GetfirstBOD(),
+        GetlistBOD(),
+        GetBODTABLE(),
+      ]);
+
       if (response) {
         //ใช้กับตาราง
         setData(response.data);
@@ -186,7 +192,7 @@ const BODdataviz: React.FC = () => {
           setMinStandard(lastbod.data.MinValue);
         }
 
-        // ✅ คำนวณเปอร์เซ็นต์การเปลี่ยนแปลง (กราฟที่ 4)
+        // คำนวณเปอร์เซ็นต์ประสิทธิภาพ (กราฟที่ 4)
         const percentageChangeData: { date: string; percent: number }[] = compare.map(item => {
           const rawPercent = item.before !== 0
             ? ((item.before - item.after) / item.before) * 100
@@ -209,21 +215,35 @@ const BODdataviz: React.FC = () => {
         setPercentChangeData(percentageChangeData); // <-- เพิ่ม state ถ้าจำเป็น
         //สิ้นสุดการใช้กราฟ
 
-        //ใช้กับตาราง ---แปลงข้อมูลสำหรับตาราง BOD ให้มี dateOnly, timeOnly สำหรับแสดงในตาราง---
-        const tableData = response.data
-          .map((item: any) => {
-            const dt = dayjs(item.Date);
-            const thaiYear = dt.year() + 543;
-            const thaiMonth = monthShortNames[dt.month()];
-            return {
-              ...item,
-              dateOnly: `${dt.date()} ${thaiMonth} ${thaiYear}`,
-              timeOnly: dt.format("HH:mm"),
-            };
-          })
-          .sort((a: any, b: any) => dayjs(b.Date).valueOf() - dayjs(a.Date).valueOf());
 
-        setData(tableData);
+        // ถ้าไม่มีข้อมูลเลย → แสดง error (ใช้แสดงในตารางด้วย)
+        if (!response2 || response2.length === 0) {
+          setError("ไม่พบข้อมูล TDS");
+          setLoading(false);
+          return;
+        }
+        //ใช้กับตาราง ---แปลงข้อมูลสำหรับตาราง BOD ให้มี dateOnly, timeOnly สำหรับแสดงในตาราง---
+        // ประมวลผลข้อมูลที่ได้มา โดยเพิ่มฟิลด์ช่วยเหลือสำหรับตาราง เช่น dateOnly, timeOnly, note
+        const processedData = response2.map((item: any) => {
+          const dt = dayjs(item.date);
+
+          return {
+            ...item,
+            dateOnly: dt.format("DD-MM-YYYY"),   // ใช้แสดงในตารางวันที่แบบอ่านง่าย
+            timeOnly: dt.format("HH:mm:ss"),     // ใช้แสดงเวลาในตาราง (ถ้าต้องการ)
+
+            before_note: item.before_note || '', // หมายเหตุก่อนบำบัด
+            after_note: item.after_note || '',   // หมายเหตุหลังบำบัด
+          };
+        });
+
+        // เรียงข้อมูลจากใหม่สุด → เก่าสุด (ให้ตารางแสดงลำดับใหม่สุดก่อน)
+        processedData.sort((a: any, b: any) =>
+          dayjs(b.date).diff(dayjs(a.date))
+        );
+
+        // เก็บข้อมูลทั้งหมดไว้ใน state ที่ใช้สำหรับ **ตาราง**
+        setData(processedData);
         //สิ้นสุดการใช้ตาราง
 
       } else {
@@ -314,7 +334,7 @@ const BODdataviz: React.FC = () => {
         min: 0,
         max: isPercentChart ? 100 : adjustedMax,
         title: {
-          text: isPercentChart ? "%" : (unit || "mg/L"),
+          text: isPercentChart ? "เปอร์เซ็น ( % )" : (unit || "mg/L"),
         },
         labels: {
           formatter: (value: number) => isPercentChart ? `${value.toFixed(2)}%` : value.toFixed(2)
@@ -384,65 +404,80 @@ const BODdataviz: React.FC = () => {
   const columns: ColumnsType<any> = [
     {
       title: 'วันที่',
-      dataIndex: 'dateOnly',
-      key: 'dateOnly',
-      width: 125,
-    },
-    {
-      title: 'เวลา',
-      dataIndex: 'timeOnly',
-      key: 'timeOnly',
-      width: 55,
+      dataIndex: 'date',
+      key: 'date',
+      width: 130,
     },
     {
       title: 'หน่วยที่วัด',
+      dataIndex: 'unit',
       key: 'unit',
       width: 145,
-      render: (_, record) => record.UnitName || '-',
+      render: (unit: string) => unit || '-',
     },
     {
-      title: 'มาตรฐาน',
-      key: 'standard',
-      width: 100,
-      render: (_, record) => {
-        // ถ้าใช้ MiddleValue, MinValue, MaxValue ที่อยู่ใน record เลย
-        if (record.MiddleValue && record.MiddleValue !== 0) {
-          return record.MiddleValue;
-        }
-        if (
-          record.MinValue !== undefined &&
-          record.MaxValue !== undefined &&
-          (record.MinValue !== 0 || record.MaxValue !== 0)
-        ) {
-          return `${record.MinValue} - ${record.MaxValue}`;
-        }
-        return '-';
-      }
+      title: 'ค่ามาตรฐาน',
+      dataIndex: 'standard_value',
+      key: 'standard_value',
+      width: 130,
+      render: (val: number) => val ?? '-',
     },
     {
       title: 'ค่าก่อนเข้าระบบบำบัด',
-      key: 'beforeValue',
-      width: 100,
-      render: (_, record) => (record.BeforeAfterTreatmentID === 1 ? record.Data : '-'),
+      dataIndex: 'before_value',
+      key: 'before_value',
+      width: 120,
+      render: (val: number | null) => val ?? '-',
     },
     {
       title: 'ค่าหลังเข้าระบบบำบัด',
-      key: 'afterValue',
-      width: 100,
-      render: (_, record) => (record.BeforeAfterTreatmentID === 2 ? record.Data : '-'),
+      dataIndex: 'after_value',
+      key: 'after_value',
+      width: 120,
+      render: (val: number | null) => val ?? '-',
     },
     {
-      title: 'หมายเหตุ',
+      title: (
+        <>
+          หมายเหตุ
+          <br />
+          ( ก่อน / หลัง )
+        </>
+      ),
+      dataIndex: 'note',
       key: 'note',
+      width: 150,
+      render: (_: any, record: any) => {
+        const beforeNote = record.before_note || '-';
+        const afterNote = record.after_note || '-';
+        return [beforeNote, afterNote].filter(Boolean).join(' / ');
+      },
+    },
+    {
+      title: (
+        <>
+          ประสิทธิภาพ
+          <br />
+          ( % )
+        </>
+      ),
+      key: 'efficiency',
       width: 120,
-      render: (_, record) => record.Note || '-',
+      render: (_: any, record: any) => {
+        const { efficiency } = record;
+        if (typeof efficiency === 'number') {
+          const safeEff = efficiency < 0 ? 0 : efficiency; // ✅ ถ้าติดลบให้เป็น 0
+          return safeEff.toFixed(2);
+        }
+        return '-';
+      },
     },
     {
       title: 'สถานะ',
       key: 'status',
       width: 200,
       render: (_, record) => {
-        const statusName = record.StatusName; // <-- เปลี่ยนจาก record.Status?.StatusName เป็นตรงนี้
+        const statusName = record.status;  // 👈 เปลี่ยนตรงนี้
 
         if (!statusName) {
           return (
@@ -453,7 +488,7 @@ const BODdataviz: React.FC = () => {
           );
         }
 
-        if (statusName.includes("ตํ่ากว่า")) {
+        if (statusName.includes("ต่ำกว่า")) {
           return (
             <span className="status-badge status-low">
               <ExclamationCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
@@ -481,68 +516,114 @@ const BODdataviz: React.FC = () => {
         }
       }
     },
-    // ปุ่มจัดการเหมือนเดิม
+
     {
       title: 'จัดการข้อมูล',
       key: 'action',
       className: 'darker-column',
       width: 120,
-      render: (_, record) => (
-        <div className="action-buttons">
-          <Tooltip title="แก้ไข">
-            <button className="circle-btn edit-btn" onClick={() => handleEdit(record.ID)}>
-              <EditOutlined />
-            </button>
-          </Tooltip>
-          <Tooltip title="ลบ">
-            <button className="circle-btn delete-btn" onClick={() => handleDelete(record.ID)}>
-              <DeleteOutlined />
-            </button>
-          </Tooltip>
-        </div>
-      ),
+      render: (_: any, record: any) => {
+        console.log('record:', record);
+        return (
+          <div className="action-buttons">
+            <Tooltip title="แก้ไข">
+              <button
+                className="circle-btn edit-btn"
+                onClick={() => handleEdit([record.before_id, record.after_id])}
+              >
+                <EditOutlined />
+              </button>
+            </Tooltip>
+            <Tooltip title="ลบ">
+              <button
+                className="circle-btn delete-btn"
+                onClick={() => handleDelete([record.before_id, record.after_id])}  //  ส่ง ID เดียว
+              >
+                <DeleteOutlined />
+              </button>
+            </Tooltip>
+          </div>
+        );
+      }
     }
   ];
 
   //ใช้กับตาราง
-  const handleEdit = async (id: number) => {
+  const handleEdit = async (ids: (number | undefined)[]) => {
+    console.log("IDs:", ids);
+
+    // กรองเอาเฉพาะ id ที่ไม่ undefined และไม่ null
+    const filteredIds = ids.filter((id): id is number => typeof id === 'number');
+
+    if (filteredIds.length === 0) {
+      message.error("ไม่พบ ID สำหรับแก้ไข");
+      return;
+    }
+
     try {
-      const response = await GetTDSbyID(id);
-      if (response.status === 200) {
-        setEditRecord(response.data);
-        setIsEditModalVisible(true);
-      } else {
+      const responses = await Promise.all(filteredIds.map((id) => GetTDSbyID(id)));
+      const validData = responses
+        .filter((res) => res && res.status === 200)
+        .map((res) => res.data);
+
+      if (validData.length === 0) {
         message.error("ไม่พบข้อมูลสำหรับแก้ไข");
+        return;
       }
+
+      setEditRecord(validData);
+      setIsEditModalVisible(true);
     } catch (error) {
+      console.error("Error fetching TDS data:", error);
       message.error("เกิดข้อผิดพลาดในการดึงข้อมูล");
     }
   };
 
   //ใช้กับตาราง
-  const handleDelete = (id: number) => {
+  const handleDelete = (ids: (number | null | undefined)[] | number | null | undefined) => {
+    let validIds: number[] = [];
+
+    if (Array.isArray(ids)) {
+      validIds = ids.filter((id): id is number => typeof id === "number" && id !== null);
+    } else if (typeof ids === "number") {
+      validIds = [ids];
+    }
+
+    if (validIds.length === 0) {
+      message.error("ไม่มี ID ที่จะลบ");
+      return;
+    }
+
+    const firstId = validIds[0];
+
     confirm({
-      title: 'คุณแน่ใจหรือไม่?',
+      title: "คุณแน่ใจหรือไม่?",
       icon: <ExclamationCircleFilled />,
-      content: 'คุณต้องการลบข้อมูลรายการนี้ใช่หรือไม่?',
-      okText: 'ใช่, ลบเลย',
-      okType: 'danger',
-      cancelText: 'ยกเลิก',
-      onOk() {
-        deleteBODRecord(id);
+      content: "คุณต้องการลบข้อมูลรายการนี้ใช่หรือไม่?",
+      okText: "ใช่, ลบเลย",
+      okType: "danger",
+      cancelText: "ยกเลิก",
+      async onOk() {
+        try {
+          await DeleteAllTDSRecordsByDate(firstId);
+          message.success("ลบข้อมูลสำเร็จ");
+          await fetchData();
+        } catch (error) {
+          message.error("ลบข้อมูลไม่สำเร็จ");
+        }
       },
     });
   };
 
-  const deleteBODRecord = async (id: number) => {
-    try {
-      await DeleteBOD(id);
-      message.success('ลบข้อมูลสำเร็จ');
-      fetchData();
-    } catch (error) {
-      message.error('เกิดข้อผิดพลาดในการลบข้อมูล');
-    }
-  };
+  // const deleteBODRecord = async (id: number) => {
+  //   try {
+  //     await DeleteBOD(id);
+  //     message.success('ลบข้อมูลสำเร็จ');
+  //     fetchData();
+  //   } catch (error) {
+  //     message.error('เกิดข้อผิดพลาดในการลบข้อมูล');
+  //   }
+  // };
 
   //ใช้กับตาราง
   const showModal = () => {
@@ -576,6 +657,7 @@ const BODdataviz: React.FC = () => {
           <div className="bod-select-date">
             <div>
               <Select
+              
                 value={filterMode}
                 onChange={(val) => {
                   setFilterMode(val);
@@ -888,13 +970,16 @@ const BODdataviz: React.FC = () => {
           <h1 className="bod-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
           <Table
             columns={columns}
-            dataSource={data
-              .filter((d) => dayjs(d.dateOnly).format('YYYY-MM-DD').includes(search))
-              .sort((a, b) => dayjs(b.dateOnly).valueOf() - dayjs(a.dateOnly).valueOf()) // เรียงวันที่ล่าสุดก่อน
-            }
+            dataSource={data.filter((d: any) =>
+              dayjs(d.date).format('YYYY-MM-DD').includes(search)
+            )}
             rowKey="ID"
             loading={loading}
-            pagination={{ pageSize: 8 }}
+            pagination={{
+              defaultPageSize: 10,
+              showSizeChanger: true,
+              pageSizeOptions: ['7', '10', '15', '30', '100'],
+            }}
             bordered
           />
 
@@ -1030,7 +1115,7 @@ const BODdataviz: React.FC = () => {
                   )}
                   series={afterSeries}
                   type={chartTypeAfter}
-                  height={350}
+                  height="100%"
                 />
               </div>
             </div>

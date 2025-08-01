@@ -103,6 +103,7 @@ func main() {
 		public.GET("/list-bod", bodcenter.ListBOD)
 		public.GET("/get-bod/:id", bodcenter.GetBODbyID)
 		public.DELETE("/delete-bod/:id",bodcenter.DeleterBOD)
+		public.GET("/get-bod-table", bodcenter.GetBODTABLE)
 
 		//FOG
 		public.POST("/create-fog", fogcenter.CreateFog)

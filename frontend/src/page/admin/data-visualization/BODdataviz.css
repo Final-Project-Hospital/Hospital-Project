@@ -391,58 +391,63 @@
 /* Responsive for small screens (max-width: 480px) */
 @media (max-width: 480px) {
   .bod-title-header {
-    padding: 20px;
+    padding: 15px;
   }
-
   .bod-title-header h1 {
     font-size: 1.5rem;
+    margin-top: 10px;
   }
-
   .bod-graph-card {
     min-height: 350px;
   }
-
   .bod-select-group {
     padding: 10px;
     gap: 8px;
   }
-
   .bod-head-graph-card {
     flex-direction: column;
     align-items: flex-start;
     margin-bottom: 10px;
   }
-
   .bod-right-select-graph {
     text-align: left;
     width: 100%;
   }
-
   .width25 {
     width: 40%;
   }
-
   .width40 {
     width: 60%;
   }
-
-  .bod-table-tdsdata {
+  /* .bod-table-tdsdata {
     overflow-x: auto;
     padding: 10px;
   }
-
   .bod-table-tdsdata .ant-table {
     min-width: 600px !important;
-    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
   }
-
   .bod-table-tdsdata .ant-table-thead>tr>th,
   .bod-table-tdsdata .ant-table-tbody>tr>td {
     white-space: nowrap !important;
-    /* บรรทัดไม่ตัด */
     padding: 8px !important;
     font-size: 5px !important;
+  } */
+   .bod-select-date {
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
   }
+
+  /* ปรับ Select filter ให้เต็มจอเล็ก */
+  .bod-select-date .bod-select-filter {
+    width: 50% !important;
+  }
+
+  /* ปรับ DatePicker และ RangePicker ให้เต็มจอ */
+  .bod-select-date .ant-picker {
+    width: 100% !important;
+  }
+  
 }
 
 /* Responsive for small screens (max-width: 480px) */

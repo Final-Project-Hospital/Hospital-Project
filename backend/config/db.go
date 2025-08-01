@@ -30,6 +30,10 @@ func ConnectionDB() {
 }
 
 func SetupDatabase() {
+	 if db.Migrator().HasTable(&entity.Employee{}) {
+        fmt.Println("⚠️ ฐานข้อมูลถูกสร้างตารางไว้แล้ว ไม่ต้องสร้างซ้ำ.")
+        return
+    }
 	db.AutoMigrate(
 		&entity.Employee{},
 		&entity.Role{},

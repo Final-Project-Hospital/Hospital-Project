@@ -72,6 +72,7 @@ const TDSdataviz: React.FC = () => {
         dayjs(b.date).diff(dayjs(a.date))
       );
 
+      console.log(processedData)
       setData(processedData);
 
       const before = processedData
@@ -119,6 +120,7 @@ const TDSdataviz: React.FC = () => {
     fetchData();
   }, []);
 
+  //ใช้กับกราฟ
   const getChartOptions = (categories: string[]): ApexOptions => ({
     chart: { id: 'tds-chart', toolbar: { show: true } },
     xaxis: { categories, title: { text: 'วันที่' } },
@@ -127,7 +129,7 @@ const TDSdataviz: React.FC = () => {
     dataLabels: { enabled: false },
     stroke: { curve: "smooth" },
   });
-
+  //ใช้กับกราฟ
   const beforeSeries = [{ name: "TDS", data: beforeData.map((item) => item.data) }];
   const afterSeries = [{ name: "TDS", data: afterData.map((item) => item.data) }];
   const compareSeries = [
