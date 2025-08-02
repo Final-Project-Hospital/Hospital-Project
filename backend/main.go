@@ -77,7 +77,9 @@ func main() {
 		public.GET("/get-tds", tdscenter.GetTDS)
 		public.GET("/get-tds/:id", tdscenter.GetTDSbyID)
 		public.PATCH("/update-tds/:id", tdscenter.UpdateTDS)
+		public.POST("/update-or-create-tds", tdscenter.UpdateOrCreateTDS) //เพิ่ม
 		public.DELETE("/delete-tds/:id", tdscenter.DeleteTDS)
+		public.DELETE("/delete-tds-day/:id", tdscenter.DeleteAllTDSRecordsByDate) //เพิ่ม
 		public.GET("/get-first-tds", tdscenter.GetfirstTDS)
 
 		//TKN
@@ -101,6 +103,7 @@ func main() {
 		public.GET("/list-bod", bodcenter.ListBOD)
 		public.GET("/get-bod/:id", bodcenter.GetBODbyID)
 		public.DELETE("/delete-bod/:id",bodcenter.DeleterBOD)
+		public.GET("/get-bod-table", bodcenter.GetBODTABLE)
 
 		//FOG
 		public.POST("/create-fog", fogcenter.CreateFog)
