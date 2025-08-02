@@ -210,6 +210,7 @@ func SetupDatabase() {
 		paramhardware1 := entity.HardwareParameter{
 			Parameter:                "Formaldehyde",
 			Icon: "icon1",
+			GroupDisplay: false,
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       formaldehydeStd.ID,
@@ -218,6 +219,7 @@ func SetupDatabase() {
 		paramhardware2 := entity.HardwareParameter{
 			Parameter:                "Temperature",
 			Icon: "icon2",
+			GroupDisplay: false,
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       temperatureStd.ID,
@@ -226,6 +228,7 @@ func SetupDatabase() {
 		paramhardware3 := entity.HardwareParameter{
 			Parameter:                "Humidity",
 			Icon: "icon3",
+			GroupDisplay: false,
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       humidityStd.ID,
@@ -234,6 +237,7 @@ func SetupDatabase() {
 		paramhardware4 := entity.HardwareParameter{
 			Parameter:                "Light",
 			Icon: "icon4",
+			GroupDisplay: false,
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       lightStd.ID,
@@ -242,6 +246,7 @@ func SetupDatabase() {
 		paramhardware5 := entity.HardwareParameter{
 			Parameter:                "Gas",
 			Icon: "icon5",
+			GroupDisplay: false,
 			HardwareParameterColorID: colorGray.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       gasStd.ID,

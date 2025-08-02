@@ -13,7 +13,6 @@ import { useStateContext } from '../../../../../../contexts/ContextProvider';
 import {
   GetSensorDataByHardwareID,
   GetSensorDataParametersBySensorDataID,
-  ListHardwareParameterIDsByHardwareID,
 } from '../../../../../../services/hardware';
 
 interface LineChartProps {
@@ -76,6 +75,8 @@ const LineChart: React.FC<LineChartProps> = ({
   hardwareID,
   timeRangeType,
   selectedRange,
+  parameters,
+  colors = [],
   chartHeight = "420px",
   reloadKey,
 }) => {
@@ -84,37 +85,17 @@ const LineChart: React.FC<LineChartProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [noData, setNoData] = useState<boolean>(false);
   const [unitMap, setUnitMap] = useState<Record<string, string>>({});
-  const [parameterInfo, setParameterInfo] = useState<Record<string, string>>({});
-  const [lineParameters, setLineParameters] = useState<string[]>([]);
+
+  const parameterInfo = parameters.reduce((acc, param, idx) => {
+    acc[param] = colors[idx] || '#999999';
+    return acc;
+  }, {} as Record<string, string>);
 
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; };
   }, [reloadKey]);
-
-  useEffect(() => {
-    const fetchLineParameters = async () => {
-      const result = await ListHardwareParameterIDsByHardwareID(hardwareID);
-      if (!result || !result.parameters) {
-        setLineParameters([]);
-        setParameterInfo({});
-        return;
-      }
-      const filtered = result.parameters.filter((p: any) => p.graph_id === 1);
-      const paramNames = filtered.map((p: any) => p.parameter);
-      const paramColors: Record<string, string> = {};
-      filtered.forEach((p: any) => {
-        paramColors[p.parameter] = p.color || '#999999';
-      });
-      setLineParameters(paramNames);
-      setParameterInfo(paramColors);
-    };
-
-    if (hardwareID) {
-      fetchLineParameters();
-    }
-  }, [hardwareID,reloadKey]);
 
   useEffect(() => {
     let stop = false;
@@ -127,7 +108,7 @@ const LineChart: React.FC<LineChartProps> = ({
       setSeriesData([]);
       setUnitMap({});
 
-      if (!hardwareID || !lineParameters.length) {
+      if (!hardwareID || !parameters.length) {
         setLoading(true);
         return;
       }
@@ -140,7 +121,6 @@ const LineChart: React.FC<LineChartProps> = ({
         const parameterMap: Record<string, { x: Date; y: number }[]> = {};
         const standardMap: Record<string, number> = {};
         const unitMapping: Record<string, string> = {};
-        let foundData = false;
 
         for (const sensor of raw) {
           const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
@@ -153,7 +133,7 @@ const LineChart: React.FC<LineChartProps> = ({
             const unit = param.HardwareParameter?.UnitHardware?.Unit;
             const date = new Date(param.Date);
 
-            const include = name && lineParameters.includes(name) && !isNaN(value) && !isNaN(date.getTime());
+            const include = name && parameters.includes(name) && !isNaN(value) && !isNaN(date.getTime());
             if (!include) continue;
 
             let inRange = false;
@@ -172,7 +152,6 @@ const LineChart: React.FC<LineChartProps> = ({
 
             if (!inRange) continue;
 
-            foundData = true;
             parameterMap[name] ??= [];
             parameterMap[name].push({ x: date, y: value });
 
@@ -204,7 +183,7 @@ const LineChart: React.FC<LineChartProps> = ({
                   ? groupByMonthAvg(groupByDayAvg(sortedData.filter(d => d.x.getFullYear() === +selectedRange[0])))
                   : groupByYearAvg(sortedData))
               : timeRangeType === 'month'
-                ? groupByDayAvg(sortedData) // ✅ เฉลี่ยรายวันก่อน
+                ? groupByDayAvg(sortedData)
                 : groupByDayAvg(sortedData);
 
           series.push({
@@ -224,26 +203,25 @@ const LineChart: React.FC<LineChartProps> = ({
               dataSource: stdData,
               xName: 'x',
               yName: 'y',
-              name: `${name} (Standard)`,
+              name: `${name} (Standard)` ,
               width: 2,
               dashArray: '5,5',
               marker: { visible: false },
               type: 'Line',
-              fill: '#888',
+              fill: 'red',
             });
           }
         }
 
         if (mounted.current && !stop) {
-          const activeParams = series.map(s => s.name).filter(n => !n.includes('(Standard)'));
           const filteredUnitMap = Object.fromEntries(
-            Object.entries(unitMapping).filter(([unit, param]) => activeParams.includes(param))
+            Object.entries(unitMapping).filter(([unit, param]) => parameters.includes(param))
           );
 
           setSeriesData(series);
           setUnitMap(filteredUnitMap);
           setLoading(false);
-          setNoData(false);
+          setNoData(series.length === 0);
         }
       } catch (err) {
         retryCount++;
@@ -265,7 +243,7 @@ const LineChart: React.FC<LineChartProps> = ({
       stop = true;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [hardwareID, timeRangeType, selectedRange, lineParameters,reloadKey]);
+  }, [hardwareID, timeRangeType, selectedRange, parameters, colors, reloadKey]);
 
   if (loading) {
     return (
@@ -278,8 +256,8 @@ const LineChart: React.FC<LineChartProps> = ({
 
   if (noData) {
     return (
-      <div className="flex items-center justify-center h-80 text-lg text-gray-500">
-        No Data
+      <div className="flex items-center justify-center h-80 text-lg text-red-500 font-bold">
+        ไม่มีข้อมูลในช่วงเวลาที่เลือก
       </div>
     );
   }
@@ -308,7 +286,7 @@ const LineChart: React.FC<LineChartProps> = ({
       </div>
 
       <ChartComponent
-        id="line-chart"
+       id={`chart-${parameters.join('-')}`}
         height={chartHeight}
         width="100%"
         primaryXAxis={{

@@ -221,7 +221,7 @@ const Stacked: React.FC<ChartdataProps> = ({
             dashArray: '5,5',
             width: 2,
             marker: { visible: false },
-            fill: '#888888',
+            fill: 'red',
           };
         });
 
@@ -307,7 +307,7 @@ const Stacked: React.FC<ChartdataProps> = ({
         })}
       </div>
       <ChartComponent
-        id="stacked-chart"
+        id={`chart-${parameters.join('-')}`}
         width="100%"
         height={chartHeight}
         primaryXAxis={primaryXAxis}

@@ -194,7 +194,7 @@ const Area: React.FC<ChartdataProps> = ({
               dashArray: '5,5',
               marker: { visible: false },
               type: 'Line',
-              fill: '#888',
+              fill: 'red',
             });
           }
         }
@@ -253,7 +253,7 @@ const Area: React.FC<ChartdataProps> = ({
       </div>
 
       <ChartComponent
-        id="area-chart"
+        id={`chart-${parameters.join('-')}`}
         height={chartHeight}
         width="100%"
         primaryXAxis={{

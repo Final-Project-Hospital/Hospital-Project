@@ -120,6 +120,7 @@ func main() {
 		public.PATCH("/update-hardware-parameter/:id", hardware.UpdateHardwareParameterByID)
 		public.GET("/hardware-parameter-ids", hardware.GetHardwareParametersWithGraph)
 		public.PATCH("/hardware-parameters/:id/icon", hardware.UpdateIconByHardwareParameterID)
+		public.PUT("/hardware-parameter/:id/group-display", hardware.UpdateGroupDisplayByID)
 
 		//report hardware
 		public.GET("/report-hardware", report.ListReportHardware)
@@ -173,8 +174,8 @@ func main() {
 		c.String(http.StatusOK, "API RUNNING... PORT: %s", PORT)
 	})
 
-	r.Run("localhost:" + PORT)
-	//r.Run("0.0.0.0:" + PORT)
+	//r.Run("localhost:" + PORT)
+	r.Run("0.0.0.0:" + PORT)
 
 }
 

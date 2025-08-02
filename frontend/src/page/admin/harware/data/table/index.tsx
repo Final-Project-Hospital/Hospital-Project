@@ -37,8 +37,8 @@ interface TableDataProps {
 const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
   const [tableData, setTableData] = useState<any[]>([]);
   const [filteredData, setFilteredData] = useState<any[]>([]);
-  const [uniqueColumns, setUniqueColumns] = useState<string[]>(["Date"]);
-  const [selectedColumns, setSelectedColumns] = useState<string[]>(["Date"]);
+  const [uniqueColumns, setUniqueColumns] = useState<string[]>(["Date", "Time"]);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>(["Date", "Time"]);
   const [paramUnits, setParamUnits] = useState<Record<string, string>>({});
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -74,15 +74,20 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
 
             let sensorDate = "ไม่ทราบวันที่";
             let rawDate = "";
+            let timeString = "";
+
             if (param?.Date && !isNaN(new Date(param.Date).getTime())) {
               rawDate = param.Date;
-              sensorDate = dayjs(param.Date).format("DD/MM/YYYY HH:mm");
+              const parsedDate = dayjs(param.Date);
+              sensorDate = parsedDate.format("DD/MM/YYYY");
+              timeString = parsedDate.format("HH:mm:ss");
             }
 
             if (name) {
               paramDetails.push({
                 ParameterName: name,
                 Date: sensorDate,
+                Time: timeString,
                 rawDate,
                 [name]: value,
                 [`${name}_standard`]: standard,
@@ -96,8 +101,8 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
       const uniqueParams = Array.from(
         new Set(paramDetails.map((p) => p.ParameterName).filter(Boolean))
       );
-      setUniqueColumns(["Date", ...uniqueParams]);
-      setSelectedColumns(["Date", ...uniqueParams]);
+      setUniqueColumns(["Date", "Time", ...uniqueParams]);
+      setSelectedColumns(["Date", "Time", ...uniqueParams]);
 
       const unitMap: Record<string, string> = {};
       paramDetails.forEach((p) => {
@@ -109,17 +114,25 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
 
       const groupedRows: Record<string, any> = {};
       paramDetails.forEach((p) => {
-        const date = p.Date;
-        if (!groupedRows[date])
-          groupedRows[date] = { Date: date, rawDate: p.rawDate };
-        Object.entries(p).forEach(([key, val]) => {
-          if (key !== "ParameterName" && key !== "rawDate") {
-            groupedRows[date][key] = val;
+        const key = `${p.Date}-${p.Time}`;
+        if (!groupedRows[key]) {
+          groupedRows[key] = {
+            Date: p.Date,
+            Time: p.Time,
+            rawDate: p.rawDate,
+          };
+        }
+
+        Object.entries(p).forEach(([k, v]) => {
+          if (!["ParameterName", "rawDate", "Date", "Time"].includes(k)) {
+            groupedRows[key][k] = v;
           }
         });
       });
 
-      const finalTableData = Object.values(groupedRows);
+      const finalTableData = Object.values(groupedRows).sort((a: any, b: any) => {
+        return dayjs(b.rawDate).valueOf() - dayjs(a.rawDate).valueOf();
+      });
       setTableData(finalTableData);
       onLoaded?.();
       setLoading(false);
@@ -173,8 +186,8 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
       .filter((col) => selectedColumns.includes(col))
       .map((col) => {
         const displayTitle =
-          col === "Date"
-            ? "Date"
+          col === "Date" || col === "Time"
+            ? col
             : paramUnits[col]
               ? `${col} (${paramUnits[col]})`
               : col;
@@ -188,7 +201,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
           dataIndex: col,
           key: col,
           render: (val: any, row: any) => {
-            if (col === "Date" || col === "rawDate") return val;
+            if (col === "Date" || col === "Time" || col === "rawDate") return val;
             const standard = row[`${col}_standard`];
             const num = typeof val === "number" ? val : parseFloat(val);
 
@@ -227,7 +240,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
       <Checkbox.Group
         value={selectedColumns}
         onChange={(vals) =>
-          setSelectedColumns(vals.length ? (vals as string[]) : ["Date"])
+          setSelectedColumns(vals.length ? (vals as string[]) : ["Date", "Time"])
         }
       >
         <div className="flex flex-col gap-2">
