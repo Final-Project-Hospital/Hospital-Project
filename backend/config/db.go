@@ -213,45 +213,45 @@ func SetupDatabase() {
 		// ----- สร้าง Parameter พร้อมผูก StandardHardwareID และ UnitHardwareID -----
 		paramhardware1 := entity.HardwareParameter{
 			Parameter:                "Formaldehyde",
-			Icon: "icon1",
+			Icon: "GiChemicalDrop",
 			GroupDisplay: false,
-			HardwareParameterColorID: colorGray.ID,
+			HardwareParameterColorID: colorPurple.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       formaldehydeStd.ID,
 			UnitHardwareID:           unitPPM.ID,
 		}
 		paramhardware2 := entity.HardwareParameter{
 			Parameter:                "Temperature",
-			Icon: "icon2",
+			Icon: "GiChemicalDrop",
 			GroupDisplay: false,
-			HardwareParameterColorID: colorGray.ID,
+			HardwareParameterColorID: colorBlue.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       temperatureStd.ID,
 			UnitHardwareID:           unitCelsius.ID,
 		}
 		paramhardware3 := entity.HardwareParameter{
 			Parameter:                "Humidity",
-			Icon: "icon3",
+			Icon: "GiChemicalDrop",
 			GroupDisplay: false,
-			HardwareParameterColorID: colorGray.ID,
+			HardwareParameterColorID: colorOrange.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       humidityStd.ID,
 			UnitHardwareID:           unitPercent.ID,
 		}
 		paramhardware4 := entity.HardwareParameter{
 			Parameter:                "Light",
-			Icon: "icon4",
+			Icon: "GiChemicalDrop",
 			GroupDisplay: false,
-			HardwareParameterColorID: colorGray.ID,
+			HardwareParameterColorID: colorYellow.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       lightStd.ID,
 			UnitHardwareID:           unitLux.ID,
 		}
 		paramhardware5 := entity.HardwareParameter{
 			Parameter:                "Gas",
-			Icon: "icon5",
+			Icon: "GiChemicalDrop",
 			GroupDisplay: false,
-			HardwareParameterColorID: colorGray.ID,
+			HardwareParameterColorID: colorGreen.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       gasStd.ID,
 			UnitHardwareID:           unitGas.ID,
