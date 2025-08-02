@@ -475,6 +475,34 @@ export const ListReportHardware = async (): Promise<SensorDataParameterInterface
     return null;
   }
 };
+
+export interface UpdateGroupDisplayInput {
+  group_display: boolean;
+}
+
+export const UpdateGroupDisplay = async (
+  id: number,
+  data: UpdateGroupDisplayInput
+): Promise<{ message: string; hardware_param: any } | null> => {
+  try {
+    const response = await axios.put(`${apiUrl}/hardware-parameter/${id}/group-display`, data, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error updating group_display:", error.response?.data || error.message);
+    return null;
+  }
+};
 async function ListDataHardware() {
 
   return await axios
