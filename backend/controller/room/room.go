@@ -47,9 +47,11 @@ func UpdateRoom(c *gin.Context) {
 		return
 	}
 
+	// รับข้อมูล JSON และรวม Icon ด้วย
 	var input struct {
 		RoomName   *string `json:"RoomName"`
 		Floor      *int    `json:"Floor"`
+		Icon       *string `json:"Icon"`
 		BuildingID *uint   `json:"BuildingID"`
 		EmployeeID *uint   `json:"EmployeeID"`
 		HardwareID *uint   `json:"HardwareID"`
@@ -67,6 +69,9 @@ func UpdateRoom(c *gin.Context) {
 	if input.Floor != nil {
 		room.Floor = *input.Floor
 	}
+	if input.Icon != nil {
+		room.Icon = *input.Icon
+	}
 	if input.BuildingID != nil {
 		room.BuildingID = *input.BuildingID
 	}
@@ -77,6 +82,7 @@ func UpdateRoom(c *gin.Context) {
 		room.HardwareID = *input.HardwareID
 	}
 
+	// Save
 	if err := config.DB().Save(&room).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -84,6 +90,7 @@ func UpdateRoom(c *gin.Context) {
 
 	c.JSON(http.StatusOK, room)
 }
+
 
 func DeleteRoomById(c *gin.Context) {
 	id := c.Param("id")

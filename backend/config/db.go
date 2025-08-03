@@ -30,6 +30,10 @@ func ConnectionDB() {
 }
 
 func SetupDatabase() {
+	 if db.Migrator().HasTable(&entity.Employee{}) {
+        fmt.Println("⚠️ ฐานข้อมูลถูกสร้างตารางไว้แล้ว ไม่ต้องสร้างซ้ำ.")
+        return
+    }
 	db.AutoMigrate(
 		&entity.Employee{},
 		&entity.Role{},
@@ -212,35 +216,45 @@ func SetupDatabase() {
 		// ----- สร้าง Parameter พร้อมผูก StandardHardwareID และ UnitHardwareID -----
 		paramhardware1 := entity.HardwareParameter{
 			Parameter:                "Formaldehyde",
-			HardwareParameterColorID: colorGray.ID,
+			Icon: "GiChemicalDrop",
+			GroupDisplay: false,
+			HardwareParameterColorID: colorPurple.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       formaldehydeStd.ID,
 			UnitHardwareID:           unitPPM.ID,
 		}
 		paramhardware2 := entity.HardwareParameter{
 			Parameter:                "Temperature",
-			HardwareParameterColorID: colorGray.ID,
+			Icon: "GiChemicalDrop",
+			GroupDisplay: false,
+			HardwareParameterColorID: colorBlue.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       temperatureStd.ID,
 			UnitHardwareID:           unitCelsius.ID,
 		}
 		paramhardware3 := entity.HardwareParameter{
 			Parameter:                "Humidity",
-			HardwareParameterColorID: colorGray.ID,
+			Icon: "GiChemicalDrop",
+			GroupDisplay: false,
+			HardwareParameterColorID: colorOrange.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       humidityStd.ID,
 			UnitHardwareID:           unitPercent.ID,
 		}
 		paramhardware4 := entity.HardwareParameter{
 			Parameter:                "Light",
-			HardwareParameterColorID: colorGray.ID,
+			Icon: "GiChemicalDrop",
+			GroupDisplay: false,
+			HardwareParameterColorID: colorYellow.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       lightStd.ID,
 			UnitHardwareID:           unitLux.ID,
 		}
 		paramhardware5 := entity.HardwareParameter{
 			Parameter:                "Gas",
-			HardwareParameterColorID: colorGray.ID,
+			Icon: "GiChemicalDrop",
+			GroupDisplay: false,
+			HardwareParameterColorID: colorGreen.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       gasStd.ID,
 			UnitHardwareID:           unitGas.ID,
@@ -312,6 +326,7 @@ func SetupDatabase() {
 	Room1 := entity.Room{
 		RoomName:   "ห้องตรวจวิเคราะห์อากาศ",
 		Floor:      1,
+		Icon: "FaVial",
 		EmployeeID: eid1,
 		HardwareID: hid1,
 		BuildingID: bid1,
@@ -444,48 +459,62 @@ func SetupDatabase() {
 	db.FirstOrCreate(&FogParameter, &entity.Parameter{ParameterName: "Fat Oil and Grease"})
 
 	beforeValues := []float64{2, 2, 4.4, 39, 47, 12, 11, 12, 29, 2, 3.1, 4.4, 14, 2, 3.8, 2, 2.6, 2, 2, 2, 4, 2, 19, 14, 15, 9, 2, 3.1, 4.4, 14, 2, 3.8, 2, 2.6, 2, 2, 2, 1.8, 1.4, 1.1, 1, 9, 2, 3.1, 2, 3.8, 2, 2.6, 2, 2, 2, 2, 3.1, 2, 9, 2, 3.1, 4.4}
-	afterValues := []float64{2.4, 2, 2.2, 5.6, 2.7, 5.5, 2, 2, 2, 2, 19, 9.2, 44, 11, 18, 46, 5.2, 6.2, 5, 6.1, 4, 2, 19, 14, 15, 9, 2, 19, 9.2, 44, 11, 18, 46, 5.2, 6.2, 5, 6.1, 10.9, 10.1, 9.3, 8.5, 9, 2, 19, 11, 18, 46, 5.2, 6.2, 5, 6.1, 2, 19, 11, 9, 2, 19, 9.2}
-	dates := []string{
-		"2020-05-01", "2020-06-01", "2020-07-01", "2020-08-01", "2020-09-01", "2020-10-01", "2020-11-01", "2020-12-01",
-		"2021-01-01", "2021-02-01", "2021-03-01", "2021-04-01", "2021-05-01", "2021-06-01", "2021-07-01", "2021-08-01",
-		"2021-09-01", "2021-10-01", "2021-11-01", "2021-12-01", "2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
-		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
-		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
-		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
-		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
-		"2025-01-01", "2025-02-01",
-	}
-	for i := 0; i < len(beforeValues); i++ {
-		date, _ := time.Parse("2006-01-02", dates[i])
-		// สร้าง 2 เรคคอร์ดต่อเดือน: ก่อนและหลัง
-		beforeRecord := entity.EnvironmentalRecord{
-			Date:                   date,
-			Data:                   beforeValues[i],
-			Note:                   "",
-			BeforeAfterTreatmentID: Before.ID,       // สมมุติ: 1 = ก่อน
-			EnvironmentID:          Wastewater.ID,   // สมมุติ
-			ParameterID:            BodParameter.ID, // BOD
-			StandardID:             3,
-			UnitID:                 Unit.ID,
-			EmployeeID:             Admin.ID,
-			StatusID:               status2.ID,
-		}
+    afterValues := []float64{2.4, 2, 2.2, 5.6, 2.7, 5.5, 2, 2, 2, 2, 19, 9.2, 44, 11, 18, 46, 5.2, 6.2, 5, 6.1, 4, 2, 19, 14, 15, 9, 2, 19, 9.2, 44, 11, 18, 46, 5.2, 6.2, 5, 6.1, 10.9, 10.1, 9.3, 8.5, 9, 2, 19, 11, 18, 46, 5.2, 6.2, 5, 6.1, 2, 19, 11, 9, 2, 19, 9.2}
+    dates := []string{
+        "2020-05-01", "2020-06-01", "2020-07-01", "2020-08-01", "2020-09-01", "2020-10-01", "2020-11-01", "2020-12-01",
+        "2021-01-01", "2021-02-01", "2021-03-01", "2021-04-01", "2021-05-01", "2021-06-01", "2021-07-01", "2021-08-01",
+        "2021-09-01", "2021-10-01", "2021-11-01", "2021-12-01", "2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+        "2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+        "2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+        "2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+        "2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+        "2025-01-01", "2025-02-01",
+    }
 
-		afterRecord := entity.EnvironmentalRecord{
-			Date:                   date,
-			Data:                   afterValues[i],
-			Note:                   "",
-			BeforeAfterTreatmentID: After.ID, // สมมุติ: 2 = หลัง
-			EnvironmentID:          Wastewater.ID,
-			ParameterID:            BodParameter.ID,
-			StandardID:             3,
-			UnitID:                 Unit.ID,
-			EmployeeID:             Admin.ID,
-			StatusID:               status2.ID,
-		}
+    for i := 0; i < len(beforeValues); i++ {
+        date, err := time.Parse("2006-01-02", dates[i])
+        if err != nil {
+            fmt.Println("Parse date error:", err)
+            continue
+        }
 
-		db.Create(&beforeRecord)
-		db.Create(&afterRecord)
-	}
+        beforeRecord := entity.EnvironmentalRecord{
+            Date:                   date,
+            Data:                   beforeValues[i],
+            BeforeAfterTreatmentID: Before.ID,
+            EnvironmentID:          Wastewater.ID,
+            ParameterID:            BodParameter.ID,
+            StandardID:             3,
+            UnitID:                 Unit.ID,
+            EmployeeID:             Admin.ID,
+            StatusID:               status2.ID,
+        }
+        db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+            Date:                   date,
+            BeforeAfterTreatmentID: Before.ID,
+            EnvironmentID:          Wastewater.ID,
+            ParameterID:            BodParameter.ID,
+        })
+
+        afterRecord := entity.EnvironmentalRecord{
+            Date:                   date,
+            Data:                   afterValues[i],
+            BeforeAfterTreatmentID: After.ID,
+            EnvironmentID:          Wastewater.ID,
+            ParameterID:            BodParameter.ID,
+            StandardID:             3,
+            UnitID:                 Unit.ID,
+            EmployeeID:             Admin.ID,
+            StatusID:               status2.ID,
+        }
+        db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+            Date:                   date,
+            BeforeAfterTreatmentID: After.ID,
+            EnvironmentID:          Wastewater.ID,
+            ParameterID:            BodParameter.ID,
+        })
+    }
+
+    fmt.Println("Insert BOD seed data done!")
 
 }

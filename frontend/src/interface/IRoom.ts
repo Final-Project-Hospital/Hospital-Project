@@ -6,6 +6,7 @@ export interface RoomInterface {
     ID?: number;
     RoomName?: string;
     Floor?:string;
+    Icon?:string;
     Building?:BuildingInterface;
     Employee?:UsersInterface;
     Hardware?:HardwareInterface;

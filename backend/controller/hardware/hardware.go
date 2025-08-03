@@ -138,6 +138,8 @@ func ListHardwareParameterByHardwareID(c *gin.Context) {
 	if err := config.DB().
 		Preload("HardwareGraph").
 		Preload("HardwareParameterColor").
+		Preload("StandardHardware").
+		Preload("UnitHardware").
 		Find(&hardwareParameters, hardwareParameterIDs).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -290,4 +292,156 @@ func UpdateStandardHardwareByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, standard)
+}
+
+type ParamWithGraphResponse struct {
+	ID           uint    `json:"id"`            // HardwareParameter.ID
+	Parameter    string  `json:"parameter"`     // HardwareParameter.Parameter
+	GraphID      uint    `json:"graph_id"`      // HardwareGraph.ID
+	Graph        string  `json:"graph"`         // HardwareGraph.Graph
+	Color        string  `json:"color"`         // HardwareParameterColor.Code
+	Unit         string  `json:"unit"`          // UnitHardware.Unit
+	Standard     float64 `json:"standard"`      // StandardHardware.Standard
+	Icon         string  `json:"icon"`          // HardwareParameter.Icon
+	GroupDisplay bool    `json:"group_display"` // ✅ เพิ่มฟิลด์นี้
+}
+
+func GetHardwareParametersWithGraph(c *gin.Context) {
+	hardwareID := c.Query("hardware_id")
+	if hardwareID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing hardware_id"})
+		return
+	}
+
+	db := config.DB()
+
+	// 1. หาพารามิเตอร์ที่มีข้อมูล sensor จริง
+	var hardwareParamIDs []uint
+	err := db.
+		Table("sensor_data_parameters").
+		Joins("JOIN sensor_data ON sensor_data.id = sensor_data_parameters.sensor_data_id").
+		Where("sensor_data.hardware_id = ?", hardwareID).
+		Select("DISTINCT sensor_data_parameters.hardware_parameter_id").
+		Pluck("hardware_parameter_id", &hardwareParamIDs).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch hardware parameter IDs"})
+		return
+	}
+
+	if len(hardwareParamIDs) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"hardware_id": hardwareID,
+			"parameters":  []ParamWithGraphResponse{},
+		})
+		return
+	}
+
+	// 2. โหลด HardwareParameter พร้อมความสัมพันธ์ทั้งหมดที่จำเป็น
+	var parameters []entity.HardwareParameter
+	err = db.
+		Preload("HardwareGraph").
+		Preload("HardwareParameterColor").
+		Preload("UnitHardware").
+		Preload("StandardHardware").
+		Where("id IN ?", hardwareParamIDs).
+		Find(&parameters).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load parameters"})
+		return
+	}
+
+	// 3. map เป็น response ที่ frontend ต้องการ
+	var result []ParamWithGraphResponse
+	for _, p := range parameters {
+		result = append(result, ParamWithGraphResponse{
+			ID:           p.ID,
+			Parameter:    p.Parameter,
+			GraphID:      p.HardwareGraph.ID,
+			Graph:        p.HardwareGraph.Graph,
+			Color:        p.HardwareParameterColor.Code,
+			Unit:         p.UnitHardware.Unit,
+			Standard:     p.StandardHardware.Standard,
+			Icon:         p.Icon,
+			GroupDisplay: p.GroupDisplay, // ✅ ส่งค่าออกไปด้วย
+		})
+	}
+
+	// 4. ส่ง response
+	c.JSON(http.StatusOK, gin.H{
+		"hardware_id": hardwareID,
+		"parameters":  result,
+	})
+}
+
+
+func UpdateIconByHardwareParameterID(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	var payload struct {
+		Icon string `json:"icon"`
+	}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	db := config.DB()
+	var hardwareParam entity.HardwareParameter
+	if err := db.First(&hardwareParam, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "HardwareParameter not found"})
+		return
+	}
+
+	hardwareParam.Icon = payload.Icon
+	if err := db.Save(&hardwareParam).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update icon"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Icon updated successfully", "id": id, "icon": payload.Icon})
+}
+
+type UpdateGroupDisplayInput struct {
+	GroupDisplay bool `json:"group_display"`
+}
+
+func UpdateGroupDisplayByID(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	var input UpdateGroupDisplayInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON input"})
+		return
+	}
+
+	db := config.DB()
+	var parameter entity.HardwareParameter
+	if err := db.First(&parameter, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "HardwareParameter not found"})
+		return
+	}
+
+	parameter.GroupDisplay = input.GroupDisplay
+
+	if err := db.Save(&parameter).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update GroupDisplay"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":         "GroupDisplay updated successfully",
+		"hardware_param": parameter,
+	})
 }

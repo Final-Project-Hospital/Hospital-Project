@@ -3,7 +3,7 @@ import { message } from 'antd';
 import { CreateTDSInterface } from "../interface/ITds";
 import { UpdateTDSInterface } from "../interface/ITds";
 import { DeleteTDSInterface } from "../interface/ITds";
-import {apiUrl} from "./index"
+import { apiUrl } from "./index"
 
 // const Authorization = localStorage.getItem("token");
 
@@ -94,9 +94,12 @@ export const UpdateTDS = async (payload: UpdateTDSInterface) => {
   if (!payload.ID) {
     throw new Error("ID is required for update");
   }
-  
+  const url = `${apiUrl}/update-tds/${payload.ID}`;
+  console.log("PATCH URL:", url);
+  console.log("Payload:", payload);
+
   try {
-    const response = await axios.patch(`${apiUrl}/update-tds/${payload.ID}`, payload, {
+    const response = await axios.patch(url, payload, {
       headers: {
         'Content-Type': 'application/json',
         ...getAuthHeader(),
@@ -105,7 +108,44 @@ export const UpdateTDS = async (payload: UpdateTDSInterface) => {
     return response;
   } catch (error) {
     console.error("Error updating TDS:", error);
-    return null;
+    throw error;
+  }
+};
+
+export const UpdateOrCreateTDS = async (payload: any) => {
+  try {
+    let response;
+
+    if (payload.ID) {
+      // ✅ Update
+      const url = `${apiUrl}/update-tds/${payload.ID}`;
+      console.log("PATCH URL:", url);
+      console.log("Payload:", payload);
+
+      response = await axios.patch(url, payload, {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      });
+    } else {
+      // ✅ Create
+      const url = `${apiUrl}/create-tds`;
+      console.log("POST URL:", url);
+      console.log("Payload:", payload);
+
+      response = await axios.post(url, payload, {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      });
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error("Error in UpdateOrCreateTDS:", error);
+    throw error;
   }
 };
 
@@ -126,6 +166,29 @@ export const DeleteTDS = async (id: number): Promise<DeleteTDSInterface[] | null
     }
   } catch (error: any) {
     console.error("Error deleting TDS:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const DeleteAllTDSRecordsByDate = async (
+  id: number
+): Promise<any | null> => {
+  try {
+    const response = await axios.delete(`${apiUrl}/delete-tds-day/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data; // อาจเป็นข้อความยืนยัน หรือข้อมูลอื่นๆ จาก backend
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error deleting TDS records by date:", error.response?.data || error.message);
     return null;
   }
 };

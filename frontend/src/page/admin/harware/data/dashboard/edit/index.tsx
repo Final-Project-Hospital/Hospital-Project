@@ -1,23 +1,23 @@
+// 📁 EditParameterModal.tsx
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Select, Button, message, Spin, Image } from "antd";
+import { Modal, Form, Select, Button, message, Spin, Image, Switch } from "antd";
 import {
   UpdateHardwareParameterByID,
   ListHardwareParameterByHardwareID,
   ListHardwareColors,
+  UpdateGroupDisplay,
 } from "../../../../../../services/hardware";
-
 import LineChartingImg from "../../../../../../assets/chart/LineCharting.png";
 import AreaChartingImg from "../../../../../../assets/chart/AreaCharting.png";
 import MappingImg from "../../../../../../assets/chart/Mapping.png";
 import StackChartingImg from "../../../../../../assets/chart/StackCharting.png";
-
 import "./ColorSelectNoArrow.css";
 
 interface EditParameterModalProps {
   open: boolean;
   onClose: () => void;
   hardwareID: number;
-  onSuccess?: () => Promise<void>; // ใช้ async
+  onSuccess?: () => Promise<void>;
 }
 
 const graphImages = [
@@ -27,10 +27,9 @@ const graphImages = [
   { id: 4, name: "Stacked", img: StackChartingImg },
 ];
 
-// 2 แถว ๆ ละ 2 charts
 const graphRows = [
-  graphImages.slice(0, 2), // [Line, Area]
-  graphImages.slice(2, 4), // [Color Mapping, Stacked]
+  graphImages.slice(0, 2),
+  graphImages.slice(2, 4),
 ];
 
 const EditParameterModal: React.FC<EditParameterModalProps> = ({
@@ -59,6 +58,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
           params.map((p: any) => ({
             ID: p.ID,
             Parameter: p.Parameter,
+            GroupDisplay: p.GroupDisplay,
             HardwareGraphID: p.HardwareGraph?.ID,
             HardwareParameterColorID: p.HardwareParameterColor?.ID,
             HardwareParameterColorCode: p.HardwareParameterColor?.Code,
@@ -146,11 +146,11 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       open={open}
       onCancel={onClose}
       footer={null}
-      width={780}
+      width={880}
       style={{ top: 32, maxWidth: "100vw" }}
       bodyStyle={{
         padding: 0,
-        minHeight: 410,
+        minHeight: 460,
         borderRadius: 18,
         background: "#f7f7f8",
       }}
@@ -167,14 +167,13 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
           <Spin size="large" />
         </div>
       ) : (
-        <div className="space-y-7 px-3 md:px-6 pb-6 pt-0 w-full">
-          {/* 2 rows, 2 charts per row */}
+        <div className="space-y-7 px-3 md:px-8 pb-6 pt-0 w-full">
           {graphRows.map((row, rowIdx) => (
-            <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-5">
+            <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mb-5">
               {row.map((g) => (
                 <div
                   key={g.id}
-                  className={`flex flex-col items-center bg-white rounded-xl shadow border border-gray-100 px-0 pt-2 pb-4
+                  className={`flex flex-col items-center bg-white rounded-xl shadow border border-gray-100 px-3 pt-3 pb-5
                     ${dragOverGraphId === g.id ? "ring-4 ring-blue-300 ring-opacity-40" : ""}
                   `}
                   onDragOver={(e) => handleDragOverGraph(g.id, e)}
@@ -185,10 +184,10 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                     alt={g.name}
                     preview={false}
                     style={{
-                      width: 78,
-                      height: 78,
+                      width: 80,
+                      height: 80,
                       objectFit: "contain",
-                      borderRadius: 11,
+                      borderRadius: 12,
                       border: "1.2px solid #eee",
                       boxShadow: "0 2px 8px #0001",
                       marginBottom: 8,
@@ -197,19 +196,17 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                       transition: "opacity 0.2s",
                     }}
                   />
-                  <div className="font-bold text-[16px] text-gray-800 mb-2 mt-0">{g.name}</div>
+                  <div className="font-bold text-[17px] text-gray-800 mb-2 mt-0">{g.name}</div>
                   <div className="flex flex-col gap-2 w-full min-h-[26px] items-center">
                     {getParamsForGraph(g.id).length === 0 ? (
                       <span className="text-xs text-gray-400 text-center mt-1">-</span>
                     ) : (
                       <div
-                        className={`flex flex-col w-full items-center gap-2 ${getParamsForGraph(g.id).length > 2
-                            ? "max-h-20 overflow-y-auto pr-1"
+                        className={`flex flex-col w-full items-center gap-2 ${
+                          getParamsForGraph(g.id).length > 2
+                            ? "max-h-28 overflow-y-auto pr-1"
                             : ""
-                          } scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent`}
-                        style={{
-                          scrollbarWidth: "thin",
-                        }}
+                        } scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent`}
                       >
                         {getParamsForGraph(g.id).map((rowParam) => (
                           <div
@@ -218,40 +215,56 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                             style={{
                               opacity: draggedParamId === rowParam.ID ? 0.5 : 1,
                               minHeight: 25,
-                              gap: 7,
-                              width: "fit-content",
-                              maxWidth: "100%",
+                              gap: 8,
+                              width: "100%",
+                              maxWidth: 220,
+                              justifyContent: "space-between",
                             }}
                             draggable
                             onDragStart={() => handleDragStart(rowParam.ID)}
                             onDragEnd={handleDragEnd}
                           >
-                            <span
-                              className="font-medium text-gray-700"
-                              style={{
-                                fontSize: 13,
-                                whiteSpace: "nowrap",
-                                minWidth: 0,
-                                maxWidth: 80,
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                              }}
-                            >
-                              {rowParam.Parameter}
-                            </span>
-                            <Form.Item style={{ marginBottom: 0, marginLeft: 0 }}>
-                              <Select
-                                value={rowParam.HardwareParameterColorID}
-                                onChange={(v) =>
-                                  handleChange(rowParam.ID, "HardwareParameterColorID", v)
-                                }
-                                options={colorOptions}
+                            <div className="flex items-center gap-2 w-full justify-between">
+                              <span
+                                className="font-medium text-gray-700"
+                                style={{
+                                  fontSize: 13,
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  maxWidth: 90,
+                                }}
+                                title={rowParam.Parameter}
+                              >
+                                {rowParam.Parameter}
+                              </span>
+                              <Switch
                                 size="small"
-                                className="no-arrow-select"
-                                style={{ width: 30, minWidth: 28 }}
-                                dropdownStyle={{ minWidth: 60, padding: 6 }}
+                                checked={rowParam.GroupDisplay}
+                                onChange={async (checked) => {
+                                  handleChange(rowParam.ID, "GroupDisplay", checked);
+                                  const result = await UpdateGroupDisplay(rowParam.ID, {
+                                    group_display: checked,
+                                  });
+                                  if (!result) {
+                                    message.error("Failed to update GroupDisplay");
+                                  }
+                                }}
                               />
-                            </Form.Item>
+                              <Form.Item style={{ marginBottom: 0 }}>
+                                <Select
+                                  value={rowParam.HardwareParameterColorID}
+                                  onChange={(v) =>
+                                    handleChange(rowParam.ID, "HardwareParameterColorID", v)
+                                  }
+                                  options={colorOptions}
+                                  size="small"
+                                  className="no-arrow-select"
+                                  style={{ width: 30, minWidth: 28 }}
+                                  dropdownStyle={{ minWidth: 60, padding: 6 }}
+                                />
+                              </Form.Item>
+                            </div>
                           </div>
                         ))}
                       </div>

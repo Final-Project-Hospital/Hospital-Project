@@ -8,6 +8,7 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/building"
 	"github.com/Tawunchai/hospital-project/controller/calendar"
 	"github.com/Tawunchai/hospital-project/controller/fogcenter"
+	"github.com/Tawunchai/hospital-project/controller/report"
 
 	"github.com/Tawunchai/hospital-project/controller/graph"
 	"github.com/Tawunchai/hospital-project/controller/hardware"
@@ -76,7 +77,9 @@ func main() {
 		public.GET("/get-tds", tdscenter.GetTDS)
 		public.GET("/get-tds/:id", tdscenter.GetTDSbyID)
 		public.PATCH("/update-tds/:id", tdscenter.UpdateTDS)
+		public.POST("/update-or-create-tds", tdscenter.UpdateOrCreateTDS) //เพิ่ม
 		public.DELETE("/delete-tds/:id", tdscenter.DeleteTDS)
+		public.DELETE("/delete-tds-day/:id", tdscenter.DeleteAllTDSRecordsByDate) //เพิ่ม
 		public.GET("/get-first-tds", tdscenter.GetfirstTDS)
 
 		//TKN
@@ -100,6 +103,7 @@ func main() {
 		public.GET("/list-bod", bodcenter.ListBOD)
 		public.GET("/get-bod/:id", bodcenter.GetBODbyID)
 		public.DELETE("/delete-bod/:id",bodcenter.DeleterBOD)
+		public.GET("/get-bod-table", bodcenter.GetBODTABLE)
 
 		//FOG
 		public.POST("/create-fog", fogcenter.CreateFog)
@@ -115,8 +119,17 @@ func main() {
 		public.GET("/hardwares", hardware.ListHardware)
 		public.GET("/hardware-colors", hardware.ListColors)
 		public.POST("/hardware/receive", hardware.ReceiveSensorData)
-		public.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID) // test system
+		public.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID)
 		public.PATCH("/update-hardware-parameter/:id", hardware.UpdateHardwareParameterByID)
+		public.GET("/hardware-parameter-ids", hardware.GetHardwareParametersWithGraph)
+		public.PATCH("/hardware-parameters/:id/icon", hardware.UpdateIconByHardwareParameterID)
+		public.PUT("/hardware-parameter/:id/group-display", hardware.UpdateGroupDisplayByID)
+
+		//report hardware
+		public.GET("/report-hardware", report.ListReportHardware)
+
+		//ESP32
+		public.POST("/hardware/read", hardware.ReadDataForHardware)
 
 		//standard
 		public.PUT("/update-unit-hardware/:id", hardware.UpdateUnitHardwareByID)
@@ -164,8 +177,8 @@ func main() {
 		c.String(http.StatusOK, "API RUNNING... PORT: %s", PORT)
 	})
 
-	r.Run("localhost:" + PORT)
-	// r.Run("0.0.0.0:" + PORT)
+	//r.Run("localhost:" + PORT)
+	r.Run("0.0.0.0:" + PORT)
 
 }
 

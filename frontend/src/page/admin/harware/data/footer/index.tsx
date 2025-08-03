@@ -4,28 +4,45 @@ import { TopProductsWrap } from "./average_date";
 import {
   GetSensorDataByHardwareID,
   GetSensorDataParametersBySensorDataID,
-  ListDataHardwareParameterByParameter,
+  ListHardwareParameterIDsByHardwareID,
 } from "../../../../../services/hardware";
 
 interface HardwareStat {
   id: number;
   name: string;
   popularityPercent: number;
-  Percent: string;
+  average: number;
+  standard?: number;
+  unit?: string;
 }
 
 interface AveragedataProps {
   hardwareID: number;
   reloadKey?: any;
-  onLoaded?: () => void; // เพิ่มตรงนี้
+  onLoaded?: () => void;
+}
+
+interface HardwareParameterWithColor {
+  id: number;
+  parameter: string;
+  graph_id: number;
+  graph: string;
+  color: string;
+  standard?: number;
+  unit?: string;
+}
+
+interface ListHardwareParameterResponse {
+  hardware_id: string;
+  parameters: HardwareParameterWithColor[];
 }
 
 const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }) => {
   const [hardwareStats, setHardwareStats] = useState<HardwareStat[]>([]);
   const [parameterColors, setParameterColors] = useState<Record<string, string>>({});
+  const [parameterMeta, setParameterMeta] = useState<Record<string, { unit?: string; standard?: number }>>({});
 
   useEffect(() => {
-    setParameterColors({});
     const fetchAndCalculateAverages = async () => {
       if (!hardwareID) {
         onLoaded?.();
@@ -33,7 +50,31 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
       }
 
       try {
-        const sensorData = await GetSensorDataByHardwareID(hardwareID);
+        const [sensorData, paramInfoRaw] = await Promise.all([
+          GetSensorDataByHardwareID(hardwareID),
+          ListHardwareParameterIDsByHardwareID(hardwareID),
+        ]);
+
+        const paramInfo: ListHardwareParameterResponse = {
+          hardware_id: String(hardwareID),
+          parameters: (paramInfoRaw?.parameters || []).map((p: any) => ({
+            ...p,
+            color: p.color || "#999999",
+          })),
+        };
+
+        const colorMap: Record<string, string> = {};
+        const metaMap: Record<string, { unit?: string; standard?: number }> = {};
+        for (const p of paramInfo.parameters) {
+          colorMap[p.parameter] = p.color;
+          metaMap[p.parameter] = {
+            unit: p.unit,
+            standard: p.standard,
+          };
+        }
+        setParameterColors(colorMap);
+        setParameterMeta(metaMap);
+
         if (!Array.isArray(sensorData) || sensorData.length === 0) {
           setHardwareStats([]);
           onLoaded?.();
@@ -51,12 +92,10 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
             for (const p of params) {
               const name = p.HardwareParameter?.Parameter;
               const value = Number(p.Data);
-
               if (name && !isNaN(value)) {
                 allParamsSet.add(name);
                 if (!sums[name]) sums[name] = 0;
                 if (!counts[name]) counts[name] = 0;
-
                 sums[name] += value;
                 counts[name] += 1;
                 if (!maxValues[name] || value > maxValues[name]) {
@@ -67,37 +106,26 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
           }
         }
 
-        const paramsArr = Array.from(allParamsSet);
-        const colorsMap: Record<string, string> = {};
-        await Promise.all(
-          paramsArr.map(async (param) => {
-            const res = await ListDataHardwareParameterByParameter(param);
-            if (res && res.length > 0) {
-              colorsMap[param] = res[0].HardwareParameterColor?.Code || "#999999";
-            } else {
-              colorsMap[param] = "#999999";
-            }
-          })
-        );
-        setParameterColors(colorsMap);
-
-        const avgData = Object.keys(sums).map((key, idx) => {
+        const avgData = Array.from(allParamsSet).map((key, idx) => {
           const avg = counts[key] > 0 ? sums[key] / counts[key] : 0;
           const maxValue = maxValues[key] || 100;
           const popularityPercent = maxValue > 0 ? Math.min((avg / maxValue) * 100, 100) : 0;
+          const meta = metaMap[key] || {};
           return {
             id: idx + 1,
             name: key,
             popularityPercent,
-            Percent: avg.toFixed(2),
+            average: avg,
+            standard: meta.standard,
+            unit: meta.unit,
           };
         });
 
         setHardwareStats(avgData);
-        onLoaded?.(); // <<< ตรงนี้
+        onLoaded?.();
       } catch (error) {
         setHardwareStats([]);
-        onLoaded?.(); // <<< ตรงนี้
+        onLoaded?.();
       }
     };
 
@@ -108,24 +136,26 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
     <TopProductsWrap>
       <div className="block-head">
         <BlockTitle className="block-title">
-          <h3>Total Hardware Data</h3>
+          <h3>ข้อมูลเฉลี่ยของเซนเซอร์</h3>
         </BlockTitle>
       </div>
+
       <div className="tbl-products overflow-auto">
         <table className="w-full table-auto text-sm">
           <thead>
-            <tr>
-              <th className="text-left">No.</th>
-              <th className="text-left">Name</th>
-              <th className="hidden md:table-cell text-left"></th>
-              <th className="text-left">Average</th>
+            <tr className="bg-gray-100 text-gray-800">
+              <th className="text-left p-2">ลำดับ</th>
+              <th className="text-left p-2">พารามิเตอร์ (หน่วย)</th>
+              <th className="text-left p-2">ค่ามาตรฐาน</th>
+              <th className="hidden md:table-cell text-left p-2">แถบแสดงค่าเฉลี่ย</th>
+              <th className="text-left p-2">ค่าเฉลี่ย</th>
             </tr>
           </thead>
           <tbody>
-            {hardwareStats?.map((progressItem, index) => (
-              <tr key={progressItem.id}>
-                <td>{index + 1}</td>
-                <td>
+            {hardwareStats?.map((item, index) => (
+              <tr key={item.id} className="border-b">
+                <td className="p-2">{index + 1}</td>
+                <td className="p-2">
                   <div className="flex items-center gap-2">
                     <span
                       style={{
@@ -133,39 +163,44 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
                         width: 12,
                         height: 12,
                         borderRadius: "50%",
-                        background: parameterColors[progressItem.name] || "#999999",
+                        background: parameterColors[item.name] || "#999999",
                       }}
                     />
-                    {progressItem.name}
+                    {item.name}{" "}
+                    {item.unit && <span className="text-xs text-gray-500">({item.unit})</span>}
                   </div>
                 </td>
-                <td className="hidden md:table-cell">
-                  <div className="tbl-progress-bar" style={{ background: "#eee" }}>
+                <td className="p-2">
+                  {item.standard !== undefined ? (
+                    <span className="text-gray-800 font-medium">
+                      {item.standard.toFixed(2)}
+                    </span>
+                  ) : (
+                    "-"
+                  )}
+                </td>
+                <td className="hidden md:table-cell p-2">
+                  <div className="w-full bg-gray-200 rounded-full h-3">
                     <div
-                      className="bar-fill"
+                      className="h-3 rounded-full"
                       style={{
-                        width: `${progressItem.popularityPercent}%`,
-                        background: parameterColors[progressItem.name] || "#999999",
-                        height: 10,
-                        borderRadius: 8,
+                        width: `${item.popularityPercent}%`,
+                        background: parameterColors[item.name] || "#999999",
                         transition: "width 0.5s",
                       }}
-                    ></div>
+                    />
                   </div>
                 </td>
-                <td>
+                <td className="p-2">
                   <div
-                    className="tbl-badge"
+                    className="text-white text-sm font-medium px-3 py-1 rounded-full text-center"
                     style={{
-                      background: parameterColors[progressItem.name] || "#999999",
-                      color: "#fff",
-                      padding: "0.25em 0.75em",
-                      borderRadius: 12,
+                      background: parameterColors[item.name] || "#999999",
                       minWidth: 60,
-                      textAlign: "center",
+                      display: "inline-block",
                     }}
                   >
-                    {progressItem.Percent}
+                    {item.average.toFixed(2)}
                   </div>
                 </td>
               </tr>
