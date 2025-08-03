@@ -11,6 +11,11 @@ import {
   FaNotesMedical,
   FaProcedures,
   FaBriefcaseMedical,
+  FaCapsules,
+  FaHeartbeat,
+  FaStethoscope,
+  FaThermometerHalf,
+  FaRadiation,
 } from 'react-icons/fa';
 import { IconType } from 'react-icons';
 import { UpdateRoom, ListBuilding, ListHardware } from '../../../../../../services/hardware';
@@ -20,17 +25,22 @@ import { HardwareInterface } from '../../../../../../interface/IHardware';
 
 const { Option } = Select;
 
-const iconOptions: { name: string; component: IconType }[] = [
-  { name: 'FaMicroscope', component: FaMicroscope },
-  { name: 'FaVial', component: FaVial },
-  { name: 'FaFlask', component: FaFlask },
-  { name: 'FaLaptopMedical', component: FaLaptopMedical },
-  { name: 'FaBiohazard', component: FaBiohazard },
-  { name: 'FaDna', component: FaDna },
-  { name: 'FaSyringe', component: FaSyringe },
-  { name: 'FaNotesMedical', component: FaNotesMedical },
-  { name: 'FaProcedures', component: FaProcedures },
-  { name: 'FaBriefcaseMedical', component: FaBriefcaseMedical },
+const iconOptions: { name: string; label: string; component: IconType }[] = [
+  { name: 'FaMicroscope', label: 'กล้องจุลทรรศน์', component: FaMicroscope },
+  { name: 'FaVial', label: 'ขวดทดลอง', component: FaVial },
+  { name: 'FaFlask', label: 'ขวดรูปชมพู่', component: FaFlask },
+  { name: 'FaLaptopMedical', label: 'โน้ตบุ๊กการแพทย์', component: FaLaptopMedical },
+  { name: 'FaBiohazard', label: 'สัญลักษณ์ชีวภาพ', component: FaBiohazard },
+  { name: 'FaDna', label: 'ดีเอ็นเอ', component: FaDna },
+  { name: 'FaSyringe', label: 'เข็มฉีดยา', component: FaSyringe },
+  { name: 'FaNotesMedical', label: 'สมุดบันทึกการแพทย์', component: FaNotesMedical },
+  { name: 'FaProcedures', label: 'ผู้ป่วยบนเตียง', component: FaProcedures },
+  { name: 'FaBriefcaseMedical', label: 'กระเป๋าพยาบาล', component: FaBriefcaseMedical },
+  { name: 'FaCapsules', label: 'แคปซูลยา', component: FaCapsules },
+  { name: 'FaHeartbeat', label: 'หัวใจเต้น', component: FaHeartbeat },
+  { name: 'FaStethoscope', label: 'หูฟังแพทย์', component: FaStethoscope },
+  { name: 'FaThermometerHalf', label: 'เทอร์โมมิเตอร์', component: FaThermometerHalf },
+  { name: 'FaRadiation', label: 'สัญลักษณ์รังสี', component: FaRadiation },
 ];
 
 interface Props {
@@ -167,13 +177,13 @@ const EditRoomModal: React.FC<Props> = ({ show, onClose, onSaveSuccess, initialD
             showSearch
             optionLabelProp="label"
           >
-            {iconOptions.map(({ name, component: Icon }) => (
-              <Option key={name} value={name} label={name}>
+            {iconOptions.map(({ name, label, component: Icon }) => (
+              <Option key={name} value={name} label={label}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-white border border-teal-600 flex items-center justify-center shadow">
                     <Icon size={20} className="text-teal-600" />
                   </div>
-                  <span className="text-gray-800 font-medium">{name}</span>
+                  <span className="text-gray-800 font-medium">{label}</span>
                 </div>
               </Option>
             ))}
