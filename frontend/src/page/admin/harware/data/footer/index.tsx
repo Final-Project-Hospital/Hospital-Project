@@ -171,14 +171,15 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
                   </div>
                 </td>
                 <td className="p-2">
-                  {item.standard !== undefined ? (
+                  {item.standard !== undefined && item.standard !== 0 ? (
                     <span className="text-gray-800 font-medium">
                       {item.standard.toFixed(2)}
                     </span>
                   ) : (
-                    "-"
+                    <span className="text-teal-500 font-medium">ยังไม่กำหนดค่ามาตรฐาน</span>
                   )}
                 </td>
+
                 <td className="hidden md:table-cell p-2">
                   <div className="w-full bg-gray-200 rounded-full h-3">
                     <div

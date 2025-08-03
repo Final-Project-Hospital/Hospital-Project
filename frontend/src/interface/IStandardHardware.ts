@@ -1,4 +1,4 @@
 export interface StandardHardwareInterface {
-    ID?: number;
-    Standard?: string | number;
+  ID?: number;
+  Standard: number; 
 }

@@ -205,19 +205,36 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         </div>
 
         <Form.Item
-          label={
-            <span>
-              <PhoneOutlined className="mr-1 text-teal-600" />
-              เบอร์โทร
-            </span>
-          }
           name="Phone"
+          label="เบอร์โทศัพท์"
+          className="mb-3"
           rules={[
-            { required: true, message: "กรุณากรอกเบอร์โทร" },
-            { pattern: /^[0-9]{9,15}$/, message: "เบอร์โทรไม่ถูกต้อง" },
+            { required: false },
+            {
+              validator: (_, value) => {
+                if (!value) return Promise.resolve();
+                if (!/^[0][0-9]{9}$/.test(value))
+                  return Promise.reject(
+                    new Error("เบอร์โทรต้องมี 10 หลัก และขึ้นต้นด้วย 0")
+                  );
+                return Promise.resolve();
+              },
+            },
           ]}
         >
-          <Input maxLength={15} placeholder="กรอกเบอร์โทร" />
+          <Input
+            className="rounded-lg bg-teal-50 border-teal-200"
+            maxLength={10}
+            onChange={(e) => {
+              const rawValue = e.target.value;
+              const cleaned = rawValue.replace(/\D/g, "");
+              if (cleaned.length === 0 || cleaned.startsWith("0")) {
+                e.target.value = cleaned;
+              } else {
+                e.target.value = "0" + cleaned.slice(0, 9);
+              }
+            }}
+          />
         </Form.Item>
 
         <div className="flex justify-end gap-4 mt-6">
