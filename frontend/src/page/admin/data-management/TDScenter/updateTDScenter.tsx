@@ -8,7 +8,7 @@ import {
   ListRangeStandard,
   ListUnit
 } from '../../../../services/index';
-import { UpdateOrCreateTDS, DeleteTDS } from '../../../../services/tdsService';
+import { UpdateOrCreateTDS, DeleteTDS, CheckUnit, CheckStandard } from '../../../../services/tdsService';
 
 import { ListBeforeAfterTreatmentInterface } from '../../../../interface/IBeforeAfterTreatment';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../interface/IStandard';
@@ -34,14 +34,17 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
   const [middleStandards, setMiddleStandards] = useState<ListMiddleStandardInterface[]>([]);
   const [rangeStandards, setRangeStandards] = useState<ListRangeStandardInterface[]>([]);
   const [selectedTreatmentID, setSelectedTreatmentID] = useState<number | null>(null);
-  const [standardType, setStandardType] = useState<string>('middle');
-  const [useCustomStandard, setUseCustomStandard] = useState<boolean>(false);
+
   const [customSingleValue, setCustomSingleValue] = useState<number | undefined>(undefined);
   const [customMinValue, setCustomMinValue] = useState<number | undefined>(undefined);
   const [customMaxValue, setCustomMaxValue] = useState<number | undefined>(undefined);
   const [isOtherUnitSelected, setIsOtherunitSelected] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  const [standardType, setStandardType] = useState('middle');
+  const [useCustomStandard, setUseCustomStandard] = useState(false);
+
 
   const renderCustomTreatmentLabel = (text: string) => (
     <>
@@ -81,7 +84,7 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
 
         form.setFieldsValue({
           date: dayjs(before.Date),
-          time: dayjs(before.Date),
+          time: dayjs(),
           unit: before.UnitID ?? 'other',
           standardType: stdType,
           standardID: before.StandardID,
@@ -137,11 +140,26 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
 
   const handleFinish = async (values: any) => {
     try {
-      let standardID = values.standardID ?? null;
+      let standardID = values.standardID ?? 0;
 
-      if (!standardID) {
+      const hasCustomSingle = standardType === "middle" && useCustomStandard && values.customSingle !== undefined;
+      const hasCustomRange =
+        standardType === "range" &&
+        useCustomStandard &&
+        values.customMin !== undefined &&
+        values.customMax !== undefined;
+
+      if (!standardID && !hasCustomSingle && !hasCustomRange) {
         message.error("กรุณาเลือกหรือกำหนดมาตรฐานก่อนบันทึก");
         return;
+      }
+
+      // ✅ เตรียม customStandardPayload ถ้าเป็นมาตรฐานใหม่
+      let customStandardPayload: any = null;
+      if (hasCustomSingle) {
+        customStandardPayload = { type: "middle", value: values.customSingle };
+      } else if (hasCustomRange) {
+        customStandardPayload = { type: "range", min: values.customMin, max: values.customMax };
       }
 
       const combinedDateTime = dayjs(values.date)
@@ -158,81 +176,73 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
       const payloads: any[] = [];
       const deletes: number[] = [];
 
+      // ✅ ใส่ CustomStandard ลงใน payload ด้วย (ให้ backend ไปสร้างมาตรฐาน)
+      const basePayload = {
+        Date: combinedDateTime,
+        UnitID: unitID,
+        StandardID: standardID,
+        CustomStandard: standardID === 0 ? customStandardPayload : null,
+        EmployeeID: employeeID,
+        CustomUnit: customUnitValue,
+      };
+
       if (values.beforeAfterTreatmentID === 3) {
-        // ✅ ทั้งก่อนและหลัง
         payloads.push({
+          ...basePayload,
           ID: initialValues[0]?.ID ?? null,
-          Date: combinedDateTime,
           Data: values.valueBefore,
           Note: values.beforeNote ?? "",
           BeforeAfterTreatmentID: 1,
-          UnitID: unitID,
-          StandardID: standardID,
           ParameterID: initialValues[0]?.ParameterID,
-          EmployeeID: employeeID,
-          CustomUnit: customUnitValue,
         });
         payloads.push({
+          ...basePayload,
           ID: initialValues[1]?.ID ?? null,
-          Date: combinedDateTime,
           Data: values.valueAfter,
           Note: values.afterNote ?? "",
           BeforeAfterTreatmentID: 2,
-          UnitID: unitID,
-          StandardID: standardID,
           ParameterID: initialValues[1]?.ParameterID,
-          EmployeeID: employeeID,
-          CustomUnit: customUnitValue,
         });
       } else if (values.beforeAfterTreatmentID === 1) {
-        // ✅ ก่อนอย่างเดียว
         payloads.push({
+          ...basePayload,
           ID: initialValues[0]?.ID ?? null,
-          Date: combinedDateTime,
           Data: values.valueBefore ?? values.data,
           Note: values.beforeNote ?? "",
           BeforeAfterTreatmentID: 1,
-          UnitID: unitID,
-          StandardID: standardID,
           ParameterID: initialValues[0]?.ParameterID,
-          EmployeeID: employeeID,
-          CustomUnit: customUnitValue,
         });
         if (initialValues[1]?.ID) {
-          deletes.push(initialValues[1].ID); // ลบ after ที่ไม่ใช้แล้ว
+          deletes.push(initialValues[1].ID);
         }
       } else if (values.beforeAfterTreatmentID === 2) {
-        // ✅ หลังอย่างเดียว
         payloads.push({
+          ...basePayload,
           ID: initialValues[1]?.ID ?? null,
-          Date: combinedDateTime,
           Data: values.valueAfter ?? values.data,
           Note: values.afterNote ?? "",
           BeforeAfterTreatmentID: 2,
-          UnitID: unitID,
-          StandardID: standardID,
           ParameterID: initialValues[1]?.ParameterID,
-          EmployeeID: employeeID,
-          CustomUnit: customUnitValue,
         });
         if (initialValues[0]?.ID) {
-          deletes.push(initialValues[0].ID); // ลบ before ที่ไม่ใช้แล้ว
+          deletes.push(initialValues[0].ID);
         }
       }
 
-      // ✅ อัปเดต/สร้าง
+      console.log("Payloads to send:", payloads);
+
+      // ✅ เรียก UpdateOrCreateTDS ตัวเดียว
       await Promise.all(payloads.map((p) => UpdateOrCreateTDS(p)));
 
-      // ✅ ลบ record ที่ไม่ต้องการแล้ว
       if (deletes.length > 0) {
         await Promise.all(deletes.map((id) => DeleteTDS(id)));
       }
 
       messageApi.success("บันทึกข้อมูลสำเร็จ");
       if (onSuccess) onSuccess();
-    } catch (error) {
-      console.error("Error updating TDS:", error);
-      message.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+    } catch (error: any) {
+      console.error("Error updating TDS:", error?.response?.data || error);
+      message.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล handfinish Update");
     }
   };
 
@@ -293,7 +303,17 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
               {isOtherUnitSelected && (
                 <Form.Item
                   name="customUnit"
-                  rules={[{ required: true, message: 'กรุณากรอกหน่วย' }]}
+                  rules={[
+                    { required: true, message: "กรุณากรอกหน่วย" },
+                    {
+                      validator: async (_, value) => {
+                        if (!value) return;
+                        const data = await CheckUnit(value);
+                        if (!data) throw new Error("ไม่สามารถตรวจสอบหน่วยได้");
+                        if (data.exists) throw new Error("หน่วยนี้มีอยู่แล้วในระบบ");
+                      },
+                    },
+                  ]}
                   style={{ marginTop: '8px' }}
                 >
                   <Input placeholder="กรอกหน่วยกำหนดเอง" />
@@ -321,7 +341,7 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
                   <Select placeholder="เลือกค่าเดี่ยว" onChange={handleStandardSelectChange}>
                     {middleStandards.map((s) => (
                       <Option key={s.ID} value={s.ID}>
-                        {s.MiddleValue}
+                        {s.MiddleValue.toFixed(2)}
                       </Option>
                     ))}
                     <Option value="custom">กำหนดเอง (ค่าเดี่ยว)</Option>
@@ -334,13 +354,29 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
                 <Form.Item
                   label="กำหนดเอง (ค่าเดี่ยว)"
                   name="customSingle"
-                  rules={[{ required: true, message: 'กรุณากรอกค่ากลาง' }]}
+                  rules={[
+                    { required: true, message: "กรุณากรอกค่ามาตรฐาน" },
+                    {
+                      validator: async (_, value) => {
+                        if (value === undefined || value === null) return Promise.resolve();
+                        if (typeof value !== "number" || isNaN(value)) {
+                          return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                        }
+                        const data = await CheckStandard("middle", value);
+                        if (!data) return Promise.reject("ไม่สามารถตรวจสอบมาตรฐานได้");
+                        if (data.exists) return Promise.reject("ค่ามาตรฐานนี้มีอยู่แล้วในระบบ");
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
                 >
                   <InputNumber
                     placeholder="กรอกค่ากลาง"
                     style={{ width: '100%' }}
                     value={customSingleValue}
                     onChange={(value) => setCustomSingleValue(value ?? undefined)}
+                    min={0}
+                    step={0.01}
                   />
                 </Form.Item>
               )}
@@ -355,7 +391,7 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
                   <Select placeholder="เลือกช่วง" onChange={handleStandardSelectChange}>
                     {rangeStandards.map((s) => (
                       <Option key={s.ID} value={s.ID}>
-                        {`${s.MinValue} - ${s.MaxValue}`}
+                        {`${s.MinValue.toFixed(2)} - ${s.MaxValue.toFixed(2)}`}
                       </Option>
                     ))}
                     <Option value="custom">กำหนดเอง (ช่วง)</Option>
@@ -369,7 +405,16 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
                   <Form.Item
                     label="ค่าต่ำสุด (Min)"
                     name="customMin"
-                    rules={[{ required: true, message: 'กรุณากรอกค่าต่ำสุด' }]}
+                    rules={[
+                      { required: true, message: "กรุณากรอกค่าต่ำสุด" },
+                      ({ getFieldValue }) => ({
+                        validator: (_, val) => {
+                          const max = getFieldValue("customMax");
+                          if (val >= max) return Promise.reject("Min ต้องน้อยกว่า Max");
+                          return Promise.resolve();
+                        },
+                      }),
+                    ]}
                     style={{ flex: 1 }}
                   >
                     <InputNumber
@@ -377,12 +422,28 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
                       style={{ width: '100%' }}
                       value={customMinValue}
                       onChange={(value) => setCustomMinValue(value ?? undefined)}
+                      step={0.01}
                     />
                   </Form.Item>
                   <Form.Item
                     label="ค่าสูงสุด (Max)"
                     name="customMax"
-                    rules={[{ required: true, message: 'กรุณากรอกค่าสูงสุด' }]}
+                    rules={[
+                      { required: true, message: "กรุณากรอกค่าสูงสุด" },
+                      ({ getFieldValue }) => ({
+                        validator: async (_, value) => {
+                          const min = getFieldValue("customMin");
+                          if (min !== undefined && value <= min) {
+                            return Promise.reject("Max ต้องมากกว่า Min");
+                          }
+                          // เรียก CheckStandard
+                          const data = await CheckStandard("range", { min, max: value });
+                          if (!data) return Promise.reject("ไม่สามารถตรวจสอบมาตรฐานได้");
+                          if (data.exists) return Promise.reject("ช่วงมาตรฐานนี้มีอยู่แล้วในระบบ");
+                          return Promise.resolve();
+                        },
+                      }),
+                    ]}
                     style={{ flex: 1 }}
                   >
                     <InputNumber
@@ -390,6 +451,7 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
                       style={{ width: '100%' }}
                       value={customMaxValue}
                       onChange={(value) => setCustomMaxValue(value ?? undefined)}
+                      step={0.01}
                     />
                   </Form.Item>
                 </div>
@@ -421,28 +483,62 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
                 <Form.Item
                   label="ค่าที่วัดได้ก่อนบำบัด"
                   name="valueBefore"
-                  rules={[{ required: true, message: 'กรอกค่าก่อนบำบัด' }]}
+                  rules={[
+                    { required: true, message: 'กรุณากรอกค่าก่อนบำบัด' },
+                    {
+                      validator: async (_, value) => {
+                        if (value === undefined || value === null) return Promise.resolve();
+                        if (typeof value !== "number" || isNaN(value)) {
+                          return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                        }
+                        return Promise.resolve();
+                      },
+                    }
+                  ]}
                   style={{ flex: 1 }}
                 >
-                  <InputNumber style={{ width: '100%' }} placeholder="ค่าก่อนบำบัด" />
+                  <InputNumber style={{ width: '100%' }} placeholder="ค่าก่อนบำบัด" step={0.01} />
                 </Form.Item>
 
                 <Form.Item
                   label="ค่าที่วัดได้หลังบำบัด"
                   name="valueAfter"
-                  rules={[{ required: true, message: 'กรุณากรอกค่าหลังบำบัด' }]}
+                  rules={[
+                    { required: true, message: 'กรุณากรอกค่าหลังบำบัด' },
+                    {
+                      validator: async (_, value) => {
+                        if (value === undefined || value === null) return Promise.resolve();
+                        if (typeof value !== "number" || isNaN(value)) {
+                          return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                        }
+                        return Promise.resolve();
+                      },
+                    }
+                  ]}
                   style={{ flex: 1 }}
                 >
-                  <InputNumber style={{ width: '100%' }} placeholder="ค่าหลังบำบัด" />
+                  <InputNumber style={{ width: '100%' }} placeholder="ค่าหลังบำบัด" step={0.01} />
                 </Form.Item>
               </div>
             ) : (
               <Form.Item
                 label="ค่าที่วัดได้"
                 name="data"
-                rules={[{ required: true, message: 'กรอกค่าที่วัดได้' }]}
+                rules={[
+                  { required: true, message: 'กรุณากรอกค่าที่วัดได้' },
+                  {
+                    validator: async (_, value) => {
+                      if (value === undefined || value === null) return Promise.resolve();
+                      if (typeof value !== "number" || isNaN(value)) {
+                        return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                      }
+                      return Promise.resolve();
+                    },
+                  }
+                ]}
+                style={{ flex: 1 }}
               >
-                <InputNumber style={{ width: '100%' }} placeholder="ค่าที่วัดได้" />
+                <InputNumber style={{ width: '100%' }} placeholder="ค่าที่วัดได้" step={0.01} />
               </Form.Item>
             )}
           </div>

@@ -5,7 +5,7 @@ import ApexChart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { GetTDS, DeleteAllTDSRecordsByDate } from "../../../services/tdsService";
 import './TDSdataviz.css';
-import { LeftOutlined, SearchOutlined, ExclamationCircleFilled, CloseCircleFilled, CheckCircleFilled, QuestionCircleFilled, } from "@ant-design/icons";
+import { LeftOutlined, SearchOutlined, ExclamationCircleFilled, CloseCircleFilled, CheckCircleFilled, QuestionCircleFilled } from "@ant-design/icons";
 import Table, { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -13,6 +13,8 @@ import timezone from "dayjs/plugin/timezone";
 import TDSCentralForm from '../data-management/TDScenter/TDScenter'
 import UpdateTDSCentralForm from '../data-management/TDScenter/updateTDScenter'
 import { GetTDSbyID } from '../../../services/tdsService';
+import { ListStatus } from '../../../services/index';
+import { ListStatusInterface } from '../../../interface/IStatus';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -40,7 +42,12 @@ const TDSdataviz: React.FC = () => {
   const handleAddModalCancel = () => setIsModalVisible(false);
   const handleEditModalCancel = () => setIsEditModalVisible(false);
 
+  const [statusOptions, setStatusOptions] = useState<ListStatusInterface[]>([]);
+
   const { confirm } = Modal;
+
+  const normalizeString = (str: any) =>
+    String(str).normalize("NFC").trim().toLowerCase();
 
   // อันใหม่
   const fetchData = async () => {
@@ -117,6 +124,16 @@ const TDSdataviz: React.FC = () => {
   };
 
   useEffect(() => {
+    const loadStatus = async () => {
+      const data = await ListStatus();
+      if (data) {
+        setStatusOptions(data);
+      } else {
+        console.error("Failed to load status options");
+      }
+    };
+
+    loadStatus();
     fetchData();
   }, []);
 
@@ -129,6 +146,7 @@ const TDSdataviz: React.FC = () => {
     dataLabels: { enabled: false },
     stroke: { curve: "smooth" },
   });
+
   //ใช้กับกราฟ
   const beforeSeries = [{ name: "TDS", data: beforeData.map((item) => item.data) }];
   const afterSeries = [{ name: "TDS", data: afterData.map((item) => item.data) }];
@@ -143,20 +161,20 @@ const TDSdataviz: React.FC = () => {
       title: 'วันที่',
       dataIndex: 'date',
       key: 'date',
-      width: 130,
+      width: 140,
     },
     {
       title: 'หน่วยที่วัด',
       dataIndex: 'unit',
       key: 'unit',
-      width: 145,
+      width: 125,
       render: (unit: string) => unit || '-',
     },
     {
       title: 'ค่ามาตรฐาน',
       dataIndex: 'standard_value',
       key: 'standard_value',
-      width: 130,
+      width: 160,
       render: (val: number) => val ?? '-',
     },
     {
@@ -164,14 +182,14 @@ const TDSdataviz: React.FC = () => {
       dataIndex: 'before_value',
       key: 'before_value',
       width: 120,
-      render: (val: number | null) => val ?? '-',
+      render: (val: number | null) => val != null ? val.toFixed(2) : '-',
     },
     {
       title: 'ค่าหลังเข้าระบบบำบัด',
       dataIndex: 'after_value',
       key: 'after_value',
       width: 120,
-      render: (val: number | null) => val ?? '-',
+      render: (val: number | null) => val != null ? val.toFixed(2) : '-',
     },
     {
       title: (
@@ -210,11 +228,38 @@ const TDSdataviz: React.FC = () => {
       },
     },
     {
-      title: 'สถานะ',
-      key: 'status',
+      title: "สถานะ",
+      key: "status",
       width: 200,
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
+        <div style={{ padding: 8, width: 190 }}>
+          <Select
+            allowClear
+            placeholder="เลือกสถานะ"
+            value={selectedKeys[0]}
+            onChange={(value) => {
+              setSelectedKeys(value ? [value] : []);
+              confirm({ closeDropdown: false });
+            }}
+            style={{ width: "100%" }}
+            options={statusOptions.map((item) => ({
+              label: item.StatusName,
+              value: item.StatusName,
+            }))}
+            autoFocus
+            size="middle"
+          />
+        </div>
+      ),
+      filterIcon: (filtered: boolean) => (
+        <SearchOutlined style={{ color: filtered ? "#999999ff" : undefined, fontSize: 20 }} />
+      ),
+      onFilter: (value: any, record: any) => {
+        if (!value) return true;
+        return normalizeString(record.status ?? "") === normalizeString(value);
+      },
       render: (_, record) => {
-        const statusName = record.status;  // 👈 เปลี่ยนตรงนี้
+        const statusName = record.status;
 
         if (!statusName) {
           return (
@@ -253,7 +298,6 @@ const TDSdataviz: React.FC = () => {
         }
       }
     },
-
     {
       title: 'จัดการข้อมูล',
       key: 'action',
