@@ -76,11 +76,12 @@ func main() {
 		public.POST("/create-tds", tdscenter.CreateTDS)
 		public.GET("/get-tds", tdscenter.GetTDS)
 		public.GET("/get-tds/:id", tdscenter.GetTDSbyID)
-		public.PATCH("/update-tds/:id", tdscenter.UpdateTDS)
-		public.POST("/update-or-create-tds", tdscenter.UpdateOrCreateTDS) //เพิ่ม
+		public.PATCH("/update-or-create-tds/:d", tdscenter.UpdateOrCreateTDS) //เพิ่ม
 		public.DELETE("/delete-tds/:id", tdscenter.DeleteTDS)
 		public.DELETE("/delete-tds-day/:id", tdscenter.DeleteAllTDSRecordsByDate) //เพิ่ม
 		public.GET("/get-first-tds", tdscenter.GetfirstTDS)
+		public.GET("/check-units", tdscenter.CheckUnit) 
+		public.GET("/check-standard", tdscenter.CheckStandard)
 
 		//TKN
 		public.POST("/create-tkn", tkncenter.CreateTKN)
@@ -168,6 +169,8 @@ func main() {
 		public.POST("/add-middle-standard", selectBoxAll.AddMiddleStandard)
 		public.POST("/add-range-standard", selectBoxAll.AddRangeStandard)
 
+		public.GET("/list-status", selectBoxAll.ListStatus)
+
 		//public.GET("/api/water-quality", dashboard.GetWaterQuality)
 		//public.GET("/dashboard/environmental", dashboard.GetEnvironmentalDashboard)
 
@@ -177,8 +180,8 @@ func main() {
 		c.String(http.StatusOK, "API RUNNING... PORT: %s", PORT)
 	})
 
-	//r.Run("localhost:" + PORT)
-	r.Run("0.0.0.0:" + PORT)
+	r.Run("localhost:" + PORT)
+	// r.Run("0.0.0.0:" + PORT)
 
 }
 

@@ -165,3 +165,15 @@ func GetStandardByID(c *gin.Context) {
 
     c.JSON(http.StatusOK, standard)
 }
+
+// ListStatus
+func ListStatus(c *gin.Context) {
+	var list []entity.Status
+
+	if err := config.DB().Find(&list).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถดึงข้อมูลได้"})
+		return
+	}
+
+	c.JSON(http.StatusOK, list)
+}
