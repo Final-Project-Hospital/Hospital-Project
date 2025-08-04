@@ -94,7 +94,7 @@ func CreateBod(c *gin.Context) {
 			} else if value > float64(standard.MaxValue) {
 				db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
 			} else {
-				db.Where("status_name = ?", "ตํ่ากว่าเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ต่ำกว่าเกณฑ์มาตรฐาน").First(&status)
 			}
 		}
 		return status.ID

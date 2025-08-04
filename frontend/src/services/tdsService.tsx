@@ -1,7 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import { message } from 'antd';
 import { CreateTDSInterface } from "../interface/ITds";
-import { UpdateTDSInterface } from "../interface/ITds";
 import { DeleteTDSInterface } from "../interface/ITds";
 import { apiUrl } from "./index"
 
@@ -85,30 +84,8 @@ export const CreateTDS = async (payload: CreateTDSInterface): Promise<AxiosRespo
     }
   } catch (error: any) {
     console.error("Error creating TDS:", error.response?.data || error.message);
-    message.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+    message.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล service');
     return null;
-  }
-};
-
-export const UpdateTDS = async (payload: UpdateTDSInterface) => {
-  if (!payload.ID) {
-    throw new Error("ID is required for update");
-  }
-  const url = `${apiUrl}/update-tds/${payload.ID}`;
-  console.log("PATCH URL:", url);
-  console.log("Payload:", payload);
-
-  try {
-    const response = await axios.patch(url, payload, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
-    });
-    return response;
-  } catch (error) {
-    console.error("Error updating TDS:", error);
-    throw error;
   }
 };
 
@@ -117,8 +94,7 @@ export const UpdateOrCreateTDS = async (payload: any) => {
     let response;
 
     if (payload.ID) {
-      // ✅ Update
-      const url = `${apiUrl}/update-tds/${payload.ID}`;
+      const url = `${apiUrl}/update-or-create-tds/${payload.ID}`;
       console.log("PATCH URL:", url);
       console.log("Payload:", payload);
 
@@ -211,6 +187,50 @@ export const GetfirstTDS = async (
     }
   } catch (error: any) {
     console.error("Error creating TDS record:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const CheckUnit = async (name: string) => {
+  try {
+    const response = await axios.get(`${apiUrl}/check-units`, {
+      params: { name }, // ส่ง name ไป query
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    console.log("✅ CheckUnit API response:", response.data);
+    return response.data; // อาจเป็น { exists: true/false } หรือ array
+  } catch (error) {
+    console.error("❌ Error fetching check unit:", error);
+    return null;
+  }
+};
+
+export const CheckStandard = async (type: string, value: any) => {
+  try {
+    const params: any = { type };
+
+    if (type === "middle") {
+      params.value = value;
+    } else if (type === "range") {
+      params.min = value.min;
+      params.max = value.max;
+    }
+
+    const response = await axios.get(`${apiUrl}/check-standard`, {
+      params,
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    return response.data; // { exists: boolean }
+  } catch (error) {
+    console.error("Error checking standard:", error);
     return null;
   }
 };

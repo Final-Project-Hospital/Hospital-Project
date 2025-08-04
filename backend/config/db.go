@@ -101,19 +101,19 @@ func SetupDatabase() {
 	}
 
 	// Status
-	status1 := entity.Status{StatusName: "ตํ่ากว่าเกณฑ์มาตรฐาน"}
+	status1 := entity.Status{StatusName: "ต่ำกว่าเกณฑ์มาตรฐาน"}
 	status2 := entity.Status{StatusName: "อยู่ในเกณฑ์มาตรฐาน"}
 	status3 := entity.Status{StatusName: "เกินเกณฑ์มาตรฐาน"}
 
-	db.FirstOrCreate(&status1, entity.Status{StatusName: "ตํ่ากว่าเกณฑ์มาตรฐาน"})
+	db.FirstOrCreate(&status1, entity.Status{StatusName: "ต่ำกว่าเกณฑ์มาตรฐาน"})
 	db.FirstOrCreate(&status2, entity.Status{StatusName: "อยู่ในเกณฑ์มาตรฐาน"})
 	db.FirstOrCreate(&status3, entity.Status{StatusName: "เกินเกณฑ์มาตรฐาน"})
 
 	// Unit
 	Unit := entity.Unit{
-		UnitName: "มิลลิกรัมต่อลิตร",
+		UnitName: "mg/L",
 	}
-	db.FirstOrCreate(&Unit, &entity.Unit{UnitName: "มิลลิกรัมต่อลิตร"})
+	db.FirstOrCreate(&Unit, &entity.Unit{UnitName: "mg/L"})
 
 	//BeforeAfter
 	Before := entity.BeforeAfterTreatment{TreatmentName: "ก่อน"}
