@@ -280,7 +280,7 @@ func GetTDS(c *gin.Context) {
 
 		// Efficiency
 		if tdsMap[k].BeforeValue != nil && tdsMap[k].AfterValue != nil && *tdsMap[k].BeforeValue != 0 {
-			eff := (*tdsMap[k].BeforeValue - *tdsMap[k].AfterValue) / (*tdsMap[k].BeforeValue * 100)
+			eff := ((*tdsMap[k].BeforeValue - *tdsMap[k].AfterValue) / (*tdsMap[k].BeforeValue))* 100
 			if eff < 0 {
 				eff = 0.00
 			}
