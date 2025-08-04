@@ -88,22 +88,18 @@ const BODdataviz: React.FC = () => {
     if (storedcolorPercentChange) setcolorPercentChange(storedcolorPercentChange);
   }, []);
 
-  //ฟังก์ชันโหลดข้อมูล BOD สำหรับกราฟและตาราง
+
+  // ใช้กับกราฟ
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [lastbod, response, response2] = await Promise.all([
+      const [lastbod, response] = await Promise.all([
         GetfirstBOD(),
         GetlistBOD(),
-        GetBODTABLE(),
       ]);
 
       if (response) {
-        //ใช้กับตาราง
-        setData(response.data);
-
-        //ใช้กับกราฟ ---จัดกลุ่มข้อมูลสำหรับกราฟ---
         const grouped: Record<string, { before: number[]; after: number[] }> = {};
         response.data.forEach((item: any) => {
           const key = filterMode === "year"
@@ -114,36 +110,18 @@ const BODdataviz: React.FC = () => {
           if (item.BeforeAfterTreatmentID === 1) grouped[key].before.push(item.Data);
           else if (item.BeforeAfterTreatmentID === 2) grouped[key].after.push(item.Data);
         });
-        //ใช้กับกราฟ
+
         const createDateRange = (start: Dayjs, end: Dayjs): string[] => {
           const arr: string[] = [];
-          if (filterMode === "year") {
-            let curr = start.startOf('month'); // เริ่มที่เดือนแรกของปีแรก
-            const last = end.endOf('month');   // จบที่เดือนสุดท้ายของปีสุดท้าย
-            while (curr.isBefore(last) || curr.isSame(last)) {
-              arr.push(curr.format("YYYY-MM")); // เก็บรายเดือน
-              curr = curr.add(1, 'month');      // เพิ่มทีละเดือน
-            }
-          } else if (filterMode === "month") {
-            // ถ้าคุณอยากแยกเดือนกับวัน (เดือนคือเดือนเดียว)
-            let curr = start.startOf('day');
-            const last = end.endOf('day');
-            while (curr.isBefore(last) || curr.isSame(last)) {
-              arr.push(curr.format("YYYY-MM-DD"));
-              curr = curr.add(1, 'day');
-            }
-          } else {
-            // กรณี dateRange เลือกวัน
-            let curr = start.startOf('day');
-            const last = end.endOf('day');
-            while (curr.isBefore(last) || curr.isSame(last)) {
-              arr.push(curr.format("YYYY-MM-DD"));
-              curr = curr.add(1, 'day');
-            }
+          let curr = start.startOf(filterMode === "year" ? 'month' : 'day');
+          const last = end.endOf(filterMode === "year" ? 'month' : 'day');
+
+          while (curr.isBefore(last) || curr.isSame(last)) {
+            arr.push(curr.format(filterMode === "year" ? "YYYY-MM" : "YYYY-MM-DD"));
+            curr = curr.add(1, filterMode === "year" ? 'month' : 'day');
           }
           return arr;
         };
-
 
         let allDates: string[] = [];
         if (dateRange) {
@@ -152,7 +130,6 @@ const BODdataviz: React.FC = () => {
           const allDatesInData = Object.keys(grouped).sort();
           if (allDatesInData.length > 0) {
             const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
-
             let start;
             let end = latestDate;
 
@@ -162,12 +139,13 @@ const BODdataviz: React.FC = () => {
               start = latestDate.startOf("month");
               end = latestDate.endOf("month");
             } else {
-              start = latestDate.subtract(6, "day").startOf("day"); // รวมวันนี้ด้วย = 7 วัน
+              start = latestDate.subtract(6, "day").startOf("day");
             }
 
             allDates = createDateRange(start, end);
           }
         }
+
         const before: { date: string; data: number }[] = [];
         const after: { date: string; data: number }[] = [];
         const compare: { date: string; before: number; after: number }[] = [];
@@ -192,7 +170,6 @@ const BODdataviz: React.FC = () => {
           setMinStandard(lastbod.data.MinValue);
         }
 
-        // คำนวณเปอร์เซ็นต์ประสิทธิภาพ (กราฟที่ 4)
         const percentageChangeData: { date: string; percent: number }[] = compare.map(item => {
           const rawPercent = item.before !== 0
             ? ((item.before - item.after) / item.before) * 100
@@ -201,51 +178,11 @@ const BODdataviz: React.FC = () => {
           return { date: item.date, percent };
         });
 
-
-        if (lastbod.data.MiddleValue !== 0) {
-          setMiddleStandard(lastbod.data.MiddleValue);
-        } else {
-          setMaxStandard(lastbod.data.MaxValue);
-          setMinStandard(lastbod.data.MinValue);
-        }
         setUnit(lastbod.data.UnitName);
         setBeforeData(before);
         setAfterData(after);
         setCompareData(compare);
-        setPercentChangeData(percentageChangeData); // <-- เพิ่ม state ถ้าจำเป็น
-        //สิ้นสุดการใช้กราฟ
-
-
-        // ถ้าไม่มีข้อมูลเลย → แสดง error (ใช้แสดงในตารางด้วย)
-        if (!response2 || response2.length === 0) {
-          setError("ไม่พบข้อมูล TDS");
-          setLoading(false);
-          return;
-        }
-        //ใช้กับตาราง ---แปลงข้อมูลสำหรับตาราง BOD ให้มี dateOnly, timeOnly สำหรับแสดงในตาราง---
-        // ประมวลผลข้อมูลที่ได้มา โดยเพิ่มฟิลด์ช่วยเหลือสำหรับตาราง เช่น dateOnly, timeOnly, note
-        const processedData = response2.map((item: any) => {
-          const dt = dayjs(item.date);
-
-          return {
-            ...item,
-            dateOnly: dt.format("DD-MM-YYYY"),   // ใช้แสดงในตารางวันที่แบบอ่านง่าย
-            timeOnly: dt.format("HH:mm:ss"),     // ใช้แสดงเวลาในตาราง (ถ้าต้องการ)
-
-            before_note: item.before_note || '', // หมายเหตุก่อนบำบัด
-            after_note: item.after_note || '',   // หมายเหตุหลังบำบัด
-          };
-        });
-
-        // เรียงข้อมูลจากใหม่สุด → เก่าสุด (ให้ตารางแสดงลำดับใหม่สุดก่อน)
-        processedData.sort((a: any, b: any) =>
-          dayjs(b.date).diff(dayjs(a.date))
-        );
-
-        // เก็บข้อมูลทั้งหมดไว้ใน state ที่ใช้สำหรับ **ตาราง**
-        setData(processedData);
-        //สิ้นสุดการใช้ตาราง
-
+        setPercentChangeData(percentageChangeData);
       } else {
         setError("ไม่พบข้อมูล BOD");
       }
@@ -257,9 +194,47 @@ const BODdataviz: React.FC = () => {
     }
   };
 
+  // เรียก fetchData เมื่อเปลี่ยน filterMode หรือ dateRange (เฉพาะกราฟ)
   useEffect(() => {
     fetchData();
   }, [dateRange, filterMode]);
+
+  //ใช้กับตาราง
+  const loadBODTable = async () => {
+    try {
+      const response2 = await GetBODTABLE();
+      if (!response2 || response2.length === 0) {
+        setError("ไม่พบข้อมูล TDS");
+        return;
+      }
+
+      const processedData = response2.map((item: any) => {
+        const dt = dayjs(item.date);
+        return {
+          ...item,
+          dateOnly: dt.format("DD-MM-YYYY"),
+          timeOnly: dt.format("HH:mm:ss"),
+          before_note: item.before_note || '',
+          after_note: item.after_note || '',
+        };
+      });
+
+      processedData.sort((a: any, b: any) =>
+        dayjs(b.date).diff(dayjs(a.date))
+      );
+
+      setData(processedData); // ✅ ใช้ชื่อเดิมเหมือนคุณเลย
+    } catch (err) {
+      console.error("Error fetching BODTABLE data:", err);
+      setError("เกิดข้อผิดพลาดในการดึงข้อมูล TDS");
+    }
+  };
+
+  // โหลดครั้งแรก
+  useEffect(() => {
+    loadBODTable();
+  }, []);
+
 
   //ใช้กับกราฟ
   const getChartOptions = (
@@ -289,26 +264,28 @@ const BODdataviz: React.FC = () => {
       },
       annotations: {
         yaxis: isPercentChart
-          ? []   // 👉 ถ้าเป็นกราฟเปอร์เซ็นต์ จะไม่มีเส้นมาตรฐานเลย
+          ? []   //  ถ้าเป็นกราฟเปอร์เซ็นต์ จะไม่มีเส้นมาตรฐานเลย
           : (isStandardRange
             ? [
               {
                 y: minstandard ?? 0,
-                borderColor: "#CF1F2A",
-                label: { text: `Min Standard ${minstandard ?? 0}`, style: { background: "#CF1F2A", color: "#fff" } },
+                borderColor: "#e05600ff",
+                label: { text: `มาตรฐานต่ำสุด ${minstandard ?? 0}`, style: { background: "#e05600ff", color: "#fff" } },
               },
               {
                 y: maxstandard ?? 0,
                 borderColor: "#035303ff",
-                label: { text: `Max Standard ${maxstandard ?? 0}`, style: { background: "#035303ff", color: "#fff" } },
+                label: { text: `มาตรฐานสูงสุด ${maxstandard ?? 0}`, style: { background: "#035303ff", color: "#fff" } },
               },
             ]
             : middlestandard !== undefined && middlestandard !== 0
               ? [
                 {
                   y: middlestandard,
-                  borderColor: "#CF1F2A",
-                  label: { text: `มาตรฐาน ${middlestandard}`, style: { background: "#CF1F2A", color: "#fff" } },
+                  borderColor: "#e05600ff",
+                  borderWidth: 1.5,
+                  strokeDashArray: 6,
+                  label: { text: `มาตรฐาน ${middlestandard}`, style: { background: "#e05600ff", color: "#fff" } },
                 },
               ]
               : []
@@ -608,6 +585,7 @@ const BODdataviz: React.FC = () => {
           await DeleteAllTDSRecordsByDate(firstId);
           message.success("ลบข้อมูลสำเร็จ");
           await fetchData();
+          await loadBODTable();
         } catch (error) {
           message.error("ลบข้อมูลไม่สำเร็จ");
         }
@@ -657,7 +635,7 @@ const BODdataviz: React.FC = () => {
           <div className="bod-select-date">
             <div>
               <Select
-              
+
                 value={filterMode}
                 onChange={(val) => {
                   setFilterMode(val);
@@ -897,8 +875,8 @@ const BODdataviz: React.FC = () => {
           </div>
           <div className="bod-graph-card">
             <div className="bod-head-graph-card">
-              <div className="width40">
-                <h2 className="bod-head-graph-card-text" >เปอร์เซ็นต์การเปลี่ยนแปลง</h2>
+              <div className="width25">
+                <h2 className="bod-head-graph-card-text" >ประสิทธิภาพ</h2>
               </div>
               <div>
                 <ColorPicker

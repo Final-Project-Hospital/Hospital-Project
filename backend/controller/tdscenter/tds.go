@@ -703,3 +703,139 @@ func DeleteAllTDSRecordsByDate(c *gin.Context) {
         "date":    dateKey,
     })
 }
+
+// func GetTDS(c *gin.Context) {
+// 	db := config.DB()
+
+// 	// หา ParameterID ของ "Total Dissolved Solids"
+// 	var param entity.Parameter
+// 	if err := db.Where("parameter_name = ?", "Total Dissolved Solids").First(&param).Error; err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่พบ Parameter Total Dissolved Solids"})
+// 		return
+// 	}
+
+// 	var tds []entity.EnvironmentalRecord
+// 	result := db.Preload("BeforeAfterTreatment").
+// 		Preload("Environment").
+// 		Preload("Unit").
+// 		Preload("Employee").
+// 		Preload("Status"). // ✅ preload Status struct เพิ่ม
+// 		Where("parameter_id = ?", param.ID).
+// 		Find(&tds)
+
+// 	if result.Error != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+// 		return
+// 	}
+
+// 	type keyType struct {
+// 		Date          string
+// 		EnvironmentID uint
+// 	}
+
+// 	type TDSRecord struct {
+// 		Date          string   `json:"date"`
+// 		Unit          string   `json:"unit"`
+// 		StandardValue string   `json:"standard_value"`
+// 		BeforeValue   *float64 `json:"before_value,omitempty"`
+// 		AfterValue    *float64 `json:"after_value,omitempty"`
+// 		BeforeID      *uint    `json:"before_id,omitempty"`
+// 		AfterID       *uint    `json:"after_id,omitempty"`
+// 		BeforeNote    string   `json:"before_note,omitempty"`
+// 		AfterNote     string   `json:"after_note,omitempty"`
+// 		Efficiency    *float64 `json:"efficiency,omitempty"`
+// 		Status        string   `json:"status,omitempty"` // ✅ ยังเป็น string
+// 	}
+
+// 	tdsMap := make(map[keyType]*TDSRecord)
+
+// 	for _, rec := range tds {
+// 		dateStr := rec.Date.Format("2006-01-02")
+// 		k := keyType{
+// 			Date:          dateStr,
+// 			EnvironmentID: rec.EnvironmentID,
+// 		}
+
+// 		// หา EnvironmentalRecord ล่าสุดของวันนั้น (เพื่อดึง standard)
+// 		var latestRec entity.EnvironmentalRecord
+// 		err := db.
+// 			Joins("JOIN parameters p ON p.id = environmental_records.parameter_id").
+// 			Where("p.parameter_name = ?", "Total Dissolved Solids").
+// 			Where("DATE(environmental_records.date) = ?", dateStr).
+// 			Order("environmental_records.date DESC").
+// 			First(&latestRec).Error
+
+// 		stdVal := "-"
+// 		if err == nil && latestRec.StandardID != 0 {
+// 			var std entity.Standard
+// 			if db.First(&std, latestRec.StandardID).Error == nil {
+// 				if (std.MinValue != 0 || std.MaxValue != 0) && (std.MinValue < std.MaxValue) {
+// 					stdVal = fmt.Sprintf("%.2f - %.2f", std.MinValue, std.MaxValue)
+// 				} else if std.MiddleValue > 0 {
+// 					stdVal = fmt.Sprintf("%.2f", std.MiddleValue)
+// 				}
+// 			}
+// 		}
+
+// 		if _, exists := tdsMap[k]; !exists {
+// 			tdsMap[k] = &TDSRecord{
+// 				Date:          dateStr,
+// 				Unit:          rec.Unit.UnitName,
+// 				StandardValue: stdVal,
+// 			}
+// 		}
+
+// 		val := rec.Data
+// 		if rec.BeforeAfterTreatmentID == 1 {
+// 			tdsMap[k].BeforeValue = &val
+// 			tdsMap[k].BeforeID = &rec.ID
+// 		} else if rec.BeforeAfterTreatmentID == 2 {
+// 			tdsMap[k].AfterValue = &val
+// 			tdsMap[k].AfterID = &rec.ID
+// 		}
+
+// 		// Efficiency calculation
+// 		if tdsMap[k].BeforeValue != nil && tdsMap[k].AfterValue != nil && *tdsMap[k].BeforeValue != 0 {
+// 			eff := (*tdsMap[k].BeforeValue - *tdsMap[k].AfterValue) / (*tdsMap[k].BeforeValue * 100)
+// 			if eff < 0 {
+// 				eff = 0.00
+// 			}
+// 			tdsMap[k].Efficiency = &eff
+// 		}
+
+// 		// ✅ ใช้ status จากฐานข้อมูล (ถ้ามี after หรือ both)
+// 		if rec.BeforeAfterTreatmentID == 2 || (rec.BeforeAfterTreatmentID == 1 && tdsMap[k].AfterValue != nil) {
+// 			if rec.Status != nil {
+// 				tdsMap[k].Status = rec.Status.StatusName
+// 			}
+// 		}
+// 	}
+
+// 	// สร้าง noteMap สำหรับเก็บ note ของแต่ละ ID
+// 	noteMap := make(map[uint]string)
+// 	for _, rec := range tds {
+// 		noteMap[rec.ID] = rec.Note
+// 	}
+
+// 	// เติม Note
+// 	for _, val := range tdsMap {
+// 		if val.BeforeID != nil {
+// 			if note, ok := noteMap[*val.BeforeID]; ok {
+// 				val.BeforeNote = note
+// 			}
+// 		}
+// 		if val.AfterID != nil {
+// 			if note, ok := noteMap[*val.AfterID]; ok {
+// 				val.AfterNote = note
+// 			}
+// 		}
+// 	}
+
+// 	// แปลง map เป็น slice
+// 	var mergedRecords []TDSRecord
+// 	for _, val := range tdsMap {
+// 		mergedRecords = append(mergedRecords, *val)
+// 	}
+
+// 	c.JSON(http.StatusOK, mergedRecords)
+// }
