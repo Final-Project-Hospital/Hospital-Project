@@ -1,7 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import { message } from 'antd';
 import { CreateTDSInterface } from "../interface/ITds";
-import { UpdateTDSInterface } from "../interface/ITds";
 import { DeleteTDSInterface } from "../interface/ITds";
 import { apiUrl } from "./index"
 
