@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import {
   ChartComponent,
   SeriesCollectionDirective,
@@ -54,6 +54,14 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
     };
   }, [reloadKey]);
 
+  const isRangeReady = useMemo(() => {
+    if (!selectedRange) return false;
+    if (timeRangeType === 'day') return Array.isArray(selectedRange) && selectedRange.length === 2;
+    if (timeRangeType === 'month') return selectedRange?.month && selectedRange?.year;
+    if (timeRangeType === 'year') return Array.isArray(selectedRange) && selectedRange.length === 2;
+    return false;
+  }, [selectedRange, timeRangeType]);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -64,6 +72,23 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
       if (!hardwareID || parameters.length === 0) {
         setLoading(false);
         return;
+      }
+      //@ts-ignore
+      let forcedXLabels: string[] = [];
+
+      if (timeRangeType === 'day' && selectedRange?.length === 2) {
+        const [start, end] = selectedRange;
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        if (startDate.toDateString() === endDate.toDateString()) {
+          const oneDayBefore = new Date(startDate.getTime() - 86400000);
+          const oneDayAfter = new Date(startDate.getTime() + 86400000);
+          forcedXLabels = [
+            oneDayBefore.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
+            startDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
+            oneDayAfter.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
+          ];
+        }
       }
 
       const raw = await GetSensorDataByHardwareID(hardwareID);
@@ -90,23 +115,27 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
           if (!name || !parameters.includes(name) || isNaN(value) || isNaN(date.getTime())) continue;
 
           let inRange = false;
+          let label = '';
+
           if (timeRangeType === 'day') {
             const [start, end] = selectedRange || [];
-            inRange = date >= new Date(start) && date <= new Date(end);
+            if (!start || !end) continue;
+            const startDate = new Date(start);
+            const endDate = new Date(end);
+            endDate.setHours(23, 59, 59, 999);
+            inRange = date >= startDate && date <= endDate;
+            if (inRange) label = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
           } else if (timeRangeType === 'month') {
-            inRange =
-              date.getMonth() + 1 === Number(selectedRange?.month) &&
+            inRange = date.getMonth() + 1 === Number(selectedRange?.month) &&
               date.getFullYear() === Number(selectedRange?.year);
+            if (inRange) label = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
           } else if (timeRangeType === 'year') {
             const [start, end] = selectedRange || [];
             inRange = date.getFullYear() >= +start && date.getFullYear() <= +end;
+            if (inRange) label = date.getFullYear().toString();
           }
-          if (!inRange) continue;
 
-          const label =
-            timeRangeType === 'year'
-              ? date.toLocaleString('default', { month: 'short' })
-              : date.toLocaleDateString('en-GB');
+          if (!inRange || !label) continue;
 
           dataMap[name] ??= [];
           dataMap[name].push({ x: label, y: value });
@@ -136,9 +165,15 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
           grouped[x].push(y);
         });
 
-        const averaged = Object.entries(grouped).map(([x, ys]) => ({
+        const allX = Object.keys(grouped).sort((a, b) => {
+          const da = new Date(a).getTime();
+          const db = new Date(b).getTime();
+          return da - db;
+        });
+
+        const averaged = allX.map(x => ({
           x,
-          y: ys.reduce((sum, val) => sum + val, 0) / ys.length,
+          y: grouped[x] ? grouped[x].reduce((sum, val) => sum + val, 0) / grouped[x].length : null,
         }));
 
         series.push({
@@ -154,20 +189,17 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
         });
 
         if (standardMap[name]) {
-          const stdData = averaged.map(({ x }) => ({
-            x,
-            y: standardMap[name],
-          }));
+          const stdData = allX.map(x => ({ x, y: standardMap[name] }));
           series.push({
             dataSource: stdData,
             xName: 'x',
             yName: 'y',
             name: `${name} (Standard)`,
-            type: 'Line',
-            dashArray: '5,5',
             width: 2,
-            fill: 'red',
+            dashArray: '5,5',
             marker: { visible: false },
+            type: 'Line',
+            fill: 'red',
           });
         }
       }
@@ -177,6 +209,7 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
       setLoading(false);
     };
 
+    if (!isRangeReady) return;
     fetchData();
   }, [hardwareID, timeRangeType, selectedRange, parameters, colors, reloadKey]);
 

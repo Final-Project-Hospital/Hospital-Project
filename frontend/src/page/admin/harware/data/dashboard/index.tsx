@@ -199,12 +199,13 @@ const Index = () => {
 
       {/* Table */}
       <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
+        <h2 className="text-lg font-semibold mb-4 text-gray-700">ตารางข้อมูล</h2>
         <TableData hardwareID={hardwareID} onLoaded={onTableLoaded} />
       </section>
 
       {/* Charts */}
       <section className="w-full px-2 md:px-8 bg-white p-6 rounded-lg shadow space-y-4">
-        <h2 className="text-lg font-semibold mb-4 text-gray-700">Charts</h2>
+        <h2 className="text-lg font-semibold mb-4 text-gray-700">กราฟเเสดงค่าของเเต่ละตัวเเปร</h2>
         {uniqueGraphs.length === 0 ? (
           <div className="text-center text-red-500 font-semibold">No Data</div>
         ) : (

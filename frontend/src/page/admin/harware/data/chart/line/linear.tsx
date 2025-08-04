@@ -140,10 +140,15 @@ const LineChart: React.FC<LineChartProps> = ({
             if (timeRangeType === 'day') {
               const [start, end] = selectedRange || [];
               if (!start || !end) continue;
-              inRange = date >= new Date(start) && date <= new Date(end);
-            } else if (timeRangeType === 'month') {
+              const startDate = new Date(start);
+              const endDate = new Date(end);
+              endDate.setHours(23, 59, 59, 999); // แก้ไขตรงนี้
+
+              inRange = date >= startDate && date <= endDate;
+            }
+            else if (timeRangeType === 'month') {
               inRange = date.getMonth() + 1 === Number(selectedRange?.month) &&
-                        date.getFullYear() === Number(selectedRange?.year);
+                date.getFullYear() === Number(selectedRange?.year);
             } else if (timeRangeType === 'year') {
               const [start, end] = selectedRange || [];
               if (!start || !end) continue;
@@ -166,12 +171,25 @@ const LineChart: React.FC<LineChartProps> = ({
         }
 
         let series: any[] = [];
-        const createStandardLine = (name: string, standard: number, data: { x: Date }[]) => {
-          return data.sort((a, b) => a.x.getTime() - b.x.getTime()).map(d => ({
-            x: d.x,
-            y: standard,
-          }));
+        const createStandardLine = (//@ts-ignore
+          name: string,
+          standard: number,
+          data: { x: Date }[]
+        ) => {
+          const sorted = data.sort((a, b) => a.x.getTime() - b.x.getTime());
+          if (sorted.length === 1) {
+            const d = sorted[0];
+            const prev = new Date(d.x.getTime() - 1000 * 60 * 60); // -1 ชม.
+            const next = new Date(d.x.getTime() + 1000 * 60 * 60); // +1 ชม.
+            return [
+              { x: prev, y: standard },
+              { x: next, y: standard },
+            ];
+          }
+          return sorted.map(d => ({ x: d.x, y: standard }));
         };
+
+
 
         for (const [name, data] of Object.entries(parameterMap)) {
           const sortedData = data.sort((a, b) => a.x.getTime() - b.x.getTime());
@@ -180,8 +198,8 @@ const LineChart: React.FC<LineChartProps> = ({
           const dataSource =
             timeRangeType === 'year'
               ? (selectedRange?.[0] === selectedRange?.[1]
-                  ? groupByMonthAvg(groupByDayAvg(sortedData.filter(d => d.x.getFullYear() === +selectedRange[0])))
-                  : groupByYearAvg(sortedData))
+                ? groupByMonthAvg(groupByDayAvg(sortedData.filter(d => d.x.getFullYear() === +selectedRange[0])))
+                : groupByYearAvg(sortedData))
               : timeRangeType === 'month'
                 ? groupByDayAvg(sortedData)
                 : groupByDayAvg(sortedData);
@@ -203,7 +221,7 @@ const LineChart: React.FC<LineChartProps> = ({
               dataSource: stdData,
               xName: 'x',
               yName: 'y',
-              name: `${name} (Standard)` ,
+              name: `${name} (Standard)`,
               width: 2,
               dashArray: '5,5',
               marker: { visible: false },
@@ -214,7 +232,7 @@ const LineChart: React.FC<LineChartProps> = ({
         }
 
         if (mounted.current && !stop) {
-          const filteredUnitMap = Object.fromEntries(
+          const filteredUnitMap = Object.fromEntries(//@ts-ignore
             Object.entries(unitMapping).filter(([unit, param]) => parameters.includes(param))
           );
 
@@ -286,7 +304,7 @@ const LineChart: React.FC<LineChartProps> = ({
       </div>
 
       <ChartComponent
-       id={`chart-${parameters.join('-')}`}
+        id={`chart-${parameters.join('-')}`}
         height={chartHeight}
         width="100%"
         primaryXAxis={{
@@ -297,8 +315,11 @@ const LineChart: React.FC<LineChartProps> = ({
           intervalType: timeRangeType === 'year'
             ? (selectedRange?.[0] !== selectedRange?.[1] ? 'Years' : 'Months')
             : 'Days',
+          interval: timeRangeType === 'day' ? 1 : undefined,
           edgeLabelPlacement: 'Shift',
           majorGridLines: { width: 0 },
+          labelIntersectAction: 'Rotate45',
+          enableTrim: false,
         }}
         primaryYAxis={{
           labelFormat: '{value}',

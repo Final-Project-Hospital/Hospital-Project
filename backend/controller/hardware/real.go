@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Tawunchai/hospital-project/config"
@@ -23,11 +24,9 @@ type HardwareInput struct {
 	Parameters []ParameterWithData `json:"parameters" binding:"required"`
 }
 
-// LINE config (ควรเก็บใน ENV จริง ๆ)
 const LineToken = "gvki3Wyt+y/sZKER+Gaex2EpillRDRDHvXq4+sYNE5jlLUcy2N2YIIONKwvMhqn8RxcaME5vQ3I1BW82d1/ZYezvWklVMUk+EGGfXRmI4jxn5I1vVbOsctQ7xNqB9n9A+Q/SRhEtXviKFCF9WOI/ZgdB04t89/1O/w1cDnyilFU="
 const LineUserID = "U3af93a2f92b1048757172584d47571c8"
 
-// ฟังก์ชันส่งข้อความ LINE
 func SendWarningToLINE(message string) error {
 	url := "https://api.line.me/v2/bot/message/push"
 	body := map[string]interface{}{
@@ -119,12 +118,25 @@ func ReadDataForHardware(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create unit"})
 				return
 			}
+
+			// 🔍 ตรวจสอบชื่อเพื่อกำหนด HardwareParameterColorID
+			lowerParam := strings.ToLower(p.Parameter)
+			colorID := uint(1) // default
+			switch {
+			case strings.Contains(lowerParam, "formaldehyde"), strings.Contains(p.Parameter, "ฟอร์มาลดีไฮด์"):
+				colorID = 1
+			case strings.Contains(lowerParam, "temperature"), strings.Contains(p.Parameter, "อุณหภูมิ"):
+				colorID = 2
+			case strings.Contains(lowerParam, "humidity"), strings.Contains(p.Parameter, "ความชื้น"):
+				colorID = 3
+			}
+
 			hp = entity.HardwareParameter{
 				Parameter:                p.Parameter,
 				StandardHardwareID:       std.ID,
 				UnitHardwareID:           unit.ID,
 				HardwareGraphID:          1,
-				HardwareParameterColorID: 1,
+				HardwareParameterColorID: colorID,
 				Icon:                     "GiChemicalDrop",
 			}
 			if err := db.Create(&hp).Error; err != nil {
@@ -149,14 +161,13 @@ func ReadDataForHardware(c *gin.Context) {
 
 		var std entity.StandardHardware
 		if err := db.First(&std, hp.StandardHardwareID).Error; err == nil {
-			if p.Data > std.Standard {
+			if std.Standard > 0 && p.Data > std.Standard {
 				part := fmt.Sprintf("- %s: %.2f (เกณฑ์ %.2f)", hp.Parameter, p.Data, std.Standard)
 				messageParts = append(messageParts, part)
 			}
 		}
 	}
 
-	// ส่ง LINE ถ้ามีอย่างน้อย 1 ตัวเกินเกณฑ์
 	if len(messageParts) > 0 {
 		fullMessage := fmt.Sprintf("☣️ แจ้งเตือนสารเคมีเกินมาตรฐาน!\n📡 ฮาร์ดแวร์: %s\n🌐 IP: %s\n\nพบค่าที่เกิน:\n%s",
 			hardware.Name, hardware.IpAddress, joinLines(messageParts))
@@ -171,7 +182,6 @@ func ReadDataForHardware(c *gin.Context) {
 	})
 }
 
-// joinLines แปลง slice ให้ขึ้นบรรทัดใหม่
 func joinLines(lines []string) string {
 	return fmt.Sprintf("%s", string(bytes.Join(mapToBytes(lines), []byte("\n"))))
 }
