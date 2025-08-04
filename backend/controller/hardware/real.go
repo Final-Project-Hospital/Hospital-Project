@@ -20,7 +20,7 @@ type ParameterWithData struct {
 
 type HardwareInput struct {
 	Name       string              `json:"name" binding:"required"`
-	IpAddress  string              `json:"ip_address" binding:"required"`
+	MacAddress  string              `json:"mac_address" binding:"required"`
 	Parameters []ParameterWithData `json:"parameters" binding:"required"`
 }
 
@@ -61,8 +61,8 @@ func ReadDataForHardware(c *gin.Context) {
 	db := config.DB()
 
 	var hardware entity.Hardware
-	if err := db.Where("name = ? AND ip_address = ?", input.Name, input.IpAddress).First(&hardware).Error; err != nil {
-		hardware = entity.Hardware{Name: input.Name, IpAddress: input.IpAddress}
+	if err := db.Where("name = ? AND mac_address = ?", input.Name, input.MacAddress).First(&hardware).Error; err != nil {
+		hardware = entity.Hardware{Name: input.Name, MacAddress: input.MacAddress}
 		if err := db.Create(&hardware).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create hardware"})
 			return
@@ -170,7 +170,7 @@ func ReadDataForHardware(c *gin.Context) {
 
 	if len(messageParts) > 0 {
 		fullMessage := fmt.Sprintf("☣️ แจ้งเตือนสารเคมีเกินมาตรฐาน!\n📡 ฮาร์ดแวร์: %s\n🌐 IP: %s\n\nพบค่าที่เกิน:\n%s",
-			hardware.Name, hardware.IpAddress, joinLines(messageParts))
+			hardware.Name, hardware.MacAddress, joinLines(messageParts))
 		go SendWarningToLINE(fullMessage)
 	}
 

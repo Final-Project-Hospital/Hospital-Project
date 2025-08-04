@@ -312,7 +312,7 @@ func SetupDatabase() {
 	// Hardware
 	Hardware1 := entity.Hardware{
 		Name:      "Hardware",
-		IpAddress: "192.168.19.1",
+		MacAddress: "24:6F:28:3C:D1:AB",
 	}
 	db.FirstOrCreate(&Hardware1, entity.Hardware{Name: "Hardware"})
 
