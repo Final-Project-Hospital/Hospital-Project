@@ -18,7 +18,7 @@ const EnvironmentLayout: React.FC = () => {
 
   return (
     <div>
-      <div className="tds-header">
+      <div className="tabs-header">
         <h1>น้ำเสีย</h1>
         <p>
           โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม

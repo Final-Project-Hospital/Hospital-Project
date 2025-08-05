@@ -1,12 +1,13 @@
-.tds-header {
+.tabs-header {
   background: linear-gradient(90deg, #356768, #5AEEF0);
   padding: 30px;
   border-radius: 0 0 25px 25px;
   color: white;
 }
 
-.tds-header h1 {
-  font-size: 2rem; /* ปรับให้ responsive โดยไม่ใช้ xx-large */
+.tabs-header h1 {
+  font-size: 2rem;
+  /* ปรับให้ responsive โดยไม่ใช้ xx-large */
   text-shadow: 0 4px 5px #000000ba;
   font-weight: 500;
   margin: 0;
@@ -25,7 +26,7 @@
   box-sizing: border-box;
 }
 
-.tabs button{
+.tabs button {
   border-radius: 15px;
 }
 
@@ -35,30 +36,36 @@
     width: 50%;
     margin: 0 auto;
   }
-  .tds-header{
+
+  .tabs-header {
     margin-top: 50px;
   }
-  .tds-header h1 {
+
+  .tabs-header h1 {
     font-size: 2.5rem;
     text-align: center;
   }
-  .tds-header p{
+
+  .tabs-header p {
     font-size: 1rem;
     text-align: center;
   }
 }
 
 @media (max-width: 480px) {
-  .tds-header {
-    padding: 20px;
+  .tabs-header {
+    padding: 15px;
   }
 
-  .tds-header h1 {
+  .tabs-header h1 {
     font-size: 1.5rem;
+    margin-top: 10px;
   }
 
   .tabs {
-    padding: 8px 12px;
-    gap: 6px;
+    width: 80%;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   }
 }
