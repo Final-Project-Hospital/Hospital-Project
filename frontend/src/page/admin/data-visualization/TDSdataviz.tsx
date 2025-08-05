@@ -189,7 +189,17 @@ const TDSdataviz: React.FC = () => {
       dataIndex: 'after_value',
       key: 'after_value',
       width: 120,
-      render: (val: number | null) => val != null ? val.toFixed(2) : '-',
+      render: (afterValue: number | null, record: any) => {
+        if (afterValue == null) return '-';
+        const before = record.before_value;
+        let arrow = null;
+        const iconStyle = { fontWeight: 'bold', fontSize: '17px' };
+        if (before != null) {
+          if (afterValue < before) arrow = <span style={{ ...iconStyle, color: '#EE404C' }}> ↓</span>;
+          else if (afterValue > before) arrow = <span style={{ ...iconStyle, color: '#14C18B' }}> ↑</span>;
+        }
+        return <span>{afterValue.toFixed(2)}{arrow}</span>;
+      },
     },
     {
       title: (
