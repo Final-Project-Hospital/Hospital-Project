@@ -60,23 +60,39 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
         const sortedReports = reportData.sort(
           (a, b) => new Date(b.Date).getTime() - new Date(a.Date).getTime()
         );
-        setReports(sortedReports);
-        setFilteredReports(sortedReports);
-        onCountChange?.(sortedReports.length);
 
-        const buildings = [...new Set(
-          sortedReports.map((r) => r?.SensorData?.Hardware?.Room?.[0]?.Building?.BuildingName).filter(Boolean)
-        )];
+        // ✅ กรองรายงานที่ไม่มี Standard หรือ Standard <= 0 ออกตั้งแต่ต้นทาง
+        const validReports = sortedReports.filter((r) => {
+          const std = r?.HardwareParameter?.StandardHardware?.Standard;
+          const num = typeof std === "number" ? std : Number(std);
+          return Number.isFinite(num) && num > 0;
+        });
 
-        const floors = [...new Set(
-          sortedReports.map((r) => r?.SensorData?.Hardware?.Room?.[0]?.Floor)
-            .filter((f): f is number => f !== undefined)
-            .map(String)
-        )];
+        setReports(validReports);
+        setFilteredReports(validReports);
+        onCountChange?.(validReports.length);
 
-        const parameters = [...new Set(
-          sortedReports.map((r) => r?.HardwareParameter?.Parameter).filter(Boolean)
-        )];
+        // ใช้ชุด validReports เพื่อสร้างตัวเลือกฟิลเตอร์
+        const buildings = [
+          ...new Set(
+            validReports
+              .map((r) => r?.SensorData?.Hardware?.Room?.[0]?.Building?.BuildingName)
+              .filter(Boolean)
+          ),
+        ];
+
+        const floors = [
+          ...new Set(
+            validReports
+              .map((r) => r?.SensorData?.Hardware?.Room?.[0]?.Floor)
+              .filter((f): f is number => f !== undefined)
+              .map(String)
+          ),
+        ];
+
+        const parameters = [
+          ...new Set(validReports.map((r) => r?.HardwareParameter?.Parameter).filter(Boolean)),
+        ];
 
         setBuildingOptions(buildings);
         setFloorOptions(floors);
@@ -103,8 +119,9 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
 
       let matchDate = true;
       if (timeRangeType === "day" && Array.isArray(selectedRange)) {
-        matchDate = itemDate.isAfter(dayjs(selectedRange[0]).startOf("day")) &&
-                    itemDate.isBefore(dayjs(selectedRange[1]).endOf("day"));
+        matchDate =
+          itemDate.isAfter(dayjs(selectedRange[0]).startOf("day")) &&
+          itemDate.isBefore(dayjs(selectedRange[1]).endOf("day"));
       } else if (timeRangeType === "month" && selectedRange?.month && selectedRange?.year) {
         matchDate = itemDate.format("YYYY-MM") === `${selectedRange.year}-${selectedRange.month}`;
       } else if (timeRangeType === "year" && Array.isArray(selectedRange)) {
@@ -117,7 +134,7 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
 
     setFilteredReports(filtered);
     onCountChange?.(filtered.length);
-  }, [buildingFilter, floorFilter, parameterFilter, reports, selectedRange, timeRangeType]);
+  }, [buildingFilter, floorFilter, parameterFilter, reports, selectedRange, timeRangeType, onCountChange]);
 
   return (
     <div className="p-2">
@@ -133,7 +150,9 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
               getPopupContainer={(trigger) => trigger.parentNode as HTMLElement}
             >
               {buildingOptions.map((b, i) => (
-                <Option key={i} value={b}>{b}</Option>
+                <Option key={i} value={b}>
+                  {b}
+                </Option>
               ))}
             </Select>
 
@@ -146,7 +165,9 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
               getPopupContainer={(trigger) => trigger.parentNode as HTMLElement}
             >
               {floorOptions.map((f, i) => (
-                <Option key={i} value={f}>{f}</Option>
+                <Option key={i} value={f}>
+                  {f}
+                </Option>
               ))}
             </Select>
 
@@ -159,7 +180,9 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
               getPopupContainer={(trigger) => trigger.parentNode as HTMLElement}
             >
               {parameterOptions.map((p, i) => (
-                <Option key={i} value={p}>{p}</Option>
+                <Option key={i} value={p}>
+                  {p}
+                </Option>
               ))}
             </Select>
           </div>
@@ -194,9 +217,7 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
                 <select
                   className="border rounded px-3 py-2 w-full sm:w-auto"
                   value={selectedRange?.month || ""}
-                  onChange={(e) =>
-                    setSelectedRange({ ...selectedRange, month: e.target.value })
-                  }
+                  onChange={(e) => setSelectedRange({ ...selectedRange, month: e.target.value })}
                 >
                   <option value="">Select Month</option>
                   {months.map((m) => (
@@ -208,9 +229,7 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
                 <select
                   className="border rounded px-3 py-2 w-full sm:w-auto"
                   value={selectedRange?.year || ""}
-                  onChange={(e) =>
-                    setSelectedRange({ ...selectedRange, year: e.target.value })
-                  }
+                  onChange={(e) => setSelectedRange({ ...selectedRange, year: e.target.value })}
                 >
                   <option value="">Select Year</option>
                   {years.map((y) => (
@@ -288,12 +307,10 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
             const title = `${parameter} Over Limit`;
             const description = `ตรวจพบค่า ${parameter} = ${value} ${unit} (เกิน ${standard}) ที่ห้อง ${roomName} ชั้น ${floor} อาคาร ${buildingName} วันที่ ${date} เวลา ${time}`;
 
-            return (
-              <NotificationItem key={item.ID} title={title} description={description} />
-            );
+            return <NotificationItem key={item.ID} title={title} description={description} />;
           })
         ) : (
-          <div className="text-center text-gray-400 py-10">No new notifications</div>
+          <div className="text-center text-gray-400 py-10">ไม่พบข้อมูลการเเจ้งเตือน</div>
         )}
       </div>
     </div>

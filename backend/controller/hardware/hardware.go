@@ -451,3 +451,56 @@ func UpdateGroupDisplayByID(c *gin.Context) {
 		"hardware_param": parameter,
 	})
 }
+
+type DeleteSensorDataParameterRequest struct {
+	IDs []uint `json:"ids" binding:"required"`
+}
+
+func DeleteSensorDataParametersByIds(c *gin.Context) {
+	var req struct {
+		IDs []uint `json:"ids" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาส่ง IDs เป็น array"})
+		return
+	}
+
+	if len(req.IDs) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่มี ID สำหรับลบ"})
+		return
+	}
+
+	db := config.DB()
+
+	if err := db.Unscoped().Where("id IN ?", req.IDs).Delete(&entity.SensorDataParameter{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบข้อมูลไม่สำเร็จ"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":     "ลบข้อมูลเรียบร้อยแล้ว",
+		"deleted_ids": req.IDs,
+	})
+}
+
+func DeleteAllSensorDataParametersBySensorID(c *gin.Context) {
+	sensorDataIDStr := c.Param("sensorDataID")
+	sensorDataID, err := strconv.ParseUint(sensorDataIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "SensorDataID ไม่ถูกต้อง"})
+		return
+	}
+
+	db := config.DB()
+
+	if err := db.Unscoped().Where("sensor_data_id = ?", sensorDataID).Delete(&entity.SensorDataParameter{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบข้อมูลไม่สำเร็จ"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":        "ลบข้อมูลทั้งหมดเรียบร้อยแล้ว",
+		"sensor_data_id": sensorDataID,
+	})
+}

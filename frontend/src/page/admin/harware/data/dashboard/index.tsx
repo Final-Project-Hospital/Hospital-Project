@@ -207,7 +207,7 @@ const Index = () => {
       <section className="w-full px-2 md:px-8 bg-white p-6 rounded-lg shadow space-y-4">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">กราฟเเสดงค่าของเเต่ละตัวเเปร</h2>
         {uniqueGraphs.length === 0 ? (
-          <div className="text-center text-red-500 font-semibold">No Data</div>
+          <div className="text-center text-gray-500 font-semibold">ไม่พบข้อมูล</div>
         ) : (
           <div
             className={
