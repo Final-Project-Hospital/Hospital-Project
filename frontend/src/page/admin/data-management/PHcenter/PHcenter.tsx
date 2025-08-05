@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input, message } from 'antd';
 import dayjs from 'dayjs';
-import './TDScenter.css';
-import { TDScenterInterface } from '../../../../interface/ITds';
-import { createTDS } from '../../../../services/tdsService';
+import './PHcenter.css';
+import { PHcenterInterface } from '../../../../interface/IpH';
+import { createPH } from '../../../../services/phService';
 import { ListBeforeAfterTreatment, ListUnit } from '../../../../services/index';
 import { ListBeforeAfterTreatmentInterface } from '../../../../interface/IBeforeAfterTreatment';
 import { ListUnitInterface } from '../../../../interface/IUnit';
-import { GetfirstTDS } from '../../../../services/tdsService';
+import { GetfirstPH } from '../../../../services/phService';
 import { ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, } from '../../../../services/index';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../interface/IStandard';
 import { CheckUnit, CheckStandard } from '../../../../services/tdsService';
@@ -19,7 +19,7 @@ type Props = {
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const { Option } = Select;
-const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
+const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
     const [form] = Form.useForm();
     const [beforeAfterOptions, setBeforeAfterOptions] = useState<ListBeforeAfterTreatmentInterface[]>([]);
     const [unitOptions, setUnitOptions] = useState<ListUnitInterface[]>([]);
@@ -41,7 +41,7 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
         return (
             <>
-                ค่า TDS บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
+                ค่า PH บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
             </>
         );
     };
@@ -75,11 +75,11 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
         }
     };
 
-    const GetfirstrowTDS = async () => {
+    const GetfirstrowPH = async () => {
         try {
-            const responfirstTDS = await GetfirstTDS();
-            if (responfirstTDS.status === 200) {
-                const data = responfirstTDS.data;
+            const responfirstPH = await GetfirstPH();
+            if (responfirstPH.status === 200) {
+                const data = responfirstPH.data;
                 const isMiddle = data.MinValue === 0 && data.MaxValue === 0;
                 setStandardType(isMiddle ? 'middle' : 'range');
                 form.setFieldsValue({
@@ -88,7 +88,7 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     standardID: data.StandardID,
                 });
             } else {
-                message.error("ไม่สามารถดึงข้อมูลการนัดหมายได้ สถานะ: " + responfirstTDS.status);
+                message.error("ไม่สามารถดึงข้อมูลการนัดหมายได้ สถานะ: " + responfirstPH.status);
             }
         } catch (error) {
             console.error("Error fetching severity levels:", error);
@@ -97,7 +97,7 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
     };
     useEffect(() => {
-        GetfirstrowTDS();
+        GetfirstrowPH();
         fetchInitialData();
     }, []);
 
@@ -179,7 +179,7 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
         if (selectedTreatmentID === 3) {
             // กรณี "ก่อนและหลังบำบัด" ส่งข้อมูล 2 ชุด
-            const payloadBefore: TDScenterInterface = {
+            const payloadBefore: PHcenterInterface = {
                 Date: combinedDateTime.toISOString(),
                 Data: values.valueBefore,
                 BeforeAfterTreatmentID: 1,
@@ -190,7 +190,7 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                 Note: values.note,
             };
 
-            const payloadAfter: TDScenterInterface = {
+            const payloadAfter: PHcenterInterface = {
                 Date: combinedDateTime.toISOString(),
                 Data: values.valueAfter,
                 BeforeAfterTreatmentID: 2,
@@ -201,13 +201,13 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                 Note: values.note,
             };
 
-            const res1 = await createTDS(payloadBefore);
-            const res2 = await createTDS(payloadAfter);
+            const res1 = await createPH(payloadBefore);
+            const res2 = await createPH(payloadAfter);
 
             if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
-                messageApi.success('บันทึกข้อมูล TDS ก่อนและหลังบำบัดสำเร็จ');
+                messageApi.success('บันทึกข้อมูล PH ก่อนและหลังบำบัดสำเร็จ');
                 form.resetFields();
-                GetfirstrowTDS();
+                GetfirstrowPH();
                 fetchInitialData();
                 await delay(500);
                 if (onSuccess) await onSuccess();
@@ -216,7 +216,7 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                 message.error('ไม่สามารถบันทึกข้อมูลก่อนหรือหลังได้');
             }
         } else {
-            const tdsData: TDScenterInterface = {
+            const phData: PHcenterInterface = {
                 Date: combinedDateTime.toISOString(),
                 Data: values.data,
                 Note: values.note,
@@ -226,19 +226,19 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                 CustomUnit: customUintValue,
                 EmployeeID: employeeID,
             }
-            const response = await createTDS(tdsData);
-            console.log(tdsData);
+            const response = await createPH(phData);
+            console.log(phData);
             if (response.status === 201) {
                 messageApi.open({
                     type: 'success',
-                    content: 'การบันทึกข้อมูล TDS สำเร็จ',
+                    content: 'การบันทึกข้อมูล PH สำเร็จ',
                 });
                 form.resetFields();
-                GetfirstrowTDS();
+                GetfirstrowPH();
                 fetchInitialData();
                 await delay(500);
                 if (onSuccess) await onSuccess();
-                onCancel?.(); // ปิด modal
+                onCancel?.();
             } else {
                 throw new Error(`การบันทึกข้อมูลไม่สำเร็จ สถานะ: ${response.status}`);
             }
@@ -248,24 +248,24 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
     return (
         <div>
             {contextHolder}
-            <div className="tds-container">
+            <div className="ph-container">
                 <Form
                     form={form}
                     layout="vertical"
                     onFinish={handleFinish}
                 >
-                    <div className="tds-form-group">
+                    <div className="ph-form-group">
                         <Form.Item label="วันที่บันทึกข้อมูล" name="date">
-                            <DatePicker defaultValue={dayjs()} format="DD/MM/YYYY" className="tds-full-width" />
+                            <DatePicker defaultValue={dayjs()} format="DD/MM/YYYY" className="ph-full-width" />
                         </Form.Item>
 
                         <Form.Item label="เวลาที่บันทึกข้อมูล" name="time">
-                            <TimePicker defaultValue={dayjs()} format={"HH:mm"} className="tds-full-width" />
+                            <TimePicker defaultValue={dayjs()} format={"HH:mm"} className="ph-full-width" />
                         </Form.Item>
                     </div>
 
-                    <div className="tds-form-group">
-                        <div className="tds-from-mini">
+                    <div className="ph-form-group">
+                        <div className="ph-from-mini">
                             <Form.Item
                                 label="หน่วยที่วัด"
                                 required
@@ -316,7 +316,7 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                 )}
                             </Form.Item>
                         </div>
-                        <div className="tds-from-mini">
+                        <div className="ph-from-mini">
                             <Form.Item label="ประเภทมาตรฐาน" name="standardType">
                                 <Select defaultValue="middle" onChange={handleStandardGroupChange}>
                                     <Option value="middle">ค่าเดี่ยว</Option>
@@ -392,7 +392,7 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                 )}
 
                                 {standardType === 'range' && useCustomStandard && (
-                                    <div className="tds-fornt-small">
+                                    <div className="ph-fornt-small">
                                         <Form.Item
                                             label="ค่าต่ำสุด (Min)"
                                             name="customMin"
@@ -451,8 +451,8 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                         </div>
                     </div>
 
-                    <div className="tds-form-group">
-                        <div className='tds-from-mini'>
+                    <div className="ph-form-group">
+                        <div className='ph-from-mini'>
                             <Form.Item
                                 label="ก่อน / หลัง / ก่อนเเละหลังบำบัด"
                                 name="before_after"
@@ -472,7 +472,7 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                 </Select>
                             </Form.Item>
                         </div>
-                        <div className='tds-from-mini'>
+                        <div className='ph-from-mini'>
                             {selectedTreatmentID === 3 ? (
                                 <div style={{ display: 'flex', gap: '30px' }}>
                                     <Form.Item
@@ -537,19 +537,19 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                             )}
                         </div>
                     </div>
-                    <div className="tds-form-group">
+                    <div className="ph-form-group">
                         <Form.Item label="หมายเหตุ" name="note">
                             <Input.TextArea rows={2} placeholder="กรอกหมายเหตุ (ถ้ามี)" />
                         </Form.Item>
                     </div>
-                    <Form.Item className="tds-form-actions" >
-                        <Button className="tds-cancel" htmlType="button" onClick={handleCancelClick} >
+                    <Form.Item className="ph-form-actions" >
+                        <Button className="ph-cancel" htmlType="button" onClick={handleCancelClick} >
                             ยกเลิก
                         </Button>
-                        <Button htmlType="reset" className="tds-reset" onClick={handleClear} >
+                        <Button htmlType="reset" className="ph-reset" onClick={handleClear} >
                             รีเซ็ต
                         </Button>
-                        <Button type="primary" htmlType="submit" className="tds-submit">
+                        <Button type="primary" htmlType="submit" className="ph-submit">
                             บันทึก
                         </Button>
                     </Form.Item>
@@ -559,4 +559,4 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
     );
 };
 
-export default TDSCentralForm;
+export default PHCentralForm;
