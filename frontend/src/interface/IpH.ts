@@ -1,24 +1,31 @@
-export interface CreatePHInterface {
-  Date: Date | string;
-  Data: number;
-  BeforeAfterTreatmentID: number;
-  StandardID: number;
-  UnitID: number;
-  EmployeeID: number;
-  Note?: string;
-  CustomUnit?: string;
+export interface PHcenterInterface {
+    ID?: number;
+    Date?: string
+    Data?:number;
+    Note?:string;
+    BeforeAfterTreatmentID?:number ;
+    StandardID?:number;
+    UnitID?:number;
+    EmployeeID?:number;
+    CustomUnit?:string;
 }
 
-export interface UpdatePHInterface {
-  ID: number; 
-  Date: Date | string;
+export interface listPHInterface {
+  ID: number;
+  Date: string;
   Data: number;
+  Note: string;
   BeforeAfterTreatmentID: number;
-  ParameterID: number; 
+  EnvironmentID: number;
+  ParameterID: number;
   StandardID: number;
   UnitID: number;
   EmployeeID: number;
-  Note?: string;
+  MinValue: number;
+  MiddleValue: number;
+  MaxValue: number;
+  UnitName: string;
+  TreatmentName: string;
 }
 
 export interface DeletePHInterface {
