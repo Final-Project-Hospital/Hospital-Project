@@ -21,12 +21,12 @@ const ManageRoom = Loadable(lazy(() => import("../page/admin/harware/manage")));
 
 // data-visualization
 const EnvironmentBlock = Loadable(lazy(() => import("../page/admin/data-visualization/EnvironmentBlock")));
-const DatavizPH = Loadable(lazy(() => import("../page/admin/data-visualization/PHdataviz")));
-const DatavizTDS = Loadable(lazy(() => import("../page/admin/data-visualization/TDSdataviz")));
-const DatavizBOD = Loadable(lazy(() => import("../page/admin/data-visualization/BODdataviz")));
-const DatavizTKN = Loadable(lazy(() => import("../page/admin/data-visualization/TKNdataviz")));
-const DatavizTS = Loadable(lazy(() => import("../page/admin/data-visualization/TSdataviz")));
-const DatavizFOG = Loadable(lazy(() => import("../page/admin/data-visualization/FOGdataviz")));
+const DatavizPH = Loadable(lazy(() => import("../page/admin/data-visualization/PHdataviz/PHdataviz")));
+const DatavizTDS = Loadable(lazy(() => import("../page/admin/data-visualization/TDSdataviz/TDSdataviz")));
+const DatavizBOD = Loadable(lazy(() => import("../page/admin/data-visualization/BODdataviz/BODdataviz")));
+const DatavizTKN = Loadable(lazy(() => import("../page/admin/data-visualization/TKNdataviz/TKNdataviz")));
+const DatavizTS = Loadable(lazy(() => import("../page/admin/data-visualization/TSdataviz/TSdataviz")));
+const DatavizFOG = Loadable(lazy(() => import("../page/admin/data-visualization/FOGdataviz/FOGdataviz")));
 
 // data-management
 const EnvironmentTabs = Loadable(lazy(() => import("../page/admin/data-management/EnvironmentTabs")));
@@ -34,10 +34,13 @@ const PH = Loadable(lazy(() => import("../page/admin/data-management/wastewater/
 const TDS = Loadable(lazy(() => import("../page/admin/data-management/wastewater/TDScenter/TDScenter")));
 const BOD = Loadable(lazy(() => import("../page/admin/data-management/wastewater/BODcenter/BODcenter")));
 const TKN = Loadable(lazy(() => import("../page/admin/data-management/wastewater/TKNcenter/TKNcenter")));
-const SS = Loadable(lazy(() => import("../page/admin/data-management/wastewater/SScenter/SScenter") ));
+const TS = Loadable(lazy(() => import("../page/admin/data-management/wastewater/TScenter/TScenter") ));
 const FOG = Loadable(lazy(() => import("../page/admin/data-management/wastewater/FOGcenter/FOGcenter")));
-
-
+const COD = Loadable(lazy(() => import("../page/admin/data-management/wastewater/CODcenter/CODcenter")));
+const FCB = Loadable(lazy(() => import("../page/admin/data-management/wastewater/FCBcenter/FCBcenter")));
+const RES = Loadable(lazy(() => import("../page/admin/data-management/wastewater/Residulecenter/REScenter")));
+const SUL = Loadable(lazy(() => import("../page/admin/data-management/wastewater/Sulfidcenter/SULcenter")));
+const TCB = Loadable(lazy(() => import("../page/admin/data-management/wastewater/TCBcenter/TCBcenter")));
 const UserRoutes = (): RouteObject[] => [
   {
     path: "/", element: <User />,
@@ -90,9 +93,14 @@ const AdminRoutes = (): RouteObject[] => [
           { path: "ph", element: <PH /> },            
           { path: "bod", element: <BOD /> },          // /admin/environment/bod
           { path: "tds", element: <TDS /> },          
-          { path: "ss", element: <SS /> },
+          { path: "ts", element: <TS /> },
           { path: "fog", element: <FOG /> },
           { path: "tkn", element: <TKN /> },
+          { path: "cod", element: <COD /> },
+          { path: "fcb", element: <FCB /> },
+          { path: "res", element: <RES /> },
+          { path: "sul", element: <SUL /> },
+          { path: "tcb", element: <TCB /> },
         ],
       },
     ],

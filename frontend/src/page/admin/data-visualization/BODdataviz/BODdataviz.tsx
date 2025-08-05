@@ -7,7 +7,7 @@ import { LeftOutlined, SearchOutlined, EditOutlined, DeleteOutlined, Exclamation
 import { useNavigate } from "react-router-dom";
 import './BODdataviz.css';
 import dayjs, { Dayjs } from "dayjs";
-import { GetlistBOD, GetfirstBOD } from "../../../services/bodService";
+import { GetlistBOD, GetfirstBOD } from "../../../../services/bodService";
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -18,11 +18,11 @@ import { BarChart3, LineChart, Maximize2 } from "lucide-react";
 
 //ใช้กับตาราง
 import Table, { ColumnsType } from "antd/es/table";
-import { GetTDSbyID } from "../../../services/tdsService";
-import UpdateTDSCentralForm from '../data-management/TDScenter/updateTDScenter';
-import BODCentralForm from "../data-management/BODcenter"
-import { DeleteAllTDSRecordsByDate } from "../../../services/tdsService";
-import { GetBODTABLE } from "../../../services/bodService";
+import { GetTDSbyID } from "../../../../services/tdsService";
+import UpdateTDSCentralForm from '../../data-management/wastewater/TDScenter/updateTDScenter';
+import BODCentralForm from "../../data-management/wastewater/BODcenter/BODcenter"
+import { DeleteAllTDSRecordsByDate } from "../../../../services/tdsService";
+import { GetBODTABLE } from "../../../../services/bodService";
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';

@@ -4,10 +4,10 @@ import (
 	"net/http"
 
 	"github.com/Tawunchai/hospital-project/config"
-	"github.com/Tawunchai/hospital-project/controller/bodcenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/bodcenter"
 	"github.com/Tawunchai/hospital-project/controller/building"
 	"github.com/Tawunchai/hospital-project/controller/calendar"
-	"github.com/Tawunchai/hospital-project/controller/fogcenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/fogcenter"
 	"github.com/Tawunchai/hospital-project/controller/report"
 
 	"github.com/Tawunchai/hospital-project/controller/graph"
@@ -16,11 +16,15 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/room"
 	"github.com/Tawunchai/hospital-project/controller/sensordata"
 
-	"github.com/Tawunchai/hospital-project/controller/phcenter"
-	"github.com/Tawunchai/hospital-project/controller/tdscenter"
-	"github.com/Tawunchai/hospital-project/controller/tkncenter"
-	"github.com/Tawunchai/hospital-project/controller/tscenter"
-
+	"github.com/Tawunchai/hospital-project/controller/wastewater/phcenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/tdscenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/tkncenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/tscenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/codcenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/fcbcenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/residulecenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/sulfidcenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/tcbcenter"
 	"github.com/Tawunchai/hospital-project/controller/employee"
 	"github.com/Tawunchai/hospital-project/controller/position"
 
@@ -84,18 +88,66 @@ func main() {
 
 		//TKN
 		public.POST("/create-tkn", tkncenter.CreateTKN)
-		public.GET("/read-tkn", tkncenter.GetTKN)
+		public.GET("/get-tkn", tkncenter.GetTKN)
 		public.GET("/get-first-tkn", tkncenter.GetFirstTKN)
 		public.GET("/read-tkn/:id", tkncenter.GetTKNbyID)
+		public.GET("/get-tkn-table", tkncenter.GetTKNTABLE)
 		public.PATCH("/update-tkn/:id", tkncenter.UpdateTKN)
 		public.DELETE("/delete-tkn/:id", tkncenter.DeleteTKN)
 
 		//TS
 		public.POST("/create-ts", tscenter.CreateTS)
-		public.GET("/read-ts", tscenter.GetTS)
+		public.GET("/get-ts", tscenter.GetTS)
+		public.GET("/get-first-ts", tscenter.GetFirstTS)
 		public.GET("/read-ts/:id", tscenter.GetTSbyID)
+		public.GET("/get-ts-table", tscenter.GetTSTABLE)
 		public.PATCH("/update-ts/:id", tscenter.UpdateTS)
 		public.DELETE("/delete-ts/:id", tscenter.DeleteTS)
+
+		//COD
+		public.POST("/create-cod", codcenter.CreateCOD)
+		public.GET("/get-cod", codcenter.GetCOD)
+		public.GET("/get-first-cod", codcenter.GetFirstCOD)
+		public.GET("/read-cod/:id", codcenter.GetCODbyID)
+		public.GET("/get-cod-table", codcenter.GetCODTABLE)
+		public.PATCH("/update-cod/:id", codcenter.UpdateCOD)
+		public.DELETE("/delete-cod/:id", codcenter.DeleteCOD)
+
+		//FCB
+		public.POST("/create-fcb", fcbcenter.CreateFCB)
+		public.GET("/get-fcb", fcbcenter.GetFCB)
+		public.GET("/get-first-fcb", fcbcenter.GetFirstFCB)
+		public.GET("/read-fcb/:id", fcbcenter.GetFCBbyID)
+		public.GET("/get-fcb-table", fcbcenter.GetFCBTABLE)
+		public.PATCH("/update-fcb/:id", fcbcenter.UpdateFCB)
+		public.DELETE("/delete-fcb/:id", fcbcenter.DeleteFCB)
+
+		//RES
+		public.POST("/create-res", residulecenter.CreateRES)
+		public.GET("/get-res", residulecenter.GetRES)
+		public.GET("/get-first-res", residulecenter.GetFirstRES)
+		public.GET("/read-res/:id", residulecenter.GetRESbyID)
+		public.GET("/get-res-table", residulecenter.GetRESTABLE)
+		public.PATCH("/update-res/:id", residulecenter.UpdateRES)
+		public.DELETE("/delete-res/:id", residulecenter.DeleteRES)
+
+		//SUL
+		public.POST("/create-sul", sulfidcenter.CreateSUL)
+		public.GET("/get-sul", sulfidcenter.GetSUL)
+		public.GET("/get-first-sul", sulfidcenter.GetFirstSUL)
+		public.GET("/read-sul/:id", sulfidcenter.GetSULbyID)
+		public.GET("/get-sul-table", sulfidcenter.GetSULTABLE)
+		public.PATCH("/update-sul/:id", sulfidcenter.UpdateSUL)
+		public.DELETE("/delete-sul/:id", sulfidcenter.DeleteSUL)
+
+		//TCB
+		public.POST("/create-tcb", tcbcenter.CreateTCB)
+		public.GET("/get-tcb", tcbcenter.GetTCB)
+		public.GET("/get-first-tcb", tcbcenter.GetFirstTCB)
+		public.GET("/read-tcb/:id", tcbcenter.GetTCBbyID)
+		public.GET("/get-tcb-table", tcbcenter.GetTCBTABLE)
+		public.PATCH("/update-tcb/:id", tcbcenter.UpdateTCB)
+		public.DELETE("/delete-tcb/:id", tcbcenter.DeleteTCB)
 
 		//BOD
 		public.POST("/create-bod", bodcenter.CreateBod)

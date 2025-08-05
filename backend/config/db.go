@@ -61,6 +61,7 @@ func SetupDatabase() {
 	Wastewater := entity.Environment{EnvironmentName: "น้ำเสีย",}
 	Drinkwater := entity.Environment{EnvironmentName: "น้ำดื่ม",}
 	Tapwater := entity.Environment{EnvironmentName: "น้ำประปา"}
+
 	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
 	db.FirstOrCreate(&Drinkwater, &entity.Environment{EnvironmentName: "น้ำดื่ม"})
 	db.FirstOrCreate(&Tapwater, &entity.Environment{EnvironmentName: "น้ำประปา"})
@@ -362,16 +363,32 @@ func SetupDatabase() {
 	}
 
 	db.FirstOrCreate(&SensorData1, entity.SensorData{HardwareID: SensorData1.HardwareID})
-
+	
+	//wastewater
 	param1 := entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"}
 	param2 := entity.Parameter{ParameterName: "Total Solid"}
 	param3 := entity.Parameter{ParameterName: "Potential of Hydrogen"}
 	param4 := entity.Parameter{ParameterName: "Total Dissolved Solids"}
-
+	param5 := entity.Parameter{ParameterName: "Biological Oxygen Demand"}
+	param6 := entity.Parameter{ParameterName: "Fats, Oils, and Grease"}
+	param7 := entity.Parameter{ParameterName: "Chemical Oxygen Demand"}
+	param8 := entity.Parameter{ParameterName: "Fecal Coliform Bacteria"}
+	param9 := entity.Parameter{ParameterName: "Residual"}
+	param10 := entity.Parameter{ParameterName: "Sulfide"}
+	param11 := entity.Parameter{ParameterName: "Total Coliform Bacteria"}
+	
 	db.FirstOrCreate(&param1, entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"})
 	db.FirstOrCreate(&param2, entity.Parameter{ParameterName: "Total Solid"})
 	db.FirstOrCreate(&param3, entity.Parameter{ParameterName: "Potential of Hydrogen"})
 	db.FirstOrCreate(&param4, entity.Parameter{ParameterName: "Total Dissolved Solids"})
+	db.FirstOrCreate(&param5, entity.Parameter{ParameterName: "Biological Oxygen Demand"})
+	db.FirstOrCreate(&param6, entity.Parameter{ParameterName: "Fats, Oils, and Grease"})
+	db.FirstOrCreate(&param7, entity.Parameter{ParameterName: "Chemical Oxygen Demand"})
+	db.FirstOrCreate(&param8, entity.Parameter{ParameterName: "Fecal Coliform Bacteria"})
+	db.FirstOrCreate(&param9, entity.Parameter{ParameterName: "Residual"})
+	db.FirstOrCreate(&param10, entity.Parameter{ParameterName: "Sulfide"})
+	db.FirstOrCreate(&param11, entity.Parameter{ParameterName: "Total Coliform Bacteria"})
+	
 
 	count := int64(0)
 	db.Model(&entity.SensorDataParameter{}).Count(&count)
