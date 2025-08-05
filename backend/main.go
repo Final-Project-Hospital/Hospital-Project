@@ -103,8 +103,11 @@ func main() {
 		public.GET("/get-first-bod", bodcenter.GetfirstBOD)
 		public.GET("/list-bod", bodcenter.ListBOD)
 		public.GET("/get-bod/:id", bodcenter.GetBODbyID)
-		public.DELETE("/delete-bod/:id",bodcenter.DeleterBOD)
 		public.GET("/get-bod-table", bodcenter.GetBODTABLE)
+		public.PATCH("/update-or-create-bod/:d", bodcenter.UpdateOrCreateBOD)
+		public.DELETE("/delete-bod/:id", bodcenter.DeleteBOD)
+		public.DELETE("/delete-bod-day/:id", bodcenter.DeleteAllBODRecordsByDate)
+		// public.DELETE("/delete-bod/:id",bodcenter.DeleterBOD)
 
 		//FOG
 		public.POST("/create-fog", fogcenter.CreateFog)
