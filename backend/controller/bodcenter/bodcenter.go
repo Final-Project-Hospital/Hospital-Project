@@ -3,6 +3,7 @@ package bodcenter
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,6 +13,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+// custom float64 type ที่แสดงทศนิยม 2 ตำแหน่งเวลา marshal เป็น JSON
+type Float64TwoDecimal float64
+
+func (f Float64TwoDecimal) MarshalJSON() ([]byte, error) {
+	// ตัดทศนิยม 2 ตำแหน่ง โดยใช้ Round
+	rounded := math.Round(float64(f)*100) / 100
+	// แปลงเป็น string ตัวเลข เช่น 19.90
+	s := fmt.Sprintf("%.2f", rounded)
+	return []byte(s), nil
+}
 
 func CreateBod(c *gin.Context) {
 	fmt.Println("Creating Environment Record")
@@ -137,20 +149,20 @@ func GetfirstBOD(c *gin.Context) {
 
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
 	var firstbod struct {
-		ID                     uint      `json:"ID"`
-		Date                   time.Time `json:"Date"`
-		Data                   float64   `json:"Data"`
-		Note                   string    `json:"Note"`
-		BeforeAfterTreatmentID uint      `json:"BeforeAfterTreatmentID"`
-		EnvironmentID          uint      `json:"EnvironmentID"`
-		ParameterID            uint      `json:"ParameterID"`
-		StandardID             uint      `json:"StandardID"`
-		UnitID                 uint      `json:"UnitID"`
-		EmployeeID             uint      `json:"EmployeeID"`
-		MinValue               float64   `json:"MinValue"`
-		MiddleValue            float64   `json:"MiddleValue"`
-		MaxValue               float64   `json:"MaxValue"`
-		UnitName               string    `json:"UnitName"`
+		ID                     uint              `json:"ID"`
+		Date                   time.Time         `json:"Date"`
+		Data                   float64           `json:"Data"`
+		Note                   string            `json:"Note"`
+		BeforeAfterTreatmentID uint              `json:"BeforeAfterTreatmentID"`
+		EnvironmentID          uint              `json:"EnvironmentID"`
+		ParameterID            uint              `json:"ParameterID"`
+		StandardID             uint              `json:"StandardID"`
+		UnitID                 uint              `json:"UnitID"`
+		EmployeeID             uint              `json:"EmployeeID"`
+		MinValue               Float64TwoDecimal `json:"MinValue"`
+		MiddleValue            Float64TwoDecimal `json:"MiddleValue"`
+		MaxValue               Float64TwoDecimal `json:"MaxValue"`
+		UnitName               string            `json:"UnitName"`
 	}
 
 	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
@@ -371,9 +383,19 @@ func GetBODTABLE(c *gin.Context) {
 		}
 
 		if _, exists := bodMap[k]; !exists {
+			unitName := rec.Unit.UnitName // default
+
+			// ลองใช้ unit ของ latestRec ถ้ามี
+			if latestRec.UnitID != 0 {
+				var latestUnit entity.Unit
+				if db.First(&latestUnit, latestRec.UnitID).Error == nil {
+					unitName = latestUnit.UnitName
+				}
+			}
+
 			bodMap[k] = &BODRecord{
 				Date:          dateStr,
-				Unit:          rec.Unit.UnitName,
+				Unit:          unitName,
 				StandardValue: stdVal,
 			}
 		}
@@ -390,7 +412,7 @@ func GetBODTABLE(c *gin.Context) {
 
 		// Efficiency
 		if bodMap[k].BeforeValue != nil && bodMap[k].AfterValue != nil && *bodMap[k].BeforeValue != 0 {
-			eff := ((*bodMap[k].BeforeValue - *bodMap[k].AfterValue) / (*bodMap[k].BeforeValue ))* 100
+			eff := ((*bodMap[k].BeforeValue - *bodMap[k].AfterValue) / (*bodMap[k].BeforeValue)) * 100
 			// ✅ ถ้าค่าติดลบให้กลายเป็น 0.00
 			//fmt.Printf("Efficiency2: %.2f\n", eff)
 			if eff < 0 {

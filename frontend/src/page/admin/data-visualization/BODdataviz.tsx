@@ -1,6 +1,6 @@
 //ใช้ทั้งกราฟและตาราง
 import React, { useEffect, useState } from "react";
-import { Input, Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
+import { Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { LeftOutlined, SearchOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled, CloseCircleFilled, CheckCircleFilled, QuestionCircleFilled } from "@ant-design/icons";
@@ -27,6 +27,7 @@ import { ListStatus } from '../../../services/index';
 import { ListStatusInterface } from '../../../interface/IStatus';
 const normalizeString = (str: any) =>
   String(str).normalize("NFC").trim().toLowerCase();
+
 
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
@@ -168,10 +169,13 @@ const BODdataviz: React.FC = () => {
           after.push({ date, data: avgAfter });
           compare.push({ date, before: avgBefore, after: avgAfter });
         });
-
+        console.log(lastbod.data)
         if (lastbod.data.MiddleValue !== 0) {
           setMiddleStandard(lastbod.data.MiddleValue);
+          setMaxStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
+          setMinStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
         } else {
+          setMiddleStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
           setMaxStandard(lastbod.data.MaxValue);
           setMinStandard(lastbod.data.MinValue);
         }
@@ -288,11 +292,15 @@ const BODdataviz: React.FC = () => {
             ? [
               {
                 y: minstandard ?? 0,
+                borderWidth: 1.5,
+                strokeDashArray: 6,
                 borderColor: "#e05600ff",
                 label: { text: `มาตรฐานต่ำสุด ${minstandard ?? 0}`, style: { background: "rgba(224, 86, 0, 0.6)", color: "#fff" } },
               },
               {
                 y: maxstandard ?? 0,
+                borderWidth: 1.5,
+                strokeDashArray: 6,
                 borderColor: "#035303ff",
                 label: { text: `มาตรฐานสูงสุด ${maxstandard ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
               },
@@ -460,22 +468,40 @@ const BODdataviz: React.FC = () => {
       },
     },
     {
-      title: (
-        <>
-          ประสิทธิภาพ
-          <br />
-          ( % )
-        </>
+      title: <>ประสิทธิภาพ<br />(%)</>,
+      key: "efficiency",
+      width: 80,
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
+        <div style={{ padding: 8 }}>
+          <Select
+            allowClear
+            placeholder="เลือกเงื่อนไข"
+            value={selectedKeys[0]}
+            onChange={(v) => { setSelectedKeys(v ? [v] : []); confirm({ closeDropdown: false }); }}
+            style={{ width: 180 }} // ✅ เพิ่มความกว้าง
+            options={[
+              { label: "มากกว่า 50%", value: "gt" },
+              { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
+            ]}
+          />
+        </div>
       ),
-      key: 'efficiency',
-      width: 120,
-      render: (_: any, record: any) => {
-        const { efficiency } = record;
-        if (typeof efficiency === 'number') {
-          const safeEff = efficiency < 0 ? 0 : efficiency; // ✅ ถ้าติดลบให้เป็น 0
-          return safeEff.toFixed(2);
-        }
-        return '-';
+      filterIcon: (f) => (
+        <SearchOutlined style={{
+          color: f ? "#007b8a" : "#6e6e76",
+          fontSize: 20, fontWeight: f ? "bold" : undefined,
+          borderRadius: "50%", padding: 5,
+          background: f ? "#fff" : undefined,
+          boxShadow: f ? "0 0 8px 4px rgba(255,255,255,1)" : undefined,
+        }} />
+      ),
+      onFilter: (v, r) => {
+        const eff = Number(r.efficiency ?? -1);
+        return v === "gt" ? eff > 50 : v === "lte" ? eff <= 50 : true;
+      },
+      render: (_, r) => {
+        const eff = Number(r.efficiency);
+        return isNaN(eff) ? "-" : Math.max(eff, 0).toFixed(2);
       },
     },
     {
@@ -503,8 +529,21 @@ const BODdataviz: React.FC = () => {
         </div>
       ),
       filterIcon: (filtered: boolean) => (
-        <SearchOutlined style={{ color: filtered ? "#ffffffff" : undefined, fontSize: 20 }} />
-      ),
+        <SearchOutlined
+          style={{
+            color: filtered ? "#007b8a" : "#6e6e76",
+            backgroundColor: filtered ? "#ffffffff" : undefined,
+            fontSize: 20,
+            fontWeight: filtered ? "bold" : undefined,
+            borderRadius: 50,
+            padding: 5,
+            boxShadow: filtered
+              ? "0 0 8px 4px rgba(255, 255, 255, 1)" // 💡 ขอบเบลอรอบไอคอน
+              : undefined,
+          }}
+        />
+      )
+      ,
       onFilter: (value: any, record: any) => {
         if (!value) return true;
         return normalizeString(record.status ?? "") === normalizeString(value);
@@ -973,15 +1012,6 @@ const BODdataviz: React.FC = () => {
           <div className="bod-title-search-vis">
             <h1 className="bod-title-text-vis">BOD DATA</h1>
             <div>
-              <div className="bod-search-box">
-                <Input
-                  placeholder="ค้นหา"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  prefix={<SearchOutlined />}
-                  className="bod-search-input"
-                />
-              </div>
             </div>
           </div>
           <div className="bod-btn-container">
@@ -992,7 +1022,7 @@ const BODdataviz: React.FC = () => {
         <div className="bod-table-data">
           <h1 className="bod-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
           <Table
-            columns={columns}
+            columns={columns.map((col) => ({ ...col, align: 'center' }))}
             dataSource={data.filter((d: any) =>
               dayjs(d.date).format('YYYY-MM-DD').includes(search)
             )}
@@ -1014,11 +1044,17 @@ const BODdataviz: React.FC = () => {
           width={1100}
           destroyOnClose
           closable={false}
+            centered
         >
-          <BODCentralForm onCancel={handleAddModalCancel} />
+          <BODCentralForm onCancel={handleAddModalCancel}
+            onSuccess={async () => {
+              await fetchData();      // ✅ โหลดข้อมูลกราฟใหม่
+              await loadBODTable();   // ✅ โหลดข้อมูลตารางใหม่
+            }}
+          />
         </Modal>
 
-        <Modal
+        {/* <Modal
           title="แก้ไขข้อมูล BOD"
           open={isEditModalVisible}
           footer={null}
@@ -1033,6 +1069,31 @@ const BODdataviz: React.FC = () => {
                 setEditRecord(null);
                 fetchData();
                 loadBODTable();
+              }}
+              onCancel={handleEditModalCancel}
+            />
+          )}
+        </Modal> */}
+        <Modal
+          title="แก้ไขข้อมูล BOD"
+          open={isEditModalVisible}
+          footer={null}
+          width={1100}
+          closable={false}
+          destroyOnClose
+          centered
+          onCancel={handleEditModalCancel}
+        >
+          {editingRecord && (
+            <UpdateBODCentralForm
+              initialValues={editingRecord}
+              onSuccess={() => {
+                setTimeout(async () => {
+                  setIsEditModalVisible(false);
+                  setEditRecord(null);
+                  await loadBODTable();
+                  await fetchData();
+                }, 500);
               }}
               onCancel={handleEditModalCancel}
             />

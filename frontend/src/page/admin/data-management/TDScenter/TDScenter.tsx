@@ -248,7 +248,7 @@ const TDSCentralForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
 
     const handleCancelClick = () => {
         form.resetFields();
-        onCancel();
+        onCancel?.();
     };
 
     return (
