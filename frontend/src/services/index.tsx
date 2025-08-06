@@ -339,4 +339,5 @@ export const ListStatus = async (): Promise<ListStatusInterface[] | null> => {
 
 export {
   GetUsers,
+  getAuthHeader,
 };
