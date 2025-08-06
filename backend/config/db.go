@@ -101,17 +101,17 @@ func SetupDatabase() {
 	}
 
 	// Status
-	status1 := entity.Status{StatusName: "ต่ำกว่าเกณฑ์มาตรฐาน"}
-	status2 := entity.Status{StatusName: "อยู่ในเกณฑ์มาตรฐาน"}
+	status1 := entity.Status{StatusName: "ไม่ผ่านเกณฑ์มาตรฐาน"}
+	status2 := entity.Status{StatusName: "ผ่านเกณฑ์มาตรฐาน"}
 	status3 := entity.Status{StatusName: "เกินเกณฑ์มาตรฐาน"}
 
-	db.FirstOrCreate(&status1, entity.Status{StatusName: "ต่ำกว่าเกณฑ์มาตรฐาน"})
-	db.FirstOrCreate(&status2, entity.Status{StatusName: "อยู่ในเกณฑ์มาตรฐาน"})
+	db.FirstOrCreate(&status1, entity.Status{StatusName: "ไม่ผ่านเกณฑ์มาตรฐาน"})
+	db.FirstOrCreate(&status2, entity.Status{StatusName: "ผ่านเกณฑ์มาตรฐาน"})
 	db.FirstOrCreate(&status3, entity.Status{StatusName: "เกินเกณฑ์มาตรฐาน"})
 
 	// Unit
-	Unit := entity.Unit{ UnitName: "mg/L" }
-	Unit2 := entity.Unit{ UnitName: "ไม่มีหน่วย" }
+	Unit := entity.Unit{UnitName: "mg/L"}
+	Unit2 := entity.Unit{UnitName: "ไม่มีหน่วย"}
 	db.FirstOrCreate(&Unit, &entity.Unit{UnitName: "mg/L"})
 	db.FirstOrCreate(&Unit2, &entity.Unit{UnitName: "ไม่มีหน่วย"})
 
@@ -555,12 +555,10 @@ func SetupDatabase() {
 
 		// --- เช็คค่าก่อนบำบัด ---
 		var statusIDBefore uint
-		if beforeValuesPH[iph] < 5.0 {
-			statusIDBefore = status1.ID
-		} else if beforeValuesPH[iph] >= 5.0 && beforeValuesPH[iph] <= 9.0 {
+		if beforeValuesPH[iph] >= 5.00 && beforeValuesPH[iph] <= 9.00 {
 			statusIDBefore = status2.ID
 		} else {
-			statusIDBefore = status3.ID
+			statusIDBefore = status1.ID
 		}
 
 		beforeRecord := entity.EnvironmentalRecord{
@@ -583,12 +581,10 @@ func SetupDatabase() {
 
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfter uint
-		if afterValuesPH[iph] < 5.0 {
-			statusIDAfter = status1.ID
-		} else if afterValuesPH[iph] >= 5.0 && afterValuesPH[iph] <= 9.0 {
+		if afterValuesPH[iph] >= 5.00 && afterValuesPH[iph] <= 9.00 {
 			statusIDAfter = status2.ID
 		} else {
-			statusIDAfter = status3.ID
+			statusIDAfter = status1.ID
 		}
 
 		afterRecord := entity.EnvironmentalRecord{
@@ -650,6 +646,14 @@ func SetupDatabase() {
 			continue
 		}
 
+		// --- เช็คค่าก่อนบำบัด ---
+		var statusIDBeforeTDS uint
+		if beforeValuesPH[i] <= 500.00 {
+			statusIDBeforeTDS = status2.ID
+		} else {
+			statusIDBeforeTDS = status1.ID
+		}
+
 		// --- ก่อนบำบัด ---
 		beforeRecord := entity.EnvironmentalRecord{
 			Date:                   date,
@@ -660,7 +664,7 @@ func SetupDatabase() {
 			StandardID:             6, // ใช้มาตรฐาน TDS สมมติ
 			UnitID:                 Unit.ID,
 			EmployeeID:             Admin.ID,
-			StatusID:               status2.ID, // ปรับตามเกณฑ์จริง
+			StatusID:               statusIDBeforeTDS,
 		}
 		db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
 			Date:                   date,
@@ -668,6 +672,14 @@ func SetupDatabase() {
 			EnvironmentID:          Wastewater.ID,
 			ParameterID:            param4.ID,
 		})
+
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterTDS uint
+		if afterValuesPH[i] <= 500.00 {
+			statusIDAfterTDS = status2.ID
+		} else {
+			statusIDAfterTDS = status1.ID
+		}
 
 		// --- หลังบำบัด ---
 		afterRecord := entity.EnvironmentalRecord{
@@ -679,7 +691,7 @@ func SetupDatabase() {
 			StandardID:             6,
 			UnitID:                 Unit.ID,
 			EmployeeID:             Admin.ID,
-			StatusID:               status2.ID,
+			StatusID:               statusIDAfterTDS,
 		}
 		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
 			Date:                   date,
