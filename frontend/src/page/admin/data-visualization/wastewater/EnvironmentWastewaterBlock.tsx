@@ -13,11 +13,11 @@ import ts from '../../../../../src/assets/sedimentation.png';
 import tds from '../../../../../src/assets/water-quality.png';
 import fog from '../../../../../src/assets/oil.png';
 import tkn from '../../../../../src/assets/nitrogen.png';
-import cod from '../../../../../src/assets/nitrogen.png';
-import fcb from '../../../../../src/assets/nitrogen.png';
-import res from '../../../../../src/assets/nitrogen.png';
-import sul from '../../../../../src/assets/nitrogen.png';
-import tcb from '../../../../../src/assets/nitrogen.png';
+import cod from '../../../../../src/assets/wastewater/COD.png';
+import fcb from '../../../../../src/assets/drinkwater/FCB-Center.png';
+import res from '../../../../../src/assets/wastewater/Residual.png';
+import sul from '../../../../../src/assets/wastewater/sulfide.png';
+import tcb from '../../../../../src/assets/drinkwater/TCB.png';
 
 const EnvironmentBlock = () => {
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ const EnvironmentBlock = () => {
     { name: 'COD Center', standard: '-', image: cod, path: 'datavizCOD' },
     { name: 'FCB Center', standard: '30', image: fcb, path: 'datavizFCB' },
     { name: 'Residule Center', standard: '-', image: res, path: 'datavizRES' },
-    { name: 'Suldid Center', standard: '20', image: sul, path: 'datavizSUL' },
+    { name: 'Sulfide Center', standard: '20', image: sul, path: 'datavizSUL' },
     { name: 'TCB Center', standard: '35', image: tcb, path: 'datavizTCB' },
 
   ]);
@@ -41,43 +41,78 @@ const EnvironmentBlock = () => {
       case 'PH Center':
         return (
           <>
-            Potential of Hydrogen (pH) <br />
+            Potential of Hydrogen (pH)<br />
             คือ ค่าความเป็นกรด-ด่างของน้ำ
           </>
         );
       case 'BOD Center':
         return (
           <>
-            Biochemical Oxygen Demand (BOD) <br />
-            คือ ค่าความต้องการออกซิเจนทางชีวภาพ
+            Biochemical Oxygen Demand (BOD)<br />
+            คือ ค่าความต้องการออกซิเจนทางชีวภาพ<br />แสดงปริมาณสารอินทรีย์ที่ย่อยสลายได้
           </>
         );
       case 'TS Center':
         return (
           <>
-            Total Solid (TS) <br />
-            คือ ของแข็งทั้งหมดในน้ำเสีย
+            Total Solids (TS)<br />
+            คือ ของแข็งทั้งหมดในน้ำ<br />ทั้งที่ละลายน้ำและแขวนลอย
           </>
         );
       case 'TDS Center':
         return (
           <>
-            Total Dissolved Solids (TDS) <br />
-            คือ ของแข็งที่ละลายได้ในน้ำ
+            Total Dissolved Solids (TDS)<br />
+            คือ ของแข็งที่ละลายได้ในน้ำ<br />เช่น เกลือ แร่ธาตุ
           </>
         );
       case 'FOG Center':
         return (
           <>
-            Fat Oil and Grease (FOG) <br />
-            คือ ไขมัน น้ำมัน และไขมันในน้ำเสีย
+            Fat, Oil and Grease (FOG)<br />
+            คือ ไขมันและน้ำมันที่ปนอยู่ในน้ำเสีย
           </>
         );
       case 'TKN Center':
         return (
           <>
-            Total Kjeldahl Nitrogen (TKN) <br />
-            คือ ไนโตรเจนทั้งหมดในรูปของอินทรีย์และแอมโมเนีย
+            Total Kjeldahl Nitrogen (TKN)<br />
+            คือ ไนโตรเจนรวมในรูปสารอินทรีย์และแอมโมเนีย
+          </>
+        );
+      case 'COD Center':
+        return (
+          <>
+            Chemical Oxygen Demand (COD)<br />
+            คือ ค่าความต้องการออกซิเจนทางเคมี<br />แสดงปริมาณสารอินทรีย์ทั้งหมดที่ย่อยสลายได้และไม่ได้
+          </>
+        );
+      case 'FCB Center':
+        return (
+          <>
+            Fecal Coliform Bacteria (FCB)<br />
+            คือ แบคทีเรียจากอุจจาระ<br />ใช้บ่งชี้การปนเปื้อนน้ำเสีย
+          </>
+        );
+      case 'Residule Center':
+        return (
+          <>
+            Residual Chlorine<br />
+            คือ ปริมาณคลอรีนอิสระที่เหลืออยู่ในน้ำหลังการฆ่าเชื้อ
+          </>
+        );
+      case 'Sulfide Center':
+        return (
+          <>
+            Sulfide (S²⁻)<br />
+            คือ ซัลไฟด์ในน้ำ<br />ถ้ามีมากจะเกิดกลิ่นเหม็นเน่าและเป็นพิษ
+          </>
+        );
+      case 'TCB Center':
+        return (
+          <>
+            Total Coliform Bacteria (TCB)<br />
+            คือ กลุ่มแบคทีเรียโคลิฟอร์มทั้งหมด<br />ใช้บ่งบอกคุณภาพความสะอาดของน้ำ
           </>
         );
       default:
@@ -88,7 +123,7 @@ const EnvironmentBlock = () => {
   useEffect(() => {
     const fetchStandards = async () => {
       try {
-        const [phRes, tdsRes, bodRes,fogRes] = await Promise.all([
+        const [phRes, tdsRes, bodRes, fogRes] = await Promise.all([
           GetfirstPH(),
           GetfirstTDS(),
           GetfirstBOD(),
@@ -115,7 +150,7 @@ const EnvironmentBlock = () => {
               return { ...center, standard: tdsStandard };
             } else if (center.name === 'BOD Center') {
               return { ...center, standard: bodStandard };
-            }else if (center.name === 'FOG Center') {
+            } else if (center.name === 'FOG Center') {
               return { ...center, standard: fogStandard };
             }
             return center;

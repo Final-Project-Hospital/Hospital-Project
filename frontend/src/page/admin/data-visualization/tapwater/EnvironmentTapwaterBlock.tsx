@@ -13,9 +13,9 @@ import mn from '../../../../../src/assets/sedimentation.png';
 import ni from '../../../../../src/assets/water-quality.png';
 import ntu from '../../../../../src/assets/oil.png';
 import pt from '../../../../../src/assets/nitrogen.png';
-import tcod from '../../../../../src/assets/nitrogen.png';
+import tcod from '../../../../../src/assets/wastewater/COD.png';
 import th from '../../../../../src/assets/nitrogen.png';
-import ttcb from '../../../../../src/assets/nitrogen.png';
+import ttcb from '../../../../../src/assets/drinkwater/TCB.png';
 
 const EnvironmentBlock = () => {
   const navigate = useNavigate();
@@ -34,46 +34,69 @@ const EnvironmentBlock = () => {
 
   const getTooltip = (name: string) => {
     switch (name) {
-      case 'PH Center':
+      case 'AL Center':
         return (
           <>
-            Potential of Hydrogen (pH) <br />
-            คือ ค่าความเป็นกรด-ด่างของน้ำ
+            Aluminum (Al)<br />
+            คือ ธาตุอะลูมิเนียม<br />ส่วนใหญ่พบจากสารส้มที่ใช้ในการตกตะกอน
           </>
         );
-      case 'BOD Center':
+      case 'IR Center':
         return (
           <>
-            Biochemical Oxygen Demand (BOD) <br />
-            คือ ค่าความต้องการออกซิเจนทางชีวภาพ
+            Iron (Fe)<br />
+            คือ ธาตุเหล็ก<br />หากมีมากทำให้น้ำมีสี กลิ่น และตะกอน
           </>
         );
-      case 'TS Center':
+      case 'MN Center':
         return (
           <>
-            Total Solid (TS) <br />
-            คือ ของแข็งทั้งหมดในน้ำเสีย
+            Manganese (Mn)<br />
+            คือ ธาตุแมงกานีส<br />ถ้ามีมากจะทำให้น้ำมีสีคล้ำและตกตะกอน
           </>
         );
-      case 'TDS Center':
+
+      case 'NI Center':
         return (
           <>
-            Total Dissolved Solids (TDS) <br />
-            คือ ของแข็งที่ละลายได้ในน้ำ
+            Nickel (Ni)<br />
+            คือ ธาตุนิกเกิล<br />หากสะสมมากอาจเป็นอันตรายต่อสุขภาพ
           </>
         );
-      case 'FOG Center':
+      case 'NTU Center':
         return (
           <>
-            Fat Oil and Grease (FOG) <br />
-            คือ ไขมัน น้ำมัน และไขมันในน้ำเสีย
+            Nephelometric Turbidity Unit (NTU)<br />
+            คือ ค่าความขุ่นของน้ำ<br />วัดจากการกระเจิงของแสง
           </>
         );
-      case 'TKN Center':
+      case 'PT Center':
         return (
           <>
-            Total Kjeldahl Nitrogen (TKN) <br />
-            คือ ไนโตรเจนทั้งหมดในรูปของอินทรีย์และแอมโมเนีย
+            Total Phosphorus (TP)<br />
+            คือ ฟอสฟอรัสรวม<br />เป็นธาตุอาหารที่กระตุ้นการเกิดสาหร่าย
+          </>
+        );
+
+      case 'COD Center':
+        return (
+          <>
+            Chemical Oxygen Demand (COD)<br />
+            คือ ค่าความต้องการออกซิเจนทางเคมี<br />ใช้บอกปริมาณสารอินทรีย์ในน้ำ
+          </>
+        );
+      case 'TH Center':
+        return (
+          <>
+            Total Hardness (TH)<br />
+            คือ ค่าความกระด้างของน้ำ<br />เกิดจากแคลเซียมและแมกนีเซียม
+          </>
+        );
+      case 'TCB Center':
+        return (
+          <>
+            Total Coliform Bacteria (TCB)<br />
+            คือ กลุ่มแบคทีเรียโคลิฟอร์มทั้งหมด<br />ใช้บ่งบอกคุณภาพความสะอาดของน้ำ
           </>
         );
       default:
@@ -84,7 +107,7 @@ const EnvironmentBlock = () => {
   useEffect(() => {
     const fetchStandards = async () => {
       try {
-        const [phRes, tdsRes, bodRes,fogRes] = await Promise.all([
+        const [phRes, tdsRes, bodRes, fogRes] = await Promise.all([
           GetfirstPH(),
           GetfirstTDS(),
           GetfirstBOD(),
@@ -111,7 +134,7 @@ const EnvironmentBlock = () => {
               return { ...center, standard: tdsStandard };
             } else if (center.name === 'BOD Center') {
               return { ...center, standard: bodStandard };
-            }else if (center.name === 'FOG Center') {
+            } else if (center.name === 'FOG Center') {
               return { ...center, standard: fogStandard };
             }
             return center;
@@ -128,7 +151,7 @@ const EnvironmentBlock = () => {
   return (
     <div>
       <div className="title-header">
-        <h1>น้ำเสีย</h1>
+        <h1>น้ำประปา</h1>
         <p>
           โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
         </p>

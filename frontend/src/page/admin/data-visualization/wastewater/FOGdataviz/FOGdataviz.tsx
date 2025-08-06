@@ -1,4 +1,4 @@
-import './FOGdataviz.css';
+// import './FOGdataviz.css';
 
 //import ph from '../../../../../frontend/src/assets/ph.png';
 
