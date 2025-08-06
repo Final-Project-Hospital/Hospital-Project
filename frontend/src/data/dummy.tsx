@@ -8,6 +8,7 @@ import { BiCube } from "react-icons/bi";
 import { AiOutlineSetting } from "react-icons/ai";
 import { TiTick } from 'react-icons/ti';
 import { GrLocation } from 'react-icons/gr';
+ import { FaTrash } from 'react-icons/fa';
 import { AxisModel } from '@syncfusion/ej2-react-charts';
 import type { EdgeLabelPlacement } from '@syncfusion/ej2-react-charts';
 import { ContextMenuItem } from '@syncfusion/ej2-react-grids';
@@ -22,6 +23,7 @@ import product4 from '../assets/admin/product4.jpg';
 import product5 from '../assets/admin/product5.jpg';
 import product6 from '../assets/admin/product6.jpg';
 import product7 from '../assets/admin/product7.jpg';
+import SubMenu from 'antd/es/menu/SubMenu';
 
 export const gridOrderImage = (props: any) => (
   <div>
@@ -533,10 +535,26 @@ export const links = [
             icon: <MdWaterDrop />,
             subMenu: [
               {
-                name: 'data-visualization/water',
+                name: 'data-visualization/wastewater',
                 label: 'นํ้าเสีย',
               },
+                            {
+                name: 'data-visualization/tapwater',
+                label: 'น้ำประปา',
+              },
+              {
+                name: 'data-visualization/drinkwater',
+                label: 'น้ำดื่ม',
+              },
             ],
+          },
+                    {
+            name: 'data-management/garbage',
+            label: 'กลุ่มขยะ',
+            icon: <FaTrash/>,
+            SubMenu: [
+              {}
+            ]
           },
         ],
       },
@@ -551,10 +569,26 @@ export const links = [
             icon: <MdWaterDrop />,
             subMenu: [
               {
-                name: 'data-management/water',
+                name: 'data-management/wastewater',
                 label: 'นํ้าเสีย',
               },
+              {
+                name: 'data-management/tapwater',
+                label: 'น้ำประปา',
+              },
+              {
+                name: 'data-management/drinkwater',
+                label: 'น้ำดื่ม',
+              }
             ],
+          },
+          {
+            name: 'data-management/garbage',
+            label: 'กลุ่มขยะ',
+            icon: <FaTrash/>,
+            SubMenu: [
+              {}
+            ]
           },
         ],
       },

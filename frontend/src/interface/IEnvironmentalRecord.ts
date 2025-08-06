@@ -31,13 +31,75 @@ export interface CreateTKNInterface {
     EmployeeID?:number;
     CustomUnit?:string;
 }
+
 export interface CreateTSInterface {
     ID?: number;
-    date?: string
-    data?: number;
-    note?:string;
-    beforeAfterTreatmentID?:number;
-    standardID?:number;
-    unitID?:number;
-    employeeID?:number;
+    Date?: string
+    Data?: number;
+    Note?:string;
+    BeforeAfterTreatmentID?:number;
+    StandardID?:number;
+    UnitID?:number;
+    EmployeeID?:number;
+    CustomUnit?:string;
+}
+
+export interface CreateCODInterface {
+    ID?: number;
+    Date?: string
+    Data?: number;
+    Note?:string;
+    BeforeAfterTreatmentID?:number;
+    StandardID?:number;
+    UnitID?:number;
+    EmployeeID?:number;
+    CustomUnit?:string;
+}
+
+export interface CreateFCBInterface {
+    ID?: number;
+    Date?: string
+    Data?: number;
+    Note?:string;
+    BeforeAfterTreatmentID?:number;
+    StandardID?:number;
+    UnitID?:number;
+    EmployeeID?:number;
+    CustomUnit?:string;
+}
+
+export interface CreateRESInterface {
+    ID?: number;
+    Date?: string
+    Data?: number;
+    Note?:string;
+    BeforeAfterTreatmentID?:number;
+    StandardID?:number;
+    UnitID?:number;
+    EmployeeID?:number;
+    CustomUnit?:string;
+}
+
+export interface CreateSulfidInterface {
+    ID?: number;
+    Date?: string
+    Data?: number;
+    Note?:string;
+    BeforeAfterTreatmentID?:number;
+    StandardID?:number;
+    UnitID?:number;
+    EmployeeID?:number;
+    CustomUnit?:string;
+}
+
+export interface CreateTCBInterface {
+    ID?: number;
+    Date?: string
+    Data?: number;
+    Note?:string;
+    BeforeAfterTreatmentID?:number;
+    StandardID?:number;
+    UnitID?:number;
+    EmployeeID?:number;
+    CustomUnit?:string;
 }
