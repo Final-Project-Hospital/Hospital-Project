@@ -7,60 +7,39 @@ import { GetfirstTDS } from '../../../../services/tdsService';
 import { GetfirstBOD } from '../../../../services/bodService';
 import { GetfirstFOG } from '../../../../services/fogService';
 
-import fcb from '../../../../../src/assets/ph.png';
-import tcb from '../../../../../src/assets/blood-analysis.png';
-import eco from '../../../../../src/assets/sedimentation.png';
+import ecoli from '../../../../../src/assets/drinkwater/E-Coli-Center.png';
+import dfcb from '../../../../../src/assets/drinkwater/FCB-Center.png';
+import dtcb from '../../../../../src/assets/drinkwater/TCB.png';
 
 const EnvironmentBlock = () => {
   const navigate = useNavigate();
   const [centers, setCenters] = useState([
-    { name: 'E Coli Center', standard: '-', image: eco, path: 'datavizEC' },
-    { name: 'FCB Center', standard: '-', image: fcb, path: 'datavizDFCB' },
-    { name: 'TCB Center', standard: '30', image: tcb, path: 'datavizDTCB' },
+    { name: 'E Coli Center', standard: '-', image: ecoli, path: 'datavizEC' },
+    { name: 'FCB Center', standard: '-', image: dfcb, path: 'datavizDFCB' },
+    { name: 'TCB Center', standard: '30', image: dtcb, path: 'datavizDTCB' },
   ]);
 
   const getTooltip = (name: string) => {
     switch (name) {
-      case 'PH Center':
+      case 'E Coli Center':
         return (
           <>
-            Potential of Hydrogen (pH) <br />
-            คือ ค่าความเป็นกรด-ด่างของน้ำ
+            Escherichia coli (E. coli)<br />
+            คือ แบคทีเรียชี้วัดการปนเปื้อนอุจจาระในน้ำ
           </>
         );
-      case 'BOD Center':
+      case 'FCB Center':
         return (
           <>
-            Biochemical Oxygen Demand (BOD) <br />
-            คือ ค่าความต้องการออกซิเจนทางชีวภาพ
+            Fecal Coliform Bacteria (FCB)<br />
+            คือ แบคทีเรียจากอุจจาระ<br />ใช้บ่งชี้การปนเปื้อนน้ำ
           </>
         );
-      case 'TS Center':
+      case 'TCB Center':
         return (
           <>
-            Total Solid (TS) <br />
-            คือ ของแข็งทั้งหมดในน้ำเสีย
-          </>
-        );
-      case 'TDS Center':
-        return (
-          <>
-            Total Dissolved Solids (TDS) <br />
-            คือ ของแข็งที่ละลายได้ในน้ำ
-          </>
-        );
-      case 'FOG Center':
-        return (
-          <>
-            Fat Oil and Grease (FOG) <br />
-            คือ ไขมัน น้ำมัน และไขมันในน้ำเสีย
-          </>
-        );
-      case 'TKN Center':
-        return (
-          <>
-            Total Kjeldahl Nitrogen (TKN) <br />
-            คือ ไนโตรเจนทั้งหมดในรูปของอินทรีย์และแอมโมเนีย
+            Total Coliform Bacteria (TCB)<br />
+            คือ กลุ่มแบคทีเรียโคลิฟอร์มทั้งหมด<br />ใช้บ่งบอกความสะอาดของน้ำ
           </>
         );
       default:
@@ -71,7 +50,7 @@ const EnvironmentBlock = () => {
   useEffect(() => {
     const fetchStandards = async () => {
       try {
-        const [phRes, tdsRes, bodRes,fogRes] = await Promise.all([
+        const [phRes, tdsRes, bodRes, fogRes] = await Promise.all([
           GetfirstPH(),
           GetfirstTDS(),
           GetfirstBOD(),
@@ -98,7 +77,7 @@ const EnvironmentBlock = () => {
               return { ...center, standard: tdsStandard };
             } else if (center.name === 'BOD Center') {
               return { ...center, standard: bodStandard };
-            }else if (center.name === 'FOG Center') {
+            } else if (center.name === 'FOG Center') {
               return { ...center, standard: fogStandard };
             }
             return center;
@@ -115,7 +94,7 @@ const EnvironmentBlock = () => {
   return (
     <div>
       <div className="title-header">
-        <h1>น้ำเสีย</h1>
+        <h1>นํ้าดื่ม</h1>
         <p>
           โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
         </p>

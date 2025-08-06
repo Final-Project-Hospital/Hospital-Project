@@ -413,13 +413,6 @@ const PHdataviz: React.FC = () => {
       render: (unit: string) => unit || '-',
     },
     {
-      title: 'ค่ามาตรฐาน',
-      dataIndex: 'standard_value',
-      key: 'standard_value',
-      width: 160,
-      render: (val: number) => val ?? '-',
-    },
-    {
       title: 'ค่าก่อนเข้าระบบบำบัด',
       dataIndex: 'before_value',
       key: 'before_value',
@@ -441,23 +434,6 @@ const PHdataviz: React.FC = () => {
           else if (afterValue > before) arrow = <span style={{ ...iconStyle, color: '#14C18B' }}> ↑</span>;
         }
         return <span>{afterValue.toFixed(2)}{arrow}</span>;
-      },
-    },
-    {
-      title: (
-        <>
-          หมายเหตุ
-          <br />
-          ( ก่อน / หลัง )
-        </>
-      ),
-      dataIndex: 'note',
-      key: 'note',
-      width: 150,
-      render: (_: any, record: any) => {
-        const beforeNote = record.before_note || '-';
-        const afterNote = record.after_note || '-';
-        return [beforeNote, afterNote].filter(Boolean).join(' / ');
       },
     },
     {
@@ -496,6 +472,13 @@ const PHdataviz: React.FC = () => {
         const eff = Number(r.efficiency);
         return isNaN(eff) ? "-" : Math.max(eff, 0).toFixed(2);
       },
+    },
+    {
+      title: 'ค่ามาตรฐาน',
+      dataIndex: 'standard_value',
+      key: 'standard_value',
+      width: 160,
+      render: (val: number) => val ?? '-',
     },
     {
       title: "สถานะ",
@@ -552,16 +535,7 @@ const PHdataviz: React.FC = () => {
           );
         }
 
-        if (statusName.includes("ต่ำกว่า")) {
-          return (
-            <span className="status-badge status-low">
-              <ExclamationCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
-              {statusName}
-            </span>
-          );
-        }
-
-        if (statusName.includes("เกิน")) {
+        if (statusName.includes("ไม่ผ่าน")) {
           return (
             <span className="status-badge status-high">
               <CloseCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
@@ -570,7 +544,7 @@ const PHdataviz: React.FC = () => {
           );
         }
 
-        if (statusName.includes("อยู่ใน")) {
+        if (statusName.includes("ผ่าน")) {
           return (
             <span className="status-badge status-good">
               <CheckCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
@@ -579,6 +553,23 @@ const PHdataviz: React.FC = () => {
           );
         }
       }
+    },
+    {
+      title: (
+        <>
+          หมายเหตุ
+          <br />
+          ( ก่อน / หลัง )
+        </>
+      ),
+      dataIndex: 'note',
+      key: 'note',
+      width: 150,
+      render: (_: any, record: any) => {
+        const beforeNote = record.before_note || '-';
+        const afterNote = record.after_note || '-';
+        return [beforeNote, afterNote].filter(Boolean).join(' / ');
+      },
     },
     {
       title: 'จัดการข้อมูล',
@@ -1023,6 +1014,7 @@ const PHdataviz: React.FC = () => {
         <div className="ph-table-data">
           <h1 className="ph-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
           <Table
+            className="ph-table-data"
             columns={columns.map((col) => ({ ...col, align: 'center' }))}
             dataSource={data.filter((d: any) =>
               dayjs(d.date).format('YYYY-MM-DD').includes(search)

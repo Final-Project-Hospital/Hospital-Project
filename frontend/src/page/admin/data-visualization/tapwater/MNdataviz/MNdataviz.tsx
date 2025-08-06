@@ -8,7 +8,7 @@ const FOGdataviz = () => {
   return (
     <div>
       <div className="title-header">
-        <h1>FOG-Central</h1>
+        <h1>MN-Central</h1>
         <p>
           โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
         </p>

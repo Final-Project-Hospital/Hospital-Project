@@ -205,10 +205,9 @@
 
 /*จัดการ*/
 
-/* ทำให้คอลัมน์จัดการข้อมูลดูทึบกว่า */
-.tds-table-data .ant-table-ttdsy>tr>td.darker-column {
+ /* ทำให้คอลัมน์จัดการข้อมูลดูทึบกว่า */
+.tds-table-data .ant-table-tbody td.darker-column {
   background-color: #f5f5f5;
-  /* เทาอ่อนทึบ */
   font-weight: 500;
   border-right: 0.5px solid #D9D9D9;
   border-bottom: 0.5px solid #D9D9D9;

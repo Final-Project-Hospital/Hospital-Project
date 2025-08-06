@@ -82,19 +82,17 @@ func CreatePH(c *gin.Context) {
 
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-		if standard.MiddleValue != 0 {
-			if value <= float64(standard.MiddleValue) {
-				db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
+		if standard.MiddleValue != 0 { // ค่าเดี่ยว
+			if value > float64(standard.MiddleValue) {
+				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
-				db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
-		} else {
+		} else { // ค่าเป็นช่วง
 			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
-				db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
-			} else if value > float64(standard.MaxValue) {
-				db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
-				db.Where("status_name = ?", "ต่ำกว่าเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		}
 		return status.ID
@@ -370,18 +368,16 @@ func GetPHTABLE(c *gin.Context) {
 			if db.First(&std, latestRec.StandardID).Error == nil {
 				after := *phMap[k].AfterValue
 				if std.MinValue != 0 || std.MaxValue != 0 {
-					if after < float64(std.MinValue) {
-						phMap[k].Status = "ต่ำกว่าเกณฑ์มาตรฐาน"
-					} else if after > float64(std.MaxValue) {
-						phMap[k].Status = "เกินเกณฑ์มาตรฐาน"
+					if after < float64(std.MinValue) || after > float64(std.MaxValue) {
+						phMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
-						phMap[k].Status = "อยู่ในเกณฑ์มาตรฐาน"
+						phMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
 					}
 				} else {
 					if after > float64(std.MiddleValue) {
-						phMap[k].Status = "เกินเกณฑ์มาตรฐาน"
+						phMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
-						phMap[k].Status = "อยู่ในเกณฑ์มาตรฐาน"
+						phMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
 					}
 				}
 			}
@@ -618,17 +614,15 @@ func UpdateOrCreatePH(c *gin.Context) {
 
 		if standard.MiddleValue != 0 {
 			if value <= float64(standard.MiddleValue) {
-				db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
-				db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		} else {
 			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
-				db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
-			} else if value > float64(standard.MaxValue) {
-				db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
-				db.Where("status_name = ?", "ต่ำกว่าเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		}
 
