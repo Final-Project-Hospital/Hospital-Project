@@ -8,6 +8,7 @@ type HardwareParameter struct {
 	gorm.Model
 	Parameter string
 	Icon      string `gorm:"type:text"`
+	GroupDisplay bool
 
 	StandardHardwareID uint
 	StandardHardware   *StandardHardware `gorm:"foreignKey: StandardHardwareID"`

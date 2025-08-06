@@ -46,16 +46,13 @@ function groupByAvg(data: { x: string; y: number }[]) {
   }));
 }
 
-const MAX_ATTEMPTS = 10;
-const RETRY_INTERVAL = 1200;
-
 const Stacked: React.FC<ChartdataProps> = ({
   hardwareID,
   parameters,
   colors,
   timeRangeType,
   selectedRange,
-  chartHeight = "420px",
+  chartHeight = '420px',
   reloadKey,
 }) => {
   const { currentMode } = useStateContext();
@@ -77,7 +74,6 @@ const Stacked: React.FC<ChartdataProps> = ({
     valueType: 'Category',
     majorGridLines: { width: 0 },
     labelIntersectAction: 'Rotate45',
-    labelRotation: 0,
     interval: 1,
   };
 
@@ -89,11 +85,7 @@ const Stacked: React.FC<ChartdataProps> = ({
   };
 
   useEffect(() => {
-    let stop = false;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let fetchCount = 0;
-
-    const fetchLoop = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setStackedData({});
       setStandardLines([]);
@@ -108,19 +100,43 @@ const Stacked: React.FC<ChartdataProps> = ({
         return;
       }
 
+      let forcedXLabels: string[] = [];
+
+      if (
+        timeRangeType === 'day' &&
+        selectedRange?.length === 2 &&
+        new Date(selectedRange[0]).toDateString() === new Date(selectedRange[1]).toDateString()
+      ) {
+        const baseDate = new Date(selectedRange[0]);
+        const oneDayBefore = new Date(baseDate.getTime() - 86400000);
+        const oneDayAfter = new Date(baseDate.getTime() + 86400000);
+        forcedXLabels = [
+          getDayLabel(oneDayBefore),
+          getDayLabel(baseDate),
+          getDayLabel(oneDayAfter),
+        ];
+      }
+
       try {
         const raw = await fetchWithRetry(
           () => GetSensorDataByHardwareID(hardwareID),
           5,
           1000
         );
-        if (!mounted.current || stop) return;
-        if (!Array.isArray(raw)) throw new Error("No sensor data");
 
         const paramDataMap: { [param: string]: { x: string; y: number }[] } = {};
         const standardMap: { [param: string]: number } = {};
         const xCategorySet: Set<string> = new Set();
         const unitMapping: Record<string, string> = {};
+
+        // Add forced labels to xCategorySet
+        forcedXLabels.forEach(x => xCategorySet.add(x));
+
+        if (!raw || !Array.isArray(raw)) {
+          setHasData(false);
+          setLoading(false);
+          return;
+        }
 
         await Promise.all(
           raw.map(async (sensor) => {
@@ -142,23 +158,27 @@ const Stacked: React.FC<ChartdataProps> = ({
               if (isNaN(value) || isNaN(date.getTime())) continue;
 
               let inRange = false;
-              let label = "";
+              let label = '';
               if (timeRangeType === 'day') {
-                if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
                 const [start, end] = selectedRange;
-                const endOfDay = new Date(end);
-                endOfDay.setHours(23, 59, 59, 999);
-                inRange = date >= new Date(start) && date <= endOfDay;
+                const startDate = new Date(start);
+                const endDate = new Date(end);
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(23, 59, 59, 999);
+                inRange = date >= startDate && date <= endDate;
                 if (inRange) label = getDayLabel(date);
               } else if (timeRangeType === 'month') {
-                inRange = (date.getMonth() + 1 === Number(selectedRange.month)) &&
-                  (date.getFullYear() === Number(selectedRange.year));
+                inRange = date.getMonth() + 1 === Number(selectedRange?.month) &&
+                  date.getFullYear() === Number(selectedRange?.year);
                 if (inRange) label = getDayLabel(date);
               } else if (timeRangeType === 'year') {
-                if (!selectedRange || !selectedRange[0] || !selectedRange[1]) continue;
                 const [start, end] = selectedRange;
-                inRange = date.getFullYear() >= +start && date.getFullYear() <= +end;
-                if (inRange) label = getMonthLabel(date) + " " + date.getFullYear();
+                const startYear = parseInt(start);
+                const endYear = parseInt(end);
+                const yearLabel = startYear === endYear ? `${startYear}` : `${startYear}-${endYear}`;
+                inRange = date.getFullYear() >= startYear && date.getFullYear() <= endYear;
+
+                if (inRange) label = yearLabel;
               }
 
               if (!inRange || !label) continue;
@@ -179,16 +199,19 @@ const Stacked: React.FC<ChartdataProps> = ({
         );
 
         const xCategoriesArr = Array.from(xCategorySet).sort((a, b) => {
-          const parseDate = (str: string) => {
-            const parts = str.split("/");
-            if (parts.length === 2) {
-              return new Date(new Date().getFullYear(), +parts[1] - 1, +parts[0]).getTime();
+          const getSortKey = (val: string) => {
+            if (val.includes('-')) {
+              return parseInt(val.split('-')[0]);
+            } else if (/^\d+$/.test(val)) {
+              return parseInt(val);
+            } else {
+              const [d, m] = val.split('/');
+              return new Date(new Date().getFullYear(), +m - 1, +d).getTime();
             }
-            if (str.match(/^[A-Za-z]{3}\s\d{4}$/)) return new Date(str).getTime();
-            return 0;
           };
-          return parseDate(a) - parseDate(b);
+          return getSortKey(a) - getSortKey(b);
         });
+
 
         for (const param of parameters) {
           if (!paramDataMap[param]) paramDataMap[param] = [];
@@ -200,7 +223,6 @@ const Stacked: React.FC<ChartdataProps> = ({
           }));
         }
 
-        // ✅ Sort parameters by total value ascending (for proper stacked order)
         const paramTotalMap = Object.fromEntries(
           parameters.map(p => [
             p,
@@ -221,53 +243,34 @@ const Stacked: React.FC<ChartdataProps> = ({
             dashArray: '5,5',
             width: 2,
             marker: { visible: false },
-            fill: '#888888',
+            fill: 'red',
           };
         });
 
         const hasSeries = Object.keys(paramDataMap).length > 0 && xCategoriesArr.length > 0 &&
           Object.values(paramDataMap).some(arr => arr.length > 0 && arr.some(d => d.y !== 0));
-        if (hasSeries) {
-          if (mounted.current && !stop) {
-            setStackedData(paramDataMap);
-            setCategories(xCategoriesArr);
-            setStandardLines(standardSeries);
-            setUnitMap(unitMapping);
-            setSortedParams(sorted); // ✅ set sorted order
-            setHasData(true);
-            setLoading(false);
-          }
-        } else {
-          fetchCount++;
-          if (fetchCount < MAX_ATTEMPTS && mounted.current && !stop) {
-            timeoutId = setTimeout(fetchLoop, RETRY_INTERVAL);
-          } else {
-            setStackedData({});
-            setCategories([]);
-            setHasData(false);
-            setLoading(false);
-          }
-        }
-      } catch (e) {
-        fetchCount++;
-        if (fetchCount < MAX_ATTEMPTS && mounted.current && !stop) {
-          timeoutId = setTimeout(fetchLoop, RETRY_INTERVAL);
+
+        if (hasSeries && mounted.current) {
+          setStackedData(paramDataMap);
+          setCategories(xCategoriesArr);
+          setStandardLines(standardSeries);
+          setUnitMap(unitMapping);
+          setSortedParams(sorted);
+          setHasData(true);
         } else {
           setStackedData({});
           setCategories([]);
           setHasData(false);
-          setLoading(false);
         }
+        setLoading(false);
+      } catch (e) {
+        setHasData(false);
+        setLoading(false);
       }
     };
 
-    fetchLoop();
-
-    return () => {
-      stop = true;
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [hardwareID, parameters, timeRangeType, selectedRange,reloadKey]);
+    fetchData();
+  }, [hardwareID, parameters, timeRangeType, selectedRange, reloadKey]);
 
   if (loading) {
     return (
@@ -280,9 +283,7 @@ const Stacked: React.FC<ChartdataProps> = ({
 
   if (!hasData) {
     return (
-      <div className="flex items-center justify-center h-80 text-lg text-gray-500">
-        No Data
-      </div>
+      <div className="flex justify-center items-center h-80 text-red-500 font-bold">ไม่มีข้อมูลในช่วงเวลาที่เลือก</div>
     );
   }
 
@@ -307,7 +308,7 @@ const Stacked: React.FC<ChartdataProps> = ({
         })}
       </div>
       <ChartComponent
-        id="stacked-chart"
+        id={`chart-${parameters.join('-')}`}
         width="100%"
         height={chartHeight}
         primaryXAxis={primaryXAxis}

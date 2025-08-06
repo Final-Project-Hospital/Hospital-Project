@@ -135,7 +135,12 @@ const Area: React.FC<ChartdataProps> = ({
             let inRange = false;
             if (timeRangeType === 'day') {
               const [start, end] = selectedRange || [];
-              inRange = start && end && date >= new Date(start) && date <= new Date(end);
+              if (!start || !end) continue;
+              const startDate = new Date(start);
+              const endDate = new Date(end);
+              endDate.setHours(23, 59, 59, 999); // แก้ไขตรงนี้
+
+              inRange = date >= startDate && date <= endDate;
             } else if (timeRangeType === 'month') {
               inRange = date.getMonth() + 1 === +selectedRange?.month &&
                 date.getFullYear() === +selectedRange?.year;
@@ -155,7 +160,20 @@ const Area: React.FC<ChartdataProps> = ({
 
         const series: any[] = [];
         const createStandardLine = (standard: number, data: { x: Date }[]) => {
-          return data.map(d => ({ x: d.x, y: standard }));
+          const sorted = data.sort((a, b) => a.x.getTime() - b.x.getTime());
+
+          if (sorted.length === 1) {
+            const d = sorted[0];
+            const prev = new Date(d.x.getTime() - 1000 * 60 * 60); // -1 ชั่วโมง
+            const next = new Date(d.x.getTime() + 1000 * 60 * 60); // +1 ชั่วโมง
+
+            return [
+              { x: prev, y: standard },
+              { x: next, y: standard },
+            ];
+          }
+
+          return sorted.map(d => ({ x: d.x, y: standard }));
         };
 
         for (const [name, data] of Object.entries(parameterMap)) {
@@ -194,7 +212,7 @@ const Area: React.FC<ChartdataProps> = ({
               dashArray: '5,5',
               marker: { visible: false },
               type: 'Line',
-              fill: '#888',
+              fill: 'red',
             });
           }
         }
@@ -219,13 +237,13 @@ const Area: React.FC<ChartdataProps> = ({
       stop = true;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [hardwareID, parameters, colors, timeRangeType, selectedRange,reloadKey]);
+  }, [hardwareID, parameters, colors, timeRangeType, selectedRange, reloadKey]);
 
   if (loading) {
     return <div className="flex justify-center items-center h-80">Loading...</div>;
   }
   if (noData) {
-    return <div className="flex justify-center items-center h-80">No Data</div>;
+    return <div className="flex items-center justify-center h-80 text-lg text-red-500 font-bold">ไม่มีข้อมูลในช่วงเวลาที่เลือก</div>;
   }
 
   return (
@@ -253,7 +271,7 @@ const Area: React.FC<ChartdataProps> = ({
       </div>
 
       <ChartComponent
-        id="area-chart"
+        id={`chart-${parameters.join('-')}`}
         height={chartHeight}
         width="100%"
         primaryXAxis={{

@@ -1,25 +1,31 @@
-export interface CreateTDSInterface {
-  Date: Date | string;
-  Data: number;
-  BeforeAfterTreatmentID: number;
-  StandardID: number;
-  UnitID: number;
-  EmployeeID: number;
-  Note?: string;
-  CustomUnit?: string;
+export interface TDScenterInterface {
+    ID?: number;
+    Date?: string
+    Data?:number;
+    Note?:string;
+    BeforeAfterTreatmentID?:number ;
+    StandardID?:number;
+    UnitID?:number;
+    EmployeeID?:number;
+    CustomUnit?:string;
 }
 
-export interface UpdateTDSInterface {
-  ID: number; 
-  Date: Date | string;
+export interface listTDSInterface {
+  ID: number;
+  Date: string;
   Data: number;
+  Note: string;
   BeforeAfterTreatmentID: number;
-  ParameterID: number; 
+  EnvironmentID: number;
+  ParameterID: number;
   StandardID: number;
   UnitID: number;
   EmployeeID: number;
-  Note?: string;
-  CustomUnit?: string;
+  MinValue: number;
+  MiddleValue: number;
+  MaxValue: number;
+  UnitName: string;
+  TreatmentName: string;
 }
 
 export interface DeleteTDSInterface {

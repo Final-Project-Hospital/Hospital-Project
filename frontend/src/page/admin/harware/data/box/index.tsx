@@ -120,7 +120,7 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
         if (params && params.length > 0) {
           const latestParamsMap = new Map<string, SensorParameter>();
           params.forEach((param: any) => {
-            const paramName = (param.HardwareParameter?.Parameter || "Unknown").toLowerCase();
+            const paramName = (param.HardwareParameter?.Parameter || "Unknown");
             latestParamsMap.set(paramName, {
               id: param.ParameterID,
               name: paramName,
@@ -170,7 +170,7 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
   };
 
   const getValueColor = (value: number, standard?: number): string => {
-    if (standard === undefined) return "text-black";
+    if (standard === undefined || standard === 0) return "text-black";
     const thresholdOrange = standard * 0.9;
     if (value >= standard) return "text-red-500";
     if (value >= thresholdOrange) return "text-orange-500";

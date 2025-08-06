@@ -7,6 +7,7 @@ export interface HardwareParameterInterface {
     ID?: number;
     Parameter?: string;
     Icon?:string;
+    GroupDisplay?:boolean;
     HardwareGraph?: HardwareGraphInterface;
     UnitHardware?:UnitHardwareInterface;
     HardwareParameterColor?: HardwareParameterColorInterface;

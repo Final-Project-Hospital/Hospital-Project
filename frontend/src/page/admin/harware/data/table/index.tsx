@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Table,
   Button,
@@ -37,8 +37,8 @@ interface TableDataProps {
 const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
   const [tableData, setTableData] = useState<any[]>([]);
   const [filteredData, setFilteredData] = useState<any[]>([]);
-  const [uniqueColumns, setUniqueColumns] = useState<string[]>(["Date"]);
-  const [selectedColumns, setSelectedColumns] = useState<string[]>(["Date"]);
+  const [uniqueColumns, setUniqueColumns] = useState<string[]>(["วันที่", "เวลา"]);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>(["วันที่", "เวลา"]);
   const [paramUnits, setParamUnits] = useState<Record<string, string>>({});
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,10 +48,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
   const currentYear = new Date().getFullYear();
   const defaultStart = new Date(currentYear, 0, 1);
   const defaultEnd = new Date(currentYear, 11, 31);
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
-    defaultStart,
-    defaultEnd,
-  ]);
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([defaultStart, defaultEnd]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,15 +71,20 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
 
             let sensorDate = "ไม่ทราบวันที่";
             let rawDate = "";
+            let timeString = "";
+
             if (param?.Date && !isNaN(new Date(param.Date).getTime())) {
               rawDate = param.Date;
-              sensorDate = dayjs(param.Date).format("DD/MM/YYYY HH:mm");
+              const parsedDate = dayjs(param.Date);
+              sensorDate = parsedDate.format("DD/MM/YYYY");
+              timeString = parsedDate.format("HH:mm:ss");
             }
 
             if (name) {
               paramDetails.push({
                 ParameterName: name,
-                Date: sensorDate,
+                วันที่: sensorDate,
+                เวลา: timeString,
                 rawDate,
                 [name]: value,
                 [`${name}_standard`]: standard,
@@ -93,11 +95,9 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
         }
       }
 
-      const uniqueParams = Array.from(
-        new Set(paramDetails.map((p) => p.ParameterName).filter(Boolean))
-      );
-      setUniqueColumns(["Date", ...uniqueParams]);
-      setSelectedColumns(["Date", ...uniqueParams]);
+      const uniqueParams = Array.from(new Set(paramDetails.map((p) => p.ParameterName).filter(Boolean)));
+      setUniqueColumns(["วันที่", "เวลา", ...uniqueParams]);
+      setSelectedColumns(["วันที่", "เวลา", ...uniqueParams]);
 
       const unitMap: Record<string, string> = {};
       paramDetails.forEach((p) => {
@@ -109,17 +109,25 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
 
       const groupedRows: Record<string, any> = {};
       paramDetails.forEach((p) => {
-        const date = p.Date;
-        if (!groupedRows[date])
-          groupedRows[date] = { Date: date, rawDate: p.rawDate };
-        Object.entries(p).forEach(([key, val]) => {
-          if (key !== "ParameterName" && key !== "rawDate") {
-            groupedRows[date][key] = val;
+        const key = `${p.วันที่}-${p.เวลา}`;
+        if (!groupedRows[key]) {
+          groupedRows[key] = {
+            วันที่: p.วันที่,
+            เวลา: p.เวลา,
+            rawDate: p.rawDate,
+          };
+        }
+
+        Object.entries(p).forEach(([k, v]) => {
+          if (!["ParameterName", "rawDate", "วันที่", "เวลา"].includes(k)) {
+            groupedRows[key][k] = v;
           }
         });
       });
 
-      const finalTableData = Object.values(groupedRows);
+      const finalTableData = Object.values(groupedRows).sort((a: any, b: any) => {
+        return dayjs(b.rawDate).valueOf() - dayjs(a.rawDate).valueOf();
+      });
       setTableData(finalTableData);
       onLoaded?.();
       setLoading(false);
@@ -128,17 +136,19 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     fetchData();
   }, [hardwareID, onLoaded]);
 
+  const handleClearQuery = () => {
+    setSearchText("");
+    setDateRange([defaultStart, defaultEnd]);
+    setSelectedColumns(uniqueColumns); 
+  };
+
   useEffect(() => {
     let data = tableData;
 
     if (dateRange[0] && dateRange[1]) {
       data = data.filter((item) => {
         const d = dayjs(item.rawDate);
-        return (
-          d.isValid() &&
-          d.isSameOrAfter(dayjs(dateRange[0]), "day") &&
-          d.isSameOrBefore(dayjs(dateRange[1]), "day")
-        );
+        return d.isValid() && d.isSameOrAfter(dayjs(dateRange[0]), "day") && d.isSameOrBefore(dayjs(dateRange[1]), "day");
       });
     }
 
@@ -160,21 +170,21 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     {
       title: (
         <span className="bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent font-bold">
-          ID
+          ลำดับ
         </span>
       ),
-      dataIndex: "no",
-      key: "no",
+      dataIndex: "ลำดับ",
+      key: "ลำดับ",
       render: (_: any, __: any, idx: number) => idx + 1,
-      width: 60,
+      width: 75,
       fixed: "left",
     },
     ...uniqueColumns
       .filter((col) => selectedColumns.includes(col))
       .map((col) => {
         const displayTitle =
-          col === "Date"
-            ? "Date"
+          col === "วันที่" || col === "เวลา"
+            ? col
             : paramUnits[col]
               ? `${col} (${paramUnits[col]})`
               : col;
@@ -188,52 +198,82 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
           dataIndex: col,
           key: col,
           render: (val: any, row: any) => {
-            if (col === "Date" || col === "rawDate") return val;
+            if (col === "วันที่" || col === "เวลา" || col === "rawDate") return val;
             const standard = row[`${col}_standard`];
             const num = typeof val === "number" ? val : parseFloat(val);
 
-            if (!isNaN(num) && standard !== null) {
+            if (!isNaN(num) && standard !== null && standard !== 0) {
               if (num > standard) {
-                return (
-                  <span style={{ color: "red", fontWeight: "bold" }}>
-                    {num.toFixed(2)}
-                  </span>
-                );
+                return <span style={{ color: "red", fontWeight: "bold" }}>{num.toFixed(2)}</span>;
               } else if (num >= standard * 0.9) {
-                return (
-                  <span style={{ color: "orange", fontWeight: "bold" }}>
-                    {num.toFixed(2)}
-                  </span>
-                );
+                return <span style={{ color: "orange", fontWeight: "bold" }}>{num.toFixed(2)}</span>;
               } else {
                 return num.toFixed(2);
               }
             }
+
+            if (!isNaN(num)) {
+              return num.toFixed(2);
+            }
+
             return val ?? "-";
           },
         };
       }),
   ];
 
-  const getDataForCSV = (data: any[]) =>
-    data.map((row: any, idx: number) => {
-      const result: any = { No: idx + 1 };
-      selectedColumns.forEach((col) => (result[col] = row[col] ?? "-"));
+  const getDataForCSV = (data: any[], columnsToInclude: string[]) => {
+    return data.map((row: any, idx: number) => {
+      const result: any = { ลำดับ: `${idx + 1}\t` };
+
+      columnsToInclude.forEach((col) => {
+        if (col === "วันที่") {
+          result["วัน/เดือน/ปี"] = row[col] ? `${row[col]}\t` : "-";
+        } else if (col === "เวลา") {
+          result["เวลา"] = row[col] ? `${row[col]}\t` : "-";
+        } else {
+          const unit = paramUnits[col];
+          const displayKey = unit ? `${col} (${unit})` : col;
+          const rawVal = row[col];
+          const num = typeof rawVal === "number" ? rawVal : parseFloat(rawVal);
+          const valFormatted =
+            !isNaN(num) && rawVal !== null && rawVal !== undefined
+              ? `${num.toFixed(2)}\t`
+              : "-";
+          result[displayKey] = valFormatted;
+        }
+      });
+
       return result;
     });
+  };
+
+  //const filteredCSVData = useMemo(() => getDataForCSV(filteredData, selectedColumns), [filteredData, selectedColumns]);
+  const filteredCSVData = useMemo(() => {
+    const sorted = [...filteredData].sort((a, b) => dayjs(a.rawDate).valueOf() - dayjs(b.rawDate).valueOf());
+    return getDataForCSV(sorted, selectedColumns);
+  }, [filteredData, selectedColumns]);
+
+  //const fullCSVData = useMemo(() => getDataForCSV(tableData, uniqueColumns), [tableData, uniqueColumns]);
+  const fullCSVData = useMemo(() => {
+    const sorted = [...tableData].sort((a, b) => dayjs(a.rawDate).valueOf() - dayjs(b.rawDate).valueOf());
+    return getDataForCSV(sorted, uniqueColumns);
+  }, [tableData, uniqueColumns]);
+
 
   const columnSelectMenu = (
-    <div className="p-2">
+    <div className="bg-white rounded-lg shadow-md p-4 w-56">
+      <h4 className="text-gray-800 font-semibold mb-2">เลือกคอลัมน์ที่ต้องการแสดง</h4>
       <Checkbox.Group
         value={selectedColumns}
         onChange={(vals) =>
-          setSelectedColumns(vals.length ? (vals as string[]) : ["Date"])
+          setSelectedColumns(vals.length ? (vals as string[]) : ["วันที่", "เวลา"])
         }
       >
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
           {uniqueColumns.map((col) => (
-            <Checkbox value={col} key={col}>
-              {col}
+            <Checkbox value={col} key={col} className="hover:bg-teal-50 px-2 py-1 rounded">
+              <span className="text-gray-700">{col}</span>
             </Checkbox>
           ))}
         </div>
@@ -267,19 +307,18 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
           </div>
 
           <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-            <Dropdown
-              overlay={columnSelectMenu}
-              trigger={["click"]}
-              placement="bottomRight"
-              arrow
-            >
-              <Button
-                icon={<FilterOutlined />}
-                className="font-semibold w-full md:w-[120px]"
-              >
+            <Dropdown overlay={columnSelectMenu} trigger={["click"]} placement="bottomRight" arrow>
+              <Button icon={<FilterOutlined />} className="font-semibold w-full md:w-[120px]">
                 คอลัมน์ <DownOutlined />
               </Button>
             </Dropdown>
+
+            <Button
+              onClick={handleClearQuery}
+              className="w-full md:w-[160px] text-teal-700 border border-teal-500 hover:bg-teal-50 transition font-semibold"
+            >
+              ล้างตัวกรองทั้งหมด
+            </Button>
 
             <Button
               icon={<DownloadOutlined />}
@@ -323,9 +362,10 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
           <h2 className="text-lg font-bold text-gray-700">Export ข้อมูลเป็น CSV</h2>
 
           <CSVLink
-            data={getDataForCSV(filteredData)}
+            data={filteredCSVData}
             filename="filtered-data.csv"
             className="w-full"
+            separator=","
           >
             <Button
               type="primary"
@@ -338,9 +378,10 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
           </CSVLink>
 
           <CSVLink
-            data={getDataForCSV(tableData)}
+            data={fullCSVData}
             filename="all-data.csv"
             className="w-full"
+            separator=","
           >
             <Button
               icon={<DownloadOutlined />}

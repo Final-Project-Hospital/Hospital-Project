@@ -20,9 +20,7 @@ const Notification: React.FC = () => {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-lg">Report Notifications</span>
-          <span
-            className="inline-flex items-center justify-center h-6 text-white text-xs rounded-full px-3 py-1 font-semibold bg-gradient-to-r from-teal-500 to-cyan-400 shadow-sm"
-          >
+          <span className="inline-flex items-center justify-center h-6 text-white text-xs rounded-full px-3 py-1 font-semibold bg-gradient-to-r from-teal-500 to-cyan-400 shadow-sm">
             {currentCount} message
           </span>
         </div>
@@ -44,10 +42,10 @@ const Notification: React.FC = () => {
         className="font-semibold"
       >
         <TabPane tab="Hardware" key="hardware">
-          <NotificationHardware onCountChange={(count) => setHardwareCount(count)} />
+          <NotificationHardware onCountChange={setHardwareCount} />
         </TabPane>
         <TabPane tab="Software" key="software">
-          <NotificationSoftware onCountChange={(count) => setSoftwareCount(count)} />
+          <NotificationSoftware onCountChange={setSoftwareCount} />
         </TabPane>
       </Tabs>
     </div>

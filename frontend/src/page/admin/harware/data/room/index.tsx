@@ -33,11 +33,27 @@ const RoomCard: React.FC<RoomCardProps> = ({
           <div className="bg-teal-100 text-teal-800 font-bold px-3 py-1 rounded text-sm">
             {name}
           </div>
-          <button onClick={e => { e.stopPropagation(); onUpdate(); }} className="ml-1 text-gray-500 hover:text-blue-600">
-            <FaEdit size={15} />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onUpdate();
+            }}
+            className="ml-1 p-2 rounded-full bg-teal-500 text-white hover:bg-teal-300 shadow transition"
+            title="แก้ไขห้อง"
+          >
+            <FaEdit size={16} />
           </button>
-          <button onClick={e => { e.stopPropagation(); onDelete(); }} className="ml-1 text-gray-500 hover:text-red-600">
-            <FaTrash size={15} />
+
+          {/* ปุ่มลบ - สีแดงอ่อน */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="ml-1 p-2 rounded-full bg-red-200 text-red-500 hover:bg-red-100 shadow transition"
+            title="ลบห้อง"
+          >
+            <FaTrash size={16} />
           </button>
         </div>
         <div className="mt-1 ml-1">
