@@ -7,9 +7,9 @@ import {
     ListMiddleStandard,
     ListRangeStandard,
     ListUnit
-} from '../../../../services/index';
-import { CheckUnit, CheckStandard } from '../../../../services/tdsService';
-import { UpdateOrCreateTDS, DeleteTDS } from '../../../../services/tdsService';
+} from '../../../../../services/index';
+import { CheckUnit, CheckStandard } from '../../../../../services/tdsService';
+import { UpdateOrCreateTDS, DeleteTDS } from '../../../../../services/tdsService';
 
 import { ListBeforeAfterTreatmentInterface } from '../../../../../interface/IBeforeAfterTreatment';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';

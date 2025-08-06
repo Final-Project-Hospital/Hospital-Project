@@ -535,15 +535,15 @@ export const links = [
             icon: <MdWaterDrop />,
             subMenu: [
               {
-                name: 'data-visualization/water',
+                name: 'data-visualization/wastewater',
                 label: 'นํ้าเสีย',
               },
                             {
-                name: 'data-visualization/water',
+                name: 'data-visualization/tapwater',
                 label: 'น้ำประปา',
               },
               {
-                name: 'data-visualization/water',
+                name: 'data-visualization/drinkwater',
                 label: 'น้ำดื่ม',
               },
             ],

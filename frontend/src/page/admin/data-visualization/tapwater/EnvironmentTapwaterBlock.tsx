@@ -1,4 +1,4 @@
-import './EnvironmentWastewaterBlock.css';
+import './EnvironmentTapwaterBlock.css';
 import { Tooltip } from 'antd';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -7,32 +7,28 @@ import { GetfirstTDS } from '../../../../services/tdsService';
 import { GetfirstBOD } from '../../../../services/bodService';
 import { GetfirstFOG } from '../../../../services/fogService';
 
-import ph from '../../../../../src/assets/ph.png';
-import bod from '../../../../../src/assets/blood-analysis.png';
-import ts from '../../../../../src/assets/sedimentation.png';
-import tds from '../../../../../src/assets/water-quality.png';
-import fog from '../../../../../src/assets/oil.png';
-import tkn from '../../../../../src/assets/nitrogen.png';
-import cod from '../../../../../src/assets/nitrogen.png';
-import fcb from '../../../../../src/assets/nitrogen.png';
-import res from '../../../../../src/assets/nitrogen.png';
-import sul from '../../../../../src/assets/nitrogen.png';
-import tcb from '../../../../../src/assets/nitrogen.png';
+import al from '../../../../../src/assets/ph.png';
+import ir from '../../../../../src/assets/blood-analysis.png';
+import mn from '../../../../../src/assets/sedimentation.png';
+import ni from '../../../../../src/assets/water-quality.png';
+import ntu from '../../../../../src/assets/oil.png';
+import pt from '../../../../../src/assets/nitrogen.png';
+import tcod from '../../../../../src/assets/nitrogen.png';
+import th from '../../../../../src/assets/nitrogen.png';
+import ttcb from '../../../../../src/assets/nitrogen.png';
 
 const EnvironmentBlock = () => {
   const navigate = useNavigate();
   const [centers, setCenters] = useState([
-    { name: 'PH Center', standard: '-', image: ph, path: 'datavizPH' },
-    { name: 'BOD Center', standard: '-', image: bod, path: 'datavizBOD' },
-    { name: 'TS Center', standard: '30', image: ts, path: 'datavizTS' },
-    { name: 'TDS Center', standard: '-', image: tds, path: 'datavizTDS' },
-    { name: 'FOG Center', standard: '20', image: fog, path: 'datavizFOG' },
-    { name: 'TKN Center', standard: '35', image: tkn, path: 'datavizTKN' },
-    { name: 'COD Center', standard: '-', image: cod, path: 'datavizCOD' },
-    { name: 'FCB Center', standard: '30', image: fcb, path: 'datavizFCB' },
-    { name: 'Residule Center', standard: '-', image: res, path: 'datavizRES' },
-    { name: 'Suldid Center', standard: '20', image: sul, path: 'datavizSUL' },
-    { name: 'TCB Center', standard: '35', image: tcb, path: 'datavizTCB' },
+    { name: 'AL Center', standard: '-', image: al, path: 'datavizAL' },
+    { name: 'IR Center', standard: '-', image: ir, path: 'datavizIR' },
+    { name: 'MN Center', standard: '30', image: mn, path: 'datavizMN' },
+    { name: 'NI Center', standard: '-', image: ni, path: 'datavizNI' },
+    { name: 'NTU Center', standard: '20', image: ntu, path: 'datavizNTU' },
+    { name: 'PT Center', standard: '35', image: pt, path: 'datavizPT' },
+    { name: 'COD Center', standard: '-', image: tcod, path: 'datavizTCOD' },
+    { name: 'TH Center', standard: '30', image: th, path: 'datavizTH' },
+    { name: 'TCB Center', standard: '-', image: ttcb, path: 'datavizTTCB' },
 
   ]);
 
@@ -143,7 +139,7 @@ const EnvironmentBlock = () => {
           <Tooltip title={getTooltip(center.name)} overlayClassName="custom-tooltip" key={index}>
             <div
               className="wqc-card clickable"
-              onClick={() => navigate(`/admin/data-visualization/wastewater/${center.path}`)}
+              onClick={() => navigate(`/admin/data-visualization/tapwater/${center.path}`)}
             >
               <div className="wqc-info">
                 <h3>{center.name}</h3>

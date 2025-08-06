@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { DatePicker, Input, Select } from "antd";
 import dayjs from "dayjs";
-import { EnvironmentalRecordInterface } from "../../../interface/IEnvironmentalRecord";
-import { GetTKN } from "../../../services/enviromentrecord";
+import { EnvironmentalRecordInterface } from "../../../../../interface/IEnvironmentalRecord";
+import { GetTKN } from "../../../../../services/enviromentrecord";
 import './TKNdataviz.css';
 import { LeftOutlined, SearchOutlined } from "@ant-design/icons";
 import Table, { ColumnsType } from "antd/es/table";

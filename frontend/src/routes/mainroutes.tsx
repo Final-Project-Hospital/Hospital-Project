@@ -20,6 +20,7 @@ const Hardware_Room = Loadable(lazy(() => import("../page/admin/harware/data/ind
 const ManageRoom = Loadable(lazy(() => import("../page/admin/harware/manage")));
 
 // data-visualization
+//wastewater
 const EnvironmentWastewaterBlock = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/EnvironmentWastewaterBlock")));
 const DatavizPH = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/PHdataviz/PHdataviz")));
 const DatavizTDS = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/TDSdataviz/TDSdataviz")));
@@ -27,6 +28,27 @@ const DatavizBOD = Loadable(lazy(() => import("../page/admin/data-visualization/
 const DatavizTKN = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/TKNdataviz/TKNdataviz")));
 const DatavizTS = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/TSdataviz/TSdataviz")));
 const DatavizFOG = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/FOGdataviz/FOGdataviz")));
+const DatavizCOD = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/CODdataviz/CODdataviz")));
+const DatavizFCB = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/FCBdataviz/FCBdataviz")));
+const DatavizRES = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/Residuledataviz/RESdataviz")));
+const DatavizSUL = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/Sulfiddataviz/SULdataviz")));
+const DatavizTCB = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/TCBdataviz/TCBdataviz")));
+//tapwater
+const EnvironmentTapwaterBlock = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/EnvironmentTapwaterBlock")));
+const DatavizAL = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/ALdataviz/ALdataviz")));
+const DatavizIR = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/IRdataviz/IRdataviz")));
+const DatavizMN = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/MNdataviz/MNdataviz")));
+const DatavizNI = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/NIdataviz/NIdataviz")));
+const DatavizNTU = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/NTUdataviz/NTUdataviz")));
+const DatavizPT = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/PTdataviz/PTdataviz")));
+const DatavizTCOD = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/TCODdataviz/CODdataviz")));
+const DatavizTH = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/THdataviz/THdataviz")));
+const DatavizTTCB = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/TTCBdataviz/TCBdataviz")));
+//drinkwater
+const EnvironmentDrinkwaterBlock = Loadable(lazy(() => import("../page/admin/data-visualization/drinkwater/EnvironmentDrinkwaterBlock")));
+const DatavizDFCB = Loadable(lazy(() => import("../page/admin/data-visualization/drinkwater/DFCBdataviz/FCBdataviz")));
+const DatavizDTCB = Loadable(lazy(() => import("../page/admin/data-visualization/drinkwater/DTCBdataviz/TCBdataviz")));
+const DatavizEC = Loadable(lazy(() => import("../page/admin/data-visualization/drinkwater/ECOLIdataviz/ECOLIdataviz")));
 
 // data-management
 const EnvironmentWastewaterTabs = Loadable(lazy(() => import("../page/admin/data-management/wastewater/EnvironmentWastewaterTabs")));
@@ -91,7 +113,7 @@ const AdminRoutes = (): RouteObject[] => [
       { path: "management", element: <ManageRoom /> },
       { path: "profile", element: <Profile /> },
       {
-        path: "data-visualization/water",
+        path: "data-visualization/wastewater",
         children: [
           { index: true, element: <EnvironmentWastewaterBlock /> },
           { path: "datavizPH", element: <DatavizPH /> },
@@ -100,6 +122,36 @@ const AdminRoutes = (): RouteObject[] => [
           { path: "datavizTDS", element: <DatavizTDS /> },
           { path: "datavizFOG", element: <DatavizFOG /> },
           { path: "datavizTKN", element: <DatavizTKN /> },
+          { path: "datavizCOD", element: <DatavizCOD /> },
+          { path: "datavizFCB", element: <DatavizFCB /> },
+          { path: "datavizRES", element: <DatavizRES /> },
+          { path: "datavizSUL", element: <DatavizSUL /> },
+          { path: "datavizTCB", element: <DatavizTCB /> },
+        ]
+      },
+            {
+        path: "data-visualization/tapwater",
+        children: [
+          { index: true, element: <EnvironmentTapwaterBlock /> },
+          { path: "DatavizAL", element: <DatavizAL /> },
+          { path: "DatavizIR", element: <DatavizIR /> },
+          { path: "DatavizMN", element: <DatavizMN /> },
+          { path: "DatavizNI", element: <DatavizNI /> },
+          { path: "DatavizNTU", element: <DatavizNTU /> },
+          { path: "DatavizPT", element: <DatavizPT /> },
+          { path: "DatavizTCOD", element: <DatavizTCOD /> },
+          { path: "DatavizTH", element: <DatavizTH /> },
+          { path: "DatavizTTCB", element: <DatavizTTCB /> },
+        ]
+      },
+            {
+        path: "data-visualization/drinkwater",
+        children: [
+          { index: true, element: <EnvironmentDrinkwaterBlock /> },
+          { path: "DatavizDFCB", element: <DatavizDFCB /> },
+          { path: "DatavizDTCB", element: <DatavizDTCB /> },
+          { path: "DatavizEC", element: <DatavizEC /> },
+
         ]
       },
       {

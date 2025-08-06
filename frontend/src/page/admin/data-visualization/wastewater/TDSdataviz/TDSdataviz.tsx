@@ -7,37 +7,24 @@ import { LeftOutlined, SearchOutlined, EditOutlined, DeleteOutlined, Exclamation
 import { useNavigate } from "react-router-dom";
 import './TDSdataviz.css';
 import dayjs, { Dayjs } from "dayjs";
-import { GetlistTDS, GetfirstTDS } from "../../../services/tdsService";
+import { GetlistTDS, GetfirstTDS } from "../../../../../services/tdsService";
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
-<<<<<<< HEAD:frontend/src/page/admin/data-visualization/TDSdataviz/TDSdataviz.tsx
-import { GetTDS, DeleteAllTDSRecordsByDate } from "../../../services/tdsService";
-import './TDSdataviz.css';
-import { LeftOutlined, SearchOutlined, ExclamationCircleFilled, CloseCircleFilled, CheckCircleFilled, QuestionCircleFilled, } from "@ant-design/icons";
-import Table, { ColumnsType } from "antd/es/table";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
-import TDSCentralForm from '../data-management/wastewater/TDScenter/TDScenter'
-import UpdateTDSCentralForm from '../data-management/wastewater/TDScenter/updateTDScenter'
-import { GetTDSbyID } from '../../../services/tdsService';
-=======
 import { ColorPicker } from "antd";
 import type { Color } from "antd/es/color-picker";
 import { BarChart3, LineChart, Maximize2 } from "lucide-react";
->>>>>>> main:frontend/src/page/admin/data-visualization/TDSdataviz.tsx
 
 //ใช้กับตาราง
 import Table, { ColumnsType } from "antd/es/table";
-import { GetTDSbyID } from "../../../services/tdsService";
-import UpdateTDSCentralForm from "../data-management/TDScenter/updateTDScenter";
-import TDSCentralForm from "../data-management/TDScenter/TDScenter"
-import { DeleteAllTDSRecordsByDate } from "../../../services/tdsService";
-import { GetTDSTABLE } from "../../../services/tdsService";
-import { ListStatus } from '../../../services/index';
-import { ListStatusInterface } from '../../../interface/IStatus';
+import { GetTDSbyID } from "../../../../../services/tdsService";
+import UpdateTDSCentralForm from "../../../data-management/wastewater/TDScenter/updateTDScenter";
+import TDSCentralForm from "../../../data-management/wastewater/TDScenter/TDScenter"
+import { DeleteAllTDSRecordsByDate } from "../../../../../services/tdsService";
+import { GetTDSTABLE } from "../../../../../services/tdsService";
+import { ListStatus } from '../../../../../services/index';
+import { ListStatusInterface } from '../../../../../interface/IStatus';
 const normalizeString = (str: any) =>
   String(str).normalize("NFC").trim().toLowerCase();
 
