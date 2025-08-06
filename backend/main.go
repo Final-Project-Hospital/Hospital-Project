@@ -24,7 +24,7 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/employee"
 	"github.com/Tawunchai/hospital-project/controller/position"
 
-	"github.com/Tawunchai/hospital-project/controller/users"
+	user "github.com/Tawunchai/hospital-project/controller/users"
 	"github.com/Tawunchai/hospital-project/middlewares"
 
 	"github.com/Tawunchai/hospital-project/controller/dashboard"
@@ -66,23 +66,28 @@ func main() {
 
 		//PH
 		public.POST("/create-ph", phcenter.CreatePH)
-		public.GET("/get-ph", phcenter.GetPH)
-		public.GET("/get-ph/:id", phcenter.GetPHbyID)
-		public.PATCH("/update-ph/:id", phcenter.UpdatePH)
-		public.DELETE("/delete-ph/:id", phcenter.DeletePH)
 		public.GET("/get-first-ph", phcenter.GetfirstPH)
+		public.GET("/list-ph", phcenter.ListPH)
+		public.GET("/get-ph/:id", phcenter.GetPHbyID)
+		public.GET("/get-ph-table", phcenter.GetPHTABLE)
+		public.PATCH("/update-or-create-ph/:d", phcenter.UpdateOrCreatePH)
+		public.DELETE("/delete-ph/:id", phcenter.DeletePH)
+		public.DELETE("/delete-ph-day/:id", phcenter.DeleteAllPHRecordsByDate)
 
 		//TDS
 		public.POST("/create-tds", tdscenter.CreateTDS)
-		public.GET("/get-tds", tdscenter.GetTDS)
-		public.GET("/get-tds/:id", tdscenter.GetTDSbyID)
-		public.PATCH("/update-or-create-tds/:d", tdscenter.UpdateOrCreateTDS) //เพิ่ม
-		public.DELETE("/delete-tds/:id", tdscenter.DeleteTDS)
-		public.DELETE("/delete-tds-day/:id", tdscenter.DeleteAllTDSRecordsByDate) //เพิ่ม
 		public.GET("/get-first-tds", tdscenter.GetfirstTDS)
-		public.GET("/check-units", tdscenter.CheckUnit) 
+		public.GET("/list-tds", tdscenter.ListTDS)
+		public.GET("/get-tds/:id", tdscenter.GetTDSbyID)
+		public.GET("/get-tds-table", tdscenter.GetTDSTABLE)
+		public.PATCH("/update-or-create-tds/:d", tdscenter.UpdateOrCreateTDS)
+		public.DELETE("/delete-tds/:id", tdscenter.DeleteTDS)
+		public.DELETE("/delete-tds-day/:id", tdscenter.DeleteAllTDSRecordsByDate)
+
+		public.GET("/check-units", tdscenter.CheckUnit)
 		public.GET("/check-standard", tdscenter.CheckStandard)
 
+		
 		//TKN
 		public.POST("/create-tkn", tkncenter.CreateTKN)
 		public.GET("/read-tkn", tkncenter.GetTKN)
@@ -103,8 +108,11 @@ func main() {
 		public.GET("/get-first-bod", bodcenter.GetfirstBOD)
 		public.GET("/list-bod", bodcenter.ListBOD)
 		public.GET("/get-bod/:id", bodcenter.GetBODbyID)
-		public.DELETE("/delete-bod/:id",bodcenter.DeleterBOD)
 		public.GET("/get-bod-table", bodcenter.GetBODTABLE)
+		public.PATCH("/update-or-create-bod/:d", bodcenter.UpdateOrCreateBOD)
+		public.DELETE("/delete-bod/:id", bodcenter.DeleteBOD)
+		public.DELETE("/delete-bod-day/:id", bodcenter.DeleteAllBODRecordsByDate)
+		// public.DELETE("/delete-bod/:id",bodcenter.DeleterBOD)
 
 		//FOG
 		public.POST("/create-fog", fogcenter.CreateFog)

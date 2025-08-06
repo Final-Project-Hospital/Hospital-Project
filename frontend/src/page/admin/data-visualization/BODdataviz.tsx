@@ -18,11 +18,16 @@ import { BarChart3, LineChart, Maximize2 } from "lucide-react";
 
 //ใช้กับตาราง
 import Table, { ColumnsType } from "antd/es/table";
-import { GetTDSbyID } from "../../../services/tdsService";
-import UpdateTDSCentralForm from '../data-management/TDScenter/updateTDScenter';
+import { GetBODbyID } from "../../../services/bodService";
+import UpdateBODCentralForm from "../data-management/BODcenter/updateBODcenter";
 import BODCentralForm from "../data-management/BODcenter"
-import { DeleteAllTDSRecordsByDate } from "../../../services/tdsService";
+import { DeleteAllBODRecordsByDate } from "../../../services/bodService";
 import { GetBODTABLE } from "../../../services/bodService";
+import { ListStatus } from '../../../services/index';
+import { ListStatusInterface } from '../../../interface/IStatus';
+const normalizeString = (str: any) =>
+  String(str).normalize("NFC").trim().toLowerCase();
+
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';
@@ -67,10 +72,11 @@ const BODdataviz: React.FC = () => {
 
   //ใช้กับตาราง
   const [search, setSearch] = useState("");
-  const [isModalVisible, setIsModalVisible] = useState(false);  // --- Modal สำหรับเพิ่ม/แก้ไข TDS (ถ้าต้องการใช้) ---
+  const [isModalVisible, setIsModalVisible] = useState(false);  // --- Modal สำหรับเพิ่ม/แก้ไข BOD (ถ้าต้องการใช้) ---
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingRecord, setEditRecord] = useState<any>(null);
   const { confirm } = Modal;
+  const [statusOptions, setStatusOptions] = useState<ListStatusInterface[]>([]);
 
 
 
@@ -88,22 +94,18 @@ const BODdataviz: React.FC = () => {
     if (storedcolorPercentChange) setcolorPercentChange(storedcolorPercentChange);
   }, []);
 
-  //ฟังก์ชันโหลดข้อมูล BOD สำหรับกราฟและตาราง
+
+  // ใช้กับกราฟ
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [lastbod, response, response2] = await Promise.all([
+      const [lastbod, response] = await Promise.all([
         GetfirstBOD(),
         GetlistBOD(),
-        GetBODTABLE(),
       ]);
 
       if (response) {
-        //ใช้กับตาราง
-        setData(response.data);
-
-        //ใช้กับกราฟ ---จัดกลุ่มข้อมูลสำหรับกราฟ---
         const grouped: Record<string, { before: number[]; after: number[] }> = {};
         response.data.forEach((item: any) => {
           const key = filterMode === "year"
@@ -114,36 +116,18 @@ const BODdataviz: React.FC = () => {
           if (item.BeforeAfterTreatmentID === 1) grouped[key].before.push(item.Data);
           else if (item.BeforeAfterTreatmentID === 2) grouped[key].after.push(item.Data);
         });
-        //ใช้กับกราฟ
+
         const createDateRange = (start: Dayjs, end: Dayjs): string[] => {
           const arr: string[] = [];
-          if (filterMode === "year") {
-            let curr = start.startOf('month'); // เริ่มที่เดือนแรกของปีแรก
-            const last = end.endOf('month');   // จบที่เดือนสุดท้ายของปีสุดท้าย
-            while (curr.isBefore(last) || curr.isSame(last)) {
-              arr.push(curr.format("YYYY-MM")); // เก็บรายเดือน
-              curr = curr.add(1, 'month');      // เพิ่มทีละเดือน
-            }
-          } else if (filterMode === "month") {
-            // ถ้าคุณอยากแยกเดือนกับวัน (เดือนคือเดือนเดียว)
-            let curr = start.startOf('day');
-            const last = end.endOf('day');
-            while (curr.isBefore(last) || curr.isSame(last)) {
-              arr.push(curr.format("YYYY-MM-DD"));
-              curr = curr.add(1, 'day');
-            }
-          } else {
-            // กรณี dateRange เลือกวัน
-            let curr = start.startOf('day');
-            const last = end.endOf('day');
-            while (curr.isBefore(last) || curr.isSame(last)) {
-              arr.push(curr.format("YYYY-MM-DD"));
-              curr = curr.add(1, 'day');
-            }
+          let curr = start.startOf(filterMode === "year" ? 'month' : 'day');
+          const last = end.endOf(filterMode === "year" ? 'month' : 'day');
+
+          while (curr.isBefore(last) || curr.isSame(last)) {
+            arr.push(curr.format(filterMode === "year" ? "YYYY-MM" : "YYYY-MM-DD"));
+            curr = curr.add(1, filterMode === "year" ? 'month' : 'day');
           }
           return arr;
         };
-
 
         let allDates: string[] = [];
         if (dateRange) {
@@ -152,7 +136,6 @@ const BODdataviz: React.FC = () => {
           const allDatesInData = Object.keys(grouped).sort();
           if (allDatesInData.length > 0) {
             const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
-
             let start;
             let end = latestDate;
 
@@ -162,12 +145,13 @@ const BODdataviz: React.FC = () => {
               start = latestDate.startOf("month");
               end = latestDate.endOf("month");
             } else {
-              start = latestDate.subtract(6, "day").startOf("day"); // รวมวันนี้ด้วย = 7 วัน
+              start = latestDate.subtract(6, "day").startOf("day");
             }
 
             allDates = createDateRange(start, end);
           }
         }
+
         const before: { date: string; data: number }[] = [];
         const after: { date: string; data: number }[] = [];
         const compare: { date: string; before: number; after: number }[] = [];
@@ -192,7 +176,6 @@ const BODdataviz: React.FC = () => {
           setMinStandard(lastbod.data.MinValue);
         }
 
-        // คำนวณเปอร์เซ็นต์ประสิทธิภาพ (กราฟที่ 4)
         const percentageChangeData: { date: string; percent: number }[] = compare.map(item => {
           const rawPercent = item.before !== 0
             ? ((item.before - item.after) / item.before) * 100
@@ -201,51 +184,11 @@ const BODdataviz: React.FC = () => {
           return { date: item.date, percent };
         });
 
-
-        if (lastbod.data.MiddleValue !== 0) {
-          setMiddleStandard(lastbod.data.MiddleValue);
-        } else {
-          setMaxStandard(lastbod.data.MaxValue);
-          setMinStandard(lastbod.data.MinValue);
-        }
         setUnit(lastbod.data.UnitName);
         setBeforeData(before);
         setAfterData(after);
         setCompareData(compare);
-        setPercentChangeData(percentageChangeData); // <-- เพิ่ม state ถ้าจำเป็น
-        //สิ้นสุดการใช้กราฟ
-
-
-        // ถ้าไม่มีข้อมูลเลย → แสดง error (ใช้แสดงในตารางด้วย)
-        if (!response2 || response2.length === 0) {
-          setError("ไม่พบข้อมูล TDS");
-          setLoading(false);
-          return;
-        }
-        //ใช้กับตาราง ---แปลงข้อมูลสำหรับตาราง BOD ให้มี dateOnly, timeOnly สำหรับแสดงในตาราง---
-        // ประมวลผลข้อมูลที่ได้มา โดยเพิ่มฟิลด์ช่วยเหลือสำหรับตาราง เช่น dateOnly, timeOnly, note
-        const processedData = response2.map((item: any) => {
-          const dt = dayjs(item.date);
-
-          return {
-            ...item,
-            dateOnly: dt.format("DD-MM-YYYY"),   // ใช้แสดงในตารางวันที่แบบอ่านง่าย
-            timeOnly: dt.format("HH:mm:ss"),     // ใช้แสดงเวลาในตาราง (ถ้าต้องการ)
-
-            before_note: item.before_note || '', // หมายเหตุก่อนบำบัด
-            after_note: item.after_note || '',   // หมายเหตุหลังบำบัด
-          };
-        });
-
-        // เรียงข้อมูลจากใหม่สุด → เก่าสุด (ให้ตารางแสดงลำดับใหม่สุดก่อน)
-        processedData.sort((a: any, b: any) =>
-          dayjs(b.date).diff(dayjs(a.date))
-        );
-
-        // เก็บข้อมูลทั้งหมดไว้ใน state ที่ใช้สำหรับ **ตาราง**
-        setData(processedData);
-        //สิ้นสุดการใช้ตาราง
-
+        setPercentChangeData(percentageChangeData);
       } else {
         setError("ไม่พบข้อมูล BOD");
       }
@@ -257,9 +200,60 @@ const BODdataviz: React.FC = () => {
     }
   };
 
+  // เรียก fetchData เมื่อเปลี่ยน filterMode หรือ dateRange (เฉพาะกราฟ)
   useEffect(() => {
     fetchData();
   }, [dateRange, filterMode]);
+
+  //ใช้กับตาราง
+  const loadBODTable = async () => {
+    try {
+      const response2 = await GetBODTABLE();
+      if (!response2 || response2.length === 0) {
+        setError("ไม่พบข้อมูล BOD ของตาราง");
+        return;
+      }
+
+      const processedData = response2.map((item: any) => {
+        const dt = dayjs(item.date);
+        return {
+          ...item,
+          dateOnly: dt.format("DD-MM-YYYY"),
+          timeOnly: dt.format("HH:mm:ss"),
+          before_note: item.before_note || '',
+          after_note: item.after_note || '',
+        };
+      });
+
+      processedData.sort((a: any, b: any) =>
+        dayjs(b.date).diff(dayjs(a.date))
+      );
+
+      setData(processedData); // ✅ ใช้ชื่อเดิมเหมือนคุณเลย
+    } catch (err) {
+      console.error("Error fetching BODTABLE data:", err);
+      setError("เกิดข้อผิดพลาดในการดึงข้อมูล BOD");
+    }
+  };
+
+  // โหลดครั้งแรก
+  useEffect(() => {
+    loadBODTable();
+  }, []);
+
+  useEffect(() => {
+    const loadStatus = async () => {
+      const data = await ListStatus();
+      if (data) {
+        setStatusOptions(data);
+      } else {
+        console.error("Failed to load status options");
+      }
+    };
+
+    loadStatus();
+  }, []);
+
 
   //ใช้กับกราฟ
   const getChartOptions = (
@@ -289,26 +283,28 @@ const BODdataviz: React.FC = () => {
       },
       annotations: {
         yaxis: isPercentChart
-          ? []   // 👉 ถ้าเป็นกราฟเปอร์เซ็นต์ จะไม่มีเส้นมาตรฐานเลย
+          ? []   //  ถ้าเป็นกราฟเปอร์เซ็นต์ จะไม่มีเส้นมาตรฐานเลย
           : (isStandardRange
             ? [
               {
                 y: minstandard ?? 0,
-                borderColor: "#CF1F2A",
-                label: { text: `Min Standard ${minstandard ?? 0}`, style: { background: "#CF1F2A", color: "#fff" } },
+                borderColor: "#e05600ff",
+                label: { text: `มาตรฐานต่ำสุด ${minstandard ?? 0}`, style: { background: "rgba(224, 86, 0, 0.6)", color: "#fff" } },
               },
               {
                 y: maxstandard ?? 0,
                 borderColor: "#035303ff",
-                label: { text: `Max Standard ${maxstandard ?? 0}`, style: { background: "#035303ff", color: "#fff" } },
+                label: { text: `มาตรฐานสูงสุด ${maxstandard ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
               },
             ]
             : middlestandard !== undefined && middlestandard !== 0
               ? [
                 {
                   y: middlestandard,
-                  borderColor: "#CF1F2A",
-                  label: { text: `มาตรฐาน ${middlestandard}`, style: { background: "#CF1F2A", color: "#fff" } },
+                  borderColor: "#e05600ff",
+                  borderWidth: 1.5,
+                  strokeDashArray: 6,
+                  label: { text: `มาตรฐาน ${middlestandard}`, style: { background: "rgba(224, 86, 0, 0.6)", color: "#fff" } },
                 },
               ]
               : []
@@ -406,20 +402,20 @@ const BODdataviz: React.FC = () => {
       title: 'วันที่',
       dataIndex: 'date',
       key: 'date',
-      width: 130,
+      width: 140,
     },
     {
       title: 'หน่วยที่วัด',
       dataIndex: 'unit',
       key: 'unit',
-      width: 145,
+      width: 125,
       render: (unit: string) => unit || '-',
     },
     {
       title: 'ค่ามาตรฐาน',
       dataIndex: 'standard_value',
       key: 'standard_value',
-      width: 130,
+      width: 160,
       render: (val: number) => val ?? '-',
     },
     {
@@ -427,14 +423,24 @@ const BODdataviz: React.FC = () => {
       dataIndex: 'before_value',
       key: 'before_value',
       width: 120,
-      render: (val: number | null) => val ?? '-',
+      render: (val: number | null) => val != null ? val.toFixed(2) : '-',
     },
     {
       title: 'ค่าหลังเข้าระบบบำบัด',
       dataIndex: 'after_value',
       key: 'after_value',
       width: 120,
-      render: (val: number | null) => val ?? '-',
+      render: (afterValue: number | null, record: any) => {
+        if (afterValue == null) return '-';
+        const before = record.before_value;
+        let arrow = null;
+        const iconStyle = { fontWeight: 'bold', fontSize: '17px' };
+        if (before != null) {
+          if (afterValue < before) arrow = <span style={{ ...iconStyle, color: '#EE404C' }}> ↓</span>;
+          else if (afterValue > before) arrow = <span style={{ ...iconStyle, color: '#14C18B' }}> ↑</span>;
+        }
+        return <span>{afterValue.toFixed(2)}{arrow}</span>;
+      },
     },
     {
       title: (
@@ -473,11 +479,38 @@ const BODdataviz: React.FC = () => {
       },
     },
     {
-      title: 'สถานะ',
-      key: 'status',
+      title: "สถานะ",
+      key: "status",
       width: 200,
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
+        <div style={{ padding: 8, width: 190 }}>
+          <Select
+            allowClear
+            placeholder="เลือกสถานะ"
+            value={selectedKeys[0]}
+            onChange={(value) => {
+              setSelectedKeys(value ? [value] : []);
+              confirm({ closeDropdown: false });
+            }}
+            style={{ width: "100%" }}
+            options={statusOptions.map((item) => ({
+              label: item.StatusName,
+              value: item.StatusName,
+            }))}
+            autoFocus
+            size="middle"
+          />
+        </div>
+      ),
+      filterIcon: (filtered: boolean) => (
+        <SearchOutlined style={{ color: filtered ? "#ffffffff" : undefined, fontSize: 20 }} />
+      ),
+      onFilter: (value: any, record: any) => {
+        if (!value) return true;
+        return normalizeString(record.status ?? "") === normalizeString(value);
+      },
       render: (_, record) => {
-        const statusName = record.status;  // 👈 เปลี่ยนตรงนี้
+        const statusName = record.status;
 
         if (!statusName) {
           return (
@@ -516,14 +549,13 @@ const BODdataviz: React.FC = () => {
         }
       }
     },
-
     {
       title: 'จัดการข้อมูล',
       key: 'action',
       className: 'darker-column',
       width: 120,
       render: (_: any, record: any) => {
-        console.log('record:', record);
+        // console.log('record:', record);
         return (
           <div className="action-buttons">
             <Tooltip title="แก้ไข">
@@ -537,7 +569,7 @@ const BODdataviz: React.FC = () => {
             <Tooltip title="ลบ">
               <button
                 className="circle-btn delete-btn"
-                onClick={() => handleDelete([record.before_id, record.after_id])}  //  ส่ง ID เดียว
+                onClick={() => handleDelete([record.before_id, record.after_id])}  // ✅ ส่ง ID เดียว
               >
                 <DeleteOutlined />
               </button>
@@ -561,7 +593,7 @@ const BODdataviz: React.FC = () => {
     }
 
     try {
-      const responses = await Promise.all(filteredIds.map((id) => GetTDSbyID(id)));
+      const responses = await Promise.all(filteredIds.map((id) => GetBODbyID(id)));
       const validData = responses
         .filter((res) => res && res.status === 200)
         .map((res) => res.data);
@@ -574,7 +606,7 @@ const BODdataviz: React.FC = () => {
       setEditRecord(validData);
       setIsEditModalVisible(true);
     } catch (error) {
-      console.error("Error fetching TDS data:", error);
+      console.error("Error fetching BOD data:", error);
       message.error("เกิดข้อผิดพลาดในการดึงข้อมูล");
     }
   };
@@ -605,25 +637,16 @@ const BODdataviz: React.FC = () => {
       cancelText: "ยกเลิก",
       async onOk() {
         try {
-          await DeleteAllTDSRecordsByDate(firstId);
+          await DeleteAllBODRecordsByDate(firstId);
           message.success("ลบข้อมูลสำเร็จ");
           await fetchData();
+          await loadBODTable();
         } catch (error) {
           message.error("ลบข้อมูลไม่สำเร็จ");
         }
       },
     });
   };
-
-  // const deleteBODRecord = async (id: number) => {
-  //   try {
-  //     await DeleteBOD(id);
-  //     message.success('ลบข้อมูลสำเร็จ');
-  //     fetchData();
-  //   } catch (error) {
-  //     message.error('เกิดข้อผิดพลาดในการลบข้อมูล');
-  //   }
-  // };
 
   //ใช้กับตาราง
   const showModal = () => {
@@ -642,7 +665,7 @@ const BODdataviz: React.FC = () => {
         <h1>BOD-Central</h1>
         <p>โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดค่า BOD น้ำเสีย</p>
       </div>
-      <div style={{ padding: "10px" }}>
+      <div style={{ padding: "20px" }}>
         <div className="bod-title">
           <div>
             <h1
@@ -657,7 +680,7 @@ const BODdataviz: React.FC = () => {
           <div className="bod-select-date">
             <div>
               <Select
-              
+
                 value={filterMode}
                 onChange={(val) => {
                   setFilterMode(val);
@@ -897,8 +920,8 @@ const BODdataviz: React.FC = () => {
           </div>
           <div className="bod-graph-card">
             <div className="bod-head-graph-card">
-              <div className="width40">
-                <h2 className="bod-head-graph-card-text" >เปอร์เซ็นต์การเปลี่ยนแปลง</h2>
+              <div className="width25">
+                <h2 className="bod-head-graph-card-text" >ประสิทธิภาพ</h2>
               </div>
               <div>
                 <ColorPicker
@@ -966,7 +989,7 @@ const BODdataviz: React.FC = () => {
           </div>
         </div>
 
-        <div className="bod-table-tdsdata">
+        <div className="bod-table-data">
           <h1 className="bod-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
           <Table
             columns={columns}
@@ -982,12 +1005,6 @@ const BODdataviz: React.FC = () => {
             }}
             bordered
           />
-
-        </div>
-
-        <div className="bod-central-statistics">
-          <h1 className="bod-title-text-statistics">BOD-Central Statistics</h1>
-          <h2>ผลการตรวจวัดค่า ปริมาณของสารต่างๆ ที่ละลายอยู่ในน้ำ บริเวณระบบบำบัดนํ้าเสียส่วนกลาง</h2>
         </div>
 
         <Modal
@@ -1002,19 +1019,20 @@ const BODdataviz: React.FC = () => {
         </Modal>
 
         <Modal
-          title="แก้ไขข้อมูล TDS"
+          title="แก้ไขข้อมูล BOD"
           open={isEditModalVisible}
           footer={null}
           width={1100}
           closable={false}
         >
           {editingRecord && (
-            <UpdateTDSCentralForm
+            <UpdateBODCentralForm
               initialValues={editingRecord}
               onSuccess={() => {
                 setIsEditModalVisible(false);
                 setEditRecord(null);
                 fetchData();
+                loadBODTable();
               }}
               onCancel={handleEditModalCancel}
             />
@@ -1025,9 +1043,7 @@ const BODdataviz: React.FC = () => {
           visible={modalVisible}
           onCancel={closeModal}
           footer={null}
-          width="90%"
-          style={{ maxWidth: 1200 }}
-          bodyStyle={{ height: '80vh' }}
+          className="custom-modal"
           centered
           destroyOnClose
           maskClosable={true}

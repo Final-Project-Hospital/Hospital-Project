@@ -27,3 +27,6 @@ export interface listBODInterface {
   UnitName: string;
   TreatmentName: string;
 }
+export interface DeleteBODInterface {
+  ID: number;
+}
