@@ -1,20 +1,12 @@
 import React from 'react';
 import { Button } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import './EnvironmentTabs.css';
+import './EnvironmentDrinkwaterTabs.css';
 
 const tabs = [
-  { label: 'pH-Central', path: '/admin/data-management/wastewater/ph' },
-  { label: 'BOD-Central', path: '/admin/data-management/wastewater/bod' },
-  { label: 'SS-Central', path: '/admin/data-management/wastewater/ts' },
-  { label: 'TDS-Central', path: '/admin/data-management/wastewater/tds' },
-  { label: 'FOG-Central', path: '/admin/data-management/wastewater/fog' },
-  { label: 'TKN-Central', path: '/admin/data-management/wastewater/tkn' },
-  { label: 'COD-Central', path: '/admin/data-management/wastewater/cod' },
-  { label: 'FCB-Central', path: '/admin/data-management/wastewater/fcb' },
-  { label: 'Residule-Central', path: '/admin/data-management/wastewater/residule' },
-  { label: 'Sulfid-Central', path: '/admin/data-management/wastewater/sulfid' },
-  { label: 'TCB-Central', path: '/admin/data-management/wastewater/tcb' },
+  { label: 'E coli-Central', path: '/admin/data-management/drinkwater/ecoli' },
+  { label: 'FCB-Central', path: '/admin/data-management/drinkwater/dfcb' },
+  { label: 'TCB-Central', path: '/admin/data-management/drinkwater/dtcb' },
 ];
 
 const EnvironmentLayout: React.FC = () => {

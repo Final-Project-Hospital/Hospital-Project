@@ -20,7 +20,7 @@ const Hardware_Room = Loadable(lazy(() => import("../page/admin/harware/data/ind
 const ManageRoom = Loadable(lazy(() => import("../page/admin/harware/manage")));
 
 // data-visualization
-const EnvironmentBlock = Loadable(lazy(() => import("../page/admin/data-visualization/EnvironmentBlock")));
+const EnvironmentWastewaterBlock = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/EnvironmentWastewaterBlock")));
 const DatavizPH = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/PHdataviz/PHdataviz")));
 const DatavizTDS = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/TDSdataviz/TDSdataviz")));
 const DatavizBOD = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/BODdataviz/BODdataviz")));
@@ -29,7 +29,7 @@ const DatavizTS = Loadable(lazy(() => import("../page/admin/data-visualization/w
 const DatavizFOG = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/FOGdataviz/FOGdataviz")));
 
 // data-management
-const EnvironmentTabs = Loadable(lazy(() => import("../page/admin/data-management/EnvironmentTabs")));
+const EnvironmentWastewaterTabs = Loadable(lazy(() => import("../page/admin/data-management/wastewater/EnvironmentWastewaterTabs")));
 const PH = Loadable(lazy(() => import("../page/admin/data-management/wastewater/PHcenter/PHcenter")));
 const TDS = Loadable(lazy(() => import("../page/admin/data-management/wastewater/TDScenter/TDScenter")));
 const BOD = Loadable(lazy(() => import("../page/admin/data-management/wastewater/BODcenter/BODcenter")));
@@ -41,6 +41,23 @@ const FCB = Loadable(lazy(() => import("../page/admin/data-management/wastewater
 const RES = Loadable(lazy(() => import("../page/admin/data-management/wastewater/Residulecenter/REScenter")));
 const SUL = Loadable(lazy(() => import("../page/admin/data-management/wastewater/Sulfidcenter/SULcenter")));
 const TCB = Loadable(lazy(() => import("../page/admin/data-management/wastewater/TCBcenter/TCBcenter")));
+//drinkwater
+const EnvironmentDrinkwaterTabs = Loadable(lazy(() => import("../page/admin/data-management/drinkwater/EnvironmentDrinkwaterTabs")));
+const ECOIN = Loadable(lazy(() => import("../page/admin/data-management/drinkwater/ecolicenter/ecolicenter")));
+const DTCB = Loadable(lazy(() => import("../page/admin/data-management/drinkwater/dtcbcenter/tcbcenter")));
+const DFCB = Loadable(lazy(() => import("../page/admin/data-management/drinkwater/dfcbcenter/fcbenter")));
+
+//tapwater
+const EnvironmentTapwaterTabs = Loadable(lazy(() => import("../page/admin/data-management/tapwater/EnvironmentTapwaterTabs")));
+const Al = Loadable(lazy(() => import("../page/admin/data-management/tapwater/alcenter/alcenter")));
+const IRON = Loadable(lazy(() => import("../page/admin/data-management/tapwater/ironcenter/ironcenter")));
+const MN = Loadable(lazy(() => import("../page/admin/data-management/tapwater/mncenter/mncenter")));
+const NI = Loadable(lazy(() => import("../page/admin/data-management/tapwater/nicenter/nicenter")));
+const NTU = Loadable(lazy(() => import("../page/admin/data-management/tapwater/ntucenter/ntucenter")));
+const PT = Loadable(lazy(() => import("../page/admin/data-management/tapwater/ptcenter/ptcenter")));
+const TCOD = Loadable(lazy(() => import("../page/admin/data-management/tapwater/tcodcenter/codcenter")));
+const TH = Loadable(lazy(() => import("../page/admin/data-management/tapwater/thcenter/thcenter")));
+const TTCB = Loadable(lazy(() => import("../page/admin/data-management/tapwater/ttcbcenter/tcbcenter")));
 const UserRoutes = (): RouteObject[] => [
   {
     path: "/", element: <User />,
@@ -76,7 +93,7 @@ const AdminRoutes = (): RouteObject[] => [
       {
         path: "data-visualization/water",
         children: [
-          { index: true, element: <EnvironmentBlock /> },
+          { index: true, element: <EnvironmentWastewaterBlock /> },
           { path: "datavizPH", element: <DatavizPH /> },
           { path: "datavizBOD", element: <DatavizBOD /> },
           { path: "datavizTS", element: <DatavizTS /> },
@@ -87,7 +104,7 @@ const AdminRoutes = (): RouteObject[] => [
       },
       {
         path: "data-management/wastewater",
-        element: <EnvironmentTabs />, // Header + Tabs
+        element: <EnvironmentWastewaterTabs />, // Header + Tabs
         children: [
           { index: true, element: <PH /> },         // /admin/environment
           { path: "ph", element: <PH /> },            
@@ -98,9 +115,36 @@ const AdminRoutes = (): RouteObject[] => [
           { path: "tkn", element: <TKN /> },
           { path: "cod", element: <COD /> },
           { path: "fcb", element: <FCB /> },
-          { path: "res", element: <RES /> },
-          { path: "sul", element: <SUL /> },
+          { path: "residule", element: <RES /> },
+          { path: "sulfid", element: <SUL /> },
           { path: "tcb", element: <TCB /> },
+        ],
+      },
+      {
+        path: "data-management/drinkwater",
+        element: <EnvironmentDrinkwaterTabs />, // Header + Tabs
+        children: [
+          { index: true, element: <ECOIN /> },         // /admin/environment
+          { path: "ecoli", element: <ECOIN /> },            
+          { path: "dfcb", element: <DFCB /> },
+          { path: "dtcb", element: <DTCB /> },
+        ],
+      },
+      {
+        path: "data-management/tapwater",
+        element: <EnvironmentTapwaterTabs />, // Header + Tabs
+        children: [
+          { index: true, element: <Al /> },         // /admin/environment
+          { path: "al", element: <Al /> },
+          { path: "iron", element: <IRON /> },            
+          { path: "mn", element: <MN /> },
+          { path: "ni", element: <NI /> },
+          { path: "ntu", element: <NTU /> },            
+          { path: "pt", element: <PT /> },
+          { path: "cod", element: <TCOD /> },
+          { path: "th", element: <TH /> },            
+          { path: "tcb", element: <TTCB /> },
+          
         ],
       },
     ],

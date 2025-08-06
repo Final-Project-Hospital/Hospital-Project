@@ -118,7 +118,7 @@ func CreateTCB(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "บันทึกข้อมูล Sulfide สำเร็จ", 
+		"message": "บันทึกข้อมูล Total Coliform Bacteria สำเร็จ", 
 		"data": tcb})
 }
 

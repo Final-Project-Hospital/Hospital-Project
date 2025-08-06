@@ -16,7 +16,7 @@ func DB() *gorm.DB {
 }
 
 func ConnectionDB() {
-	dsn := "host=localhost user=postgres password=1234 dbname=hospital port=5432 sslmode=disable TimeZone=Asia/Bangkok"
+	dsn := "host=localhost user=postgres password=123456 dbname=HospitalDB port=5432 sslmode=disable TimeZone=Asia/Bangkok"
 
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Error),
@@ -58,11 +58,13 @@ func SetupDatabase() {
 		&entity.Status{},
 	)
 	// Enviroment
-	Wastewater := entity.Environment{
-		EnvironmentName: "น้ำเสีย",
-	}
-	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
+	Wastewater := entity.Environment{EnvironmentName: "น้ำเสีย",}
+	Drinkwater := entity.Environment{EnvironmentName: "น้ำดื่ม",}
+	Tapwater := entity.Environment{EnvironmentName: "น้ำประปา"}
 
+	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
+	db.FirstOrCreate(&Drinkwater, &entity.Environment{EnvironmentName: "น้ำดื่ม"})
+	db.FirstOrCreate(&Tapwater, &entity.Environment{EnvironmentName: "น้ำประปา"})
 	// Standard
 	ranges := []struct {
 		min float32
@@ -360,16 +362,55 @@ func SetupDatabase() {
 
 	db.FirstOrCreate(&SensorData1, entity.SensorData{HardwareID: SensorData1.HardwareID})
 
+	//Wastewater
 	param1 := entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"}
 	param2 := entity.Parameter{ParameterName: "Total Solid"}
 	param3 := entity.Parameter{ParameterName: "Potential of Hydrogen"}
 	param4 := entity.Parameter{ParameterName: "Total Dissolved Solids"}
+	param5 := entity.Parameter{ParameterName: "Biological Oxygen Demand"}
+	param6 := entity.Parameter{ParameterName: "Fats, Oils, and Grease"}
+	param7 := entity.Parameter{ParameterName: "Chemical Oxygen Demand"}
+	param8 := entity.Parameter{ParameterName: "Fecal Coliform Bacteria"}
+	param9 := entity.Parameter{ParameterName: "Residual"}
+	param10 := entity.Parameter{ParameterName: "Sulfide"}
+	param11 := entity.Parameter{ParameterName: "Total Coliform Bacteria"}
 
+	//น้ำดื่ม
+	param12 := entity.Parameter{ParameterName: "Escherichia coli"}
+
+	//น้ำประปา
+	param13 := entity.Parameter{ParameterName: "Turbidity"}
+	param14 := entity.Parameter{ParameterName: "Color"}
+	param15 := entity.Parameter{ParameterName: "Total Hardness"}
+	param16 := entity.Parameter{ParameterName: "Nitrate"}
+	param17 := entity.Parameter{ParameterName: "Alurminnium"}
+	param18 := entity.Parameter{ParameterName: "Iron"}
+	param19 := entity.Parameter{ParameterName: "Manganese"}
+
+	//น้ำเสีย
 	db.FirstOrCreate(&param1, entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"})
 	db.FirstOrCreate(&param2, entity.Parameter{ParameterName: "Total Solid"})
 	db.FirstOrCreate(&param3, entity.Parameter{ParameterName: "Potential of Hydrogen"})
 	db.FirstOrCreate(&param4, entity.Parameter{ParameterName: "Total Dissolved Solids"})
+	db.FirstOrCreate(&param5, entity.Parameter{ParameterName: "Biological Oxygen Demand"})
+	db.FirstOrCreate(&param6, entity.Parameter{ParameterName: "Fats, Oils, and Grease"})
+	db.FirstOrCreate(&param7, entity.Parameter{ParameterName: "Chemical Oxygen Demand"})
+	db.FirstOrCreate(&param8, entity.Parameter{ParameterName: "Fecal Coliform Bacteria"})
+	db.FirstOrCreate(&param9, entity.Parameter{ParameterName: "Residual"})
+	db.FirstOrCreate(&param10, entity.Parameter{ParameterName: "Sulfide"})
+	db.FirstOrCreate(&param11, entity.Parameter{ParameterName: "Total Coliform Bacteria"})
 
+	//น้ำดื่ม
+	db.FirstOrCreate(&param12, entity.Parameter{ParameterName: "Escherichia coli"})
+
+	//น้ำประปา
+	db.FirstOrCreate(&param13, entity.Parameter{ParameterName: "Turbidity"})
+	db.FirstOrCreate(&param14, entity.Parameter{ParameterName: "Color"})
+	db.FirstOrCreate(&param15, entity.Parameter{ParameterName: "Total Hardness"})
+	db.FirstOrCreate(&param16, entity.Parameter{ParameterName: "Nitrate"})
+	db.FirstOrCreate(&param17, entity.Parameter{ParameterName: "Alurminnium"})
+	db.FirstOrCreate(&param18, entity.Parameter{ParameterName: "Iron"})
+	db.FirstOrCreate(&param19, entity.Parameter{ParameterName: "Manganese"})
 	count := int64(0)
 	db.Model(&entity.SensorDataParameter{}).Count(&count)
 

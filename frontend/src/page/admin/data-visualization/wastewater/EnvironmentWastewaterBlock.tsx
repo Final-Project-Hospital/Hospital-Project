@@ -1,18 +1,23 @@
-import './EnvironmentBlock.css';
+import './EnvironmentWastewaterBlock.css';
 import { Tooltip } from 'antd';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { GetfirstPH } from '../../../services/phService';
-import { GetfirstTDS } from '../../../services/tdsService';
-import { GetfirstBOD } from '../../../services/bodService';
-import { GetfirstFOG } from '../../../services/fogService';
+import { GetfirstPH } from '../../../../services/phService';
+import { GetfirstTDS } from '../../../../services/tdsService';
+import { GetfirstBOD } from '../../../../services/bodService';
+import { GetfirstFOG } from '../../../../services/fogService';
 
-import ph from '../../../../../frontend/src/assets/ph.png';
-import bod from '../../../../../frontend/src/assets/blood-analysis.png';
-import ts from '../../../../../frontend/src/assets/sedimentation.png';
-import tds from '../../../../../frontend/src/assets/water-quality.png';
-import fog from '../../../../../frontend/src/assets/oil.png';
-import tkn from '../../../../../frontend/src/assets/nitrogen.png';
+import ph from '../../../../../src/assets/ph.png';
+import bod from '../../../../../src/assets/blood-analysis.png';
+import ts from '../../../../../src/assets/sedimentation.png';
+import tds from '../../../../../src/assets/water-quality.png';
+import fog from '../../../../../src/assets/oil.png';
+import tkn from '../../../../../src/assets/nitrogen.png';
+import cod from '../../../../../src/assets/nitrogen.png';
+import fcb from '../../../../../src/assets/nitrogen.png';
+import res from '../../../../../src/assets/nitrogen.png';
+import sul from '../../../../../src/assets/nitrogen.png';
+import tcb from '../../../../../src/assets/nitrogen.png';
 
 const EnvironmentBlock = () => {
   const navigate = useNavigate();
