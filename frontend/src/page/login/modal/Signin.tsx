@@ -168,11 +168,34 @@ const Signin = ({ handleSignIn }: any) => {
             className="mb-3"
             rules={[
               { required: false },
-              { min: 9, message: "เบอร์โทรต้องไม่น้อยกว่า 9 หลัก" },
+              {
+                validator: (_, value) => {
+                  if (!value) return Promise.resolve();
+                  if (!/^[0][0-9]{9}$/.test(value))
+                    return Promise.reject(
+                      new Error("เบอร์โทรต้องมี 10 หลัก และขึ้นต้นด้วย 0")
+                    );
+                  return Promise.resolve();
+                },
+              },
             ]}
           >
-            <Input className="rounded-lg bg-teal-50 border-teal-200" />
+            <Input
+              className="rounded-lg bg-teal-50 border-teal-200"
+              maxLength={10}
+              onChange={(e) => {
+                // รับเฉพาะตัวเลขเท่านั้น
+                const rawValue = e.target.value;
+                const cleaned = rawValue.replace(/\D/g, ""); 
+                if (cleaned.length === 0 || cleaned.startsWith("0")) {
+                  e.target.value = cleaned;
+                } else {
+                  e.target.value = "0" + cleaned.slice(0, 9); 
+                }
+              }}
+            />
           </Form.Item>
+
           <Button
             htmlType="submit"
             type="primary"

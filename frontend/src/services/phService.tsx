@@ -1,13 +1,6 @@
-import axios, { AxiosResponse } from 'axios';
-import { message } from 'antd';
-import { CreatePHInterface } from "../interface/IpH";
-import { UpdatePHInterface } from "../interface/IpH";
-import { DeletePHInterface } from "../interface/IpH";
-import {apiUrl} from "./index"
-
-// const Authorization = localStorage.getItem("token");
-
-// const Bearer = localStorage.getItem("token_type");
+import axios from "axios";
+import { PHcenterInterface, DeletePHInterface } from "../interface/IpH";
+import { apiUrl } from "./index"
 
 const getAuthHeader = () => {
   const token = localStorage.getItem("token");
@@ -15,43 +8,32 @@ const getAuthHeader = () => {
   return { Authorization: `${tokenType} ${token}` };
 };
 
-// const requestOptions = {
-
-//   headers: {
-
-//     "Content-Type": "application/json",
-
-//     Authorization: `${Bearer} ${Authorization}`,
-
-//   },
-
-// };
-
-export const CreatePH = async (payload: CreatePHInterface): Promise<AxiosResponse<any> | null> => {
+export const createPH = async (
+  data: PHcenterInterface
+): Promise<any | null> => {
   try {
-    const response = await axios.post(`${apiUrl}/create-ph`, payload, {
+    const response = await axios.post(`${apiUrl}/create-ph`, data, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
       },
     });
 
-    if (response.status === 201) {
+    if (response.status === 201 || response.status === 200) {
       return response;
     } else {
       console.error("Unexpected status:", response.status);
       return null;
     }
   } catch (error: any) {
-    console.error("Error creating pH:", error.response?.data || error.message);
-    message.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+    console.error("Error creating PH record:", error.response?.data || error.message);
     return null;
   }
 };
-
-export const UpdatePH = async (id: number): Promise<UpdatePHInterface[] | null> => {
+export const GetfirstPH = async (
+): Promise<any | null> => {
   try {
-    const response = await axios.patch(`${apiUrl}/update-ph/${id}`, {
+    const response = await axios.get(`${apiUrl}/get-first-ph`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -59,14 +41,92 @@ export const UpdatePH = async (id: number): Promise<UpdatePHInterface[] | null> 
     });
 
     if (response.status === 200) {
-      return response.data;
+      return response;
     } else {
       console.error("Unexpected status:", response.status);
       return null;
     }
   } catch (error: any) {
-    console.error("Error updating pH:", error.response?.data || error.message);
+    console.error("Error creating PH record:", error.response?.data || error.message);
     return null;
+  }
+};
+
+export const GetlistPH = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/list-ph`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating PH record:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const GetPHTABLE = async () => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-ph-table`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching PH:", error);
+    return null;
+  }
+};
+
+export const UpdateOrCreatePH = async (payload: any) => {
+  try {
+    let response;
+
+    if (payload.ID) {
+      const url = `${apiUrl}/update-or-create-ph/${payload.ID}`;
+      console.log("PATCH URL:", url);
+      console.log("Payload:", payload);
+
+      response = await axios.patch(url, payload, {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      });
+    } else {
+      // Create
+      const url = `${apiUrl}/create-ph`;
+      console.log("POST URL:", url);
+      console.log("Payload:", payload);
+
+      response = await axios.post(url, payload, {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      });
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error("Error in UpdateOrCreatePH:", error);
+    throw error;
   }
 };
 
@@ -86,15 +146,14 @@ export const DeletePH = async (id: number): Promise<DeletePHInterface[] | null> 
       return null;
     }
   } catch (error: any) {
-    console.error("Error deleting pH:", error.response?.data || error.message);
+    console.error("Error deleting PH :", error.response?.data || error.message);
     return null;
   }
 };
 
-export const GetfirstPH = async (
-): Promise<any | null> => {
+export const GetPHbyID = async (id: number): Promise<any | null> => {
   try {
-    const response = await axios.get(`${apiUrl}/get-first-ph`,{
+    const response = await axios.get(`${apiUrl}/get-ph/${id}`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -108,7 +167,30 @@ export const GetfirstPH = async (
       return null;
     }
   } catch (error: any) {
-    console.error("Error creating PH record:", error.response?.data || error.message);
+    console.error("Error fetching PH by ID:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const DeleteAllPHRecordsByDate = async (
+  id: number
+): Promise<any | null> => {
+  try {
+    const response = await axios.delete(`${apiUrl}/delete-ph-day/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data; // อาจเป็นข้อความยืนยัน หรือข้อมูลอื่นๆ จาก backend
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error deleting PH records by date:", error.response?.data || error.message);
     return null;
   }
 };

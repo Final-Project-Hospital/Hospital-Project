@@ -21,12 +21,12 @@ const ManageRoom = Loadable(lazy(() => import("../page/admin/harware/manage")));
 
 // data-visualization
 const EnvironmentBlock = Loadable(lazy(() => import("../page/admin/data-visualization/EnvironmentBlock")));
-const DatavizPH = Loadable(lazy(() => import("../page/admin/data-visualization/PHdataviz/PHdataviz")));
-const DatavizTDS = Loadable(lazy(() => import("../page/admin/data-visualization/TDSdataviz/TDSdataviz")));
-const DatavizBOD = Loadable(lazy(() => import("../page/admin/data-visualization/BODdataviz/BODdataviz")));
-const DatavizTKN = Loadable(lazy(() => import("../page/admin/data-visualization/TKNdataviz/TKNdataviz")));
-const DatavizTS = Loadable(lazy(() => import("../page/admin/data-visualization/TSdataviz/TSdataviz")));
-const DatavizFOG = Loadable(lazy(() => import("../page/admin/data-visualization/FOGdataviz/FOGdataviz")));
+const DatavizPH = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/PHdataviz/PHdataviz")));
+const DatavizTDS = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/TDSdataviz/TDSdataviz")));
+const DatavizBOD = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/BODdataviz/BODdataviz")));
+const DatavizTKN = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/TKNdataviz/TKNdataviz")));
+const DatavizTS = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/TSdataviz/TSdataviz")));
+const DatavizFOG = Loadable(lazy(() => import("../page/admin/data-visualization/wastewater/FOGdataviz/FOGdataviz")));
 
 // data-management
 const EnvironmentTabs = Loadable(lazy(() => import("../page/admin/data-management/EnvironmentTabs")));

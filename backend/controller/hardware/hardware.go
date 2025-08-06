@@ -275,8 +275,9 @@ func UpdateStandardHardwareByID(c *gin.Context) {
 		return
 	}
 
+	// ✅ รับ pointer เพื่อให้ binding 0 ได้
 	var input struct {
-		Standard float64 `json:"standard" binding:"required"`
+		Standard *float64 `json:"standard" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -284,7 +285,10 @@ func UpdateStandardHardwareByID(c *gin.Context) {
 		return
 	}
 
-	standard.Standard = input.Standard
+	// ✅ ตรวจสอบว่าค่าถูกส่งมา
+	if input.Standard != nil {
+		standard.Standard = *input.Standard
+	}
 
 	if err := db.Save(&standard).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -293,6 +297,8 @@ func UpdateStandardHardwareByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, standard)
 }
+
+
 
 type ParamWithGraphResponse struct {
 	ID           uint    `json:"id"`            // HardwareParameter.ID

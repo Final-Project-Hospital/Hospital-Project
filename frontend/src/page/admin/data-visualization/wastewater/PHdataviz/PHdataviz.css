@@ -1,25 +1,25 @@
-.bod-title-header {
+.ph-title-header {
   background: linear-gradient(90deg, #356768, #5AEEF0);
   padding: 30px;
   border-radius: 0 0 25px 25px;
   color: white;
 }
 
-.bod-title-header h1 {
+.ph-title-header h1 {
   font-size: 2rem;
   text-shadow: 0 4px 5px #000000ba;
   font-weight: 500;
   margin: 0;
 }
 
-.bod-back-icon {
+.ph-back-icon {
   font-size: 1.5rem;
   color: #007b8a;
   cursor: pointer;
   margin-right: 4px;
 }
 
-.bod-title {
+.ph-title {
   justify-content: space-between;
   flex-wrap: wrap;
   display: flex;
@@ -29,7 +29,7 @@
   gap: 16px;
 }
 
-.bod-title-text {
+.ph-title-text {
   margin: 0;
   font-weight: bold;
   font-size: 1.5rem;
@@ -37,21 +37,21 @@
   margin-top: 10px;
 }
 
-.bod-select-group {
+.ph-select-group {
   padding: 16px;
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
 }
 
-.bod-graph-container {
+.ph-graph-container {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
   justify-content: space-between;
 }
 
-.bod-graph-card {
+.ph-graph-card {
   flex: 0 1 calc(50% - 10px);
   max-width: calc(50% - 10px);
   background-color: #fff;
@@ -63,45 +63,45 @@
   padding: 15px;
 }
 
-.width25 {
+.ph-width25 {
   width: 25%;
 }
 
-.width40 {
+.ph-width40 {
   width: 40%;
 }
 
-.bod-head-graph-card {
+.ph-head-graph-card {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
 }
 
-.bod-head-graph-card-text {
+.ph-head-graph-card-text {
   color: #1b4242;
   border-radius: 2px;
   background-image: linear-gradient(to right, #5DDFE2, #ffffff);
   padding: 5px;
 }
 
-.bod-right-select-graph {
+.ph-right-select-graph {
   text-align: right;
 }
 
-.bod-select-filter {
+.ph-select-filter {
   width: fit-content;
   min-width: 120px;
 }
 
-.bod-select-date {
+.ph-select-date {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
   align-items: flex-end;
 }
 
-.bod-header-vis {
+.ph-header-vis {
   align-items: center;
   font-size: 24px;
   font-weight: bold;
@@ -109,12 +109,12 @@
   margin-top: 20px;
 }
 
-.bod-title-search-vis {
+.ph-title-search-vis {
   align-items: center;
   width: 25%;
 }
 
-.bod-title-text-vis {
+.ph-title-text-vis {
   margin: 0;
   font-weight: bold;
   font-size: 1.5rem;
@@ -122,23 +122,23 @@
   margin-top: 10px;
 }
 
-.bod-search-box {
+.ph-search-box {
   margin: 10px 0px;
 }
 
-.bod-search-input {
+.ph-search-input {
   border-radius: 20px;
   height: 30px;
   font-size: 14px;
 }
 
-.bod-btn-container {
+.ph-btn-container {
   display: flex;
   padding: 0px 45px 10px 0px;
   justify-content: flex-end;
 }
 
-.bod-add-btn {
+.ph-add-btn {
   height: 100%;
   background-color: #157071;
   color: white;
@@ -153,11 +153,11 @@
 
 }
 
-.bod-add-btn:hover {
+.ph-add-btn:hover {
   background-color: #49d4d7;
 }
 
-.bod-table-tdsdata {
+.ph-table-phdata {
   background: white;
   border-radius: 25px;
   padding: 20px;
@@ -168,37 +168,37 @@
   z-index: 5;
 }
 
-.bod-table-tdsdata .ant-table-thead>tr>th {
+.ph-table-data .ant-table-thead>tr>th {
   background-color: #A1EFF0;
   color: #5D5D5D;
   font-weight: bold;
   text-align: center;
 }
 
-.bod-table-tdsdata .ant-table {
+.ph-table-data .ant-table {
   border-radius: 25px;
   overflow: hidden;
 }
 
-.bod-table-tdsdata .ant-table-tbody>tr>td {
+.ph-table-data .ant-table-tphy>tr>td {
   text-align: center;
   vertical-align: middle;
 }
 
 /* โค้งขอบหัวตาราง (thead) */
-.bod-table-tdsdata .ant-table-thead>tr>th:first-child {
+.ph-table-data .ant-table-thead>tr>th:first-child {
   border-top-left-radius: 20px;
 }
 
-.bod-table-tdsdata .ant-table-thead>tr>th:last-child {
+.ph-table-data .ant-table-thead>tr>th:last-child {
   border-top-right-radius: 20px;
 }
 
-.bod-table-tdsdata .ant-table-tfoot>tr>td:first-child {
+.ph-table-data .ant-table-tfoot>tr>td:first-child {
   border-bottom-left-radius: 20px;
 }
 
-.bod-table-tdsdata .ant-table-tfoot>tr>td:last-child {
+.ph-table-data .ant-table-tfoot>tr>td:last-child {
   border-bottom-right-radius: 20px;
 }
 
@@ -206,7 +206,7 @@
 /*จัดการ*/
 
 /* ทำให้คอลัมน์จัดการข้อมูลดูทึบกว่า */
-.bod-table-tdsdata .ant-table-tbody>tr>td.darker-column {
+.ph-table-data .ant-table-tphy>tr>td.darker-column {
   background-color: #f5f5f5;
   /* เทาอ่อนทึบ */
   font-weight: 500;
@@ -214,7 +214,7 @@
   border-bottom: 0.5px solid #D9D9D9;
 }
 
-.bod-title-text-table {
+.ph-title-text-table {
   margin: 0;
   font-weight: bold;
   font-size: 1.2rem;
@@ -222,7 +222,7 @@
   margin-bottom: 10px;
 }
 
-.bod-title-text-statistics {
+.ph-title-text-statistics {
   font-size: 24px;
   font-weight: bold;
   margin: 100px 0px;
@@ -303,31 +303,46 @@
   box-shadow: none !important;
   border: none !important;
 }
+.ph-custom-modal{
+   width: 90% !important;     /* important ใช้ในกรณีที่ Ant Design อาจ override ค่า */
+  max-width: 1200px !important;
+}
+
+.ph-chart-container {
+  flex: 1;                   /* ให้กินพื้นที่ที่เหลือ */
+  min-height: 400px;         /* กันไม่ให้เตี้ยเกินไป */
+}
+
+.ph-chart-container .apexcharts-canvas {
+  height: 100% !important;   /* บังคับให้ chart ขยายเต็ม */
+}
+
+
 
 /* Responsive for tablets (max-width: 1024px) */
 @media (max-width: 1025px) {
-  .bod-graph-card {
+  .ph-graph-card {
     flex: 1 1 100%;
     max-width: 100%;
   }
 
-  .bod-select-group {
+  .ph-select-group {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .bod-title {
+  .ph-title {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
 
-  .bod-right-select-graph {
+  .ph-right-select-graph {
     width: 100%;
     text-align: left;
   }
 
-  .bod-select-date {
+  .ph-select-date {
     display: flex;
     gap: 10px;
     margin-left: auto;
@@ -336,53 +351,53 @@
 
 /* Responsive for medium screens (max-width: 768px) */
 @media (max-width: 768px) {
-  .bod-title-header {
+  .ph-title-header {
     margin-top: 50px;
     text-align: center;
   }
 
-  .bod-title-header h1 {
+  .ph-title-header h1 {
     font-size: 2rem;
   }
 
-  .bod-title-text {
+  .ph-title-text {
     font-size: 1.25rem;
     text-align: center;
   }
 
-  .bod-select-group {
+  .ph-select-group {
     flex-direction: column;
   }
 
-  .bod-table-tdsdata {
+  .ph-table-data {
     overflow-x: auto;
     padding: 10px;
   }
 
-  .bod-table-tdsdata .ant-table {
+  .ph-table-data .ant-table {
     min-width: 600px !important;
     /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
   }
 
-  .bod-table-tdsdata .ant-table-thead>tr>th,
-  .bod-table-tdsdata .ant-table-tbody>tr>td {
+  .ph-table-data .ant-table-thead>tr>th,
+  .ph-table-data .ant-table-tphy>tr>td {
     white-space: nowrap !important;
     /* บรรทัดไม่ตัด */
     padding: 8px !important;
     font-size: 12px !important;
   }
 
-  .bod-title-text-table {
+  .ph-title-text-table {
     text-align: center;
     font-size: 1rem;
   }
 
-  .bod-add-btn {
+  .ph-add-btn {
     font-size: 12px;
     padding: 5px 12px;
   }
 
-  .bod-search-input {
+  .ph-search-input {
     font-size: 12px;
     height: 28px;
   }
@@ -390,117 +405,112 @@
 
 /* Responsive for small screens (max-width: 480px) */
 @media (max-width: 480px) {
-  .bod-title-header {
+  .ph-title-header {
     padding: 15px;
   }
-  .bod-title-header h1 {
+
+  .ph-title-header h1 {
     font-size: 1.5rem;
     margin-top: 10px;
   }
-  .bod-graph-card {
+
+  .ph-graph-card {
     min-height: 350px;
   }
-  .bod-select-group {
+
+  .ph-select-group {
     padding: 10px;
     gap: 8px;
   }
-  .bod-head-graph-card {
+
+  .ph-head-graph-card {
     flex-direction: column;
     align-items: flex-start;
     margin-bottom: 10px;
   }
-  .bod-right-select-graph {
+
+  .ph-right-select-graph {
     text-align: left;
     width: 100%;
   }
+
   .width25 {
     width: 40%;
   }
+
   .width40 {
     width: 60%;
   }
-  /* .bod-table-tdsdata {
-    overflow-x: auto;
-    padding: 10px;
-  }
-  .bod-table-tdsdata .ant-table {
-    min-width: 600px !important;
-  }
-  .bod-table-tdsdata .ant-table-thead>tr>th,
-  .bod-table-tdsdata .ant-table-tbody>tr>td {
-    white-space: nowrap !important;
-    padding: 8px !important;
-    font-size: 5px !important;
-  } */
-   .bod-select-date {
+
+  .ph-select-date {
     align-items: flex-start;
     gap: 10px;
     width: 100%;
   }
 
   /* ปรับ Select filter ให้เต็มจอเล็ก */
-  .bod-select-date .bod-select-filter {
+  .ph-select-date .ph-select-filter {
     width: 50% !important;
   }
 
   /* ปรับ DatePicker และ RangePicker ให้เต็มจอ */
-  .bod-select-date .ant-picker {
+  .ph-select-date .ant-picker {
     width: 100% !important;
   }
-  
+
 }
 
 /* Responsive for small screens (max-width: 480px) */
 @media (max-width: 376px) {
-  .bod-title-header {
+  .ph-title-header {
     padding: 15px;
     max-width: 100%;
   }
 
-  .width25 {
+  .ph-width25 {
     width: 40%;
   }
 
-  .width40 {
+  .ph-width40 {
     width: 60%;
   }
 
-  .bod-title-header h1 {
+  .ph-title-header h1 {
     font-size: 1rem;
   }
 
-  .bod-graph-card {
+  .ph-graph-card {
     min-height: 350px;
     max-width: 375px;
   }
 
-  .bod-select-group {
+  .ph-select-group {
     padding: 10px;
     gap: 8px;
   }
 
-  .bod-head-graph-card {
+  .ph-head-graph-card {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .bod-right-select-graph {
+  .ph-right-select-graph {
     text-align: left;
     width: 100%;
   }
 
-  .bod-table-tdsdata {
+  .ph-table-data {
     overflow-x: auto;
     padding: 10px;
   }
 
-  .bod-table-tdsdata .ant-table {
+  .ph-table-data .ant-table {
     min-width: 600px !important;
     /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
   }
 
-  .bod-table-tdsdata .ant-table-thead>tr>th,
-  .bod-table-tdsdata .ant-table-tbody>tr>td {
+  .ph-table-data .ant-table-thead>tr>th,
+  .ph-table-data .ant-table-tphy>tr>td {
     white-space: nowrap !important;
     /* บรรทัดไม่ตัด */
     padding: 5px !important;
@@ -522,5 +532,11 @@
 
   .circle-btn:hover {
     background-color: #f5f5f5;
+  }
+
+  .ph-custom-modal {
+    width: 90% !important;
+    max-width: 1200px !important;
+    margin-top: 60px !important;
   }
 }

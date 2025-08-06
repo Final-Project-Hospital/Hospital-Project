@@ -11,26 +11,41 @@ import {
   FaNotesMedical,
   FaProcedures,
   FaBriefcaseMedical,
+  FaCapsules,
+  FaHeartbeat,
+  FaStethoscope,
+  FaThermometerHalf,
+  FaRadiation,
 } from 'react-icons/fa';
 import { IconType } from 'react-icons';
-import { CreateRoom, ListBuilding, ListHardware } from '../../../../../../services/hardware';
+import {
+  CreateRoom,
+  ListBuilding,
+  ListHardware,
+  ListRoom,
+} from '../../../../../../services/hardware';
 import { RoomInterface } from '../../../../../../interface/IRoom';
 import { BuildingInterface } from '../../../../../../interface/IBuilding';
 import { HardwareInterface } from '../../../../../../interface/IHardware';
 
 const { Option } = Select;
 
-const iconOptions: { name: string; component: IconType }[] = [
-  { name: 'FaMicroscope', component: FaMicroscope },
-  { name: 'FaVial', component: FaVial },
-  { name: 'FaFlask', component: FaFlask },
-  { name: 'FaLaptopMedical', component: FaLaptopMedical },
-  { name: 'FaBiohazard', component: FaBiohazard },
-  { name: 'FaDna', component: FaDna },
-  { name: 'FaSyringe', component: FaSyringe },
-  { name: 'FaNotesMedical', component: FaNotesMedical },
-  { name: 'FaProcedures', component: FaProcedures },
-  { name: 'FaBriefcaseMedical', component: FaBriefcaseMedical },
+const iconOptions: { name: string; label: string; component: IconType }[] = [
+  { name: 'FaMicroscope', label: 'กล้องจุลทรรศน์', component: FaMicroscope },
+  { name: 'FaVial', label: 'ขวดทดลอง', component: FaVial },
+  { name: 'FaFlask', label: 'ขวดรูปชมพู่', component: FaFlask },
+  { name: 'FaLaptopMedical', label: 'โน้ตบุ๊กการแพทย์', component: FaLaptopMedical },
+  { name: 'FaBiohazard', label: 'สัญลักษณ์ชีวภาพ', component: FaBiohazard },
+  { name: 'FaDna', label: 'ดีเอ็นเอ', component: FaDna },
+  { name: 'FaSyringe', label: 'เข็มฉีดยา', component: FaSyringe },
+  { name: 'FaNotesMedical', label: 'สมุดบันทึกการแพทย์', component: FaNotesMedical },
+  { name: 'FaProcedures', label: 'ผู้ป่วยบนเตียง', component: FaProcedures },
+  { name: 'FaBriefcaseMedical', label: 'กระเป๋าพยาบาล', component: FaBriefcaseMedical },
+  { name: 'FaCapsules', label: 'แคปซูลยา', component: FaCapsules },
+  { name: 'FaHeartbeat', label: 'หัวใจเต้น', component: FaHeartbeat },
+  { name: 'FaStethoscope', label: 'หูฟังแพทย์', component: FaStethoscope },
+  { name: 'FaThermometerHalf', label: 'เทอร์โมมิเตอร์', component: FaThermometerHalf },
+  { name: 'FaRadiation', label: 'สัญลักษณ์รังสี', component: FaRadiation },
 ];
 
 interface Props {
@@ -44,11 +59,12 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
     RoomName: '',
     Floor: '',
     Employee: { ID: 1 },
-    Icon: 'FaMicroscope', // ✅ default icon
+    Icon: 'FaMicroscope',
   });
 
   const [buildings, setBuildings] = useState<BuildingInterface[]>([]);
-  const [hardwares, setHardwares] = useState<HardwareInterface[]>([]);
+  const [allHardwares, setAllHardwares] = useState<HardwareInterface[]>([]);
+  const [usedHardwareIDs, setUsedHardwareIDs] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
 
   const selectedIcon = iconOptions.find(i => i.name === room.Icon)?.component;
@@ -57,9 +73,19 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
     const fetchData = async () => {
       const b = await ListBuilding();
       const h = await ListHardware();
+      const r = await ListRoom();
+
       if (b) setBuildings(b);
-      if (h) setHardwares(h);
+      if (h) setAllHardwares(h);
+
+      if (r) {
+        const used = r
+          .map(room => room.Hardware?.ID)
+          .filter((id): id is number => id !== undefined);
+        setUsedHardwareIDs(used);
+      }
     };
+
     if (show) {
       setRoom({ RoomName: '', Floor: '', Employee: { ID: 1 }, Icon: 'FaMicroscope' });
       fetchData();
@@ -74,17 +100,28 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
   };
 
   const handleSubmit = async () => {
-    if (!room.RoomName || !room.Floor || !room.Building?.ID || !room.Hardware?.ID || !room.Icon) {
-      message.error('กรุณากรอกข้อมูลให้ครบทุกช่อง');
+    if (!room.RoomName || !room.Floor || !room.Building?.ID || !room.Icon) {
+      message.warning('กรุณากรอกข้อมูลให้ครบทุกช่อง');
       return;
     }
+
+    if (availableHardwares.length === 0) {
+      message.warning('ไม่มีอุปกรณ์เซนเซอร์พร้อมใช้งาน');
+      return;
+    }
+
+    if (!room.Hardware?.ID) {
+      message.warning('กรุณาเลือกอุปกรณ์เซนเซอร์');
+      return;
+    }
+
     setLoading(true);
     const payload: RoomInterface = {
       RoomName: room.RoomName,
       Floor: room.Floor,
       Building: buildings.find((b) => b.ID === Number(room.Building?.ID)),
       Employee: { ID: 1 },
-      Hardware: hardwares.find((h) => h.ID === Number(room.Hardware?.ID)),
+      Hardware: allHardwares.find((h) => h.ID === Number(room.Hardware?.ID)),
       Icon: room.Icon,
     };
     const res = await CreateRoom(payload);
@@ -101,6 +138,10 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
   const handleReset = () => {
     setRoom({ RoomName: '', Floor: '', Employee: { ID: 1 }, Icon: 'FaMicroscope' });
   };
+
+  const availableHardwares = allHardwares.filter(
+    hw => !usedHardwareIDs.includes(hw.ID!)
+  );
 
   if (!show) return null;
 
@@ -122,7 +163,6 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <Input
             placeholder="ชื่อห้อง"
-            name="RoomName"
             value={room.RoomName}
             onChange={(e) => handleChange('RoomName', e.target.value)}
             allowClear
@@ -135,11 +175,17 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
             allowClear
             className="w-full"
           >
-            {hardwares.map((hw) => (
-              <Option key={hw.ID} value={hw.ID}>
-                {hw.Name}
+            {availableHardwares.length > 0 ? (
+              availableHardwares.map((hw) => (
+                <Option key={hw.ID} value={hw.ID}>
+                  {hw.Name}
+                </Option>
+              ))
+            ) : (
+              <Option disabled key="no-hardware" value="">
+                ไม่มีอุปกรณ์พร้อมใช้งาน
               </Option>
-            ))}
+            )}
           </Select>
 
           <Input
@@ -167,7 +213,6 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
             ))}
           </Select>
 
-          {/* Icon Select - Full Width */}
           <Select
             placeholder="เลือกไอคอน"
             value={room.Icon || undefined}
@@ -177,13 +222,13 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
             showSearch
             optionLabelProp="label"
           >
-            {iconOptions.map(({ name, component: Icon }) => (
-              <Option key={name} value={name} label={name}>
+            {iconOptions.map(({ name, label, component: Icon }) => (
+              <Option key={name} value={name} label={label}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-white border border-teal-600 flex items-center justify-center shadow">
                     <Icon size={20} className="text-teal-600" />
                   </div>
-                  <span className="text-gray-800 font-medium">{name}</span>
+                  <span className="text-gray-800 font-medium">{label}</span>
                 </div>
               </Option>
             ))}
@@ -194,7 +239,12 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
         <div className="flex justify-end gap-4">
           <Button onClick={onClose}>ยกเลิก</Button>
           <Button onClick={handleReset}>รีเซ็ต</Button>
-          <Button type="primary" loading={loading} onClick={handleSubmit} className="bg-teal-600 hover:bg-teal-700">
+          <Button
+            type="primary"
+            loading={loading}
+            onClick={handleSubmit}
+            className="bg-teal-600 hover:bg-teal-700"
+          >
             บันทึก
           </Button>
         </div>

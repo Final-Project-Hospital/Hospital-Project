@@ -373,7 +373,6 @@ export const ListHardwareParameterByHardwareID = async (
     return null;
   }
 };
-
 export const UpdateStandardHardwareByID = async (
   id: number,
   data: StandardHardwareInterface

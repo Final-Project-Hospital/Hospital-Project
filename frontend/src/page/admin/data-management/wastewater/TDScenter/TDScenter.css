@@ -1,3 +1,152 @@
+/* .tds-container .ant-input,
+.tds-container .ant-input-number,
+.tds-container .ant-picker,
+.tds-container .ant-select-selector {
+  border-radius: 50px !important;
+}
+
+.tds-container .ant-input-number-handler-wrap {
+  border-radius: 0 50px 50px 0 !important;
+  overflow: hidden;
+}
+
+.tds-form-group {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.tds-form-group .ant-form-item {
+  flex: 1 1 300px;
+}
+
+.tds-from-mini {
+  width: 48%;
+}
+
+.tds-full-width {
+  width: 100%;
+}
+
+.tds-red-text {
+  color: red;
+  font-weight: bold;
+}
+
+.tds-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 9px;
+  margin-bottom: 9px;
+}
+
+.tds-cancel,
+.tds-reset,
+.tds-submit {
+  padding: 10px 10px;
+  min-width: 80px;
+  height: inherit;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 50px;
+  border: none;
+  margin-top: -15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* ปุ่มแต่ละแบบ 
+.tds-cancel {
+  background-color: #949494;
+  color: white;
+  margin-right: 10px;
+  transition: all 0.2s ease-in-out;
+}
+
+.tds-reset {
+  background-color: #ffffff;
+  color: #326667;
+  margin-right: 10px;
+  transition: all 0.2s ease-in-out;
+}
+
+.tds-submit {
+  background-color: #326667;
+  color: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.tds-submit:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #358788 !important;
+  transform: scale(1.05) !important;
+}
+
+.tds-reset:hover {
+  color: #326667 !important;
+  background-color: #ffffff !important;
+  transform: scale(1.05) !important;
+}
+
+.tds-cancel:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #646464 !important;
+  transform: scale(1.05) !important;
+}
+
+.tds-fornt-small {
+  display: flex;
+  gap: 16px;
+}
+
+.tds-chat-modal {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive behavior 
+@media (max-width: 768px) {
+  .tds-form-group {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .tds-form-group .ant-form-item {
+    flex: 1 1 100%;
+  }
+
+  .tds-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tds-cancel,
+  .tds-reset,
+  .tds-submit {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .tds-from-mini {
+    width: 100%;
+  }
+
+  .tds-fornt-small .ant-form-item-label>label {
+    font-size: small !important;
+  }
+
+}
+
+@media (max-width: 1024px) {
+  .tds-from-mini {
+    width: 100%;
+  }
+} */
+
+
 .tds-container {
   background: white;
   padding: 20px 30px;
@@ -11,6 +160,7 @@
   font-size: 14px;
 }
 
+/* ปรับ input ให้มี border-radius 50px */
 .tds-container .ant-input,
 .tds-container .ant-input-number,
 .tds-container .ant-picker,
@@ -23,30 +173,30 @@
   overflow: hidden;
 }
 
-.form-group-tds {
+.tds-form-group {
   display: flex;
   gap: 30px;
   flex-wrap: wrap;
 }
 
-.form-group-tds .ant-form-item {
+.tds-form-group .ant-form-item {
   flex: 1 1 300px;
 }
 
-.form-group-mini-tds {
+.tds-from-mini {
   width: 48%;
 }
 
-.full-width-tds {
+.tds-full-width {
   width: 100%;
 }
 
-.red-text-tds {
+.tds-red-text {
   color: red;
   font-weight: bold;
 }
 
-.form-actions-tds {
+.tds-form-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -55,9 +205,9 @@
   margin-bottom: 9px;
 }
 
-.cancel-tds,
-.reset-tds,
-.submit-tds {
+.tds-cancel,
+.tds-reset,
+.tds-submit {
   padding: 10px 10px;
   min-width: 80px;
   height: inherit;
@@ -71,39 +221,39 @@
 }
 
 /* ปุ่มแต่ละแบบ */
-.cancel-tds {
+.tds-cancel {
   background-color: #949494;
   color: white;
   margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
-.reset-tds {
+.tds-reset {
   background-color: #ffffff;
   color: #326667;
   margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
-.submit-tds {
+.tds-submit {
   background-color: #326667;
   color: white;
   transition: all 0.2s ease-in-out;
 }
 
-.submit-tds:hover {
+.tds-submit:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #358788 !important;
   transform: scale(1.05) !important;
 }
 
-.reset-tds:hover {
+.tds-reset:hover {
   color: #326667 !important;
   background-color: #ffffff !important;
   transform: scale(1.05) !important;
 }
 
-.cancel-tds:hover {
+.tds-cancel:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #646464 !important;
   transform: scale(1.05) !important;
@@ -112,40 +262,45 @@
   display: flex;
   gap: 16px;
 }
+.tds-chat-modal{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
 /* Responsive behavior */
 @media (max-width: 768px) {
-  .form-group-tds {
+  .tds-form-group {
     flex-direction: column;
     gap: 16px;
   }
 
-  .form-group-tds .ant-form-item {
+  .tds-form-group .ant-form-item {
     flex: 1 1 100%;
   }
 
-  .form-actions-tds {
+  .tds-form-actions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .cancel-tds,
-  .reset-tds,
-  .submit-tds {
+  .tds-cancel,
+  .tds-reset,
+  .tds-submit {
     width: 100%;
     margin-top: 10px;
   }
 
-  .from-mini-tds {
+  .tds-from-mini {
     width: 100%;
   }
-  .fornt-small-tds .ant-form-item-label > label {
+  .tds-fornt-small .ant-form-item-label > label {
   font-size: small !important;}
   
 }
 
 @media (max-width: 1024px) {
-  .from-mini-tds {
+  .tds-from-mini {
     width: 100%;
   }
 }

@@ -7,9 +7,9 @@ import {
     ListMiddleStandard,
     ListRangeStandard,
     ListUnit
-} from '../../../../services/index';
-import { CheckUnit, CheckStandard } from '../../../../services/tdsService';
-import { UpdateOrCreateTDS, DeleteTDS } from '../../../../services/tdsService';
+} from '../../../../../services/index';
+import { CheckUnit, CheckStandard } from '../../../../../services/tdsService';
+import { UpdateOrCreateBOD, DeleteBOD } from '../../../../../services/bodService';
 
 import { ListBeforeAfterTreatmentInterface } from '../../../../../interface/IBeforeAfterTreatment';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';
@@ -17,13 +17,13 @@ import { ListUnitInterface } from '../../../../../interface/IUnit';
 
 const { Option } = Select;
 
-interface UpdateTDSCentralFormProps {
+interface UpdateBODCentralFormProps {
     initialValues: any; // รับค่า before/after 2 record
     onSuccess?: () => void;
     onCancel: () => void;
 }
 
-const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
+const UpdateBODCentralForm: React.FC<UpdateBODCentralFormProps> = ({
     initialValues,
     onSuccess,
     onCancel
@@ -46,9 +46,10 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
     const [standardType, setStandardType] = useState('middle');
     const [useCustomStandard, setUseCustomStandard] = useState(false);
 
+
     const renderCustomTreatmentLabel = (text: string) => (
         <>
-            ค่า TDS บริเวณบ่อพักน้ำทิ้ง
+            ค่า BOD บริเวณบ่อพักน้ำทิ้ง
             <span style={{ color: '#f45415ff', fontWeight: 'bold' }}>{text}</span>
             เข้าระบบบำบัด
         </>
@@ -89,8 +90,8 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
                     standardType: stdType,
                     standardID: before.StandardID,
                     beforeAfterTreatmentID: 3,
-                    valueBefore: before?.Data ?? undefined,
-                    valueAfter: after?.Data ?? undefined,
+                    valueBefore: before?.Data ?? undefined, // ✅ map เข้ากับ name="valueBefore"
+                    valueAfter: after?.Data ?? undefined,   // ✅ map เข้ากับ name="valueAfter"
                     beforeNote: before?.Note || '',
                     afterNote: after?.Note || ''
                 });
@@ -108,7 +109,7 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
                     standardType: stdType,
                     standardID: single.StandardID,
                     beforeAfterTreatmentID: single.BeforeAfterTreatmentID,
-                    data: single?.Data ?? undefined,
+                    data: single?.Data ?? undefined, // ✅ map เข้ากับ name="data"
                     beforeNote: single.BeforeAfterTreatmentID === 1 ? single.Note || '' : '',
                     afterNote: single.BeforeAfterTreatmentID === 2 ? single.Note || '' : ''
                 });
@@ -154,6 +155,14 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
                 return;
             }
 
+            // ✅ เตรียม customStandardPayload ถ้าเป็นมาตรฐานใหม่
+            let customStandardPayload: any = null;
+            if (hasCustomSingle) {
+                customStandardPayload = { type: "middle", value: values.customSingle };
+            } else if (hasCustomRange) {
+                customStandardPayload = { type: "range", min: values.customMin, max: values.customMax };
+            }
+
             const combinedDateTime = dayjs(values.date)
                 .hour(dayjs(values.time).hour())
                 .minute(dayjs(values.time).minute())
@@ -165,67 +174,50 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
             const unitID = isOther ? null : values.unit;
             const customUnitValue = isOther ? values.customUnit : null;
 
-            //const payloads: any[] = [];
+            const payloads: any[] = [];
             const deletes: number[] = [];
 
-            // สร้าง payload แรกก่อน
+            // ✅ ใส่ CustomStandard ลงใน payload ด้วย (ให้ backend ไปสร้างมาตรฐาน)
             const basePayload = {
                 Date: combinedDateTime,
                 UnitID: unitID,
                 StandardID: standardID,
-                CustomStandard: standardID === 0
-                    ? (hasCustomSingle
-                        ? { type: "middle", value: values.customSingle }
-                        : { type: "range", min: values.customMin, max: values.customMax })
-                    : null,
+                CustomStandard: standardID === 0 ? customStandardPayload : null,
                 EmployeeID: employeeID,
                 CustomUnit: customUnitValue,
             };
 
             if (values.beforeAfterTreatmentID === 3) {
-                // --- Payload แรก (Before)
-                const beforePayload = {
+                payloads.push({
                     ...basePayload,
                     ID: initialValues[0]?.ID ?? null,
                     Data: values.valueBefore,
                     Note: values.beforeNote ?? "",
                     BeforeAfterTreatmentID: 1,
                     ParameterID: initialValues[0]?.ParameterID,
-                };
-
-                // ส่งไปสร้าง/อัปเดต และเก็บ StandardID ที่ backend คืนมา
-                const res = await UpdateOrCreateTDS(beforePayload);
-                standardID = res?.data?.StandardID ?? standardID;
-
-                // --- Payload สอง (After) ใช้ StandardID ที่สร้างแล้ว
-                const afterPayload = {
+                });
+                payloads.push({
                     ...basePayload,
-                    StandardID: standardID,
-                    CustomStandard: null, // ป้องกันไม่ให้สร้างซ้ำ
                     ID: initialValues[1]?.ID ?? null,
                     Data: values.valueAfter,
                     Note: values.afterNote ?? "",
                     BeforeAfterTreatmentID: 2,
                     ParameterID: initialValues[1]?.ParameterID,
-                };
-                await UpdateOrCreateTDS(afterPayload);
-
+                });
             } else if (values.beforeAfterTreatmentID === 1) {
-                await UpdateOrCreateTDS({
+                payloads.push({
                     ...basePayload,
                     ID: initialValues[0]?.ID ?? null,
                     Data: values.valueBefore ?? values.data,
                     Note: values.beforeNote ?? "",
                     BeforeAfterTreatmentID: 1,
-                    ParameterID: initialValues[0]?.ParameterID,
+                    ParameterID:initialValues[0]?.ParameterID,
                 });
-
                 if (initialValues[1]?.ID) {
                     deletes.push(initialValues[1].ID);
                 }
-
             } else if (values.beforeAfterTreatmentID === 2) {
-                await UpdateOrCreateTDS({
+                payloads.push({
                     ...basePayload,
                     ID: initialValues[1]?.ID ?? null,
                     Data: values.valueAfter ?? values.data,
@@ -233,23 +225,24 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
                     BeforeAfterTreatmentID: 2,
                     ParameterID: initialValues[1]?.ParameterID,
                 });
-
                 if (initialValues[0]?.ID) {
                     deletes.push(initialValues[0].ID);
                 }
             }
 
-            // ลบ record ที่ไม่ใช้แล้ว
+            console.log("Payloads to send:", payloads);
+
+            // ✅ เรียก UpdateOrCreate BOD ตัวเดียว
+            await Promise.all(payloads.map((p) => UpdateOrCreateBOD(p)));
+
             if (deletes.length > 0) {
-                for (const id of deletes) {
-                    await DeleteTDS(id);
-                }
+                await Promise.all(deletes.map((id) => DeleteBOD(id)));
             }
 
             messageApi.success("บันทึกข้อมูลสำเร็จ");
             if (onSuccess) onSuccess();
         } catch (error: any) {
-            console.error("Error updating TDS:", error?.response?.data || error);
+            console.error("Error updating BOD:", error?.response?.data || error);
             message.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล handfinish Update");
         }
     };
@@ -594,4 +587,4 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
     );
 };
 
-export default UpdateTDSCentralForm;
+export default UpdateBODCentralForm;
