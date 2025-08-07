@@ -548,8 +548,8 @@ export const links = [
               },
             ],
           },
-                    {
-            name: 'data-management/garbage',
+          {
+            name: 'data-visualization/garbage',
             label: 'กลุ่มขยะ',
             icon: <FaTrash/>,
             SubMenu: [
