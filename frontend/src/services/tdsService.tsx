@@ -1,12 +1,6 @@
-import axios, { AxiosResponse } from 'axios';
-import { message } from 'antd';
-import { CreateTDSInterface } from "../interface/ITds";
-import { DeleteTDSInterface } from "../interface/ITds";
+import axios from 'axios';
+import { TDScenterInterface, DeleteTDSInterface } from "../interface/ITds";
 import { apiUrl } from "./index"
-
-// const Authorization = localStorage.getItem("token");
-
-// const Bearer = localStorage.getItem("token_type");
 
 const getAuthHeader = () => {
   const token = localStorage.getItem("token");
@@ -14,21 +8,75 @@ const getAuthHeader = () => {
   return { Authorization: `${tokenType} ${token}` };
 };
 
-// const requestOptions = {
-
-//   headers: {
-
-//     "Content-Type": "application/json",
-
-//     Authorization: `${Bearer} ${Authorization}`,
-
-//   },
-
-// };
-
-export const GetTDS = async () => {
+export const createTDS = async (
+  data: TDScenterInterface
+): Promise<any | null> => {
   try {
-    const response = await axios.get(`${apiUrl}/get-tds`, {
+    const response = await axios.post(`${apiUrl}/create-tds`, data, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 201 || response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating TDS record:", error.response?.data || error.message);
+    return null;
+  }
+};
+export const GetfirstTDS = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-first-tds`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating TDS record:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const GetlistTDS = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/list-tds`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating TDS record:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const GetTDSTABLE = async () => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-tds-table`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -42,49 +90,6 @@ export const GetTDS = async () => {
     }
   } catch (error) {
     console.error("Error fetching TDS:", error);
-    return null;
-  }
-};
-
-export const GetTDSbyID = async (id: number): Promise<any | null> => {
-  try {
-    const response = await axios.get(`${apiUrl}/get-tds/${id}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-    });
-
-    if (response.status === 200) {
-      return response;
-    } else {
-      console.error("Unexpected status:", response.status);
-      return null;
-    }
-  } catch (error: any) {
-    console.error("Error fetching TDS by ID:", error.response?.data || error.message);
-    return null;
-  }
-};
-
-export const CreateTDS = async (payload: CreateTDSInterface): Promise<AxiosResponse<any> | null> => {
-  try {
-    const response = await axios.post(`${apiUrl}/create-tds`, payload, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-    });
-
-    if (response.status === 201) {
-      return response;
-    } else {
-      console.error("Unexpected status:", response.status);
-      return null;
-    }
-  } catch (error: any) {
-    console.error("Error creating TDS:", error.response?.data || error.message);
-    message.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล service');
     return null;
   }
 };
@@ -105,7 +110,7 @@ export const UpdateOrCreateTDS = async (payload: any) => {
         },
       });
     } else {
-      // ✅ Create
+      // Create
       const url = `${apiUrl}/create-tds`;
       console.log("POST URL:", url);
       console.log("Payload:", payload);
@@ -141,7 +146,28 @@ export const DeleteTDS = async (id: number): Promise<DeleteTDSInterface[] | null
       return null;
     }
   } catch (error: any) {
-    console.error("Error deleting TDS:", error.response?.data || error.message);
+    console.error("Error deleting TDS :", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const GetTDSbyID = async (id: number): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-tds/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error fetching TDS by ID:", error.response?.data || error.message);
     return null;
   }
 };
@@ -169,28 +195,7 @@ export const DeleteAllTDSRecordsByDate = async (
   }
 };
 
-export const GetfirstTDS = async (
-): Promise<any | null> => {
-  try {
-    const response = await axios.get(`${apiUrl}/get-first-tds`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-    });
-
-    if (response.status === 200) {
-      return response;
-    } else {
-      console.error("Unexpected status:", response.status);
-      return null;
-    }
-  } catch (error: any) {
-    console.error("Error creating TDS record:", error.response?.data || error.message);
-    return null;
-  }
-};
-
+//ใช้ส่วนรวม
 export const CheckUnit = async (name: string) => {
   try {
     const response = await axios.get(`${apiUrl}/check-units`, {
@@ -209,6 +214,7 @@ export const CheckUnit = async (name: string) => {
   }
 };
 
+//ใช้ส่วนรวม
 export const CheckStandard = async (type: string, value: any) => {
   try {
     const params: any = { type };

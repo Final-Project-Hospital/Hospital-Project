@@ -294,8 +294,8 @@ const BODdataviz: React.FC = () => {
                 y: minstandard ?? 0,
                 borderWidth: 1.5,
                 strokeDashArray: 6,
-                borderColor: "#e05600ff",
-                label: { text: `มาตรฐานต่ำสุด ${minstandard ?? 0}`, style: { background: "rgba(224, 86, 0, 0.6)", color: "#fff" } },
+                borderColor: "rgba(255, 163, 24, 0.77)",
+                label: { text: `มาตรฐานต่ำสุด ${minstandard ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
               },
               {
                 y: maxstandard ?? 0,
@@ -309,10 +309,10 @@ const BODdataviz: React.FC = () => {
               ? [
                 {
                   y: middlestandard,
-                  borderColor: "#e05600ff",
+                  borderColor: "rgba(255, 163, 24, 0.77)",
                   borderWidth: 1.5,
                   strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middlestandard}`, style: { background: "rgba(224, 86, 0, 0.6)", color: "#fff" } },
+                  label: { text: `มาตรฐาน ${middlestandard}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
                 },
               ]
               : []
