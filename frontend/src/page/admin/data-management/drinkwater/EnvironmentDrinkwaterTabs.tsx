@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'; 
 import { Button } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import './EnvironmentDrinkwaterTabs.css';
@@ -16,17 +16,15 @@ const EnvironmentLayout: React.FC = () => {
   return (
     <div>
       <div className="tabs-header">
-        <h1>น้ำเสีย</h1>
+        <h1>น้ำดื่ม</h1>
         <p>
           โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
         </p>
       </div>
       <br />
-      <div
-        className="tabs"
-      >
+      <div className="tabs">
         {tabs.map(({ label, path }) => {
-          const active = pathname === path;
+          const active = pathname === path || (pathname === '/admin/data-management/drinkwater' && path === '/admin/data-management/drinkwater/ecoli');
           return (
             <Button
               key={path}
@@ -39,7 +37,6 @@ const EnvironmentLayout: React.FC = () => {
           );
         })}
       </div>
-
       <br />
       <Outlet />
     </div>

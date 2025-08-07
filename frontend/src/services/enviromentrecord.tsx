@@ -276,7 +276,7 @@ export const GetTSTABLE = async () => {
 //COD
 export const CreateCOD = async (
     payload: CreateCODInterface
-): Promise<EnvironmentalRecordInterface | null> => {
+): Promise<any | null> => {
     try {
         const response = await axios.post(`${apiUrl}/create-cod`, payload, {
             headers: {
