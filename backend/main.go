@@ -4,11 +4,11 @@ import (
 	"net/http"
 
 	"github.com/Tawunchai/hospital-project/config"
-	"github.com/Tawunchai/hospital-project/controller/bodcenter"
 	"github.com/Tawunchai/hospital-project/controller/building"
 	"github.com/Tawunchai/hospital-project/controller/calendar"
-	"github.com/Tawunchai/hospital-project/controller/fogcenter"
 	"github.com/Tawunchai/hospital-project/controller/report"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/bodcenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/fogcenter"
 
 	"github.com/Tawunchai/hospital-project/controller/graph"
 	"github.com/Tawunchai/hospital-project/controller/hardware"
@@ -16,11 +16,33 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/room"
 	"github.com/Tawunchai/hospital-project/controller/sensordata"
 
-	"github.com/Tawunchai/hospital-project/controller/phcenter"
-	"github.com/Tawunchai/hospital-project/controller/tdscenter"
-	"github.com/Tawunchai/hospital-project/controller/tkncenter"
-	"github.com/Tawunchai/hospital-project/controller/tscenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/codcenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/fcbcenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/phcenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/residulecenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/sulfidcenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/tcbcenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/tdscenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/tkncenter"
+	"github.com/Tawunchai/hospital-project/controller/wastewater/tscenter"
 
+	//drinkwater
+	"github.com/Tawunchai/hospital-project/controller/drinkwater/dfcbcenter"
+	"github.com/Tawunchai/hospital-project/controller/drinkwater/dtcbcenter"
+	"github.com/Tawunchai/hospital-project/controller/drinkwater/ecoilcenter"
+
+	//tapwater
+	"github.com/Tawunchai/hospital-project/controller/tapwater/alcenter"
+	"github.com/Tawunchai/hospital-project/controller/tapwater/ironcenter"
+	"github.com/Tawunchai/hospital-project/controller/tapwater/mncenter"
+	"github.com/Tawunchai/hospital-project/controller/tapwater/nicenter"
+	"github.com/Tawunchai/hospital-project/controller/tapwater/ntucenter"
+	"github.com/Tawunchai/hospital-project/controller/tapwater/ptcenter"
+	"github.com/Tawunchai/hospital-project/controller/tapwater/tcodcenter"
+	"github.com/Tawunchai/hospital-project/controller/tapwater/thcenter"
+	"github.com/Tawunchai/hospital-project/controller/tapwater/ttcbcenter"
+
+	//tapwater
 	"github.com/Tawunchai/hospital-project/controller/employee"
 	"github.com/Tawunchai/hospital-project/controller/position"
 
@@ -90,18 +112,66 @@ func main() {
 		
 		//TKN
 		public.POST("/create-tkn", tkncenter.CreateTKN)
-		public.GET("/read-tkn", tkncenter.GetTKN)
+		public.GET("/get-tkn", tkncenter.GetTKN)
 		public.GET("/get-first-tkn", tkncenter.GetFirstTKN)
 		public.GET("/read-tkn/:id", tkncenter.GetTKNbyID)
+		public.GET("/get-tkn-table", tkncenter.GetTKNTABLE)
 		public.PATCH("/update-tkn/:id", tkncenter.UpdateTKN)
 		public.DELETE("/delete-tkn/:id", tkncenter.DeleteTKN)
 
 		//TS
 		public.POST("/create-ts", tscenter.CreateTS)
-		public.GET("/read-ts", tscenter.GetTS)
+		public.GET("/get-ts", tscenter.GetTS)
+		public.GET("/get-first-ts", tscenter.GetFirstTS)
 		public.GET("/read-ts/:id", tscenter.GetTSbyID)
+		public.GET("/get-ts-table", tscenter.GetTSTABLE)
 		public.PATCH("/update-ts/:id", tscenter.UpdateTS)
 		public.DELETE("/delete-ts/:id", tscenter.DeleteTS)
+
+		//COD
+		public.POST("/create-cod", codcenter.CreateCOD)
+		public.GET("/get-cod", codcenter.GetCOD)
+		public.GET("/get-first-cod", codcenter.GetFirstCOD)
+		public.GET("/read-cod/:id", codcenter.GetCODbyID)
+		public.GET("/get-cod-table", codcenter.GetCODTABLE)
+		public.PATCH("/update-cod/:id", codcenter.UpdateCOD)
+		public.DELETE("/delete-cod/:id", codcenter.DeleteCOD)
+
+		//FCB
+		public.POST("/create-fcb", fcbcenter.CreateFCB)
+		public.GET("/get-fcb", fcbcenter.GetFCB)
+		public.GET("/get-first-fcb", fcbcenter.GetFirstFCB)
+		public.GET("/read-fcb/:id", fcbcenter.GetFCBbyID)
+		public.GET("/get-fcb-table", fcbcenter.GetFCBTABLE)
+		public.PATCH("/update-fcb/:id", fcbcenter.UpdateFCB)
+		public.DELETE("/delete-fcb/:id", fcbcenter.DeleteFCB)
+
+		//RES
+		public.POST("/create-res", residulecenter.CreateRES)
+		public.GET("/get-res", residulecenter.GetRES)
+		public.GET("/get-first-res", residulecenter.GetFirstRES)
+		public.GET("/read-res/:id", residulecenter.GetRESbyID)
+		public.GET("/get-res-table", residulecenter.GetRESTABLE)
+		public.PATCH("/update-res/:id", residulecenter.UpdateRES)
+		public.DELETE("/delete-res/:id", residulecenter.DeleteRES)
+
+		//SUL
+		public.POST("/create-sul", sulfidcenter.CreateSUL)
+		public.GET("/get-sul", sulfidcenter.GetSUL)
+		public.GET("/get-first-sul", sulfidcenter.GetFirstSUL)
+		public.GET("/read-sul/:id", sulfidcenter.GetSULbyID)
+		public.GET("/get-sul-table", sulfidcenter.GetSULTABLE)
+		public.PATCH("/update-sul/:id", sulfidcenter.UpdateSUL)
+		public.DELETE("/delete-sul/:id", sulfidcenter.DeleteSUL)
+
+		//TCB
+		public.POST("/create-tcb", tcbcenter.CreateTCB)
+		public.GET("/get-tcb", tcbcenter.GetTCB)
+		public.GET("/get-first-tcb", tcbcenter.GetFirstTCB)
+		public.GET("/read-tcb/:id", tcbcenter.GetTCBbyID)
+		public.GET("/get-tcb-table", tcbcenter.GetTCBTABLE)
+		public.PATCH("/update-tcb/:id", tcbcenter.UpdateTCB)
+		public.DELETE("/delete-tcb/:id", tcbcenter.DeleteTCB)
 
 		//BOD
 		public.POST("/create-bod", bodcenter.CreateBod)
@@ -117,6 +187,53 @@ func main() {
 		//FOG
 		public.POST("/create-fog", fogcenter.CreateFog)
 		public.GET("/get-first-fog", fogcenter.GetfirstFOG)
+
+		//drinkwater
+		//ecoin
+		public.POST("/create-ecoin", ecoilcenter.CreateECOIN)
+		public.GET("/get-first-ecoin", ecoilcenter.GetFirstEcoli)
+		//FCB
+		public.POST("/create-dfcb", dfcbcenter.CreateFCB)
+		public.GET("/get-first-dfcb", dfcbcenter.GetFirstFCB)
+		//TCB
+		public.POST("/create-dtcb", dtcbcenter.CreateTCB)
+		public.GET("/get-first-dtcb", dtcbcenter.GetFirstFCB)
+
+		//tapwater
+		//al
+		public.POST("/create-al", alcenter.CreateAL)
+		public.GET("/get-first-al", alcenter.GetFirstAL)
+		//iron
+		public.POST("/create-iron", ironcenter.CreateFe)
+		public.GET("/get-first-iron", ironcenter.GetFirstIron)
+
+		//mn
+		public.POST("/create-mn", mncenter.CreateMn)
+		public.GET("/get-first-mn", mncenter.GetFirstMN)
+		
+		//ni
+		public.POST("/create-ni", nicenter.CreateNi)
+		public.GET("/get-first-ni", nicenter.GetFirstNi)
+
+		//ntu
+		public.POST("/create-ntu", ntucenter.CreateNTU)
+		public.GET("/get-first-ntu", ntucenter.GetFirstNTU)
+
+		//pt
+		public.POST("/create-pt", ptcenter.CreatePT)
+		public.GET("/get-first-pt", ptcenter.GetFirstPT)
+
+		//tcod
+		public.POST("/create-tcod", tcodcenter.CreateCOD)
+		public.GET("/get-first-tcod", tcodcenter.GetFirstCOD)
+
+		//th
+		public.POST("/create-th", thcenter.CreateTH)
+		public.GET("/get-first-th", thcenter.GetFirstTH)
+		
+		//ttcb
+		public.POST("/create-ttcb", ttcbcenter.CreateTCB)
+		public.GET("/get-first-ttcb", ttcbcenter.GetFirstTCB)
 
 		//Room
 		public.GET("/rooms", room.ListRoom)
