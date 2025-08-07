@@ -337,6 +337,4 @@ export const ListStatus = async (): Promise<ListStatusInterface[] | null> => {
   }
 };
 
-export {
-  GetUsers,
-};
+export { GetUsers, getAuthHeader, };

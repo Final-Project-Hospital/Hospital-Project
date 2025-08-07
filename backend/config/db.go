@@ -58,11 +58,13 @@ func SetupDatabase() {
 		&entity.Status{},
 	)
 	// Enviroment
-	Wastewater := entity.Environment{
-		EnvironmentName: "น้ำเสีย",
-	}
-	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
+	Wastewater := entity.Environment{EnvironmentName: "น้ำเสีย",}
+	Drinkwater := entity.Environment{EnvironmentName: "น้ำดื่ม",}
+	Tapwater := entity.Environment{EnvironmentName: "น้ำประปา"}
 
+	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
+	db.FirstOrCreate(&Drinkwater, &entity.Environment{EnvironmentName: "น้ำดื่ม"})
+	db.FirstOrCreate(&Tapwater, &entity.Environment{EnvironmentName: "น้ำประปา"})
 	// Standard
 	ranges := []struct {
 		min float32
@@ -101,17 +103,17 @@ func SetupDatabase() {
 	}
 
 	// Status
-	status1 := entity.Status{StatusName: "ต่ำกว่าเกณฑ์มาตรฐาน"}
-	status2 := entity.Status{StatusName: "อยู่ในเกณฑ์มาตรฐาน"}
+	status1 := entity.Status{StatusName: "ไม่ผ่านเกณฑ์มาตรฐาน"}
+	status2 := entity.Status{StatusName: "ผ่านเกณฑ์มาตรฐาน"}
 	status3 := entity.Status{StatusName: "เกินเกณฑ์มาตรฐาน"}
 
-	db.FirstOrCreate(&status1, entity.Status{StatusName: "ต่ำกว่าเกณฑ์มาตรฐาน"})
-	db.FirstOrCreate(&status2, entity.Status{StatusName: "อยู่ในเกณฑ์มาตรฐาน"})
+	db.FirstOrCreate(&status1, entity.Status{StatusName: "ไม่ผ่านเกณฑ์มาตรฐาน"})
+	db.FirstOrCreate(&status2, entity.Status{StatusName: "ผ่านเกณฑ์มาตรฐาน"})
 	db.FirstOrCreate(&status3, entity.Status{StatusName: "เกินเกณฑ์มาตรฐาน"})
 
 	// Unit
-	Unit := entity.Unit{ UnitName: "mg/L" }
-	Unit2 := entity.Unit{ UnitName: "ไม่มีหน่วย" }
+	Unit := entity.Unit{UnitName: "mg/L"}
+	Unit2 := entity.Unit{UnitName: "ไม่มีหน่วย"}
 	db.FirstOrCreate(&Unit, &entity.Unit{UnitName: "mg/L"})
 	db.FirstOrCreate(&Unit2, &entity.Unit{UnitName: "ไม่มีหน่วย"})
 
@@ -360,16 +362,55 @@ func SetupDatabase() {
 
 	db.FirstOrCreate(&SensorData1, entity.SensorData{HardwareID: SensorData1.HardwareID})
 
+	//Wastewater
 	param1 := entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"}
 	param2 := entity.Parameter{ParameterName: "Total Solid"}
 	param3 := entity.Parameter{ParameterName: "Potential of Hydrogen"}
 	param4 := entity.Parameter{ParameterName: "Total Dissolved Solids"}
+	param5 := entity.Parameter{ParameterName: "Biological Oxygen Demand"}
+	param6 := entity.Parameter{ParameterName: "Fats, Oils, and Grease"}
+	param7 := entity.Parameter{ParameterName: "Chemical Oxygen Demand"}
+	param8 := entity.Parameter{ParameterName: "Fecal Coliform Bacteria"}
+	param9 := entity.Parameter{ParameterName: "Residual"}
+	param10 := entity.Parameter{ParameterName: "Sulfide"}
+	param11 := entity.Parameter{ParameterName: "Total Coliform Bacteria"}
 
+	//น้ำดื่ม
+	param12 := entity.Parameter{ParameterName: "Escherichia coli"}
+
+	//น้ำประปา
+	param13 := entity.Parameter{ParameterName: "Turbidity"}
+	param14 := entity.Parameter{ParameterName: "Color"}
+	param15 := entity.Parameter{ParameterName: "Total Hardness"}
+	param16 := entity.Parameter{ParameterName: "Nitrate"}
+	param17 := entity.Parameter{ParameterName: "Alurminnium"}
+	param18 := entity.Parameter{ParameterName: "Iron"}
+	param19 := entity.Parameter{ParameterName: "Manganese"}
+
+	//น้ำเสีย
 	db.FirstOrCreate(&param1, entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"})
 	db.FirstOrCreate(&param2, entity.Parameter{ParameterName: "Total Solid"})
 	db.FirstOrCreate(&param3, entity.Parameter{ParameterName: "Potential of Hydrogen"})
 	db.FirstOrCreate(&param4, entity.Parameter{ParameterName: "Total Dissolved Solids"})
+	db.FirstOrCreate(&param5, entity.Parameter{ParameterName: "Biological Oxygen Demand"})
+	db.FirstOrCreate(&param6, entity.Parameter{ParameterName: "Fats, Oils, and Grease"})
+	db.FirstOrCreate(&param7, entity.Parameter{ParameterName: "Chemical Oxygen Demand"})
+	db.FirstOrCreate(&param8, entity.Parameter{ParameterName: "Fecal Coliform Bacteria"})
+	db.FirstOrCreate(&param9, entity.Parameter{ParameterName: "Residual"})
+	db.FirstOrCreate(&param10, entity.Parameter{ParameterName: "Sulfide"})
+	db.FirstOrCreate(&param11, entity.Parameter{ParameterName: "Total Coliform Bacteria"})
 
+	//น้ำดื่ม
+	db.FirstOrCreate(&param12, entity.Parameter{ParameterName: "Escherichia coli"})
+
+	//น้ำประปา
+	db.FirstOrCreate(&param13, entity.Parameter{ParameterName: "Turbidity"})
+	db.FirstOrCreate(&param14, entity.Parameter{ParameterName: "Color"})
+	db.FirstOrCreate(&param15, entity.Parameter{ParameterName: "Total Hardness"})
+	db.FirstOrCreate(&param16, entity.Parameter{ParameterName: "Nitrate"})
+	db.FirstOrCreate(&param17, entity.Parameter{ParameterName: "Alurminnium"})
+	db.FirstOrCreate(&param18, entity.Parameter{ParameterName: "Iron"})
+	db.FirstOrCreate(&param19, entity.Parameter{ParameterName: "Manganese"})
 	count := int64(0)
 	db.Model(&entity.SensorDataParameter{}).Count(&count)
 
@@ -555,12 +596,10 @@ func SetupDatabase() {
 
 		// --- เช็คค่าก่อนบำบัด ---
 		var statusIDBefore uint
-		if beforeValuesPH[iph] < 5.0 {
-			statusIDBefore = status1.ID
-		} else if beforeValuesPH[iph] >= 5.0 && beforeValuesPH[iph] <= 9.0 {
+		if beforeValuesPH[iph] >= 5.00 && beforeValuesPH[iph] <= 9.00 {
 			statusIDBefore = status2.ID
 		} else {
-			statusIDBefore = status3.ID
+			statusIDBefore = status1.ID
 		}
 
 		beforeRecord := entity.EnvironmentalRecord{
@@ -583,12 +622,10 @@ func SetupDatabase() {
 
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfter uint
-		if afterValuesPH[iph] < 5.0 {
-			statusIDAfter = status1.ID
-		} else if afterValuesPH[iph] >= 5.0 && afterValuesPH[iph] <= 9.0 {
+		if afterValuesPH[iph] >= 5.00 && afterValuesPH[iph] <= 9.00 {
 			statusIDAfter = status2.ID
 		} else {
-			statusIDAfter = status3.ID
+			statusIDAfter = status1.ID
 		}
 
 		afterRecord := entity.EnvironmentalRecord{
@@ -650,6 +687,14 @@ func SetupDatabase() {
 			continue
 		}
 
+		// --- เช็คค่าก่อนบำบัด ---
+		var statusIDBeforeTDS uint
+		if beforeValuesPH[i] <= 500.00 {
+			statusIDBeforeTDS = status2.ID
+		} else {
+			statusIDBeforeTDS = status1.ID
+		}
+
 		// --- ก่อนบำบัด ---
 		beforeRecord := entity.EnvironmentalRecord{
 			Date:                   date,
@@ -660,7 +705,7 @@ func SetupDatabase() {
 			StandardID:             6, // ใช้มาตรฐาน TDS สมมติ
 			UnitID:                 Unit.ID,
 			EmployeeID:             Admin.ID,
-			StatusID:               status2.ID, // ปรับตามเกณฑ์จริง
+			StatusID:               statusIDBeforeTDS,
 		}
 		db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
 			Date:                   date,
@@ -668,6 +713,14 @@ func SetupDatabase() {
 			EnvironmentID:          Wastewater.ID,
 			ParameterID:            param4.ID,
 		})
+
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterTDS uint
+		if afterValuesPH[i] <= 500.00 {
+			statusIDAfterTDS = status2.ID
+		} else {
+			statusIDAfterTDS = status1.ID
+		}
 
 		// --- หลังบำบัด ---
 		afterRecord := entity.EnvironmentalRecord{
@@ -679,7 +732,7 @@ func SetupDatabase() {
 			StandardID:             6,
 			UnitID:                 Unit.ID,
 			EmployeeID:             Admin.ID,
-			StatusID:               status2.ID,
+			StatusID:               statusIDAfterTDS,
 		}
 		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
 			Date:                   date,
