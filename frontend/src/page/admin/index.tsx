@@ -1,80 +1,113 @@
-// pages/Dashboard.tsx (เฉพาะส่วนที่เปลี่ยนแปลงสำคัญ)
-import React, { useEffect, useMemo, useState } from "react";
-import { DatePicker, Radio, Row, Col, Select } from "antd";
-import { Line, Bar } from "react-chartjs-2";
-import {
-  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend,
-} from "chart.js";
+// src/page/admin/index.tsx
+import React, { useState, useEffect, useMemo } from "react";
+import { Row, Col, Select, DatePicker, Modal } from "antd";
 import dayjs, { Dayjs } from "dayjs";
-import "./dashboard.css";
+import ApexChart from "react-apexcharts";
+import { ApexOptions } from "apexcharts";
+import { ColorPicker } from "antd";
+import type { Color } from "antd/es/color-picker";
+import { Maximize2 } from "lucide-react";
 import {
-  GetEnvironmentalRecords, RecordItem,
-  GetEnvironmentalEfficiency, EfficiencyItem,
+  GetEnvironmentalRecords,
+  GetEnvironmentalEfficiency,
+  RecordItem,
+  EfficiencyItem,
 } from "../../services/DashboardService";
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend);
+import "./dashboard.css";
 
 const { Option } = Select;
 
-const Dashboard: React.FC = () => {
+interface AlertItem {
+  month_year: string;
+  parameter: string;
+  average: number;
+  max_value: number;
+  unit: string;
+}
+
+const AdminDashboard: React.FC = () => {
+  // states เดิม
   const [data, setData] = useState<RecordItem[]>([]);
-  const [effData, setEffData] = useState<EfficiencyItem[]>([]); // ✅ ใหม่
-  const [selectedParam, setSelectedParam] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(dayjs());
-  const [selectedDateType, setSelectedDateType] = useState<"date" | "month" | "year">("date");
+  const [effData, setEffData] = useState<EfficiencyItem[]>([]);
+  const [selectedParam, setSelectedParam] = useState("");
+  const [dateType, setDateType] = useState<"date" | "month" | "year">("month");
+  const [date, setDate] = useState<Dayjs | null>(null);
   const [chartType, setChartType] = useState<"line" | "bar">("line");
-  const [viewType, setViewType] = useState<"before" | "after" | "compare">("before");
-  const [loading, setLoading] = useState(false);
-  const [parameterOptions, setParameterOptions] = useState<string[]>([]);
+  const [view, setView] = useState<"before" | "after" | "compare">("compare");
+  const [showModal, setShowModal] = useState(false);
+  const [chartColor, setChartColor] = useState({
+    before: "#7B61FF",
+    after: "#33E944",
+    compareBefore: "#FF4560",
+    compareAfter: "#775DD0",
+    efficiency: "#faad14",
+  });
 
-  const formattedDate: string | undefined = useMemo(() => {
-    if (!selectedDate) return undefined;
-    if (selectedDateType === "date") return selectedDate.format("YYYY-MM-DD");
-    if (selectedDateType === "month") return selectedDate.format("YYYY-MM");
-    return selectedDate.format("YYYY");
-  }, [selectedDate, selectedDateType]);
+  // state ใหม่: alert data
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
 
-  // โหลดชุดหลัก (ค่าก่อน/หลัง)
+  // ฟอร์แมตวันที่ใช้ส่ง API
+  const formattedDate = date ? dayjs(date).format(
+    dateType === "year" ? "YYYY" :
+    dateType === "month" ? "YYYY-MM" : "YYYY-MM-DD") : undefined;
+
+  // โหลด environmental records (เหมือนเดิม)
   useEffect(() => {
     const run = async () => {
-      setLoading(true);
-      try {
-        const resData = await GetEnvironmentalRecords({
-          date: formattedDate,
-          type: formattedDate ? selectedDateType : undefined,
-          view: viewType,
-        });
-        const safeData = resData ?? [];
-        setData(safeData);
-
-        const paramsSet = [...new Set(safeData.map((d) => d.parameter))];
-        setParameterOptions(paramsSet);
-        if ((!selectedParam || !paramsSet.includes(selectedParam)) && paramsSet.length > 0) {
-          setSelectedParam(paramsSet[0]);
-        }
-      } finally {
-        setLoading(false);
-      }
+      const res = await GetEnvironmentalRecords({
+        date: formattedDate || undefined,
+        type: formattedDate ? dateType : undefined,
+        view,
+      });
+      setData(res ?? []);
     };
     run();
-  }, [formattedDate, selectedDateType, viewType]);
+  }, [formattedDate, dateType, view]);
 
-  // โหลดประสิทธิภาพ (ตามช่วงเวลาเดียวกัน และ optional กรอง param)
+  // โหลด efficiency (เหมือนเดิม)
   useEffect(() => {
-    const run = async () => {
+    const loadEff = async () => {
       const res = await GetEnvironmentalEfficiency({
         date: formattedDate,
-        type: formattedDate ? selectedDateType : undefined,
-        // ถ้าต้องการดึงทุกพารามิเตอร์ให้ตัด param ออกได้ แต่ที่นี่เราจะกรองด้วย selectedParam
+        type: formattedDate ? dateType : undefined,
         param: selectedParam || undefined,
       });
       setEffData(res ?? []);
     };
-    // โหลดเมื่อ selectedParam พร้อมแล้ว (หลัง data มาก่อน)
-    if (selectedParam) run();
-  }, [formattedDate, selectedDateType, selectedParam]);
+    if (selectedParam) loadEff();
+  }, [formattedDate, dateType, selectedParam]);
 
-  // labels กราฟหลัก (ขึ้นกับ param ที่เลือก)
+  // โหลด alerts ใหม่ — เรียก API โดยตรง
+  useEffect(() => {
+    async function loadAlerts() {
+      let url = `/dashboard/environmental/alerts?type=${dateType}`;
+      if (formattedDate) url += `&date=${formattedDate}`;
+      if (selectedParam) url += `&param=${selectedParam}`;
+
+      try {
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          setAlerts(data);
+        } else {
+          setAlerts([]);
+        }
+      } catch {
+        setAlerts([]);
+      }
+    }
+    loadAlerts();
+  }, [formattedDate, dateType, selectedParam]);
+
+  // param options เดิม
+  const params = useMemo(() => [...new Set(data.map((d) => d.parameter))], [data]);
+  useEffect(() => {
+    if (params.length > 0 && !params.includes(selectedParam)) {
+      setSelectedParam(params[0]);
+    }
+  }, [params]);
+
+  // labels สำหรับกราฟ (เหมือนเดิม)
   const labels = useMemo(() => {
     return Array.from(
       new Set(
@@ -83,180 +116,234 @@ const Dashboard: React.FC = () => {
           .map((d) =>
             new Date(d.date).toLocaleDateString("th-TH", {
               year: "numeric",
-              ...(selectedDateType !== "year" && { month: "numeric" }),
-              ...(selectedDateType === "date" && { day: "numeric" }),
+              ...(dateType !== "year" && { month: "numeric" }),
+              ...(dateType === "date" && { day: "numeric" }),
             })
           )
       )
     );
-  }, [data, selectedParam, selectedDateType]);
+  }, [data, selectedParam, dateType]);
 
-  const getDataset = (treatment: string, color: string) => {
-    const treatmentData = data.filter(
-      (d) => d.parameter === selectedParam && d.treatment === treatment
-    );
-    return {
-      label: `${selectedParam} (${treatment})`,
-      data: labels.map((label) => {
-        const match = treatmentData.find(
-          (d) =>
-            new Date(d.date).toLocaleDateString("th-TH", {
-              year: "numeric",
-              ...(selectedDateType !== "year" && { month: "numeric" }),
-              ...(selectedDateType === "date" && { day: "numeric" }),
-            }) === label
-        );
-        return match ? match.value : null;
-      }),
-      borderColor: color,
-      backgroundColor: color,
-      tension: 0.2,
-    };
+  // สร้าง series สำหรับกราฟ (เหมือนเดิม)
+  const makeSeries = (treatment: "ก่อน" | "หลัง") => {
+    const tdata = data.filter((d) => d.parameter === selectedParam && d.treatment === treatment);
+    return labels.map((lb) => {
+      const f = tdata.find(
+        (d) =>
+          new Date(d.date).toLocaleDateString("th-TH", {
+            year: "numeric",
+            ...(dateType !== "year" && { month: "numeric" }),
+            ...(dateType === "date" && { day: "numeric" }),
+          }) === lb
+      );
+      return { x: lb, y: f ? f.value : 0 };
+    });
   };
 
-  type ChartDataset = {
-    label: string;
-    data: (number | null)[];
-    borderColor: string;
-    backgroundColor: string;
-    tension: number;
-  };
-
-  let datasets: ChartDataset[] = [];
-  if (viewType === "compare") {
-    datasets = [getDataset("ก่อน", "#f5222d"), getDataset("หลัง", "#52c41a")];
-  } else {
-    datasets = [getDataset(viewType === "before" ? "ก่อน" : "หลัง", "#1890ff")];
-  }
-  const chartData = { labels, datasets };
-
-  // ===== กราฟแท่ง ประสิทธิภาพ =====
-  // แปลง effData (เฉพาะ param ที่เลือก) ให้แมปกับ labels เดียวกัน
-  const efficiencyMap = useMemo(() => {
+  // แปลง effData เป็น Map (เหมือนเดิม)
+  const effMap = useMemo(() => {
     const m = new Map<string, number>();
-    effData
-      .filter((e) => e.parameter === selectedParam)
-      .forEach((e) => {
-        const label = new Date(e.date).toLocaleDateString("th-TH", {
-          year: "numeric",
-          ...(selectedDateType !== "year" && { month: "numeric" }),
-          ...(selectedDateType === "date" && { day: "numeric" }),
-        });
-        m.set(label, e.efficiency); // ค่าตามสูตรที่ backend ส่งมา
+    effData.forEach((e) => {
+      const key = new Date(e.date).toLocaleDateString("th-TH", {
+        year: "numeric",
+        ...(dateType !== "year" && { month: "numeric" }),
+        ...(dateType === "date" && { day: "numeric" }),
       });
+      m.set(key, +(e.efficiency * 100).toFixed(2));
+    });
     return m;
-  }, [effData, selectedParam, selectedDateType]);
+  }, [effData, dateType]);
 
-  const efficiencyBarData = {
-    labels,
-    datasets: [
-      {
-        label: `ประสิทธิภาพ (${selectedParam})`,
-        data: labels.map((lb) => {
-          const v = efficiencyMap.get(lb);
-          return v !== undefined ? v : null;
-        }),
-        backgroundColor: "#faad14", // โทนส้มทอง
-      },
-    ],
-  };
+  const effSeriesData = labels.map((lb) => ({
+    x: lb,
+    y: effMap.get(lb) ?? 0,
+  }));
+
+  // ปรับความสูงกราฟตามจำนวน alerts
+  const graphHeight = alerts.length > 0 ? 250 : 350;
+
+  // options กราฟ (เหมือนเดิม)
+  const buildOpts = (title: string): ApexOptions => ({
+    chart: { id: title, zoom: { enabled: true, type: "x", autoScaleYaxis: true }, toolbar: { show: true } },
+    dataLabels: { enabled: false },
+    xaxis: { categories: labels, labels: { rotate: -45 } },
+    yaxis: { forceNiceScale: true, min: 0 },
+    title: { text: title, align: "left" },
+  });
 
   return (
-    <div>
-      {/* header */}
-      <div className="title-header">
-        <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-lg sm:text-xl md:text-2xl font-semibold drop-shadow-md">
-              การตรวจวัดคุณภาพสิ่งแวดล้อม
-            </h1>
-            <p className="text-sm drop-shadow-sm leading-snug">
-              โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
-            </p>
+    <>
+      {/* การ์ดแจ้งเตือน */}
+      {alerts.length > 0 && (
+        <div style={{ marginBottom: 16, display: "flex", flexWrap: "wrap", gap: 12 }}>
+          {alerts.map((a, i) => (
+            <div
+              key={i}
+              style={{
+                border: "1px solid #f5222d",
+                backgroundColor: "#fff1f0",
+                padding: 12,
+                borderRadius: 6,
+                minWidth: 220,
+                boxShadow: "0 0 6px rgba(245, 34, 45, 0.2)",
+              }}
+            >
+              <div><b>เดือน:</b> {a.month_year}</div>
+              <div><b>พารามิเตอร์:</b> {a.parameter}</div>
+              <div><b>ค่าเฉลี่ย:</b> {a.average.toFixed(2)} {a.unit}</div>
+              <div><b>มาตรฐานสูงสุด:</b> {a.max_value.toFixed(2)} {a.unit}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* header และ controls ตามเดิม */}
+      <div>
+        {/* header */}
+        <div className="title-header">
+          <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-lg sm:text-xl md:text-2xl font-semibold drop-shadow-md">
+                การตรวจวัดคุณภาพสิ่งแวดล้อม
+              </h1>
+              <p className="text-sm drop-shadow-sm leading-snug">
+                โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* controls + charts */}
-      <div className="max-w-screen-xl mx-auto mt-6 bg-white rounded-lg p-6 text-black">
-        {/* controls */}
-        <Row gutter={16} align="middle" style={{ marginBottom: 8 }}>
-          <Col flex="1" style={{ textAlign: "center" }}>
-            <Radio.Group value={selectedParam} onChange={(e) => setSelectedParam(e.target.value)} style={{ flexWrap: "wrap" }}>
-              {parameterOptions.map((param) => (
-                <Radio.Button key={param} value={param}>
-                  {param}
-                </Radio.Button>
-              ))}
-            </Radio.Group>
-          </Col>
-
+        {/* CONTROLS */}
+        <Row gutter={16} style={{ marginBottom: 16 }}>
           <Col>
-            <Radio.Group
-              value={selectedDateType}
-              onChange={(e) => {
-                setSelectedDateType(e.target.value);
-                setSelectedDate(null);
-              }}
-              style={{ marginBottom: 8, marginRight: 5 }}
-            >
-              <Radio.Button value="date">วัน</Radio.Button>
-              <Radio.Button value="month">เดือน</Radio.Button>
-              <Radio.Button value="year">ปี</Radio.Button>
-            </Radio.Group>
-
-            {selectedDateType === "date" && (
-              <DatePicker picker="date" value={selectedDate} onChange={setSelectedDate} placeholder="เลือกวัน" format="DD MMMM YYYY" size="middle" />
-            )}
-            {selectedDateType === "month" && (
-              <DatePicker picker="month" value={selectedDate} onChange={setSelectedDate} placeholder="เลือกเดือน" format="MMMM YYYY" size="middle" />
-            )}
-            {selectedDateType === "year" && (
-              <DatePicker picker="year" value={selectedDate} onChange={setSelectedDate} placeholder="เลือกปี" format="YYYY" size="middle" />
-            )}
-          </Col>
-        </Row>
-
-        <Row justify="end" gutter={16} style={{ marginBottom: 16, marginRight: 25 }}>
-          <Col>
-            <Select value={viewType} onChange={(val) => setViewType(val)} style={{ width: 150 }}>
-              <Option value="before">ก่อนบำบัด</Option>
-              <Option value="after">หลังบำบัด</Option>
-              <Option value="compare">เปรียบเทียบ</Option>
+            <Select value={view} onChange={setView} style={{ width: 160 }}>
+              <Option value="before">น้ำก่อนบำบัด</Option>
+              <Option value="after">น้ำหลังบำบัด</Option>
+              <Option value="compare">เปรียบเทียบก่อน–หลัง</Option>
             </Select>
           </Col>
-
           <Col>
-            <Select value={chartType} onChange={(val) => setChartType(val)} style={{ width: 120 }}>
+            <Select value={selectedParam} onChange={setSelectedParam} style={{ width: 180 }}>
+              {params.map((p) => (
+                <Option key={p}>{p}</Option>
+              ))}
+            </Select>
+          </Col>
+          <Col>
+            <Select value={dateType} onChange={(v) => { setDateType(v); setDate(null); }} style={{ width: 120 }}>
+              <Option value="date">วัน</Option>
+              <Option value="month">เดือน</Option>
+              <Option value="year">ปี</Option>
+            </Select>
+          </Col>
+          <Col>
+            {dateType === "date" && <DatePicker value={date} onChange={setDate} />}
+            {dateType === "month" && <DatePicker picker="month" value={date} onChange={setDate} />}
+            {dateType === "year" && <DatePicker picker="year" value={date} onChange={setDate} />}
+          </Col>
+          <Col>
+            <Select value={chartType} onChange={setChartType} style={{ width: 110 }}>
               <Option value="line">กราฟเส้น</Option>
               <Option value="bar">กราฟแท่ง</Option>
             </Select>
           </Col>
         </Row>
 
-        {/* กราฟหลัก (ค่าก่อน/หลัง/เปรียบเทียบ) */}
+        {/* กราฟซ้าย */}
         <Row gutter={16}>
-  {/* ซ้าย: กราฟค่าก่อน/หลัง/เปรียบเทียบ */}
-  <Col xs={24} lg={12} style={{ height: 320 }}>
-    {chartType === "line" ? (
-      <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
-    ) : (
-      <Bar data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
-    )}
-  </Col>
+          <Col span={12}>
+            <div className="bod-graph-card">
+              <div className="bod-head-graph-card">
+                <div>{view === "before" ? "น้ำก่อนบำบัด" : view === "after" ? "น้ำหลังบำบัด" : "เปรียบเทียบก่อน-หลัง"}</div>
+                <div>
+                  {(view === "before" || view === "after") && (
+                    <ColorPicker
+                      value={view === "before" ? chartColor.before : chartColor.after}
+                      onChange={(c: Color) => {
+                        const hex = c.toHexString();
+                        if (view === "before") setChartColor({ ...chartColor, before: hex });
+                        else setChartColor({ ...chartColor, after: hex });
+                      }}
+                    />
+                  )}
+                  {view === "compare" && (
+                    <>
+                      <ColorPicker
+                        value={chartColor.compareBefore}
+                        onChange={(c) => setChartColor({ ...chartColor, compareBefore: c.toHexString() })}
+                      />
+                      <ColorPicker
+                        value={chartColor.compareAfter}
+                        onChange={(c) => setChartColor({ ...chartColor, compareAfter: c.toHexString() })}
+                      />
+                    </>
+                  )}
+                  <Maximize2 style={{ cursor: "pointer", marginLeft: 8 }} onClick={() => setShowModal(true)} />
+                </div>
+              </div>
+              <ApexChart
+                key={view + chartType}
+                options={buildOpts("")}
+                series={
+                  view === "before"
+                    ? [{ name: "ก่อน", data: makeSeries("ก่อน"), color: chartColor.before }]
+                    : view === "after"
+                    ? [{ name: "หลัง", data: makeSeries("หลัง"), color: chartColor.after }]
+                    : [
+                        { name: "ก่อน", data: makeSeries("ก่อน"), color: chartColor.compareBefore },
+                        { name: "หลัง", data: makeSeries("หลัง"), color: chartColor.compareAfter },
+                      ]
+                }
+                type={chartType}
+                height={graphHeight}
+              />
+            </div>
+          </Col>
 
-  {/* ขวา: กราฟแท่งประสิทธิภาพ */}
-  <Col xs={24} lg={12} style={{ height: 320 }}>
-    <Bar data={efficiencyBarData} options={{ responsive: true, maintainAspectRatio: false }} />
-  </Col>
-</Row>
-        {loading && <p>กำลังโหลดข้อมูล...</p>}
-        {!loading && datasets.every((ds) => ds.data.every((v: number | null) => v === null)) && (
-          <p>ไม่มีข้อมูลสำหรับการเลือกนี้</p>
-        )}
+          {/* กราฟขวา efficiency */}
+          <Col span={12}>
+            <div className="bod-graph-card">
+              <div className="bod-head-graph-card">
+                <div>ประสิทธิภาพ (%)</div>
+                <div>
+                  <ColorPicker
+                    value={chartColor.efficiency}
+                    onChange={(c) => setChartColor({ ...chartColor, efficiency: c.toHexString() })}
+                  />
+                </div>
+              </div>
+              <ApexChart
+                options={buildOpts("Efficiency (%)")}
+                series={[{ name: "Efficiency", data: effSeriesData, color: chartColor.efficiency }]}
+                type="bar"
+                height={graphHeight}
+              />
+            </div>
+          </Col>
+        </Row>
+
+        {/* MODAL */}
+        <Modal open={showModal} footer={null} onCancel={() => setShowModal(false)} width={1000}>
+          <ApexChart
+            key={"modal" + view + chartType}
+            options={buildOpts("Zoom Chart")}
+            series={
+              view === "before"
+                ? [{ name: "ก่อน", data: makeSeries("ก่อน"), color: chartColor.before }]
+                : view === "after"
+                ? [{ name: "หลัง", data: makeSeries("หลัง"), color: chartColor.after }]
+                : [
+                    { name: "ก่อน", data: makeSeries("ก่อน"), color: chartColor.compareBefore },
+                    { name: "หลัง", data: makeSeries("หลัง"), color: chartColor.compareAfter },
+                  ]
+            }
+            type={chartType}
+            height={600}
+          />
+        </Modal>
       </div>
-    </div>
+    </>
   );
 };
 
-export default Dashboard;
+export default AdminDashboard;

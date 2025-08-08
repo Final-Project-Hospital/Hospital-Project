@@ -75,7 +75,8 @@ func main() {
 		authorized.PUT("/api/employees/:id", employee.UpdateEmployeeInfo)
 		authorized.DELETE("/api/employees/:id", employee.DeleteEmployee)
 		authorized.GET("/dashboard/environmental", dashboard.GetEnvironmentalDashboard)
-
+		authorized.GET("/dashboard/environmental/efficiency", dashboard.GetEnvironmentalEfficiency)
+		authorized.GET("/dashboard/environmental/alerts", dashboard.GetEnvironmentalAlerts)
 	}
 
 	public := r.Group("")

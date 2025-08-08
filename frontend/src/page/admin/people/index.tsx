@@ -1,6 +1,6 @@
 // pages/admin/UserManagement.tsx
 import { useEffect, useState } from "react";
-import { Table, Select, message, Space, Tag, Button } from "antd";
+import { Table, message, Space, Tag, Button } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import axios from "axios";
 import { EmployeeInterface } from "../../../interface/IEmployee";
@@ -51,22 +51,6 @@ export default function UserManagement() {
     fetchPositions();
   }, []);
 
-  const handleChangeRole = async (id: number, roleName: string) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return message.error("กรุณาเข้าสู่ระบบก่อน");
-
-      await axios.patch(
-        `/api/employees/${id}/role`,
-        { role: roleName },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      message.success("อัปเดตสิทธิ์สำเร็จ");
-      fetchEmployees();
-    } catch {
-      message.error("อัปเดตสิทธิ์ไม่สำเร็จ");
-    }
-  };
 
   const openEdit = (emp: EmployeeInterface) => {
     setCurrentEmployee(emp);
@@ -128,7 +112,7 @@ export default function UserManagement() {
       key: "action",
       render: (_, record) => (
         <Space wrap>
-          <Select<string>
+          {/* <Select<string>
             value={record.Role?.RoleName?.toLowerCase()}
             style={{ width: 120 }}
             onChange={(role) => handleChangeRole(record.ID!, role)}
@@ -137,7 +121,7 @@ export default function UserManagement() {
               { value: "employee", label: "employee" },
               { value: "guest", label: "guest" },
             ]}
-          />
+          /> */}
           <Button size="small" onClick={() => openEdit(record)}>
             แก้ไข
           </Button>

@@ -13,7 +13,6 @@ const tabs = [
   { label: 'COD-Central', path: '/admin/data-management/tapwater/cod' },
   { label: 'TH-Central', path: '/admin/data-management/tapwater/th' },
   { label: 'TCB-Central', path: '/admin/data-management/tapwater/tcb' },
-
 ];
 
 const EnvironmentLayout: React.FC = () => {
@@ -23,17 +22,15 @@ const EnvironmentLayout: React.FC = () => {
   return (
     <div>
       <div className="tabs-header">
-        <h1>น้ำเสีย</h1>
+        <h1>น้ำประปา</h1>
         <p>
-          โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
+          โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพน้ำประปา
         </p>
       </div>
       <br />
-      <div
-        className="tabs"
-      >
+      <div className="tabs">
         {tabs.map(({ label, path }) => {
-          const active = pathname === path;
+          const active = pathname === path || (pathname === '/admin/data-management/tapwater' && path === '/admin/data-management/tapwater/al');
           return (
             <Button
               key={path}
@@ -46,7 +43,6 @@ const EnvironmentLayout: React.FC = () => {
           );
         })}
       </div>
-
       <br />
       <Outlet />
     </div>

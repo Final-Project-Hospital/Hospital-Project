@@ -1,24 +1,15 @@
 import React from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { Button } from 'antd';
-import './EnvironmentWastewaterTabs.css'
+import './EnvironmentGrabageTab.css'
 
 const tabsRow1 = [
-  { label: 'pH-Central', path: '/admin/data-management/wastewater/ph' },
-  { label: 'BOD-Central', path: '/admin/data-management/wastewater/bod' },
-  { label: 'SS-Central', path: '/admin/data-management/wastewater/ts' },
-  { label: 'TDS-Central', path: '/admin/data-management/wastewater/tds' },
-  { label: 'FOG-Central', path: '/admin/data-management/wastewater/fog' },
-  { label: 'TKN-Central', path: '/admin/data-management/wastewater/tkn' },
-];
+  { label: 'Chemica-Waste', path: '/admin/data-management/garbage/chemica' },
+  { label: 'General-Waste', path: '/admin/data-management/garbage/general' },
+  { label: 'hazardous-Waste', path: '/admin/data-management/garbage/hazardous' },
+  { label: 'infectious-Waste', path: '/admin/data-management/garbage/infectious' },
+  { label: 'recycled-Waste', path: '/admin/data-management/garbage/recycled' },];
 
-const tabsRow2 = [
-  { label: 'COD-Central', path: '/admin/data-management/wastewater/cod' },
-  { label: 'FCB-Central', path: '/admin/data-management/wastewater/fcb' },
-  { label: 'Residule-Central', path: '/admin/data-management/wastewater/residule' },
-  { label: 'Sulfid-Central', path: '/admin/data-management/wastewater/sulfid' },
-  { label: 'TCB-Central', path: '/admin/data-management/wastewater/tcb' },
-];
 
 const EnvironmentLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -27,8 +18,8 @@ const EnvironmentLayout: React.FC = () => {
   const getActivePath = (path: string): boolean => {
     if (pathname === path) return true;
     if (
-      pathname === '/admin/data-management/wastewater' &&
-      path === '/admin/data-management/wastewater/ph'
+      pathname === '/admin/data-management/garbage' &&
+      path === '/admin/data-management/garbage/chemica'
     ) {
       return true; // ตั้งค่า default ให้ pH เป็น active หากยังไม่ได้ระบุ path
     }
@@ -66,7 +57,7 @@ const EnvironmentLayout: React.FC = () => {
   return (
     <div>
       <div className="tabs-header">
-        <h1>น้ำเสีย</h1>
+        <h1>ขยะ</h1>
         <p>
           โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
         </p>
@@ -75,7 +66,6 @@ const EnvironmentLayout: React.FC = () => {
       <br />
 
       {renderTabRow(tabsRow1)}
-      {renderTabRow(tabsRow2)}
 
       <br />
 

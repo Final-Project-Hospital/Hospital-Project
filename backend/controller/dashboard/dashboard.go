@@ -25,6 +25,14 @@ type EfficiencyResponse struct {
 	Efficiency  float64   `json:"efficiency"` // ค่าที่คำนวณตามสูตรที่กำหนด
 }
 
+type AlertResponse struct {
+	MonthYear string  `json:"month_year"`
+	Parameter string  `json:"parameter"`
+	Average   float64 `json:"average"`
+	MaxValue  float64 `json:"max_value"`
+	Unit      string  `json:"unit"`
+}
+
 func GetEnvironmentalDashboard(c *gin.Context) {
 	db := config.DB()
 
@@ -38,13 +46,21 @@ func GetEnvironmentalDashboard(c *gin.Context) {
 
 	// เตรียม query พื้นฐาน
 	query := db.Model(&entity.EnvironmentalRecord{}).
-		Select("environmental_records.date, environmental_records.data AS value, " +
-			"parameters.parameter_name AS parameter, units.unit_name AS unit, " +
-			"before_after_treatments.treatment_name AS treatment, statuses.status_name AS status").
-		Joins("INNER JOIN parameters ON environmental_records.parameter_id = parameters.id").
-		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
-		Joins("INNER JOIN before_after_treatments ON environmental_records.before_after_treatment_id = before_after_treatments.id").
-		Joins("INNER JOIN statuses ON environmental_records.status_id = statuses.id")
+	Select(`environmental_records.id, environmental_records.date, environmental_records.data AS value, environmental_records.note,
+		environmental_records.before_after_treatment_id, environmental_records.environment_id,
+		environmental_records.parameter_id, environmental_records.standard_id, environmental_records.unit_id,
+		environmental_records.employee_id,
+		parameters.parameter_name AS parameter,
+		units.unit_name AS unit,
+		before_after_treatments.treatment_name AS treatment,
+		statuses.status_name AS status,
+		standards.min_value, standards.middle_value, standards.max_value`).
+	Joins("INNER JOIN parameters ON environmental_records.parameter_id = parameters.id").
+	Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
+	Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
+	Joins("INNER JOIN before_after_treatments ON environmental_records.before_after_treatment_id = before_after_treatments.id").
+	Joins("INNER JOIN statuses ON environmental_records.status_id = statuses.id")
+
 
 	// ---------------------------
 	// กรองช่วงเวลา
@@ -258,4 +274,74 @@ func GetEnvironmentalEfficiency(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, resp)
+}
+func GetEnvironmentalAlerts(c *gin.Context) {
+	db := config.DB()
+
+	dateStr := c.Query("date")
+	filterType := c.Query("type")
+	param := c.Query("param")
+
+	var start, end time.Time
+	now := time.Now().In(time.Local)
+
+	if dateStr != "" && filterType != "" {
+		switch filterType {
+		case "year":
+			year, err := strconv.Atoi(dateStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid year format"})
+				return
+			}
+			start = time.Date(year, 1, 1, 0, 0, 0, 0, time.Local)
+			end = start.AddDate(1, 0, 0)
+		case "month":
+			t, err := time.ParseInLocation("2006-01", dateStr, time.Local)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid month format"})
+				return
+			}
+			start = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.Local)
+			end = start.AddDate(0, 1, 0)
+		case "date":
+			t, err := time.ParseInLocation("2006-01-02", dateStr, time.Local)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format"})
+				return
+			}
+			start = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.Local)
+			end = start.AddDate(0, 0, 1)
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid type. Expected year|month|date"})
+			return
+		}
+	} else {
+		end = now
+		start = now.AddDate(-1, 0, 0)
+	}
+
+	var alerts []AlertResponse
+
+	// Query ค่าเฉลี่ยแยกตามเดือน, parameter, unit, max_value
+	// ใช้ GORM + raw SQL ฟังก์ชัน DATE_FORMAT ของ MySQL
+	// ถ้า DB เป็นอื่น ต้องแก้ฟังก์ชันแปลงวันที่ให้เหมาะสม
+	tx := db.Table("environmental_records").
+		Select("DATE_FORMAT(environmental_records.date, '%Y-%m') AS month_year, parameters.parameter_name AS parameter, units.unit_name AS unit, AVG(environmental_records.data) AS average, standards.max_value").
+		Joins("INNER JOIN parameters ON environmental_records.parameter_id = parameters.id").
+		Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
+		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
+		Where("environmental_records.date >= ? AND environmental_records.date < ?", start, end).
+		Group("month_year, parameter, max_value, unit").
+		Having("AVG(environmental_records.data) > standards.max_value || AVG(environmental_records.data) < standards.min_value || AVG(environmental_records.data) > standards.middle_value")
+
+	if param != "" {
+		tx = tx.Where("parameters.parameter_name = ?", param)
+	}
+
+	if err := tx.Scan(&alerts).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, alerts)
 }
