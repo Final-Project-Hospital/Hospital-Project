@@ -92,21 +92,38 @@ func CreateBod(c *gin.Context) {
 		return
 	}
 
+	// getStatusID := func(value float64) uint {
+	// 	var status entity.Status
+	// 	if standard.MiddleValue != 0 {
+	// 		if value <= float64(standard.MiddleValue) {
+	// 			db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
+	// 		} else {
+	// 			db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
+	// 		}
+	// 	} else {
+	// 		if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
+	// 			db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
+	// 		} else if value > float64(standard.MaxValue) {
+	// 			db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
+	// 		} else {
+	// 			db.Where("status_name = ?", "ต่ำกว่าเกณฑ์มาตรฐาน").First(&status)
+	// 		}
+	// 	}
+	// 	return status.ID
+	// }
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-		if standard.MiddleValue != 0 {
-			if value <= float64(standard.MiddleValue) {
-				db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
+		if standard.MiddleValue != 0 { // ค่าเดี่ยว
+			if value > float64(standard.MiddleValue) {
+				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
-				db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
-		} else {
+		} else { // ค่าเป็นช่วง
 			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
-				db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
-			} else if value > float64(standard.MaxValue) {
-				db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
-				db.Where("status_name = ?", "ต่ำกว่าเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		}
 		return status.ID
@@ -422,23 +439,42 @@ func GetBODTABLE(c *gin.Context) {
 		}
 
 		// Status
+		// if bodMap[k].AfterValue != nil && latestRec.StandardID != 0 {
+		// 	var std entity.Standard
+		// 	if db.First(&std, latestRec.StandardID).Error == nil {
+		// 		after := *bodMap[k].AfterValue
+		// 		if std.MinValue != 0 || std.MaxValue != 0 {
+		// 			if after < float64(std.MinValue) {
+		// 				bodMap[k].Status = "ต่ำกว่าเกณฑ์มาตรฐาน"
+		// 			} else if after > float64(std.MaxValue) {
+		// 				bodMap[k].Status = "เกินเกณฑ์มาตรฐาน"
+		// 			} else {
+		// 				bodMap[k].Status = "อยู่ในเกณฑ์มาตรฐาน"
+		// 			}
+		// 		} else {
+		// 			if after > float64(std.MiddleValue) {
+		// 				bodMap[k].Status = "เกินเกณฑ์มาตรฐาน"
+		// 			} else {
+		// 				bodMap[k].Status = "อยู่ในเกณฑ์มาตรฐาน"
+		// 			}
+		// 		}
+		// 	}
+		// }
 		if bodMap[k].AfterValue != nil && latestRec.StandardID != 0 {
 			var std entity.Standard
 			if db.First(&std, latestRec.StandardID).Error == nil {
 				after := *bodMap[k].AfterValue
-				if std.MinValue != 0 || std.MaxValue != 0 {
-					if after < float64(std.MinValue) {
-						bodMap[k].Status = "ต่ำกว่าเกณฑ์มาตรฐาน"
-					} else if after > float64(std.MaxValue) {
-						bodMap[k].Status = "เกินเกณฑ์มาตรฐาน"
+					if std.MinValue != 0 || std.MaxValue != 0 {
+					if after < float64(std.MinValue) || after > float64(std.MaxValue) {
+						bodMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
-						bodMap[k].Status = "อยู่ในเกณฑ์มาตรฐาน"
+						bodMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
 					}
 				} else {
 					if after > float64(std.MiddleValue) {
-						bodMap[k].Status = "เกินเกณฑ์มาตรฐาน"
+						bodMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
-						bodMap[k].Status = "อยู่ในเกณฑ์มาตรฐาน"
+						bodMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
 					}
 				}
 			}
@@ -669,28 +705,49 @@ func UpdateOrCreateBOD(c *gin.Context) {
 		return
 	}
 
+	// // ✅ ฟังก์ชันคำนวณสถานะ
+	// getStatusID := func(value float64) uint {
+	// 	var status entity.Status
+
+	// 	// กรณีใช้เกณฑ์กลาง (MiddleValue)
+	// 	if standard.MiddleValue != 0 {
+	// 		if value <= float64(standard.MiddleValue) {
+	// 			// ค่าเท่ากับหรือต่ำกว่ากลาง → อยู่ในเกณฑ์
+	// 			db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
+	// 		} else {
+	// 			// ค่าเกิน → เกินเกณฑ์
+	// 			db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
+	// 		}
+
+	// 		// กรณีใช้ช่วง (MinValue/MaxValue)
+	// 	} else {
+	// 		if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
+	// 			db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
+	// 		} else if value > float64(standard.MaxValue) {
+	// 			db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
+	// 		} else {
+	// 			db.Where("status_name = ?", "ต่ำกว่าเกณฑ์มาตรฐาน").First(&status)
+	// 		}
+	// 	}
+
+	// 	return status.ID
+	// }
+
 	// ✅ ฟังก์ชันคำนวณสถานะ
 	getStatusID := func(value float64) uint {
 		var status entity.Status
 
-		// กรณีใช้เกณฑ์กลาง (MiddleValue)
 		if standard.MiddleValue != 0 {
 			if value <= float64(standard.MiddleValue) {
-				// ค่าเท่ากับหรือต่ำกว่ากลาง → อยู่ในเกณฑ์
-				db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
-				// ค่าเกิน → เกินเกณฑ์
-				db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
-
-			// กรณีใช้ช่วง (MinValue/MaxValue)
 		} else {
 			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
-				db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
-			} else if value > float64(standard.MaxValue) {
-				db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
-				db.Where("status_name = ?", "ต่ำกว่าเกณฑ์มาตรฐาน").First(&status)
+				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		}
 

@@ -78,6 +78,9 @@ const BODdataviz: React.FC = () => {
   const [editingRecord, setEditRecord] = useState<any>(null);
   const { confirm } = Modal;
   const [statusOptions, setStatusOptions] = useState<ListStatusInterface[]>([]);
+  const [tableFilterMode, setTableFilterMode] = useState<"dateRange" | "month" | "year">("year");
+  const [tableDateRange, setTableDateRange] = useState<[Dayjs, Dayjs] | null>(null);
+
 
 
 
@@ -411,6 +414,14 @@ const BODdataviz: React.FC = () => {
       dataIndex: 'date',
       key: 'date',
       width: 140,
+      render: (date: string) => {
+        if (!date) return '-';
+        const d = dayjs(date);
+        if (!d.isValid()) return '-';
+
+        // แปลงปี ค.ศ. เป็น พ.ศ. (+543) และฟอร์แมตเป็นวัน เดือน(ภาษาไทย) ปี
+        return d.format('DD MMM ') + (d.year() + 543);
+      }
     },
     {
       title: 'หน่วยที่วัด',
@@ -418,13 +429,6 @@ const BODdataviz: React.FC = () => {
       key: 'unit',
       width: 125,
       render: (unit: string) => unit || '-',
-    },
-    {
-      title: 'ค่ามาตรฐาน',
-      dataIndex: 'standard_value',
-      key: 'standard_value',
-      width: 160,
-      render: (val: number) => val ?? '-',
     },
     {
       title: 'ค่าก่อนเข้าระบบบำบัด',
@@ -448,23 +452,6 @@ const BODdataviz: React.FC = () => {
           else if (afterValue > before) arrow = <span style={{ ...iconStyle, color: '#14C18B' }}> ↑</span>;
         }
         return <span>{afterValue.toFixed(2)}{arrow}</span>;
-      },
-    },
-    {
-      title: (
-        <>
-          หมายเหตุ
-          <br />
-          ( ก่อน / หลัง )
-        </>
-      ),
-      dataIndex: 'note',
-      key: 'note',
-      width: 150,
-      render: (_: any, record: any) => {
-        const beforeNote = record.before_note || '-';
-        const afterNote = record.after_note || '-';
-        return [beforeNote, afterNote].filter(Boolean).join(' / ');
       },
     },
     {
@@ -503,6 +490,13 @@ const BODdataviz: React.FC = () => {
         const eff = Number(r.efficiency);
         return isNaN(eff) ? "-" : Math.max(eff, 0).toFixed(2);
       },
+    },
+    {
+      title: 'ค่ามาตรฐาน',
+      dataIndex: 'standard_value',
+      key: 'standard_value',
+      width: 160,
+      render: (val: number) => val ?? '-',
     },
     {
       title: "สถานะ",
@@ -560,16 +554,33 @@ const BODdataviz: React.FC = () => {
           );
         }
 
-        if (statusName.includes("ต่ำกว่า")) {
-          return (
-            <span className="status-badge status-low">
-              <ExclamationCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
-              {statusName}
-            </span>
-          );
-        }
+        // if (statusName.includes("ต่ำกว่า")) {
+        //   return (
+        //     <span className="status-badge status-low">
+        //       <ExclamationCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
+        //       {statusName}
+        //     </span>
+        //   );
+        // }
 
-        if (statusName.includes("เกิน")) {
+        // if (statusName.includes("เกิน")) {
+        //   return (
+        //     <span className="status-badge status-high">
+        //       <CloseCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
+        //       {statusName}
+        //     </span>
+        //   );
+        // }
+
+        // if (statusName.includes("อยู่ใน")) {
+        //   return (
+        //     <span className="status-badge status-good">
+        //       <CheckCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
+        //       {statusName}
+        //     </span>
+        //   );
+        // }
+        if (statusName.includes("ไม่ผ่าน")) {
           return (
             <span className="status-badge status-high">
               <CloseCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
@@ -578,7 +589,7 @@ const BODdataviz: React.FC = () => {
           );
         }
 
-        if (statusName.includes("อยู่ใน")) {
+        if (statusName.includes("ผ่าน")) {
           return (
             <span className="status-badge status-good">
               <CheckCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
@@ -587,6 +598,23 @@ const BODdataviz: React.FC = () => {
           );
         }
       }
+    },
+    {
+      title: (
+        <>
+          หมายเหตุ
+          <br />
+          ( ก่อน / หลัง )
+        </>
+      ),
+      dataIndex: 'note',
+      key: 'note',
+      width: 150,
+      render: (_: any, record: any) => {
+        const beforeNote = record.before_note || '-';
+        const afterNote = record.after_note || '-';
+        return [beforeNote, afterNote].filter(Boolean).join(' / ');
+      },
     },
     {
       title: 'จัดการข้อมูล',
@@ -746,7 +774,7 @@ const BODdataviz: React.FC = () => {
                     }
                   }}
                   locale={th_TH}
-                  allowClear={false}
+                  allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
                   placeholder={["วันเริ่มต้น", "วันสิ้นสุด"]}
@@ -768,7 +796,7 @@ const BODdataviz: React.FC = () => {
                   locale={th_TH}
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
-                  allowClear={false}
+                  allowClear={true}
                   value={dateRange ? dayjs(dateRange[0]) : null}
                   format={(value) => value ? `${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                 />
@@ -788,7 +816,7 @@ const BODdataviz: React.FC = () => {
                   locale={th_TH}
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
-                  allowClear={false}
+                  allowClear={true}
                   value={dateRange}
                   format={(value) => value ? `${value.year() + 543}` : ''}
                 />
@@ -1009,13 +1037,90 @@ const BODdataviz: React.FC = () => {
           </div>
         </div>
         <div className="bod-header-vis">
-          <div className="bod-title-search-vis">
-            <h1 className="bod-title-text-vis">BOD DATA</h1>
-            <div>
-            </div>
-          </div>
+
+          <h1 className="bod-title-text-vis">BOD DATA</h1>
+
           <div className="bod-btn-container">
             <button className="bod-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
+          </div>
+        </div>
+        <div className="bod-select-date">
+          <div>
+            <Select
+              value={tableFilterMode}
+              onChange={(val) => {
+                setTableFilterMode(val);
+                setTableDateRange(null);
+              }}
+              className="bod-select-filter"
+              options={[
+                { label: "เลือกช่วงวัน", value: "dateRange" },
+                { label: "เลือกเดือน", value: "month" },
+                { label: "เลือกปี", value: "year" },
+              ]}
+            />
+          </div>
+          <div>
+            {tableFilterMode === "dateRange" && (
+              <RangePicker
+                value={tableDateRange}
+                onChange={(dates) => {
+                  if (dates && dates[0] && dates[1]) {
+                    setTableDateRange([dates[0], dates[1]]);
+                  } else {
+                    setTableDateRange(null);
+                  }
+                }}
+                locale={th_TH}
+                allowClear={true}
+                format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
+                style={{ width: 300 }}
+                placeholder={["วันเริ่มต้น", "วันสิ้นสุด"]}
+              />
+            )}
+
+            {tableFilterMode === "month" && (
+              <DatePicker
+                picker="month"
+                onChange={(date) => {
+                  if (date) {
+                    const start = date.startOf('month');
+                    const end = date.endOf('month');
+                    setTableDateRange([start, end]);
+                  } else {
+                    setTableDateRange(null);
+                  }
+                }}
+                locale={th_TH}
+                placeholder="เลือกเดือน"
+                style={{ width: 150 }}
+                allowClear={true}
+                value={tableDateRange ? tableDateRange[0] : null}
+                format={(value) => value ? `${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
+              />
+            )}
+
+            {tableFilterMode === "year" && (
+              <DatePicker.RangePicker
+                picker="year"
+                onChange={(dates) => {
+                  if (dates && dates[0] && dates[1]) {
+                    const start = dates[0].startOf('year');
+                    const end = dates[1].endOf('year');
+                    setTableDateRange([start, end]);
+                  } else {
+                    setTableDateRange(null);
+                  }
+                }}
+                locale={th_TH}
+                placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
+                style={{ width: 300 }}
+                allowClear={true}
+                value={tableDateRange}
+                format={(value) => value ? `${value.year() + 543}` : ''}
+              />
+            )}
+
           </div>
         </div>
 
@@ -1023,9 +1128,16 @@ const BODdataviz: React.FC = () => {
           <h1 className="bod-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
           <Table
             columns={columns.map((col) => ({ ...col, align: 'center' }))}
-            dataSource={data.filter((d: any) =>
-              dayjs(d.date).format('YYYY-MM-DD').includes(search)
-            )}
+            dataSource={data
+              .filter((d: any) =>
+                dayjs(d.date).format('YYYY-MM-DD').includes(search) // filter จาก input search ปกติ
+              )
+              .filter((d: any) => {
+                if (!tableDateRange) return true;
+                const recordDate = dayjs(d.date);
+                return recordDate.isBetween(tableDateRange[0], tableDateRange[1], null, '[]');
+              })
+            }
             rowKey="ID"
             loading={loading}
             pagination={{
@@ -1035,6 +1147,7 @@ const BODdataviz: React.FC = () => {
             }}
             bordered
           />
+
         </div>
 
         <Modal
@@ -1044,7 +1157,7 @@ const BODdataviz: React.FC = () => {
           width={1100}
           destroyOnClose
           closable={false}
-            centered
+          centered
         >
           <BODCentralForm onCancel={handleAddModalCancel}
             onSuccess={async () => {
