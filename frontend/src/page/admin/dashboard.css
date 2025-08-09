@@ -3,11 +3,10 @@
   padding: 30px;
   border-radius: 0 0 25px 25px;
   color: white;
-  /* ปรับขนาดฟอนต์ */
 }
 
 .title-header h1 {
-  font-size: 2rem;  /* ปรับตามเค้า */
+  font-size: 2rem;
   font-weight: 500;
   margin: 0;
   text-shadow: 0 4px 5px #000000ba;
@@ -20,7 +19,7 @@
   color: #e0f7f7;
 }
 
-.bod-graph-card {
+.dashboard-graph-card {
   background: #fff;
   padding: 15px;
   border-radius: 10px;
@@ -30,23 +29,20 @@
 
   display: flex;
   flex-direction: column;
-  /* ถ้าต้องการกึ่งกลางแนวตั้ง-แนวนอนให้เปิดคอมเม้นต์นี้ */
-  /* justify-content: center;
-  align-items: center; */
 }
 
-.bod-head-graph-card {
+.dashboard-head-graph-card {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 12px;
   font-weight: 600;
-  font-size: 1rem; /* ปรับขนาด */
+  font-size: 1rem;
   color: #1b4242;
 }
 
-.bod-head-graph-card > div {
+.dashboard-head-graph-card > div {
   background-image: linear-gradient(to right, #5DDFE2, #ffffff);
   padding: 5px;
   border-radius: 2px;
@@ -67,7 +63,7 @@
   gap: 16px;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center; /* จัดกึ่งกลาง */
+  justify-content: center;
 }
 
 /* Responsive เบื้องต้น */
@@ -80,13 +76,14 @@
     font-size: 0.9rem;
     text-align: center;
   }
-  .bod-head-graph-card {
+  .dashboard-head-graph-card {
     font-size: 0.9rem;
   }
-  .bod-graph-card {
+  .dashboard-graph-card {
     min-height: 350px;
   }
 }
+
 .profile-upload {
   width: 100px;
   height: 100px;
@@ -95,7 +92,8 @@
   position: relative;
   display: inline-block;
 }
-/* ===== Efficiency Graph Styling (ไม่ยุ่งกับ .bod-*) ===== */
+
+/* ===== Efficiency Graph Styling (ไม่ยุ่งกับ dashboard-*) ===== */
 .efficiency-card {
   background: #ffffff;
   padding: 20px;
