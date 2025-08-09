@@ -9,7 +9,7 @@ import {
     ListUnit
 } from '../../../../../services/index';
 import { CheckUnit, CheckStandard } from '../../../../../services/tdsService';
-import { UpdateOrCreatePH, DeletePH } from '../../../../../services/phService';
+import { UpdateOrCreatePH, DeletePH } from '../../../../../services/wastewaterServices/ph';
 
 import { ListBeforeAfterTreatmentInterface } from '../../../../../interface/IBeforeAfterTreatment';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';

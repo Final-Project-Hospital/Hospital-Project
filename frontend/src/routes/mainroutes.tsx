@@ -74,8 +74,8 @@ const TCB = Loadable(lazy(() => import("../page/admin/data-management/wastewater
 //drinkwater
 const EnvironmentDrinkwaterTabs = Loadable(lazy(() => import("../page/admin/data-management/drinkwater/EnvironmentDrinkwaterTabs")));
 const ECOIN = Loadable(lazy(() => import("../page/admin/data-management/drinkwater/ecolicenter/ecolicenter")));
-const DTCB = Loadable(lazy(() => import("../page/admin/data-management/drinkwater/dtcbcenter/tcbcenter")));
-const DFCB = Loadable(lazy(() => import("../page/admin/data-management/drinkwater/dfcbcenter/fcbenter")));
+const DTCB = Loadable(lazy(() => import("../page/admin/data-management/drinkwater/dtcbcenter/dtcbcenter")));
+const DFCB = Loadable(lazy(() => import("../page/admin/data-management/drinkwater/dfcbcenter/dfcbcenter")));
 
 //tapwater
 const EnvironmentTapwaterTabs = Loadable(lazy(() => import("../page/admin/data-management/tapwater/EnvironmentTapwaterTabs")));
@@ -85,9 +85,9 @@ const MN = Loadable(lazy(() => import("../page/admin/data-management/tapwater/mn
 const NI = Loadable(lazy(() => import("../page/admin/data-management/tapwater/nicenter/nicenter")));
 const NTU = Loadable(lazy(() => import("../page/admin/data-management/tapwater/ntucenter/ntucenter")));
 const PT = Loadable(lazy(() => import("../page/admin/data-management/tapwater/ptcenter/ptcenter")));
-const TCOD = Loadable(lazy(() => import("../page/admin/data-management/tapwater/tcodcenter/codcenter")));
+const TCOD = Loadable(lazy(() => import("../page/admin/data-management/tapwater/tcodcenter/tcodcenter")));
 const TH = Loadable(lazy(() => import("../page/admin/data-management/tapwater/thcenter/thcenter")));
-const TTCB = Loadable(lazy(() => import("../page/admin/data-management/tapwater/ttcbcenter/tcbcenter")));
+const TTCB = Loadable(lazy(() => import("../page/admin/data-management/tapwater/ttcbcenter/ttcbcenter")));
 
 //garbage
 const EnvironmentGrabageTab = Loadable(lazy(() => import("../page/admin/data-management/garbage/EnvironmentGrabageTab")));

@@ -1,4 +1,4 @@
-.tcb-container {
+.dtcb-container {
   background: white;
   padding: 20px 30px;
   border-radius: 20px;
@@ -11,42 +11,43 @@
   font-size: 14px;
 }
 
-.tcb-container .ant-input,
-.tcb-container .ant-input-number,
-.tcb-container .ant-picker,
-.tcb-container .ant-select-selector {
+/* ปรับ input ให้มี border-radius 50px */
+.dtcb-container .ant-input,
+.dtcb-container .ant-input-number,
+.dtcb-container .ant-picker,
+.dtcb-container .ant-select-selector {
   border-radius: 50px !important;
 }
 
-.tcb-container .ant-input-number-handler-wrap {
+.dtcb-container .ant-input-number-handler-wrap {
   border-radius: 0 50px 50px 0 !important;
   overflow: hidden;
 }
 
-.tcb-form-group {
+.dtcb-form-group {
   display: flex;
   gap: 30px;
   flex-wrap: wrap;
 }
 
-.tcb-form-group .ant-form-item {
+.dtcb-form-group .ant-form-item {
   flex: 1 1 300px;
 }
 
-.tcb-form-mini {
+.dtcb-from-mini {
   width: 48%;
 }
 
-.tcb-full-width {
+.dtcb-full-width {
   width: 100%;
 }
 
-.tcb-red-text {
+.dtcb-red-text {
   color: red;
   font-weight: bold;
 }
 
-.tcb-form-actions {
+.dtcb-form-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -55,9 +56,9 @@
   margin-bottom: 9px;
 }
 
-.tcb-cancel,
-.tcb-reset,
-.tcb-submit {
+.dtcb-cancel,
+.dtcb-reset,
+.dtcb-submit {
   padding: 10px 10px;
   min-width: 80px;
   height: inherit;
@@ -71,83 +72,86 @@
 }
 
 /* ปุ่มแต่ละแบบ */
-.tcb-cancel {
+.dtcb-cancel {
   background-color: #949494;
   color: white;
   margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
-.tcb-reset {
+.dtcb-reset {
   background-color: #ffffff;
   color: #326667;
   margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
-.tcb-submit {
+.dtcb-submit {
   background-color: #326667;
   color: white;
   transition: all 0.2s ease-in-out;
 }
 
-.tcb-submit:hover {
+.dtcb-submit:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #358788 !important;
   transform: scale(1.05) !important;
 }
 
-.tcb-reset:hover {
+.dtcb-reset:hover {
   color: #326667 !important;
   background-color: #ffffff !important;
   transform: scale(1.05) !important;
 }
 
-.tcb-cancel:hover {
+.dtcb-cancel:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #646464 !important;
   transform: scale(1.05) !important;
 }
-
-.tcb-fornt-small {
+.dtcb-fornt-small {
   display: flex;
   gap: 16px;
+}
+.dtcb-chat-modal{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Responsive behavior */
 @media (max-width: 768px) {
-  .tcb-form-group {
+  .dtcb-form-group {
     flex-direction: column;
     gap: 16px;
   }
 
-  .tcb-form-group .ant-form-item {
+  .dtcb-form-group .ant-form-item {
     flex: 1 1 100%;
   }
 
-  .tcb-form-actions {
+  .dtcb-form-actions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .tcb-cancel,
-  .tcb-reset,
-  .tcb-submit {
+  .dtcb-cancel,
+  .dtcb-reset,
+  .dtcb-submit {
     width: 100%;
     margin-top: 10px;
   }
 
-  .tcb-from-mini {
+  .dtcb-from-mini {
     width: 100%;
   }
-
-  .tcb-fornt-small .ant-form-item-label > label {
-    font-size: small !important;
-  }
+  .dtcb-fornt-small .ant-form-item-label > label {
+  font-size: small !important;}
+  
 }
 
 @media (max-width: 1024px) {
-  .tcb-from-mini {
+  .dtcb-from-mini {
     width: 100%;
   }
 }

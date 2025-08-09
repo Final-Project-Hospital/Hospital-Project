@@ -1,12 +1,4 @@
 .fog-container {
-  /* background: white;
-  padding: 24px;
-  border-radius: 25px;
-  box-shadow: 0 4px 20px #7b61ff3b;
-  max-width: 1000px;
-  margin: 0 auto;
-  width: 100%;
-  box-sizing: border-box; */
   background: white;
   padding: 20px 30px;
   border-radius: 20px;
@@ -14,20 +6,10 @@
   max-width: 80%;
   margin: 0 auto;
   margin-bottom: 40px;
-  /* ✅ เพิ่มช่องว่างขอบล่าง */
   width: 100%;
   box-sizing: border-box;
   font-size: 14px;
 }
-
-/* .bod-container label{
-  color:#000000 !important;
-  font-size: medium !important;
-  font-weight:500 !important;
-} */
-/* .bod-container.label{
-  font-size:larger;
-} */
 
 /* ปรับ input ให้มี border-radius 50px */
 .fog-container .ant-input,
@@ -46,15 +28,11 @@
   display: flex;
   gap: 30px;
   flex-wrap: wrap;
-  /* min-width:initial; */
 }
 
 .fog-form-group .ant-form-item {
   flex: 1 1 300px;
-  /* ทำให้มีขั้นต่ำ 300px และยืดหดได้ */
-
 }
-
 
 .fog-from-mini {
   width: 48%;
@@ -64,7 +42,7 @@
   width: 100%;
 }
 
-.bfogod-red-text {
+.fog-red-text {
   color: red;
   font-weight: bold;
 }
@@ -134,6 +112,11 @@
 .fog-fornt-small {
   display: flex;
   gap: 16px;
+}
+.fog-chat-modal{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Responsive behavior */
