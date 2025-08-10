@@ -1,4 +1,4 @@
-.ir-container {
+.iron-container {
   background: white;
   padding: 20px 30px;
   border-radius: 20px;
@@ -11,42 +11,43 @@
   font-size: 14px;
 }
 
-.ir-container .ant-input,
-.ir-container .ant-input-number,
-.ir-container .ant-picker,
-.ir-container .ant-select-selector {
+/* ปรับ input ให้มี border-radius 50px */
+.iron-container .ant-input,
+.iron-container .ant-input-number,
+.iron-container .ant-picker,
+.iron-container .ant-select-selector {
   border-radius: 50px !important;
 }
 
-.ir-container .ant-input-number-handler-wrap {
+.iron-container .ant-input-number-handler-wrap {
   border-radius: 0 50px 50px 0 !important;
   overflow: hidden;
 }
 
-.ir-form-group {
+.iron-form-group {
   display: flex;
   gap: 30px;
   flex-wrap: wrap;
 }
 
-.ir-form-group .ant-form-item {
+.iron-form-group .ant-form-item {
   flex: 1 1 300px;
 }
 
-.ir-form-mini {
+.iron-from-mini {
   width: 48%;
 }
 
-.ir-full-width {
+.iron-full-width {
   width: 100%;
 }
 
-.ir-red-text {
+.iron-red-text {
   color: red;
   font-weight: bold;
 }
 
-.ir-form-actions {
+.iron-form-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -55,9 +56,9 @@
   margin-bottom: 9px;
 }
 
-.ir-cancel,
-.ir-reset,
-.ir-submit {
+.iron-cancel,
+.iron-reset,
+.iron-submit {
   padding: 10px 10px;
   min-width: 80px;
   height: inherit;
@@ -71,83 +72,86 @@
 }
 
 /* ปุ่มแต่ละแบบ */
-.ir-cancel {
+.iron-cancel {
   background-color: #949494;
   color: white;
   margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
-.ir-reset {
+.iron-reset {
   background-color: #ffffff;
   color: #326667;
   margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
-.ir-submit {
+.iron-submit {
   background-color: #326667;
   color: white;
   transition: all 0.2s ease-in-out;
 }
 
-.ir-submit:hover {
+.iron-submit:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #358788 !important;
   transform: scale(1.05) !important;
 }
 
-.ir-reset:hover {
+.iron-reset:hover {
   color: #326667 !important;
   background-color: #ffffff !important;
   transform: scale(1.05) !important;
 }
 
-.ir-cancel:hover {
+.iron-cancel:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #646464 !important;
   transform: scale(1.05) !important;
 }
-
-.ir-fornt-small {
+.iron-fornt-small {
   display: flex;
   gap: 16px;
+}
+.iron-chat-modal{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Responsive behavior */
 @media (max-width: 768px) {
-  .ir-form-group {
+  .iron-form-group {
     flex-direction: column;
     gap: 16px;
   }
 
-  .ir-form-group .ant-form-item {
+  .iron-form-group .ant-form-item {
     flex: 1 1 100%;
   }
 
-  .ir-form-actions {
+  .iron-form-actions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .ir-cancel,
-  .ir-reset,
-  .ir-submit {
+  .iron-cancel,
+  .iron-reset,
+  .iron-submit {
     width: 100%;
     margin-top: 10px;
   }
 
-  .ir-from-mini {
+  .iron-from-mini {
     width: 100%;
   }
-
-  .ir-fornt-small .ant-form-item-label > label {
-    font-size: small !important;
-  }
+  .iron-fornt-small .ant-form-item-label > label {
+  font-size: small !important;}
+  
 }
 
 @media (max-width: 1024px) {
-  .ir-from-mini {
+  .iron-from-mini {
     width: 100%;
   }
 }

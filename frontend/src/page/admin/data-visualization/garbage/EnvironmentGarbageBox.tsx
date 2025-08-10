@@ -2,10 +2,10 @@ import './EnvironmentGarbageBox.css';
 import { Tooltip } from 'antd';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { GetfirstPH } from '../../../../services/phService';
+import { GetfirstPH } from '../../../../services/wastewaterServices/ph';
 import { GetfirstTDS } from '../../../../services/tdsService';
 import { GetfirstBOD } from '../../../../services/bodService';
-import { GetfirstFOG } from '../../../../services/fogService';
+import { GetfirstFOG } from '../../../../services/wastewaterServices/fog';
 
 import che from '../../../../../src/assets/hazardous.png';
 import gen from '../../../../../src/assets/recycle.png';

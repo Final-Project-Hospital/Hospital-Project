@@ -11,6 +11,7 @@
   font-size: 14px;
 }
 
+/* ปรับ input ให้มี border-radius 50px */
 .ts-container .ant-input,
 .ts-container .ant-input-number,
 .ts-container .ant-picker,
@@ -27,15 +28,13 @@
   display: flex;
   gap: 30px;
   flex-wrap: wrap;
-  
 }
 
 .ts-form-group .ant-form-item {
   flex: 1 1 300px;
 }
 
-
-.ts-form-mini {
+.ts-from-mini {
   width: 48%;
 }
 
@@ -113,6 +112,11 @@
 .ts-fornt-small {
   display: flex;
   gap: 16px;
+}
+.ts-chat-modal{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Responsive behavior */

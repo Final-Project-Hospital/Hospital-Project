@@ -6,7 +6,7 @@ import './EnvironmentWastewaterTabs.css'
 const tabsRow1 = [
   { label: 'pH-Central', path: '/admin/data-management/wastewater/ph' },
   { label: 'BOD-Central', path: '/admin/data-management/wastewater/bod' },
-  { label: 'SS-Central', path: '/admin/data-management/wastewater/ts' },
+  { label: 'TS-Central', path: '/admin/data-management/wastewater/ts' },
   { label: 'TDS-Central', path: '/admin/data-management/wastewater/tds' },
   { label: 'FOG-Central', path: '/admin/data-management/wastewater/fog' },
   { label: 'TKN-Central', path: '/admin/data-management/wastewater/tkn' },

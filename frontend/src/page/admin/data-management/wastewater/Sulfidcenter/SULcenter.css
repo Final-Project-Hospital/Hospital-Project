@@ -11,6 +11,7 @@
   font-size: 14px;
 }
 
+/* ปรับ input ให้มี border-radius 50px */
 .sul-container .ant-input,
 .sul-container .ant-input-number,
 .sul-container .ant-picker,
@@ -27,15 +28,13 @@
   display: flex;
   gap: 30px;
   flex-wrap: wrap;
-  
 }
 
 .sul-form-group .ant-form-item {
   flex: 1 1 300px;
 }
 
-
-.sul-form-mini {
+.sul-from-mini {
   width: 48%;
 }
 
@@ -113,6 +112,11 @@
 .sul-fornt-small {
   display: flex;
   gap: 16px;
+}
+.sul-chat-modal{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Responsive behavior */
