@@ -56,15 +56,19 @@ func SetupDatabase() {
 		&entity.HardwareParameter{},
 		&entity.HardwareParameterColor{},
 		&entity.Status{},
+		&entity.Target{},
+		&entity.Garbage{},
 	)
 	// Enviroment
 	Wastewater := entity.Environment{EnvironmentName: "น้ำเสีย",}
 	Drinkwater := entity.Environment{EnvironmentName: "น้ำดื่ม",}
 	Tapwater := entity.Environment{EnvironmentName: "น้ำประปา"}
+	Garbage := entity.Environment{EnvironmentName: "ขยะ"}
 
 	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
 	db.FirstOrCreate(&Drinkwater, &entity.Environment{EnvironmentName: "น้ำดื่ม"})
 	db.FirstOrCreate(&Tapwater, &entity.Environment{EnvironmentName: "น้ำประปา"})
+	db.FirstOrCreate(&Garbage, &entity.Environment{EnvironmentName: "ขยะ"})
 	// Standard
 	ranges := []struct {
 		min float32
@@ -415,6 +419,20 @@ func SetupDatabase() {
 	db.FirstOrCreate(&param19, entity.Parameter{ParameterName: "Manganese"})
 	db.FirstOrCreate(&param20, entity.Parameter{ParameterName: "Nephelometric Turbidity Unit"})
 	db.FirstOrCreate(&param21, entity.Parameter{ParameterName: "Total Phosphorus"})
+
+	//ขยะ
+	param22 := entity.Parameter{ParameterName: "ขยะติดเชื้อ"}
+	param23 := entity.Parameter{ParameterName: "ขยะทั่วไป"}
+	param24 := entity.Parameter{ParameterName: "ขยะรีไซเคิล"}
+	param25 := entity.Parameter{ParameterName: "ขยะอันตราย"}
+	param26 := entity.Parameter{ParameterName: "ขยะเคมีบำบัด"}
+
+	db.FirstOrCreate(&param22, entity.Parameter{ParameterName: "ขยะติดเชื้อ"})
+	db.FirstOrCreate(&param23, entity.Parameter{ParameterName: "ขยะทั่วไป"})
+	db.FirstOrCreate(&param24, entity.Parameter{ParameterName: "ขยะรีไซเคิล"})
+	db.FirstOrCreate(&param25, entity.Parameter{ParameterName: "ขยะอันตราย"})
+	db.FirstOrCreate(&param26, entity.Parameter{ParameterName: "ขยะเคมีบำบัด"})
+
 	count := int64(0)
 	db.Model(&entity.SensorDataParameter{}).Count(&count)
 

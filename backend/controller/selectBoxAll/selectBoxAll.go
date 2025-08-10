@@ -166,6 +166,130 @@ func GetStandardByID(c *gin.Context) {
     c.JSON(http.StatusOK, standard)
 }
 
+
+
+
+
+// Target
+func ListMiddleTarget(c *gin.Context) {
+	var list []entity.Target
+
+	if err := config.DB().
+		Where("min_target = ? AND max_target = ?", 0, 0).
+		Order("middle_target ASC").
+		Find(&list).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถดึงข้อมูลค่าเดี่ยวได้"})
+		return
+	}
+
+	c.JSON(http.StatusOK, list)
+}
+
+func ListRangeTarget(c *gin.Context) {
+	var listT []entity.Target
+
+	if err := config.DB().
+		Where("middle_target = ?", 0).
+		Order("min_target ASC").
+		Find(&listT).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถดึงข้อมูลค่าช่วงได้"})
+		return
+	}
+
+	c.JSON(http.StatusOK, listT)
+}
+
+
+// เพิ่ม middle Target
+func AddMiddleTarget(c *gin.Context) {
+    var input map[string]interface{}
+    if err := c.BindJSON(&input); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    middleTarget, ok := input["MiddleTarget"].(float64)
+    if !ok {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "MiddleTarget ต้องเป็นตัวเลข"})
+        return
+    }
+
+    minTarget, _ := input["MinTarget"].(float64)
+    maxTarget, _ := input["MaxTarget"].(float64)
+
+    std := entity.Target{
+        MiddleTarget: float64(middleTarget),
+        MinTarget:    float64(minTarget),
+        MaxTarget:    float64(maxTarget),
+    }
+
+    if err := config.DB().Create(&std).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถบันทึกข้อมูลค่าเดี่ยวได้"})
+        return
+    }
+
+    c.JSON(http.StatusCreated, gin.H{
+        "ID":          std.ID,
+        "MiddleTarget": std.MiddleTarget,
+        "MinTarget":    std.MinTarget,
+        "MaxTarget":    std.MaxTarget,
+    })
+}
+// เพิ่ม range Target
+func AddRangeTarget(c *gin.Context) {
+    var input map[string]interface{}
+    if err := c.BindJSON(&input); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    minTarget, okMin := input["MinTarget"].(float64)
+    maxTarget, okMax := input["MaxTarget"].(float64)
+    if !okMin || !okMax {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "MinTarget และ MaxTarget ต้องเป็นตัวเลข"})
+        return
+    }
+
+    middleTarget, _ := input["MiddleTarget"].(float64) // อาจไม่มีค่า
+
+    std := entity.Target{
+        MiddleTarget: float64(middleTarget),
+        MinTarget:    float64(minTarget),
+        MaxTarget:    float64(maxTarget),
+    }
+
+    if err := config.DB().Create(&std).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถบันทึกข้อมูลค่าช่วงได้"})
+        return
+    }
+
+    c.JSON(http.StatusCreated, gin.H{
+        "ID":          std.ID,
+        "MiddleTarget": std.MiddleTarget,
+        "MinTarget":    std.MinTarget,
+        "MaxTarget":    std.MaxTarget,
+    })
+}
+
+// GetTargetByID ดึงข้อมูล Target ตาม ID
+func GetTargetByID(c *gin.Context) {
+    var standard entity.Target
+
+    idParam := c.Param("id")
+    id, err := strconv.Atoi(idParam)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid target ID"})
+        return
+    }
+
+    if err := config.DB().First(&standard, id).Error; err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูลมาตรฐาน"})
+        return
+    }
+
+    c.JSON(http.StatusOK, standard)
+}
+
 // ListStatus
 func ListStatus(c *gin.Context) {
 	var list []entity.Status

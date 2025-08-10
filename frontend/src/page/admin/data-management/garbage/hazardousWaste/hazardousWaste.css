@@ -1,4 +1,4 @@
-.al-container {
+.haz-container {
   background: white;
   padding: 20px 30px;
   border-radius: 20px;
@@ -12,42 +12,42 @@
 }
 
 /* ปรับ input ให้มี border-radius 50px */
-.al-container .ant-input,
-.al-container .ant-input-number,
-.al-container .ant-picker,
-.al-container .ant-select-selector {
+.haz-container .ant-input,
+.haz-container .ant-input-number,
+.haz-container .ant-picker,
+.haz-container .ant-select-selector {
   border-radius: 50px !important;
 }
 
-.al-container .ant-input-number-handler-wrap {
+.haz-container .ant-input-number-handler-wrap {
   border-radius: 0 50px 50px 0 !important;
   overflow: hidden;
 }
 
-.al-form-group {
+.haz-form-group {
   display: flex;
   gap: 30px;
   flex-wrap: wrap;
 }
 
-.al-form-group .ant-form-item {
+.haz-form-group .ant-form-item {
   flex: 1 1 300px;
 }
 
-.al-from-mini {
+.haz-from-mini {
   width: 48%;
 }
 
-.al-full-width {
+.haz-full-width {
   width: 100%;
 }
 
-.al-red-text {
+.haz-red-text {
   color: red;
   font-weight: bold;
 }
 
-.al-form-actions {
+.haz-form-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -56,9 +56,9 @@
   margin-bottom: 9px;
 }
 
-.al-cancel,
-.al-reset,
-.al-submit {
+.haz-cancel,
+.haz-reset,
+.haz-submit {
   padding: 10px 10px;
   min-width: 80px;
   height: inherit;
@@ -72,48 +72,48 @@
 }
 
 /* ปุ่มแต่ละแบบ */
-.al-cancel {
+.haz-cancel {
   background-color: #949494;
   color: white;
   margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
-.al-reset {
+.haz-reset {
   background-color: #ffffff;
   color: #326667;
   margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
-.al-submit {
+.haz-submit {
   background-color: #326667;
   color: white;
   transition: all 0.2s ease-in-out;
 }
 
-.al-submit:hover {
+.haz-submit:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #358788 !important;
   transform: scale(1.05) !important;
 }
 
-.al-reset:hover {
+.haz-reset:hover {
   color: #326667 !important;
   background-color: #ffffff !important;
   transform: scale(1.05) !important;
 }
 
-.al-cancel:hover {
+.haz-cancel:hover {
   color: rgb(255, 255, 255) !important;
   background-color: #646464 !important;
   transform: scale(1.05) !important;
 }
-.al-fornt-small {
+.haz-fornt-small {
   display: flex;
   gap: 16px;
 }
-.al-chat-modal{
+.haz-chat-modal{
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -121,37 +121,37 @@
 
 /* Responsive behavior */
 @media (max-width: 768px) {
-  .al-form-group {
+  .haz-form-group {
     flex-direction: column;
     gap: 16px;
   }
 
-  .al-form-group .ant-form-item {
+  .haz-form-group .ant-form-item {
     flex: 1 1 100%;
   }
 
-  .al-form-actions {
+  .haz-form-actions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .al-cancel,
-  .al-reset,
-  .al-submit {
+  .haz-cancel,
+  .haz-reset,
+  .haz-submit {
     width: 100%;
     margin-top: 10px;
   }
 
-  .al-from-mini {
+  .haz-from-mini {
     width: 100%;
   }
-  .al-fornt-small .ant-form-item-label > label {
+  .haz-fornt-small .ant-form-item-label > label {
   font-size: small !important;}
   
 }
 
 @media (max-width: 1024px) {
-  .al-from-mini {
+  .haz-from-mini {
     width: 100%;
   }
 }
