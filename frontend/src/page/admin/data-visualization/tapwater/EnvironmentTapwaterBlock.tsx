@@ -2,19 +2,19 @@ import './EnvironmentTapwaterBlock.css';
 import { Tooltip } from 'antd';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { GetfirstPH } from '../../../../services/phService';
+import { GetfirstPH } from '../../../../services/wastewaterServices/ph';
 import { GetfirstTDS } from '../../../../services/tdsService';
 import { GetfirstBOD } from '../../../../services/bodService';
-import { GetfirstFOG } from '../../../../services/fogService';
+import { GetfirstFOG } from '../../../../services/wastewaterServices/fog';
 
-import al from '../../../../../src/assets/ph.png';
-import ir from '../../../../../src/assets/blood-analysis.png';
-import mn from '../../../../../src/assets/sedimentation.png';
-import ni from '../../../../../src/assets/water-quality.png';
-import ntu from '../../../../../src/assets/oil.png';
-import pt from '../../../../../src/assets/nitrogen.png';
+import al from '../../../../../src/assets/tapwater/aluminium.png';
+import ir from '../../../../../src/assets/tapwater/iron.png';
+import mn from '../../../../../src/assets/tapwater/manganese.png';
+import ni from '../../../../../src/assets/tapwater/nickel.png';
+import ntu from '../../../../../src/assets/tapwater/NTU.png';
+import pt from '../../../../../src/assets/tapwater/PT.png';
 import tcod from '../../../../../src/assets/wastewater/COD.png';
-import th from '../../../../../src/assets/nitrogen.png';
+import th from '../../../../../src/assets/tapwater/TH.png';
 import ttcb from '../../../../../src/assets/drinkwater/TCB.png';
 
 const EnvironmentBlock = () => {
@@ -55,7 +55,6 @@ const EnvironmentBlock = () => {
             คือ ธาตุแมงกานีส<br />ถ้ามีมากจะทำให้น้ำมีสีคล้ำและตกตะกอน
           </>
         );
-
       case 'NI Center':
         return (
           <>
@@ -77,7 +76,6 @@ const EnvironmentBlock = () => {
             คือ ฟอสฟอรัสรวม<br />เป็นธาตุอาหารที่กระตุ้นการเกิดสาหร่าย
           </>
         );
-
       case 'COD Center':
         return (
           <>

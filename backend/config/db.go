@@ -56,15 +56,19 @@ func SetupDatabase() {
 		&entity.HardwareParameter{},
 		&entity.HardwareParameterColor{},
 		&entity.Status{},
+		&entity.Target{},
+		&entity.Garbage{},
 	)
 	// Enviroment
 	Wastewater := entity.Environment{EnvironmentName: "น้ำเสีย",}
 	Drinkwater := entity.Environment{EnvironmentName: "น้ำดื่ม",}
 	Tapwater := entity.Environment{EnvironmentName: "น้ำประปา"}
+	Garbage := entity.Environment{EnvironmentName: "ขยะ"}
 
 	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
 	db.FirstOrCreate(&Drinkwater, &entity.Environment{EnvironmentName: "น้ำดื่ม"})
 	db.FirstOrCreate(&Tapwater, &entity.Environment{EnvironmentName: "น้ำประปา"})
+	db.FirstOrCreate(&Garbage, &entity.Environment{EnvironmentName: "ขยะ"})
 	// Standard
 	ranges := []struct {
 		min float32
@@ -383,9 +387,11 @@ func SetupDatabase() {
 	param14 := entity.Parameter{ParameterName: "Color"}
 	param15 := entity.Parameter{ParameterName: "Total Hardness"}
 	param16 := entity.Parameter{ParameterName: "Nitrate"}
-	param17 := entity.Parameter{ParameterName: "Alurminnium"}
+	param17 := entity.Parameter{ParameterName: "Aluminium"}
 	param18 := entity.Parameter{ParameterName: "Iron"}
 	param19 := entity.Parameter{ParameterName: "Manganese"}
+	param20 := entity.Parameter{ParameterName: "Nephelometric Turbidity Unit"}
+	param21 := entity.Parameter{ParameterName: "Total Phosphorus"}
 
 	//น้ำเสีย
 	db.FirstOrCreate(&param1, entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"})
@@ -408,9 +414,25 @@ func SetupDatabase() {
 	db.FirstOrCreate(&param14, entity.Parameter{ParameterName: "Color"})
 	db.FirstOrCreate(&param15, entity.Parameter{ParameterName: "Total Hardness"})
 	db.FirstOrCreate(&param16, entity.Parameter{ParameterName: "Nitrate"})
-	db.FirstOrCreate(&param17, entity.Parameter{ParameterName: "Alurminnium"})
+	db.FirstOrCreate(&param17, entity.Parameter{ParameterName: "Aluminium"})
 	db.FirstOrCreate(&param18, entity.Parameter{ParameterName: "Iron"})
 	db.FirstOrCreate(&param19, entity.Parameter{ParameterName: "Manganese"})
+	db.FirstOrCreate(&param20, entity.Parameter{ParameterName: "Nephelometric Turbidity Unit"})
+	db.FirstOrCreate(&param21, entity.Parameter{ParameterName: "Total Phosphorus"})
+
+	//ขยะ
+	param22 := entity.Parameter{ParameterName: "ขยะติดเชื้อ"}
+	param23 := entity.Parameter{ParameterName: "ขยะทั่วไป"}
+	param24 := entity.Parameter{ParameterName: "ขยะรีไซเคิล"}
+	param25 := entity.Parameter{ParameterName: "ขยะอันตราย"}
+	param26 := entity.Parameter{ParameterName: "ขยะเคมีบำบัด"}
+
+	db.FirstOrCreate(&param22, entity.Parameter{ParameterName: "ขยะติดเชื้อ"})
+	db.FirstOrCreate(&param23, entity.Parameter{ParameterName: "ขยะทั่วไป"})
+	db.FirstOrCreate(&param24, entity.Parameter{ParameterName: "ขยะรีไซเคิล"})
+	db.FirstOrCreate(&param25, entity.Parameter{ParameterName: "ขยะอันตราย"})
+	db.FirstOrCreate(&param26, entity.Parameter{ParameterName: "ขยะเคมีบำบัด"})
+
 	count := int64(0)
 	db.Model(&entity.SensorDataParameter{}).Count(&count)
 

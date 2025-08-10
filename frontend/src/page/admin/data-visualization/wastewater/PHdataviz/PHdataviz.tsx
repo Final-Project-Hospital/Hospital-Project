@@ -7,7 +7,7 @@ import { LeftOutlined, SearchOutlined, EditOutlined, DeleteOutlined, Exclamation
 import { useNavigate } from "react-router-dom";
 import './PHdataviz.css';
 import dayjs, { Dayjs } from "dayjs";
-import { GetlistPH, GetfirstPH } from "../../../../../services/phService";
+import { GetlistPH, GetfirstPH } from "../../../../../services/wastewaterServices/ph";
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -18,11 +18,11 @@ import { BarChart3, LineChart, Maximize2 } from "lucide-react";
 
 //ใช้กับตาราง
 import Table, { ColumnsType } from "antd/es/table";
-import { GetPHbyID } from "../../../../../services/phService";
+import { GetPHbyID } from "../../../../../services/wastewaterServices/ph";
 import UpdatePHCentralForm from "../../../data-management/wastewater/PHcenter/updatePHcenter";
 import PHCentralForm from "../../../data-management/wastewater/PHcenter/PHcenter"
-import { DeleteAllPHRecordsByDate } from "../../../../../services/phService";
-import { GetPHTABLE } from "../../../../../services/phService";
+import { DeleteAllPHRecordsByDate } from "../../../../../services/wastewaterServices/ph";
+import { GetPHTABLE } from "../../../../../services/wastewaterServices/ph";
 import { ListStatus } from '../../../../../services/index';
 import { ListStatusInterface } from '../../../../../interface/IStatus';
 const normalizeString = (str: any) =>

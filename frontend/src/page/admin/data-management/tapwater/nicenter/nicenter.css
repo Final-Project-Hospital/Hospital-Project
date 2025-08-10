@@ -11,6 +11,7 @@
   font-size: 14px;
 }
 
+/* ปรับ input ให้มี border-radius 50px */
 .ni-container .ant-input,
 .ni-container .ant-input-number,
 .ni-container .ant-picker,
@@ -33,7 +34,7 @@
   flex: 1 1 300px;
 }
 
-.ni-form-mini {
+.ni-from-mini {
   width: 48%;
 }
 
@@ -108,10 +109,14 @@
   background-color: #646464 !important;
   transform: scale(1.05) !important;
 }
-
 .ni-fornt-small {
   display: flex;
   gap: 16px;
+}
+.ni-chat-modal{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Responsive behavior */
@@ -140,10 +145,9 @@
   .ni-from-mini {
     width: 100%;
   }
-
   .ni-fornt-small .ant-form-item-label > label {
-    font-size: small !important;
-  }
+  font-size: small !important;}
+  
 }
 
 @media (max-width: 1024px) {
