@@ -1,133 +1,3 @@
-// const HazardousWaste = () => {
-//   return (
-//     <div>
-
-//     </div>
-//   );
-// };
-
-// export default HazardousWaste;
-
-
-
-
-// const handleFinish = async (values: any) => {
-//     // รวม date กับ time เข้าเป็นค่าเดียว
-//     let targetID = values.targetID ?? null;
-//     if (useCustomTarget) {
-//         if (targetType === 'middle' && values.customSingle !== undefined) {
-//             const res = await AddMiddleTarget({
-//                 MiddleTarget: values.customSingle,
-//                 MinTarget: 0,
-//                 MaxTarget: 0,
-//             });
-
-//             if (res && res.ID) {
-//                 targetID = res.ID;
-//                 setMiddleTargets(prev => [...prev, res]);
-//             }
-//         } else if (
-//             targetType === 'range' &&
-//             values.customMin !== undefined &&
-//             values.customMax !== undefined
-//         ) {
-//             const res = await AddRangeTarget({
-//                 MiddleTarget: 0,
-//                 MinTarget: values.customMin,
-//                 MaxTarget: values.customMax,
-//             });
-
-//             if (res && res.ID) {
-//                 targetID = res.ID;
-//                 setRangeTargets(prev => [...prev, res]);
-//             }
-//         }
-//     }
-//     // เช็คว่ามี targetID หรือไม่
-//     if (!targetID) {
-//         message.error('กรุณาเลือกหรือกำหนดมาตรฐานก่อนบันทึก');
-//         return;
-//     }
-//     const employeeID = Number(localStorage.getItem('employeeid'));
-//     const combinedDateTime = dayjs(values.date)
-//         .hour(dayjs(values.time).hour())
-//         .minute(dayjs(values.time).minute())
-//         .second(0);
-//     // ตรวจสอบค่ามาตรฐาน
-//     const isOther = values.unit === 'other';
-//     const unitID = isOther ? null : values.unit;
-//     const customUintValue = isOther ? values.customUnit : null;
-
-//     if (selectedTreatmentID === 3) {
-//         // กรณี "ก่อนและหลังบำบัด" ส่งข้อมูล 2 ชุด
-//         const payloadBefore: HazardouscenterInterface = {
-//             Date: combinedDateTime.toISOString(),
-//             Data: values.valueBefore,
-//             BeforeAfterTreatmentID: 1,
-//             TargetID: targetID,
-//             UnitID: unitID,
-//             CustomUnit: customUintValue,
-//             EmployeeID: employeeID,
-//             Note: values.note,
-//         };
-
-//         const payloadAfter: HazardouscenterInterface = {
-//             Date: combinedDateTime.toISOString(),
-//             Data: values.valueAfter,
-//             BeforeAfterTreatmentID: 2,
-//             TargetID: targetID,
-//             UnitID: unitID,
-//             CustomUnit: customUintValue,
-//             EmployeeID: employeeID,
-//             Note: values.note,
-//         };
-
-//         const res1 = await createAL(payloadBefore);
-//         const res2 = await createAL(payloadAfter);
-
-//         if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
-//             messageApi.success('บันทึกข้อมูล Al ก่อนและหลังบำบัดสำเร็จ');
-//             form.resetFields();
-//             GetfirstrowAL();
-//             fetchInitialData();
-//             await delay(500);
-//             if (onSuccess) await onSuccess();
-//             onCancel?.();
-//         } else {
-//             message.error('ไม่สามารถบันทึกข้อมูลก่อนหรือหลังได้');
-//         }
-//     } else {
-//         const alData: HazardouscenterInterface = {
-//             Date: combinedDateTime.toISOString(),
-//             Data: values.data,
-//             Note: values.note,
-//             BeforeAfterTreatmentID: values.before_after,
-//             TargetID: targetID,
-//             UnitID: unitID,
-//             CustomUnit: customUintValue,
-//             EmployeeID: employeeID,
-//         }
-//         const response = await createAL(alData);
-//         console.log(alData);
-//         if (response.status === 201) {
-//             messageApi.open({
-//                 type: 'success',
-//                 content: 'การบันทึกข้อมูล AL สำเร็จ',
-//             });
-//             form.resetFields();
-//             GetfirstrowAL();
-//             fetchInitialData();
-//             await delay(500);
-//             if (onSuccess) await onSuccess();
-//             onCancel?.();
-//         } else {
-//             throw new Error(`การบันทึกข้อมูลไม่สำเร็จ สถานะ: ${response.status}`);
-//         }
-//     }
-// };
-
-
-
 import React, { useEffect, useState } from 'react';
 import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input, message } from 'antd';
 import dayjs from 'dayjs';
@@ -136,9 +6,7 @@ import { HazardouscenterInterface } from '../../../../../interface/Igarbage/Ihaz
 import { createHazardous, GetfirstHazardous } from '../../../../../services/garbageServices/hazardousWaste';
 import { ListUnit } from '../../../../../services/index';
 import { ListUnitInterface } from '../../../../../interface/IUnit';
-import { ListMiddleTarget, ListRangeTarget, AddMiddleTarget, AddRangeTarget, } from '../../../../../services/index';
-import { ListMiddleTargetInterface, ListRangeTargetInterface } from '../../../../../interface/ITarget';
-import { CheckUnit, CheckTarget } from '../../../../../services/index';
+import { CheckUnit } from '../../../../../services/index';
 
 type Props = {
   onCancel?: () => void;
@@ -152,56 +20,24 @@ const HazardousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
   const [unitOptions, setUnitOptions] = useState<ListUnitInterface[]>([]);
   const [messageApi, contextHolder] = message.useMessage();
   const [isOtherUnitSelected, setIsOtherunitSelected] = useState(false);
-  const [middleTargets, setMiddleTargets] = useState<ListMiddleTargetInterface[]>([]);
-  const [rangeTargets, setRangeTargets] = useState<ListRangeTargetInterface[]>([]);
-  const [targetType, setTargetType] = useState<string>('middle'); // middle or range
-  const [useCustomTarget, setUseCustomTarget] = useState<boolean>(false);
-  const [customSingleValue, setCustomSingleValue] = useState<number | undefined>(undefined);
-  const [customMinTarget, setCustomMinTarget] = useState<number | undefined>(undefined);
-  const [customMaxTarget, setCustomMaxTarget] = useState<number | undefined>(undefined);
 
   const fetchInitialData = async () => {
-    const [units, targetsMiddle, targetsRange] = await Promise.all([
+    const [units] = await Promise.all([
       ListUnit(),
-      ListMiddleTarget(),
-      ListRangeTarget(),
     ]);
-
     if (units) setUnitOptions(units);
-    if (targetsMiddle) {
-      setMiddleTargets(
-        targetsMiddle.map((s: any) => ({
-          ...s,
-          MiddleTarget: Number(s.MiddleTarget).toFixed(2)
-        }))
-      );
-    }
-    if (targetsRange) {
-      setRangeTargets(
-        targetsRange.map((s: any) => ({
-          ...s,
-          MinTarget: Number(s.MinTarget).toFixed(2),
-          MaxTarget: Number(s.MaxTarget).toFixed(2)
-        }))
-      );
-    }
   };
 
-  const GetfirstrowAL = async () => {
+  const GetfirstrowHazardous = async () => {
     try {
-      const responfirstAL = await GetfirstHazardous();
-      if (responfirstAL.status === 200) {
-        const data = responfirstAL.data;
-        const isMiddle = data.MinTarget === 0 && data.MaxTarget === 0;
-        setTargetType(isMiddle ? 'middle' : 'range');
+      const responfirstHAS = await GetfirstHazardous();
+      if (responfirstHAS.status === 200) {
+        const data = responfirstHAS.data;
         form.setFieldsValue({
           unit: data.UnitID,
-          targetType: isMiddle ? 'middle' : 'range',
-          targetID: data.TargetID,
         });
-
       } else {
-        message.error("ไม่สามารถดึงข้อมูลการนัดหมายได้ สถานะ: " + responfirstAL.status);
+        message.error("ไม่สามารถดึงข้อมูลได้ สถานะ: " + responfirstHAS.status);
       }
     } catch (error) {
       console.error("Error fetching severity levels:", error);
@@ -210,7 +46,7 @@ const HazardousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
   };
   useEffect(() => {
-    GetfirstrowAL();
+    GetfirstrowHazardous();
     fetchInitialData();
   }, []);
 
@@ -223,63 +59,9 @@ const HazardousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
     onCancel?.();
   };
 
-  const handleTargetGroupChange = (value: string) => {
-    setTargetType(value);
-    setUseCustomTarget(false);
-    form.setFieldsValue({
-      targetID: undefined,
-      customSingle: undefined,
-      customMin: undefined,
-      customMax: undefined,
-    });
-  };
-
-  const handleTargetSelectChange = (value: string) => {
-    if (value === 'custom') {
-      setUseCustomTarget(true);
-      form.setFieldsValue({ targetID: undefined });
-    } else {
-      setUseCustomTarget(false);
-    }
-  };
-
   const handleFinish = async (values: any) => {
     try {
       console.log('Form Values:', values);
-
-      // กรณีใช้มาตรฐานกำหนดเอง (Custom Target)
-      let targetID = values.targetID ?? null;
-
-      if (useCustomTarget) {
-        if (targetType === 'middle' && values.customSingle !== undefined) {
-          const res = await AddMiddleTarget({
-            MiddleTarget: values.customSingle,
-            MinTarget: 0,
-            MaxTarget: 0,
-          });
-          if (res && res.ID) {
-            targetID = res.ID;
-            setMiddleTargets(prev => [...prev, res]);
-          }
-        } else if (targetType === 'range' && values.customMin !== undefined && values.customMax !== undefined) {
-          const res = await AddRangeTarget({
-            MiddleTarget: 0,
-            MinTarget: values.customMin,
-            MaxTarget: values.customMax,
-          });
-          if (res && res.ID) {
-            targetID = res.ID;
-            setRangeTargets(prev => [...prev, res]);
-          }
-        }
-      }
-
-      console.log('Final targetID:', targetID);
-
-      if (!targetID || targetID === 0) {
-        message.error('กรุณาเลือกหรือกำหนดมาตรฐานก่อนบันทึก');
-        return;
-      }
 
       // ดึง employeeID จาก localStorage
       const employeeID = Number(localStorage.getItem('employeeid'));
@@ -293,17 +75,16 @@ const HazardousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
         .second(0);
       const unitID = isOther ? null : values.unit;
       const customUnitValue = isOther ? values.customUnit : null;
+      console.log("unit", isOther);
 
       // สร้าง payload สำหรับส่งไป API
       const payload: HazardouscenterInterface = {
         Date: combinedDateTime.toISOString(),
         Quantity: values.quantity,
-        AADC: values.aadc,
         MonthlyGarbage: values.monthlyGarbage,
         AverageDailyGarbage: values.average_daily_garbage,
         TotalSale: values.totalSale ?? 0,
         Note: values.note ?? '',
-        TargetID: targetID,
         UnitID: unitID,
         CustomUnit: customUnitValue,
         EmployeeID: employeeID,
@@ -317,8 +98,10 @@ const HazardousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
       if (response.status === 201) {
         messageApi.success('บันทึกข้อมูลสำเร็จ');
         form.resetFields();
-        fetchInitialData();
+        setIsOtherunitSelected(false); 
         await delay(500);
+        await fetchInitialData();
+        await GetfirstrowHazardous();
         if (onSuccess) await onSuccess();
         onCancel?.();
       } else {
@@ -330,7 +113,6 @@ const HazardousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
       console.error('API error:', error.response?.data || error.message || error);
     }
   };
-
 
   return (
     <div>
@@ -403,142 +185,8 @@ const HazardousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                 )}
               </Form.Item>
             </div>
-            <div className="haz-from-mini">
-              <Form.Item label="ค่า Target" name="targetType">
-                <Select defaultValue="middle" onChange={handleTargetGroupChange}>
-                  <Option value="middle">ค่าเดี่ยว</Option>
-                  <Option value="range">ช่วง (Min - Max)</Option>
-                </Select>
-              </Form.Item>
 
-              <div style={{ position: 'relative', top: '-15px' }}>
-                {/* ค่าเดี่ยว */}
-                {targetType === 'middle' && !useCustomTarget && (
-                  <Form.Item
-                    label="ค่าเดี่ยว"
-                    name="targetID"
-                    rules={[{ required: true, message: 'กรุณาเลือกค่าเดี่ยว' }]}
-                  >
-                    <Select placeholder="เลือกค่าเดี่ยว" onChange={handleTargetSelectChange}>
-                      {middleTargets.map((s) => (
-                        <Option key={s.ID} value={s.ID}>
-                          {s.MiddleTarget}
-                        </Option>
-                      ))}
-                      <Option value="custom">กำหนดเอง (ค่าเดี่ยว)</Option>
-                    </Select>
-                  </Form.Item>
-                )}
-
-                {targetType === 'middle' && useCustomTarget && (
-                  <Form.Item
-                    label="กำหนดเอง (ค่าเดี่ยว)"
-                    name="customSingle"
-                    rules={[{ required: true, message: 'กรุณากรอกค่ามาตรฐาน' },
-                    {
-                      validator: async (_, value) => {
-                        if (value === undefined || value === null) return Promise.resolve();
-                        if (typeof value !== "number" || isNaN(value)) {
-                          return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                        }
-                        const data = await CheckTarget("middle", value);
-                        if (!data) return Promise.reject("ไม่สามารถตรวจสอบค่า Target ได้");
-                        if (data.exists) return Promise.reject("ค่า Target นี้มีอยู่แล้วในระบบ");
-                        return Promise.resolve();
-                      },
-                    },
-
-                    ]}
-                  >
-                    <InputNumber
-                      placeholder="กรอกค่ากลาง"
-                      style={{ width: '100%' }}
-                      value={customSingleValue}
-                      onChange={(value) => setCustomSingleValue(value ?? undefined)}
-                      step={0.01}
-                    />
-                  </Form.Item>
-                )}
-
-                {/* ค่าช่วง */}
-                {targetType === 'range' && !useCustomTarget && (
-                  <Form.Item
-                    label="ช่วง (Min - Max)"
-                    name="targetID"
-                    rules={[{ required: true, message: 'กรุณาเลือกช่วง Target' }]}
-                  >
-                    <Select placeholder="เลือกช่วง" onChange={handleTargetSelectChange}>
-                      {rangeTargets.map((s) => (
-                        <Option key={s.ID} value={s.ID}>
-                          {s.MinTarget} - {s.MaxTarget}
-                        </Option>
-                      ))}
-                      <Option value="custom">กำหนดเอง (ช่วง)</Option>
-                    </Select>
-                  </Form.Item>
-                )}
-
-                {targetType === 'range' && useCustomTarget && (
-                  <div className="haz-fornt-small">
-                    <Form.Item
-                      label="ค่าต่ำสุด (Min)"
-                      name="customMin"
-                      rules={[{ required: true, message: 'กรุณากรอกค่าต่ำสุด' },
-                      ({ getFieldValue }) => ({
-                        validator: (_, val) => {
-                          const max = getFieldValue("customMax");
-                          if (val >= max) return Promise.reject("Min ต้องน้อยกว่า Max");
-                          return Promise.resolve();
-                        },
-                      }),
-
-                      ]}
-                      style={{ flex: 1 }}
-                    >
-                      <InputNumber
-                        placeholder="ค่าต่ำสุด"
-                        style={{ width: '100%' }}
-                        value={customMinTarget}
-                        onChange={(value) => setCustomMinTarget(value ?? undefined)}
-                        step={0.01}
-                      />
-                    </Form.Item>
-                    <Form.Item
-                      label="ค่าสูงสุด (Max)"
-                      name="customMax"
-                      rules={[{ required: true, message: 'กรุณากรอกค่าสูงสุด' },
-                      ({ getFieldValue }) => ({
-                        validator: async (_, value) => {
-                          const min = getFieldValue("customMin");
-                          if (min !== undefined && value <= min) {
-                            return Promise.reject("Max ต้องมากกว่า Min");
-                          }
-                          // เรียก CheckTarget
-                          const data = await CheckTarget("range", { min, max: value });
-                          if (!data) return Promise.reject("ไม่สามารถตรวจสอบค่า Target ได้");
-                          if (data.exists) return Promise.reject("ช่วงค่า Target นี้มีอยู่แล้วในระบบ");
-                          return Promise.resolve();
-                        },
-                      }),
-
-                      ]}
-                      style={{ flex: 1 }}
-                    >
-                      <InputNumber
-                        placeholder="ค่าสูงสุด"
-                        style={{ width: '100%' }}
-                        value={customMaxTarget}
-                        onChange={(value) => setCustomMaxTarget(value ?? undefined)}
-                        step={0.01}
-                      />
-                    </Form.Item>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="haz-form-group">
+            {/* <div className="haz-form-group"> */}
             <div className="haz-from-mini">
               <Form.Item
                 label="จำนวนคนที่เข้าใช้บริการโรงพยาบาล"
@@ -557,27 +205,6 @@ const HazardousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                 ]}
               >
                 <InputNumber style={{ width: '100%' }} placeholder="กรอกจำนวนคน" />
-              </Form.Item>
-            </div>
-
-            <div className="haz-from-mini">
-              <Form.Item
-                label="ค่า AADC"
-                name="aadc"
-                rules={[{ required: true, message: 'กรุณากรอกค่า AADC' },
-                {
-                  validator: async (_, value) => {
-                    if (value === undefined || value === null) return Promise.resolve();
-                    if (typeof value !== "number" || isNaN(value)) {
-                      return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                    }
-                    return Promise.resolve();
-                  },
-                }
-
-                ]}
-              >
-                <InputNumber style={{ width: '100%' }} placeholder="กรอกค่า AADC" step={0.01} />
               </Form.Item>
             </div>
           </div>
@@ -605,7 +232,12 @@ const HazardousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                   placeholder="กรอกปริมาณขยะ"
                   step={0.01}
                   onChange={(val) => {
-                    const daysInMonth = 30;
+                    // ดึงวันที่จากฟอร์ม ถ้าไม่มีให้ใช้วันนี้
+                    const selectedDate = form.getFieldValue("date") || new Date()
+                    // แปลงเป็น JS Date (รองรับทั้ง dayjs และ Date)
+                    const jsDate = selectedDate.toDate ? selectedDate.toDate() : selectedDate;
+                    // หาจำนวนวันจริงในเดือน
+                    const daysInMonth = new Date(jsDate.getFullYear(), jsDate.getMonth() + 1, 0).getDate();
                     const numVal = val as number;
                     if (!isNaN(numVal)) {
                       form.setFieldsValue({
@@ -629,6 +261,7 @@ const HazardousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
               <Input.TextArea rows={2} placeholder="กรอกหมายเหตุ (ถ้ามี)" />
             </Form.Item>
           </div>
+
           <Form.Item className="haz-form-actions" >
             <Button className="haz-cancel" htmlType="button" onClick={handleCancelClick} >
               ยกเลิก
@@ -641,8 +274,8 @@ const HazardousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             </Button>
           </Form.Item>
         </Form>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

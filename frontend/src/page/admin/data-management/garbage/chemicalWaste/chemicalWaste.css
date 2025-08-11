@@ -1,0 +1,157 @@
+.chem-container {
+  background: white;
+  padding: 20px 30px;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px #7b61ff3b;
+  max-width: 80%;
+  margin: 0 auto;
+  margin-bottom: 40px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+/* ปรับ input ให้มี border-radius 50px */
+.chem-container .ant-input,
+.chem-container .ant-input-number,
+.chem-container .ant-picker,
+.chem-container .ant-select-selector {
+  border-radius: 50px !important;
+}
+
+.chem-container .ant-input-number-handler-wrap {
+  border-radius: 0 50px 50px 0 !important;
+  overflow: hidden;
+}
+
+.chem-form-group {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.chem-form-group .ant-form-item {
+  flex: 1 1 300px;
+}
+
+.chem-from-mini {
+  width: 48%;
+}
+
+.chem-full-width {
+  width: 100%;
+}
+
+.chem-red-text {
+  color: red;
+  font-weight: bold;
+}
+
+.chem-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 9px;
+  margin-bottom: 9px;
+}
+
+.chem-cancel,
+.chem-reset,
+.chem-submit {
+  padding: 10px 10px;
+  min-width: 80px;
+  height: inherit;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 50px;
+  border: none;
+  margin-top: -15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* ปุ่มแต่ละแบบ */
+.chem-cancel {
+  background-color: #949494;
+  color: white;
+  margin-right: 10px;
+  transition: all 0.2s ease-in-out;
+}
+
+.chem-reset {
+  background-color: #ffffff;
+  color: #326667;
+  margin-right: 10px;
+  transition: all 0.2s ease-in-out;
+}
+
+.chem-submit {
+  background-color: #326667;
+  color: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.chem-submit:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #358788 !important;
+  transform: scale(1.05) !important;
+}
+
+.chem-reset:hover {
+  color: #326667 !important;
+  background-color: #ffffff !important;
+  transform: scale(1.05) !important;
+}
+
+.chem-cancel:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #646464 !important;
+  transform: scale(1.05) !important;
+}
+.chem-fornt-small {
+  display: flex;
+  gap: 16px;
+}
+.chem-chat-modal{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+  .chem-form-group {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .chem-form-group .ant-form-item {
+    flex: 1 1 100%;
+  }
+
+  .chem-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .chem-cancel,
+  .chem-reset,
+  .chem-submit {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .chem-from-mini {
+    width: 100%;
+  }
+  .chem-fornt-small .ant-form-item-label > label {
+  font-size: small !important;}
+  
+}
+
+@media (max-width: 1024px) {
+  .chem-from-mini {
+    width: 100%;
+  }
+}

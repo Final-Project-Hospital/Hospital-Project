@@ -1,18 +1,18 @@
-export interface HazardouscenterInterface {
+export interface InfectiouscenterInterface {
   Date?: string;
   Quantity?: number;
-  // AADC?: number;
+  AADC?: number;
   MonthlyGarbage?: number;
   AverageDailyGarbage?: number;
   TotalSale?: number | null;
   Note?: string | null;
-  // TargetID?: number;
+  TargetID?: number;
   UnitID?: number;
   CustomUnit?: string | null;
   EmployeeID?: number;  
 }
 
-export interface listHazardousInterface {
+export interface listInfectiousInterface {
     ID: number;
     Date: string;
     Quantity: number;
@@ -31,6 +31,6 @@ export interface listHazardousInterface {
     UnitName: string;
 }
 
-export interface DeleteHazardousInterface {
+export interface DeleteInfectiousInterface {
     ID: number;
 }
