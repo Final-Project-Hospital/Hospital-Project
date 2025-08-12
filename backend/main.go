@@ -48,6 +48,10 @@ import (
 
 	//Garbage
 	"github.com/Tawunchai/hospital-project/controller/garbage/hazardousWaste"
+	"github.com/Tawunchai/hospital-project/controller/garbage/generalWaste"
+	"github.com/Tawunchai/hospital-project/controller/garbage/chemicalWaste"
+	"github.com/Tawunchai/hospital-project/controller/garbage/infectiousWaste"
+	"github.com/Tawunchai/hospital-project/controller/garbage/recycledWaste"
 
 	user "github.com/Tawunchai/hospital-project/controller/users"
 	"github.com/Tawunchai/hospital-project/middlewares"
@@ -338,9 +342,48 @@ func main() {
 		public.PATCH("/update-or-create-hazardous/:d", hazardousWaste.UpdateOrCreateHazardous)
 		public.DELETE("/delete-hazardous/:id", hazardousWaste.DeleteHazardous)
 		public.DELETE("/delete-hazardous-day/:id", hazardousWaste.DeleteAllHazardousRecordsByDate)
-
+		//ใช้ร่วมกัน
 		public.GET("/check-target", hazardousWaste.CheckTarget)
 
+		//GeneralWaste
+		public.POST("/create-general", generalWaste.CreateGeneral)
+		public.GET("/get-first-general", generalWaste.GetfirstGeneral)
+		public.GET("/list-general", generalWaste.ListGeneral)
+		public.GET("/get-general/:id", generalWaste.GetGeneralbyID)
+		public.GET("/get-general-table", generalWaste.GetGeneralTABLE)
+		public.PATCH("/update-or-create-general/:d", generalWaste.UpdateOrCreateGeneral)
+		public.DELETE("/delete-general/:id", generalWaste.DeleteGeneral)
+		public.DELETE("/delete-general-day/:id", generalWaste.DeleteAllGeneralRecordsByDate)
+
+		//ChemicalWaste
+		public.POST("/create-chemical", chemicalWaste.CreateChemical)
+		public.GET("/get-first-chemical", chemicalWaste.GetfirstChemical)
+		public.GET("/list-chemical", chemicalWaste.ListChemical)
+		public.GET("/get-chemical/:id", chemicalWaste.GetChemicalbyID)
+		public.GET("/get-chemical-table", chemicalWaste.GetChemicalTABLE)
+		public.PATCH("/update-or-create-chemical/:d", chemicalWaste.UpdateOrCreateChemical)
+		public.DELETE("/delete-chemical/:id", chemicalWaste.DeleteChemical)
+		public.DELETE("/delete-chemical-day/:id", chemicalWaste.DeleteAllChemicalRecordsByDate)
+
+		//infectiousWaste
+		public.POST("/create-infectious", infectiousWaste.CreateInfectious)
+		public.GET("/get-first-infectious", infectiousWaste.GetfirstInfectious)
+		public.GET("/list-infectious", infectiousWaste.ListInfectious)
+		public.GET("/get-infectious/:id", infectiousWaste.GetInfectiousbyID)
+		public.GET("/get-infectious-table", infectiousWaste.GetInfectiousTABLE)
+		public.PATCH("/update-or-create-infectious/:d", infectiousWaste.UpdateOrCreateInfectious)
+		public.DELETE("/delete-infectious/:id", infectiousWaste.DeleteInfectious)
+		public.DELETE("/delete-infectious-day/:id", infectiousWaste.DeleteAllInfectiousRecordsByDate)
+
+		//RecycledWaste
+		public.POST("/create-recycled", recycledWaste.CreateRecycled)
+		public.GET("/get-first-recycled", recycledWaste.GetfirstRecycled)
+		public.GET("/list-recycled", recycledWaste.ListRecycled)
+		public.GET("/get-recycled/:id", recycledWaste.GetRecycledbyID)
+		public.GET("/get-recycled-table", recycledWaste.GetRecycledTABLE)
+		public.PATCH("/update-or-create-recycled/:d", recycledWaste.UpdateOrCreateRecycled)
+		public.DELETE("/delete-recycled/:id", recycledWaste.DeleteRecycled)
+		public.DELETE("/delete-recycled-day/:id", recycledWaste.DeleteAllRecycledRecordsByDate)
 
 		//Room
 		public.GET("/rooms", room.ListRoom)
@@ -403,6 +446,7 @@ func main() {
 		public.POST("/add-range-standard", selectBoxAll.AddRangeStandard)
 
 		//ขยะ
+		//hazardousWaste
 		public.GET("/list-target-middle", selectBoxAll.ListMiddleTarget)
 		public.GET("/list-target-range", selectBoxAll.ListRangeTarget)
 		public.POST("/add-middle-target", selectBoxAll.AddMiddleTarget)

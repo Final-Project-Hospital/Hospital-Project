@@ -1,4 +1,4 @@
-package hazardousWaste
+package generalWaste
 
 import (
 	"errors"
@@ -13,14 +13,16 @@ import (
 	"gorm.io/gorm"
 )
 
-func CreateHazardous(c *gin.Context) {
+func CreateGeneral(c *gin.Context) {
 	var input struct {
 		Date                time.Time
 		Quantity            uint
+		AADC                float64
 		MonthlyGarbage      float64
 		AverageDailyGarbage float64
 		TotalSale           float64
 		Note                string
+		TargetID            uint
 		UnitID              uint
 		CustomUnit          string
 		EmployeeID          uint
@@ -36,60 +38,91 @@ func CreateHazardous(c *gin.Context) {
 	if input.CustomUnit != "" {
 		var existingUnit entity.Unit
 		if err := db.Where("unit_name = ?", input.CustomUnit).First(&existingUnit).Error; err == nil {
-			// เจอ unit ที่มีอยู่แล้ว
 			input.UnitID = existingUnit.ID
 		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			// ไม่เจอ unit -> สร้างใหม่
 			newUnit := entity.Unit{
 				UnitName: input.CustomUnit,
 			}
 			if err := db.Create(&newUnit).Error; err != nil {
-				fmt.Println(" ไม่สามารถสร้างหน่วยใหม่ได้:", err) // แค่ขึ้น log
-				// ไม่คืน error ไปยัง frontend
+				fmt.Println("ไม่สามารถสร้างหน่วยใหม่ได้:", err)
 			} else {
 				input.UnitID = newUnit.ID
 			}
 		} else {
-			// เกิด error อื่นขณะเช็กหน่วย
-			fmt.Println(" เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err)
-			// ไม่คืน error ไปยัง frontend
+			fmt.Println("เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err)
 		}
 	}
 
-	// ดึง Parameter ที่ชื่อ "ขยะอันตราย"
 	var param entity.Parameter
-	if err := db.Where("parameter_name = ?", "ขยะอันตราย").First(&param).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบ Parameter ขยะอันตราย"})
+	if err := db.Where("parameter_name = ?", "ขยะทั่วไป").First(&param).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบ Parameter ขยะทั่วไป"})
 		return
 	}
 
-	// ดึง Environment ที่ชื่อ "ขยะ"
 	var env entity.Environment
 	if err := db.Where("environment_name = ?", "ขยะ").First(&env).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบ Environment ขยะ"})
 		return
 	}
 
-	// คำนวณปริมาณขยะต่อวันถ้าไม่ส่งมา
+	var target entity.Target
+	if input.TargetID == 0 || db.First(&target, input.TargetID).Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูลเกณฑ์มาตรฐาน หรือไม่ได้เลือก"})
+		return
+	}
+
+	getStatusID := func(value float64) uint {
+		var status entity.Status
+		if target.MiddleTarget != 0 { // ค่าเดี่ยว
+			if value > float64(target.MiddleTarget) {
+				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
+			} else {
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
+			}
+		} else { // ค่าเป็นช่วง
+			if value >= float64(target.MinTarget) && value <= float64(target.MaxTarget) {
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
+			} else {
+				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
+			}
+		}
+		return status.ID
+	}
+
 	if input.AverageDailyGarbage == 0 && input.MonthlyGarbage > 0 {
-		// หาจำนวนวันจริงในเดือน
 		daysInMonth := time.Date(input.Date.Year(), input.Date.Month()+1, 0, 0, 0, 0, 0, input.Date.Location()).Day()
 		input.AverageDailyGarbage = input.MonthlyGarbage / float64(daysInMonth)
+	}
+
+	// แปลง uint เป็น *uint สำหรับ TargetID และ StatusID
+	var targetIDPtr *uint
+	if input.TargetID != 0 {
+		targetIDPtr = &input.TargetID
+	} else {
+		targetIDPtr = nil
+	}
+
+	statusID := getStatusID(input.AADC)
+	var statusIDPtr *uint
+	if statusID != 0 {
+		statusIDPtr = &statusID
+	} else {
+		statusIDPtr = nil
 	}
 
 	garbage := entity.Garbage{
 		Date:                input.Date,
 		Quantity:            input.Quantity,
-		AADC:                0,
+		AADC:                input.AADC,
 		MonthlyGarbage:      input.MonthlyGarbage,
 		AverageDailyGarbage: input.AverageDailyGarbage,
 		TotalSale:           input.TotalSale,
 		Note:                input.Note,
 		EnvironmentID:       env.ID,
 		ParameterID:         param.ID,
-		TargetID:            nil,
+		TargetID:            targetIDPtr,
 		UnitID:              input.UnitID,
-		StatusID:            nil,
+		StatusID:            statusIDPtr,
 		EmployeeID:          input.EmployeeID,
 	}
 
@@ -99,23 +132,24 @@ func CreateHazardous(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "บันทึกขยะอันตรายสำเร็จ",
+		"message": "บันทึกขยะทั่วไปสำเร็จ",
 		"data":    garbage,
 	})
 }
 
-func GetfirstHazardous(c *gin.Context) {
+
+func GetfirstGeneral(c *gin.Context) {
 	db := config.DB()
 
 	var parameter entity.Parameter
-	if err := db.Where("parameter_name = ?", "ขยะอันตราย").First(&parameter).Error; err != nil {
+	if err := db.Where("parameter_name = ?", "ขยะทั่วไป").First(&parameter).Error; err != nil {
 		fmt.Println("Error fetching parameter:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
 	}
 
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
-	var firstHaz struct {
+	var firstgen struct {
 		ID                  uint      `json:"ID"`
 		Date                time.Time `json:"Date"`
 		Quantity            uint      `json:"Quantity"`
@@ -126,18 +160,23 @@ func GetfirstHazardous(c *gin.Context) {
 		Note                string    `json:"Note"`
 		EnvironmentID       uint      `json:"EnvironmentID"`
 		ParameterID         uint      `json:"ParameterID"`
+		TargetID            uint      `json:"TargetID"`
 		UnitID              uint      `json:"UnitID"`
 		EmployeeID          uint      `json:"EmployeeID"`
+		MinTarget           float64   `json:"MinTarget"`
+		MiddleTarget        float64   `json:"MiddleTarget"`
+		MaxTarget           float64   `json:"MaxTarget"`
 		UnitName            string    `json:"UnitName"`
 	}
 
 	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
 	result := db.Model(&entity.Garbage{}).
-		Select(`garbages.id, garbages.date, garbages.quantity,garbages.aadc,garbages.monthly_garbage,garbages.average_daily_garbage,garbages.total_sale,garbages.note,garbages.environment_id,garbages.parameter_id,units.unit_name,units.id as unit_id`).
+		Select(`garbages.id, garbages.date, garbages.quantity,garbages.aadc,garbages.monthly_garbage,garbages.average_daily_garbage,garbages.total_sale,garbages.note,garbages.environment_id,garbages.parameter_id,garbages.target_id,garbages.unit_id,garbages.employee_id,targets.min_target,targets.middle_target,targets.max_target,units.unit_name`).
+		Joins("inner join targets on garbages.target_id = targets.id").
 		Joins("inner join units on garbages.unit_id = units.id").
 		Where("parameter_id = ?", parameter.ID).
 		Order("garbages.created_at desc").
-		Scan(&firstHaz)
+		Scan(&firstgen)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
 	if result.Error != nil {
@@ -146,7 +185,7 @@ func GetfirstHazardous(c *gin.Context) {
 	}
 
 	// ส่งข้อมูลกลับในรูปแบบ JSON
-	c.JSON(http.StatusOK, firstHaz)
+	c.JSON(http.StatusOK, firstgen)
 }
 
 var thaiMonths = [...]string{
@@ -161,11 +200,11 @@ func formatThaiDate(t time.Time) string {
 	return strconv.Itoa(day) + " " + month + " " + strconv.Itoa(year)
 }
 
-func ListHazardous(c *gin.Context) {
+func ListGeneral(c *gin.Context) {
 	db := config.DB()
 
 	var parameter entity.Parameter
-	if err := db.Where("parameter_name = ?", "ขยะอันตราย").First(&parameter).Error; err != nil {
+	if err := db.Where("parameter_name = ?", "ขยะทั่วไป").First(&parameter).Error; err != nil {
 		fmt.Println("Error fetching parameter:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
@@ -178,7 +217,7 @@ func ListHazardous(c *gin.Context) {
 	}
 
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
-	var firstha []struct {
+	var firstgen []struct {
 		ID                     uint      `json:"ID"`
 		Date                   time.Time `json:"Date"`
 		Data                   float64   `json:"Data"`
@@ -206,7 +245,7 @@ func ListHazardous(c *gin.Context) {
 		Joins("inner join before_after_treatments on environmental_records.before_after_treatment_id = before_after_treatments.id").
 		Joins("inner join statuses on environmental_records.status_id = statuses.id").
 		Where("environmental_records.parameter_id = ? ", parameter.ID).
-		Find(&firstha)
+		Find(&firstgen)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
 	if result.Error != nil {
@@ -215,10 +254,10 @@ func ListHazardous(c *gin.Context) {
 	}
 
 	// ส่งข้อมูลกลับในรูปแบบ JSON
-	c.JSON(http.StatusOK, firstha)
+	c.JSON(http.StatusOK, firstgen)
 }
 
-func DeleterHazardous(c *gin.Context) {
+func DeleterGeneral(c *gin.Context) {
 	id := c.Param("id")
 	db := config.DB()
 
@@ -231,23 +270,23 @@ func DeleterHazardous(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Soft Deleted Environmental Records Successfully"})
 }
 
-func GetHazardousTABLE(c *gin.Context) {
+func GetGeneralTABLE(c *gin.Context) {
 	db := config.DB()
 
-	// หา ParameterID ของ "ขยะอันตราย"
+	// หา ParameterID ของ "ขยะทั่วไป"
 	var param entity.Parameter
-	if err := db.Where("parameter_name = ?", "ขยะอันตราย").First(&param).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่พบ Parameter ขยะอันตราย"})
+	if err := db.Where("parameter_name = ?", "ขยะทั่วไป").First(&param).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่พบ Parameter ขยะทั่วไป"})
 		return
 	}
 
-	var ha []entity.EnvironmentalRecord
+	var gen []entity.EnvironmentalRecord
 	result := db.Preload("BeforeAfterTreatment").
 		Preload("Environment").
 		Preload("Unit").
 		Preload("Employee").
 		Where("parameter_id = ?", param.ID).
-		Find(&ha)
+		Find(&gen)
 
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
@@ -259,7 +298,7 @@ func GetHazardousTABLE(c *gin.Context) {
 		EnvironmentID uint
 	}
 
-	type HazardousRecord struct {
+	type GeneralRecord struct {
 		Date          string   `json:"date"`
 		Unit          string   `json:"unit"`
 		StandardValue string   `json:"standard_value"`
@@ -273,9 +312,9 @@ func GetHazardousTABLE(c *gin.Context) {
 		Status        string   `json:"status"`
 	}
 
-	haMap := make(map[keyType]*HazardousRecord)
+	genMap := make(map[keyType]*GeneralRecord)
 
-	for _, rec := range ha {
+	for _, rec := range gen {
 		dateStr := rec.Date.Format("2006-01-02")
 		k := keyType{
 			Date:          dateStr,
@@ -286,7 +325,7 @@ func GetHazardousTABLE(c *gin.Context) {
 		var latestRec entity.EnvironmentalRecord
 		err := db.
 			Joins("JOIN parameters p ON p.id = environmental_records.parameter_id").
-			Where("p.parameter_name = ?", "ขยะอันตราย").
+			Where("p.parameter_name = ?", "ขยะทั่วไป").
 			Where("DATE(environmental_records.date) = ?", dateStr).
 			Order("environmental_records.date DESC").
 			First(&latestRec).Error
@@ -302,7 +341,7 @@ func GetHazardousTABLE(c *gin.Context) {
 				}
 			}
 		}
-		if _, exists := haMap[k]; !exists {
+		if _, exists := genMap[k]; !exists {
 			unitName := rec.Unit.UnitName // default
 
 			// ลองใช้ unit ของ latestRec ถ้ามี
@@ -313,7 +352,7 @@ func GetHazardousTABLE(c *gin.Context) {
 				}
 			}
 
-			haMap[k] = &HazardousRecord{
+			genMap[k] = &GeneralRecord{
 				Date:          dateStr,
 				Unit:          unitName,
 				StandardValue: stdVal,
@@ -323,40 +362,40 @@ func GetHazardousTABLE(c *gin.Context) {
 		// Before / After
 		val := rec.Data
 		if rec.BeforeAfterTreatmentID == 1 {
-			haMap[k].BeforeValue = &val
-			haMap[k].BeforeID = &rec.ID
+			genMap[k].BeforeValue = &val
+			genMap[k].BeforeID = &rec.ID
 		} else if rec.BeforeAfterTreatmentID == 2 {
-			haMap[k].AfterValue = &val
-			haMap[k].AfterID = &rec.ID
+			genMap[k].AfterValue = &val
+			genMap[k].AfterID = &rec.ID
 		}
 
 		// Efficiency
-		if haMap[k].BeforeValue != nil && haMap[k].AfterValue != nil && *haMap[k].BeforeValue != 0 {
-			eff := ((*haMap[k].BeforeValue - *haMap[k].AfterValue) / (*haMap[k].BeforeValue)) * 100
+		if genMap[k].BeforeValue != nil && genMap[k].AfterValue != nil && *genMap[k].BeforeValue != 0 {
+			eff := ((*genMap[k].BeforeValue - *genMap[k].AfterValue) / (*genMap[k].BeforeValue)) * 100
 			// ✅ ถ้าค่าติดลบให้กลายเป็น 0.00
 			//fmt.Printf("Efficiency2: %.2f\n", eff)
 			if eff < 0 {
 				eff = 0.00
 			}
-			haMap[k].Efficiency = &eff
+			genMap[k].Efficiency = &eff
 		}
 
 		// Status
-		if haMap[k].AfterValue != nil && latestRec.StandardID != 0 {
+		if genMap[k].AfterValue != nil && latestRec.StandardID != 0 {
 			var std entity.Standard
 			if db.First(&std, latestRec.StandardID).Error == nil {
-				after := *haMap[k].AfterValue
+				after := *genMap[k].AfterValue
 				if std.MinValue != 0 || std.MaxValue != 0 {
 					if after < float64(std.MinValue) || after > float64(std.MaxValue) {
-						haMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
+						genMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
-						haMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
+						genMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
 					}
 				} else {
 					if after > float64(std.MiddleValue) {
-						haMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
+						genMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
-						haMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
+						genMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
 					}
 				}
 			}
@@ -365,12 +404,12 @@ func GetHazardousTABLE(c *gin.Context) {
 
 	// สร้าง map รวบรวม id -> note เพื่อดึง note ของ before และ after จากข้อมูลดิบ
 	noteMap := make(map[uint]string)
-	for _, rec := range ha {
+	for _, rec := range gen {
 		noteMap[rec.ID] = rec.Note
 	}
 
-	// เติม BeforeNote และ AfterNote ใน haMap
-	for _, val := range haMap {
+	// เติม BeforeNote และ AfterNote ใน genMap
+	for _, val := range genMap {
 		if val.BeforeID != nil {
 			if note, ok := noteMap[*val.BeforeID]; ok {
 				val.BeforeNote = note
@@ -384,15 +423,15 @@ func GetHazardousTABLE(c *gin.Context) {
 	}
 
 	// รวมข้อมูลส่งกลับ
-	var mergedRecords []HazardousRecord
-	for _, val := range haMap {
+	var mergedRecords []GeneralRecord
+	for _, val := range genMap {
 		mergedRecords = append(mergedRecords, *val)
 	}
 
 	c.JSON(http.StatusOK, mergedRecords)
 }
 
-func UpdateOrCreateHazardous(c *gin.Context) {
+func UpdateOrCreateGeneral(c *gin.Context) {
 	var input struct {
 		entity.EnvironmentalRecord
 		CustomStandard *struct {
@@ -542,7 +581,7 @@ func UpdateOrCreateHazardous(c *gin.Context) {
 	}
 }
 
-func DeleteHazardous(c *gin.Context) {
+func DeleteGeneral(c *gin.Context) {
 	id := c.Param("id")
 	uintID, err := strconv.ParseUint(id, 10, 32)
 
@@ -558,14 +597,14 @@ func DeleteHazardous(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "ลบข้อมูล Hazardous สำเร็จ"})
+	c.JSON(http.StatusOK, gin.H{"message": "ลบข้อมูล General สำเร็จ"})
 }
 
-func GetHazardousbyID(c *gin.Context) {
+func GetGeneralbyID(c *gin.Context) {
 	id := c.Param("id")
 	db := config.DB()
 
-	var ha struct {
+	var gen struct {
 		ID                     uint      `json:"ID"`
 		Date                   time.Time `json:"Date"`
 		Data                   float64   `json:"Data"`
@@ -588,17 +627,17 @@ func GetHazardousbyID(c *gin.Context) {
 			standards.min_value, standards.middle_value, standards.max_value`).
 		Joins("inner join standards on environmental_records.standard_id = standards.id").
 		Where("environmental_records.id = ?", id).
-		Scan(&ha)
+		Scan(&gen)
 
 	if result.Error != nil || result.RowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Record not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, ha)
+	c.JSON(http.StatusOK, gen)
 }
 
-func DeleteAllHazardousRecordsByDate(c *gin.Context) {
+func DeleteAllGeneralRecordsByDate(c *gin.Context) {
 	id := c.Param("id")
 	uintID, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
@@ -624,7 +663,7 @@ func DeleteAllHazardousRecordsByDate(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "ลบข้อมูล Hazardous สำเร็จ",
+		"message": "ลบข้อมูล General สำเร็จ",
 		"date":    dateKey,
 	})
 }
