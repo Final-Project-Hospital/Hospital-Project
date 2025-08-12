@@ -185,7 +185,7 @@ const InfectiousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
       const response = await createInfectious(payload);
 
       if (response.status === 201) {
-        messageApi.success('บันทึกข้อมูลสำเร็จ');
+        messageApi.success('บันทึกข้อมูลขยะติดเชื้อสำเร็จ');
         form.resetFields();
         setIsOtherunitSelected(false);   // ซ่อนช่องกรอกหน่วยเอง
         setUseCustomTarget(false);       // ซ่อนช่องกรอก target เอง

@@ -96,7 +96,7 @@ const RecycledWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
       const response = await createRecycled(payload);
 
       if (response.status === 201) {
-        messageApi.success('บันทึกข้อมูลสำเร็จ');
+        messageApi.success('บันทึกข้อมูลขยะรีไซเคิลสำเร็จ');
         form.resetFields();
         setIsOtherunitSelected(false); 
         await delay(500);

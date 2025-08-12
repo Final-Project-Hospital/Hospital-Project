@@ -207,6 +207,11 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
                 messageApi.success('บันทึกข้อมูล TDS ก่อนและหลังบำบัดสำเร็จ');
                 form.resetFields();
+                setIsOtherunitSelected(false);
+                setUseCustomStandard(false);
+                setCustomSingleValue(undefined);
+                setCustomMinValue(undefined);
+                setCustomMaxValue(undefined);
                 GetfirstrowTDS();
                 fetchInitialData();
                 await delay(500);
@@ -234,6 +239,11 @@ const TDSCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     content: 'การบันทึกข้อมูล TDS สำเร็จ',
                 });
                 form.resetFields();
+                setIsOtherunitSelected(false);
+                setUseCustomStandard(false);
+                setCustomSingleValue(undefined);
+                setCustomMinValue(undefined);
+                setCustomMaxValue(undefined);
                 GetfirstrowTDS();
                 fetchInitialData();
                 await delay(500);

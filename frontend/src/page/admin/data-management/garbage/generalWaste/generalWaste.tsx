@@ -185,7 +185,7 @@ const GeneralWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
       const response = await createGeneral(payload);
 
       if (response.status === 201) {
-        messageApi.success('บันทึกข้อมูลสำเร็จ');
+        messageApi.success('บันทึกข้อมูลขยะทั่วไปสำเร็จ');
         form.resetFields();               // เคลียร์ฟอร์มทั้งหมด
         setIsOtherunitSelected(false);   // ซ่อนช่องกรอกหน่วยเอง
         setUseCustomTarget(false);       // ซ่อนช่องกรอก target เอง

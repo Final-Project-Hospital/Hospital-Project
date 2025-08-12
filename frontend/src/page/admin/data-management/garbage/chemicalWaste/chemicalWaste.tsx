@@ -96,7 +96,7 @@ const ChemicalWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
       const response = await createChemical(payload);
 
       if (response.status === 201) {
-        messageApi.success('บันทึกข้อมูลสำเร็จ');
+        messageApi.success('บันทึกข้อมูลขยะเคมีบำบัดสำเร็จ');
         form.resetFields();
         setIsOtherunitSelected(false);
         await delay(500);
