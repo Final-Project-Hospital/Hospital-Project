@@ -108,7 +108,7 @@ func ReadDataForHardware(c *gin.Context) {
 		}
 
 		if needNew {
-			std := entity.StandardHardware{Standard: 0.0}
+			std := entity.StandardHardware{MaxValueStandard: 0.0}
 			unit := entity.UnitHardware{Unit: ""}
 			if err := db.Create(&std).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create standard"})
@@ -161,8 +161,8 @@ func ReadDataForHardware(c *gin.Context) {
 
 		var std entity.StandardHardware
 		if err := db.First(&std, hp.StandardHardwareID).Error; err == nil {
-			if std.Standard > 0 && p.Data > std.Standard {
-				part := fmt.Sprintf("- %s: %.2f (เกณฑ์ %.2f)", hp.Parameter, p.Data, std.Standard)
+			if std.MaxValueStandard > 0 && p.Data > std.MaxValueStandard {
+				part := fmt.Sprintf("- %s: %.2f (เกณฑ์ %.2f)", hp.Parameter, p.Data, std.MaxValueStandard)
 				messageParts = append(messageParts, part)
 			}
 		}
@@ -192,4 +192,22 @@ func mapToBytes(lines []string) [][]byte {
 		out[i] = []byte(l)
 	}
 	return out
+}
+
+
+func WebhookNotification(c *gin.Context) {
+	var payload entity.Notification
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	db := config.DB()
+	if err := db.Create(&payload).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, payload)
 }

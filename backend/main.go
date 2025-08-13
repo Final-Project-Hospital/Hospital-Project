@@ -357,6 +357,10 @@ func main() {
 		public.GET("/hardware-parameter-ids", hardware.GetHardwareParametersWithGraph)
 		public.PATCH("/hardware-parameters/:id/icon", hardware.UpdateIconByHardwareParameterID)
 		public.PUT("/hardware-parameter/:id/group-display", hardware.UpdateGroupDisplayByID)
+		public.PATCH("/sensor-data-parameter/:id/note", hardware.CreateNoteBySensorDataParameterID)
+
+		// Line + Webhook
+		public.POST("/webhook/notification", hardware.WebhookNotification)
 
 		//report hardware
 		public.GET("/report-hardware", report.ListReportHardware)

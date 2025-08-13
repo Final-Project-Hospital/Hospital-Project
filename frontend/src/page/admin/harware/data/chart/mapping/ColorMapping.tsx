@@ -73,9 +73,8 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
         setLoading(false);
         return;
       }
-      //@ts-ignore
-      let forcedXLabels: string[] = [];
 
+      let forcedXLabels: string[] = [];
       if (timeRangeType === 'day' && selectedRange?.length === 2) {
         const [start, end] = selectedRange;
         const startDate = new Date(start);
@@ -99,7 +98,8 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
       }
 
       const dataMap: Record<string, { x: string; y: number }[]> = {};
-      const standardMap: Record<string, number> = {};
+      const maxStandardMap: Record<string, number> = {};
+      const minStandardMap: Record<string, number> = {};
       const unitMapping: Record<string, string> = {};
 
       for (const sensor of raw) {
@@ -109,7 +109,8 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
         for (const param of params) {
           const name = param.HardwareParameter?.Parameter;
           const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
-          const standard = param.HardwareParameter?.StandardHardware?.Standard;
+          const maxStandard = param.HardwareParameter?.StandardHardware?.MaxValueStandard;
+          const minStandard = param.HardwareParameter?.StandardHardware?.MinValueStandard;
           const unit = param.HardwareParameter?.UnitHardware?.Unit;
           const date = new Date(param.Date);
           if (!name || !parameters.includes(name) || isNaN(value) || isNaN(date.getTime())) continue;
@@ -140,10 +141,12 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
           dataMap[name] ??= [];
           dataMap[name].push({ x: label, y: value });
 
-          if (standard && !standardMap[name]) {
-            standardMap[name] = standard;
+          if (maxStandard && !maxStandardMap[name]) {
+            maxStandardMap[name] = maxStandard;
           }
-
+          if (minStandard && !minStandardMap[name]) {
+            minStandardMap[name] = minStandard;
+          }
           if (unit && !unitMapping[unit]) {
             unitMapping[unit] = name;
           }
@@ -176,6 +179,7 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
           y: grouped[x] ? grouped[x].reduce((sum, val) => sum + val, 0) / grouped[x].length : null,
         }));
 
+        // ค่าจริง (แท่ง)
         series.push({
           dataSource: averaged,
           xName: 'x',
@@ -188,13 +192,29 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
           cornerRadius: { topLeft: 5, topRight: 5 },
         });
 
-        if (standardMap[name]) {
-          const stdData = allX.map(x => ({ x, y: standardMap[name] }));
+        // Max Standard (เส้นแดง)
+        if (maxStandardMap[name]) {
+          const stdDataMax = allX.map(x => ({ x, y: maxStandardMap[name] }));
           series.push({
-            dataSource: stdData,
+            dataSource: stdDataMax,
             xName: 'x',
             yName: 'y',
-            name: `${name} (Standard)`,
+            name: `${name} (Max)`,
+            width: 2,
+            dashArray: '5,5',
+            marker: { visible: false },
+            type: 'Line',
+            fill: 'red',
+          });
+        }
+
+        if (minStandardMap[name]) {
+          const stdDataMin = allX.map(x => ({ x, y: minStandardMap[name] }));
+          series.push({
+            dataSource: stdDataMin,
+            xName: 'x',
+            yName: 'y',
+            name: `${name} (Min)`,
             width: 2,
             dashArray: '5,5',
             marker: { visible: false },
@@ -211,7 +231,7 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
 
     if (!isRangeReady) return;
     fetchData();
-  }, [hardwareID, timeRangeType, selectedRange, parameters, colors, reloadKey]);
+  }, [hardwareID, timeRangeType, selectedRange, parameters, colors, reloadKey, isRangeReady]);
 
   if (loading)
     return <div className="flex justify-center items-center h-80 text-gray-500 text-lg">Loading...</div>;
@@ -240,7 +260,6 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
           );
         })}
       </div>
-
       <ChartComponent
         id={`chart-${parameters.join('-')}`}
         height={chartHeight}
@@ -252,12 +271,20 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
         }}
         primaryYAxis={{
           labelFormat: '{value}',
+          minimum: 0,
+          rangePadding: 'None',
           lineStyle: { width: 0 },
           majorTickLines: { width: 0 },
           minorTickLines: { width: 0 },
         }}
         chartArea={{ border: { width: 0 } }}
         tooltip={{ enable: true }}
+        tooltipRender={(args) => {
+          if (args.point && typeof args.point.y === 'number') {
+            const formattedValue = args.point.y.toFixed(2);
+            args.text = `${args.point.x} : ${formattedValue}`;
+          }
+        }}
         background={currentMode === 'Dark' ? '#33373E' : '#fff'}
         legendSettings={{ background: 'white' }}
       >

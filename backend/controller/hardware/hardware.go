@@ -275,9 +275,10 @@ func UpdateStandardHardwareByID(c *gin.Context) {
 		return
 	}
 
-	// ✅ รับ pointer เพื่อให้ binding 0 ได้
+	// ✅ ใช้ pointer เพื่อรองรับการส่งค่า 0 ได้
 	var input struct {
-		Standard *float64 `json:"standard" binding:"required"`
+		MaxValueStandard *float64 `json:"MaxValueStandard" binding:"required"`
+		MinValueStandard *float64 `json:"MinValueStandard" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -285,9 +286,12 @@ func UpdateStandardHardwareByID(c *gin.Context) {
 		return
 	}
 
-	// ✅ ตรวจสอบว่าค่าถูกส่งมา
-	if input.Standard != nil {
-		standard.Standard = *input.Standard
+	// ✅ อัปเดตค่าที่รับมา
+	if input.MaxValueStandard != nil {
+		standard.MaxValueStandard = *input.MaxValueStandard
+	}
+	if input.MinValueStandard != nil {
+		standard.MinValueStandard = *input.MinValueStandard
 	}
 
 	if err := db.Save(&standard).Error; err != nil {
@@ -298,18 +302,18 @@ func UpdateStandardHardwareByID(c *gin.Context) {
 	c.JSON(http.StatusOK, standard)
 }
 
-
-
 type ParamWithGraphResponse struct {
-	ID           uint    `json:"id"`            // HardwareParameter.ID
-	Parameter    string  `json:"parameter"`     // HardwareParameter.Parameter
-	GraphID      uint    `json:"graph_id"`      // HardwareGraph.ID
-	Graph        string  `json:"graph"`         // HardwareGraph.Graph
-	Color        string  `json:"color"`         // HardwareParameterColor.Code
-	Unit         string  `json:"unit"`          // UnitHardware.Unit
-	Standard     float64 `json:"standard"`      // StandardHardware.Standard
-	Icon         string  `json:"icon"`          // HardwareParameter.Icon
-	GroupDisplay bool    `json:"group_display"` // ✅ เพิ่มฟิลด์นี้
+	ID            uint    `json:"id"`             // HardwareParameter.ID
+	Parameter     string  `json:"parameter"`      // HardwareParameter.Parameter
+	GraphID       uint    `json:"graph_id"`       // HardwareGraph.ID
+	Graph         string  `json:"graph"`          // HardwareGraph.Graph
+	Color         string  `json:"color"`          // HardwareParameterColor.Code
+	Unit          string  `json:"unit"`           // UnitHardware.Unit
+	Standard      float64 `json:"standard"`       // StandardHardware.Standard
+	StandardMin   float64 `json:"standard_min"`   // StandardHardware.StandardMin
+	Icon          string  `json:"icon"`           // HardwareParameter.Icon
+	GroupDisplay  bool    `json:"group_display"`  // ✅ เพิ่มฟิลด์นี้
+	LayoutDisplay bool    `json:"layout_display"` // ✅ เพิ่มฟิลด์นี้
 }
 
 func GetHardwareParametersWithGraph(c *gin.Context) {
@@ -362,15 +366,17 @@ func GetHardwareParametersWithGraph(c *gin.Context) {
 	var result []ParamWithGraphResponse
 	for _, p := range parameters {
 		result = append(result, ParamWithGraphResponse{
-			ID:           p.ID,
-			Parameter:    p.Parameter,
-			GraphID:      p.HardwareGraph.ID,
-			Graph:        p.HardwareGraph.Graph,
-			Color:        p.HardwareParameterColor.Code,
-			Unit:         p.UnitHardware.Unit,
-			Standard:     p.StandardHardware.Standard,
-			Icon:         p.Icon,
-			GroupDisplay: p.GroupDisplay, // ✅ ส่งค่าออกไปด้วย
+			ID:            p.ID,
+			Parameter:     p.Parameter,
+			GraphID:       p.HardwareGraph.ID,
+			Graph:         p.HardwareGraph.Graph,
+			Color:         p.HardwareParameterColor.Code,
+			Unit:          p.UnitHardware.Unit,
+			Standard:      p.StandardHardware.MaxValueStandard,
+			StandardMin:   p.StandardHardware.MinValueStandard,
+			Icon:          p.Icon,
+			GroupDisplay:  p.GroupDisplay, // ✅ ส่งค่าออกไปด้วย
+			LayoutDisplay: p.LayoutDisplay,
 		})
 	}
 
@@ -380,7 +386,6 @@ func GetHardwareParametersWithGraph(c *gin.Context) {
 		"parameters":  result,
 	})
 }
-
 
 func UpdateIconByHardwareParameterID(c *gin.Context) {
 	idParam := c.Param("id")
@@ -447,7 +452,7 @@ func UpdateGroupDisplayByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":         "GroupDisplay updated successfully",
+		"message":        "GroupDisplay updated successfully",
 		"hardware_param": parameter,
 	})
 }
@@ -502,5 +507,45 @@ func DeleteAllSensorDataParametersBySensorID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message":        "ลบข้อมูลทั้งหมดเรียบร้อยแล้ว",
 		"sensor_data_id": sensorDataID,
+	})
+}
+
+func CreateNoteBySensorDataParameterID(c *gin.Context) {
+	// ดึง ID จาก URL param
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID ไม่ถูกต้อง"})
+		return
+	}
+
+	// รับ note จาก body
+	var requestBody struct {
+		Note string `json:"note" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ข้อมูลไม่ถูกต้อง", "details": err.Error()})
+		return
+	}
+
+	// เชื่อมต่อ DB
+	db := config.DB()
+
+	// หา SensorDataParameter ตาม ID
+	var sdp entity.SensorDataParameter
+	if err := db.First(&sdp, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูล SensorDataParameter"})
+		return
+	}
+
+	sdp.Note = requestBody.Note
+	if err := db.Save(&sdp).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปเดตหมายเหตุไม่สำเร็จ"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "บันทึกหมายเหตุสำเร็จ",
+		"data":    sdp,
 	})
 }

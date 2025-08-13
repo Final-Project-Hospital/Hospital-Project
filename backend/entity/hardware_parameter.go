@@ -9,6 +9,8 @@ type HardwareParameter struct {
 	Parameter string
 	Icon      string `gorm:"type:text"`
 	GroupDisplay bool
+	LayoutDisplay bool
+	Alert bool
 
 	StandardHardwareID uint
 	StandardHardware   *StandardHardware `gorm:"foreignKey: StandardHardwareID"`

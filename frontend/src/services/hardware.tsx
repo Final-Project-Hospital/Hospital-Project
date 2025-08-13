@@ -199,6 +199,87 @@ export const GetSensorDataParametersBySensorDataID = async (
   }
 };
 
+export const DeleteSensorDataParametersByIds = async (
+  ids: number[]
+): Promise<{ message: string; deleted_ids: number[] } | null> => {
+  try {
+    const response = await axios.delete(`${apiUrl}/sensor-data-parameters`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+      data: { ids }, // ✅ ต้องส่ง data ผ่าน option เพราะ axios.delete ไม่รับ body โดยตรง
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error deleting sensor data parameters:", error);
+    return null;
+  }
+};
+
+export interface DeleteAllSensorDataParamsResponse {
+  message: string;
+  sensor_data_id: number;
+}
+
+export const DeleteAllSensorDataParametersBySensorDataID = async (
+  sensorDataID: number
+): Promise<DeleteAllSensorDataParamsResponse | null> => {
+  try {
+    const response = await axios.delete(
+      `${apiUrl}/sensor-data-parameters/all/${sensorDataID}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      return response.data as DeleteAllSensorDataParamsResponse;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error deleting all sensor data parameters by SensorDataID:", error);
+    return null;
+  }
+};
+export const CreateNoteBySensorDataParameterID = async (
+  id: number,
+  note: string
+): Promise<boolean> => {
+  try {
+    const response = await axios.patch(
+      `${apiUrl}/sensor-data-parameter/${id}/note`,
+      { note },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      return true;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return false;
+    }
+  } catch (error) {
+    console.error("Error creating note:", error);
+    return false;
+  }
+};
 export const ListDataHardwareParameterByParameter = async (
   parameter: string
 ): Promise<HardwareParameterInterface[] | null> => {
@@ -373,9 +454,15 @@ export const ListHardwareParameterByHardwareID = async (
     return null;
   }
 };
+export interface HardwareStandardInterface {
+  ID?: number;
+  MaxValueStandard?: number;
+  MinValueStandard?: number;
+}
+
 export const UpdateStandardHardwareByID = async (
   id: number,
-  data: StandardHardwareInterface
+  data: HardwareStandardInterface
 ): Promise<any | null> => {
   try {
     const response = await axios.put(`${apiUrl}/update-standard-hardware/${id}`, data, {

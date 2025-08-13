@@ -29,25 +29,32 @@ interface HardwareParameterResponse {
   graph_id: number;
   graph: string;
   color: string;
-  group_display: boolean;
+  group_display: boolean;     // เดิม
+  layout_display: boolean;    // เพิ่มใหม่ (มาจาก API เป็น snake_case)
 }
+
+type UniqueGraphItem = {
+  ID: number;
+  Graph: string;
+  ParametersWithColor: ParameterWithColor[];
+  fullSpan?: boolean;
+};
 
 const Index = () => {
   const location = useLocation();
   const { hardwareID } = location.state || {};
 
-  const [uniqueGraphs, setUniqueGraphs] = useState<
-    {
-      ID: number;
-      Graph: string;
-      ParametersWithColor: ParameterWithColor[];
-    }[]
-  >([]);
+  const [uniqueGraphs, setUniqueGraphs] = useState<UniqueGraphItem[]>([]);
   const [showEdit, setShowEdit] = useState(false);
   const [showEditStandard, setShowEditStandard] = useState(false);
+
+  // ตัวนับรีโหลดแยกตามส่วน
   const [reloadCharts, setReloadCharts] = useState(0);
   const [reloadAverage, setReloadAverage] = useState(0);
   const [reloadBoxes, setReloadBoxes] = useState(0);
+  const [reloadTable, setReloadTable] = useState(0);
+
+  // สถานะโหลดรวม + ธงย่อย
   const [loadingAll, setLoadingAll] = useState(true);
   const [boxLoaded, setBoxLoaded] = useState(false);
   const [tableLoaded, setTableLoaded] = useState(false);
@@ -81,39 +88,57 @@ const Index = () => {
     }
 
     const response = await ListHardwareParameterIDsByHardwareID(hardwareID);
-    if (!response?.parameters || !Array.isArray(response.parameters)) return;
+    if (!response?.parameters || !Array.isArray(response.parameters)) {
+      setUniqueGraphs([]);
+      return;
+    }
 
-    const filteredGraphMap: {
-      [key: string]: {
-        ID: number;
-        Graph: string;
-        ParametersWithColor: ParameterWithColor[];
-      };
-    } = {};
+    const filteredGraphMap: Record<
+      string,
+      { ID: number; Graph: string; ParametersWithColor: ParameterWithColor[]; fullSpan?: boolean }
+    > = {};
 
     for (const paramObj of response.parameters as HardwareParameterResponse[]) {
-      const { id, parameter, graph_id, graph, color, group_display } = paramObj;
+      const {
+        id,
+        parameter,
+        graph_id,
+        graph,
+        color,
+        group_display,
+        layout_display,
+      } = paramObj;
 
       if (!allParamIDsFromSensorData.includes(id)) continue;
 
+      if (layout_display === false) {
+        filteredGraphMap[`isolate-full-${id}`] = {
+          ID: id,
+          Graph: graph || "Unknown",
+          ParametersWithColor: [{ parameter, color }],
+          fullSpan: true,
+        };
+        continue;
+      }
+
       if (group_display === false) {
-        // แสดงแยก
         filteredGraphMap[`single-${id}`] = {
           ID: id,
           Graph: graph || "Unknown",
           ParametersWithColor: [{ parameter, color }],
         };
-      } else {
-        const key = `group-${graph_id}`;
-        if (!filteredGraphMap[key]) {
-          filteredGraphMap[key] = {
-            ID: graph_id,
-            Graph: graph || "Unknown",
-            ParametersWithColor: [],
-          };
-        }
-        filteredGraphMap[key].ParametersWithColor.push({ parameter, color });
+        continue;
       }
+
+      const key = `group-${graph_id}`;
+      if (!filteredGraphMap[key]) {
+        filteredGraphMap[key] = {
+          ID: graph_id,
+          Graph: graph || "Unknown",
+          ParametersWithColor: [],
+        };
+      }
+      filteredGraphMap[key].ParametersWithColor.push({ parameter, color });
     }
 
     setUniqueGraphs(Object.values(filteredGraphMap));
@@ -121,11 +146,14 @@ const Index = () => {
   }, [hardwareID]);
 
   useEffect(() => {
+    // โหลดครั้งแรก
     setLoadingAll(true);
     setBoxLoaded(false);
     setTableLoaded(false);
     setAverageLoaded(false);
-    fetchSensorDataAndParameters();
+    fetchSensorDataAndParameters().finally(() => {
+      // ปล่อยให้ลูกยิง onLoaded เอง
+    });
   }, [hardwareID, fetchSensorDataAndParameters]);
 
   useEffect(() => {
@@ -135,18 +163,27 @@ const Index = () => {
   }, [boxLoaded, tableLoaded, averageLoaded]);
 
   const handleEditSuccess = async () => {
+    // เริ่มรอบโหลดใหม่
     setLoadingAll(true);
     setBoxLoaded(false);
     setTableLoaded(false);
     setAverageLoaded(false);
+
+    // ดึง layout/graphs ให้ทันก่อน
     await fetchSensorDataAndParameters();
-    setReloadAverage((prev) => prev + 1);
+
+    // กระตุ้นให้ลูกรีโหลด/รีมาวน์
     setReloadBoxes((prev) => prev + 1);
+    setReloadTable((prev) => prev + 1);
+    setReloadAverage((prev) => prev + 1);
+    // หมายเหตุ: charts ใช้ setReloadCharts ไปแล้วใน fetchSensorDataAndParameters()
   };
 
   const onBoxLoaded = () => setBoxLoaded(true);
   const onTableLoaded = () => setTableLoaded(true);
   const onAverageLoaded = () => setAverageLoaded(true);
+
+  const nonFullTotal = uniqueGraphs.filter((g) => !g.fullSpan).length;
 
   return (
     <div className="space-y-8 relative">
@@ -194,13 +231,26 @@ const Index = () => {
       {/* Box */}
       <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">ข้อมูลเซนเซอร์ล่าสุด</h2>
-        <Boxsdata hardwareID={hardwareID} reloadKey={reloadBoxes} onLoaded={onBoxLoaded} />
+        <Boxsdata
+          key={`box-${reloadBoxes}`}
+          hardwareID={hardwareID}
+          reloadKey={reloadBoxes}
+          onLoaded={onBoxLoaded}
+        />
       </section>
 
       {/* Table */}
       <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">ตารางข้อมูล</h2>
-        <TableData hardwareID={hardwareID} onLoaded={onTableLoaded} />
+        <TableData
+          key={`table-${reloadTable}`}
+          hardwareID={hardwareID}
+          // ถ้า TableData รองรับ reloadKey ให้ส่งให้ด้วย
+          // ถ้าไม่รองรับ key จะทำให้รีมาวน์และดึงข้อมูลใหม่
+          // @ts-ignore
+          reloadKey={reloadTable}
+          onLoaded={onTableLoaded}
+        />
       </section>
 
       {/* Charts */}
@@ -216,57 +266,73 @@ const Index = () => {
                 : "grid grid-cols-1 md:grid-cols-2 gap-6"
             }
           >
-            {uniqueGraphs.map((g, index, arr) => {
-              if (!g.ParametersWithColor?.length) return null;
+            {(() => {
+              let nonFullSeen = 0;
 
-              const isLastAndOdd =
-                index === arr.length - 1 && arr.length % 2 === 1 && arr.length !== 1;
+              return uniqueGraphs.map((g, index) => {
+                if (!g.ParametersWithColor?.length) return null;
 
-              const parameters = g.ParametersWithColor.map((p) => p.parameter);
-              const colors = g.ParametersWithColor.map((p) => p.color);
+                const parameters = g.ParametersWithColor.map((p) => p.parameter);
+                const colors = g.ParametersWithColor.map((p) => p.color);
 
-              const commonProps = {
-                hardwareID,
-                parameters,
-                colors,
-                timeRangeType: "day" as "day",
-                selectedRange: [defaultStart, defaultEnd],
-                reloadKey: reloadCharts,
-              };
+                const commonProps = {
+                  hardwareID,
+                  parameters,
+                  colors,
+                  timeRangeType: "day" as const,
+                  selectedRange: [defaultStart, defaultEnd] as [Date, Date],
+                  reloadKey: reloadCharts,
+                };
 
-              const ChartComponent = (() => {
-                switch (g.Graph) {
-                  case "Line":
-                    return <LineChart {...commonProps} />;
-                  case "Area":
-                    return <Area {...commonProps} />;
-                  case "Mapping":
-                    return <ColorMapping {...commonProps} />;
-                  case "Stacked":
-                    return <Stacked {...commonProps} />;
-                  default:
-                    return null;
+                const ChartComponent = (() => {
+                  switch (g.Graph) {
+                    case "Line":
+                      return <LineChart {...commonProps} />;
+                    case "Area":
+                      return <Area {...commonProps} />;
+                    case "Mapping":
+                      return <ColorMapping {...commonProps} />;
+                    case "Stacked":
+                      return <Stacked {...commonProps} />;
+                    default:
+                      return null;
+                  }
+                })();
+
+                let spanClass = "";
+                if (g.fullSpan) {
+                  spanClass = "md:col-span-2";
+                } else {
+                  const isLastNonFullAndOdd =
+                    nonFullSeen === nonFullTotal - 1 && nonFullTotal % 2 === 1;
+                  if (isLastNonFullAndOdd) {
+                    spanClass = "md:col-span-2";
+                  }
+                  nonFullSeen += 1;
                 }
-              })();
 
-              return (
-                <div
-                  key={g.ID + "-" + index}
-                  className={`p-3 bg-gray-50 rounded shadow ${
-                    isLastAndOdd ? "md:col-span-2" : ""
-                  }`}
-                >
-                  {ChartComponent}
-                </div>
-              );
-            })}
+                return (
+                  <div
+                    key={`${g.ID}-${index}-${reloadCharts}`}
+                    className={`p-3 bg-gray-50 rounded shadow ${spanClass}`}
+                  >
+                    {ChartComponent}
+                  </div>
+                );
+              });
+            })()}
           </div>
         )}
       </section>
 
       {/* Average */}
       <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
-        <Avergare hardwareID={hardwareID} reloadKey={reloadAverage} onLoaded={onAverageLoaded} />
+        <Avergare
+          key={`avg-${reloadAverage}`}
+          hardwareID={hardwareID}
+          reloadKey={reloadAverage}
+          onLoaded={onAverageLoaded}
+        />
       </section>
 
       {/* Modals */}

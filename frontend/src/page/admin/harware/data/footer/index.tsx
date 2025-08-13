@@ -12,7 +12,8 @@ interface HardwareStat {
   name: string;
   popularityPercent: number;
   average: number;
-  standard?: number;
+  standard?: number;      // ค่ามาตรฐาน (สูงสุด) จาก backend: standard
+  standardMin?: number;   // ค่ามาตรฐานต่ำสุด   จาก backend: standard_min
   unit?: string;
 }
 
@@ -28,8 +29,11 @@ interface HardwareParameterWithColor {
   graph_id: number;
   graph: string;
   color: string;
-  standard?: number;
   unit?: string;
+
+  // ฟิลด์จาก backend
+  standard?: number;       // Max
+  standard_min?: number;   // Min
 }
 
 interface ListHardwareParameterResponse {
@@ -40,7 +44,9 @@ interface ListHardwareParameterResponse {
 const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }) => {
   const [hardwareStats, setHardwareStats] = useState<HardwareStat[]>([]);
   const [parameterColors, setParameterColors] = useState<Record<string, string>>({});
-  const [parameterMeta, setParameterMeta] = useState<Record<string, { unit?: string; standard?: number }>>({});
+  const [parameterMeta, setParameterMeta] = useState<
+    Record<string, { unit?: string; standard?: number; standardMin?: number }>
+  >({});
 
   useEffect(() => {
     const fetchAndCalculateAverages = async () => {
@@ -64,12 +70,13 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
         };
 
         const colorMap: Record<string, string> = {};
-        const metaMap: Record<string, { unit?: string; standard?: number }> = {};
+        const metaMap: Record<string, { unit?: string; standard?: number; standardMin?: number }> = {};
         for (const p of paramInfo.parameters) {
           colorMap[p.parameter] = p.color;
           metaMap[p.parameter] = {
             unit: p.unit,
-            standard: p.standard,
+            standard: typeof p.standard === "number" ? p.standard : undefined,
+            standardMin: typeof p.standard_min === "number" ? p.standard_min : undefined,
           };
         }
         setParameterColors(colorMap);
@@ -88,6 +95,7 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
 
         for (const sensor of sensorData) {
           const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
+
           if (Array.isArray(params)) {
             for (const p of params) {
               const name = p.HardwareParameter?.Parameter;
@@ -116,14 +124,17 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
             name: key,
             popularityPercent,
             average: avg,
-            standard: meta.standard,
+            standard: meta.standard,          // แสดงค่าสูงสุด
+            standardMin: meta.standardMin,    // แสดงค่าต่ำสุด
             unit: meta.unit,
-          };
+          } as HardwareStat;
         });
+
 
         setHardwareStats(avgData);
         onLoaded?.();
       } catch (error) {
+        console.error("❌ Error fetching averages:", error);
         setHardwareStats([]);
         onLoaded?.();
       }
@@ -146,7 +157,8 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
             <tr className="bg-gray-100 text-gray-800">
               <th className="text-left p-2">ลำดับ</th>
               <th className="text-left p-2">พารามิเตอร์ (หน่วย)</th>
-              <th className="text-left p-2">ค่ามาตรฐาน</th>
+              <th className="text-left p-2">ค่ามาตรฐานต่ำสุด</th>
+              <th className="text-left p-2">ค่ามาตรฐานสูงสุด</th>
               <th className="hidden md:table-cell text-left p-2">แถบแสดงค่าเฉลี่ย</th>
               <th className="text-left p-2">ค่าเฉลี่ย</th>
             </tr>
@@ -170,16 +182,30 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
                     {item.unit && <span className="text-xs text-gray-500">({item.unit})</span>}
                   </div>
                 </td>
+
+                {/* ค่ามาตรฐานต่ำสุด */}
+                <td className="p-2">
+                  {item.standardMin !== undefined && item.standardMin !== 0 ? (
+                    <span className="text-gray-800 font-medium">
+                      {Number(item.standardMin).toFixed(2)}
+                    </span>
+                  ) : (
+                    <span className="text-teal-500 font-medium">ยังไม่กำหนดค่าต่ำสุด</span>
+                  )}
+                </td>
+
+                {/* ค่ามาตรฐาน (สูงสุด) */}
                 <td className="p-2">
                   {item.standard !== undefined && item.standard !== 0 ? (
                     <span className="text-gray-800 font-medium">
-                      {item.standard.toFixed(2)}
+                      {Number(item.standard).toFixed(2)}
                     </span>
                   ) : (
                     <span className="text-teal-500 font-medium">ยังไม่กำหนดค่ามาตรฐาน</span>
                   )}
                 </td>
 
+                {/* แถบแสดงค่าเฉลี่ย */}
                 <td className="hidden md:table-cell p-2">
                   <div className="w-full bg-gray-200 rounded-full h-3">
                     <div
@@ -192,6 +218,8 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
                     />
                   </div>
                 </td>
+
+                {/* ค่าเฉลี่ย */}
                 <td className="p-2">
                   <div
                     className="text-white text-sm font-medium px-3 py-1 rounded-full text-center"
@@ -201,7 +229,7 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
                       display: "inline-block",
                     }}
                   >
-                    {item.average.toFixed(2)}
+                    {Number(item.average).toFixed(2)}
                   </div>
                 </td>
               </tr>

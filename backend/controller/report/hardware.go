@@ -31,7 +31,7 @@ func ListReportHardware(c *gin.Context) {
 	// กรองเฉพาะค่าที่เกิน Standard
 	for _, report := range allReports {
 		if report.HardwareParameter != nil && report.HardwareParameter.StandardHardware != nil {
-			if report.Data > report.HardwareParameter.StandardHardware.Standard {
+			if report.Data > report.HardwareParameter.StandardHardware.MaxValueStandard {
 				overStandardReports = append(overStandardReports, report)
 			}
 		}

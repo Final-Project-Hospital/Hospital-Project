@@ -125,11 +125,11 @@ const Stacked: React.FC<ChartdataProps> = ({
         );
 
         const paramDataMap: { [param: string]: { x: string; y: number }[] } = {};
-        const standardMap: { [param: string]: number } = {};
+        const standardMaxMap: { [param: string]: number } = {};
+        const standardMinMap: { [param: string]: number } = {};
         const xCategorySet: Set<string> = new Set();
         const unitMapping: Record<string, string> = {};
 
-        // Add forced labels to xCategorySet
         forcedXLabels.forEach(x => xCategorySet.add(x));
 
         if (!raw || !Array.isArray(raw)) {
@@ -151,7 +151,8 @@ const Stacked: React.FC<ChartdataProps> = ({
               const name = param.HardwareParameter?.Parameter;
               const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
               const date = new Date(param.Date);
-              const standard = param.HardwareParameter?.StandardHardware?.Standard;
+              const standardMax = param.HardwareParameter?.StandardHardware?.MaxValueStandard;
+              const standardMin = param.HardwareParameter?.StandardHardware?.MinValueStandard;
               const unit = param.HardwareParameter?.UnitHardware?.Unit;
 
               if (!name || !parameters.includes(name)) continue;
@@ -177,7 +178,6 @@ const Stacked: React.FC<ChartdataProps> = ({
                 const endYear = parseInt(end);
                 const yearLabel = startYear === endYear ? `${startYear}` : `${startYear}-${endYear}`;
                 inRange = date.getFullYear() >= startYear && date.getFullYear() <= endYear;
-
                 if (inRange) label = yearLabel;
               }
 
@@ -187,8 +187,11 @@ const Stacked: React.FC<ChartdataProps> = ({
               paramDataMap[name].push({ x: label, y: value });
               xCategorySet.add(label);
 
-              if (standard && !standardMap[name]) {
-                standardMap[name] = standard;
+              if (standardMax && !standardMaxMap[name]) {
+                standardMaxMap[name] = standardMax;
+              }
+              if (standardMin && !standardMinMap[name]) {
+                standardMinMap[name] = standardMin;
               }
 
               if (unit && !unitMapping[unit]) {
@@ -212,7 +215,6 @@ const Stacked: React.FC<ChartdataProps> = ({
           return getSortKey(a) - getSortKey(b);
         });
 
-
         for (const param of parameters) {
           if (!paramDataMap[param]) paramDataMap[param] = [];
           const averaged = groupByAvg(paramDataMap[param]);
@@ -233,18 +235,35 @@ const Stacked: React.FC<ChartdataProps> = ({
           (a, b) => paramTotalMap[a] - paramTotalMap[b]
         );
 
-        const standardSeries = Object.entries(standardMap).map(([param, std]) => {
-          return {
+        const standardSeries: any[] = [];
+
+        // Max standard lines (red)
+        Object.entries(standardMaxMap).forEach(([param, std]) => {
+          standardSeries.push({
             dataSource: xCategoriesArr.map(x => ({ x, y: std })),
             xName: 'x',
             yName: 'y',
             type: 'Line',
-            name: `${param} (Standard)`,
+            name: `${param} (Max)`,
             dashArray: '5,5',
             width: 2,
             marker: { visible: false },
             fill: 'red',
-          };
+          });
+        });
+
+        Object.entries(standardMinMap).forEach(([param, std]) => {
+          standardSeries.push({
+            dataSource: xCategoriesArr.map(x => ({ x, y: std })),
+            xName: 'x',
+            yName: 'y',
+            type: 'Line',
+            name: `${param} (Min)`,
+            dashArray: '5,5',
+            width: 2,
+            marker: { visible: false },
+            fill: 'red',
+          });
         });
 
         const hasSeries = Object.keys(paramDataMap).length > 0 && xCategoriesArr.length > 0 &&
@@ -315,6 +334,11 @@ const Stacked: React.FC<ChartdataProps> = ({
         primaryYAxis={primaryYAxis}
         chartArea={{ border: { width: 0 } }}
         tooltip={{ enable: true }}
+        tooltipRender={(args) => {
+          if (args.point && typeof args.point.y === 'number') {
+            args.text = `${args.point.x} : ${args.point.y.toFixed(2)}`;
+          }
+        }}
         legendSettings={{ background: 'white' }}
         background={currentMode === 'Dark' ? '#33373E' : '#fff'}
       >
