@@ -18,6 +18,9 @@ import fcb from '../../../../../src/assets/drinkwater/FCB-Center.png';
 import res from '../../../../../src/assets/wastewater/Residual.png';
 import sul from '../../../../../src/assets/wastewater/sulfide.png';
 import tcb from '../../../../../src/assets/drinkwater/TCB.png';
+import { Layout } from 'antd';
+const { Footer } = Layout;
+
 
 const EnvironmentBlock = () => {
   const navigate = useNavigate();
@@ -194,6 +197,21 @@ const EnvironmentBlock = () => {
       </div>
 
       <Outlet />
+      <Layout>
+        <Footer style={{textAlign:"center",padding:"10px"}} >Icons made by 
+          <a href="https://www.flaticon.com/authors/iconjam" title="Iconjam"> Iconjam</a>,
+          <a href="https://www.flaticon.com/authors/freepik" title="Freepik"> Freepik</a>,
+          <a href="https://www.flaticon.com/authors/paul-j" title="Andinur"> Paul J.</a>,
+          <a href="https://www.flaticon.com/authors/smashicons" title="Smashicons"> Smashicons</a>,
+          <a href="https://www.flaticon.com/authors/andinur" title="Andinur"> Andinur</a>,
+          <a href="https://www.flaticon.com/authors/pikepicture" title="Pikepicture"> Pikepicture</a>,
+          <a href="https://www.flaticon.com/authors/ranukumbololab" title="RanuKumbolo.lab"> RanuKumbolo.lab</a>,
+          <a href="https://www.flaticon.com/authors/aficons-studio" title="Aficons studio"> Aficons studio</a>,
+          <a href="https://www.flaticon.com/authors/meaicon" title="Aficons studio"> Meaicon</a>,
+          <a href="https://www.flaticon.com/authors/kliwir-art" title="Aficons studio"> Kliwir art </a>
+          from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
+        </Footer>
+      </Layout>
     </div>
   );
 };

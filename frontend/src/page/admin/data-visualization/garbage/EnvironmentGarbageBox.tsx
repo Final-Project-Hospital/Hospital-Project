@@ -7,11 +7,13 @@ import { GetfirstTDS } from '../../../../services/tdsService';
 import { GetfirstBOD } from '../../../../services/bodService';
 import { GetfirstFOG } from '../../../../services/wastewaterServices/fog';
 
-import che from '../../../../../src/assets/hazardous.png';
-import gen from '../../../../../src/assets/recycle.png';
-import haz from '../../../../../src/assets/hazardous.png';
-import inf from '../../../../../src/assets/hazardous.png';
-import rec from '../../../../../src/assets/recycle.png';
+import che from '../../../../../src/assets/waste/radiation.png';
+import gen from '../../../../../src/assets/waste/food-waste.png';
+import haz from '../../../../../src/assets/waste/biohazard.png';
+import inf from '../../../../../src/assets/waste/infectious-disease.png';
+import rec from '../../../../../src/assets/waste/recycle.png';
+import { Layout } from 'antd';
+const { Footer } = Layout;
 
 
 const EnvironmentBlock = () => {
@@ -117,28 +119,44 @@ const EnvironmentBlock = () => {
           โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
         </p>
       </div>
-
-      <div className="wqc-grid">
-        {centers.map((center, index) => (
-          <Tooltip title={getTooltip(center.name)} overlayClassName="custom-tooltip" key={index}>
-            <div
-              className="wqc-card clickable"
-              onClick={() => navigate(`/admin/data-visualization/garbage/${center.path}`)}
-            >
-              <div className="wqc-info">
-                <h3>{center.name}</h3>
-                <p>
-                  มาตรฐาน <span>{center.standard}</span>
-                </p>
+      <div className='buttom-footer'>
+        <div className="wqc-grid">
+          {centers.map((center, index) => (
+            <Tooltip title={getTooltip(center.name)} overlayClassName="custom-tooltip" key={index}>
+              <div
+                className="wqc-card clickable"
+                onClick={() => navigate(`/admin/data-visualization/garbage/${center.path}`)}
+              >
+                <div className="wqc-info">
+                  <h3>{center.name}</h3>
+                  <p>
+                    มาตรฐาน <span>{center.standard}</span>
+                  </p>
+                </div>
+                <div className="wqc-divider" />
+                <img src={center.image} alt={center.name} className="wqc-icon" />
               </div>
-              <div className="wqc-divider" />
-              <img src={center.image} alt={center.name} className="wqc-icon" />
-            </div>
-          </Tooltip>
-        ))}
-      </div>
+            </Tooltip>
+          ))}
+        </div>
 
-      <Outlet />
+        <Outlet />
+      </div>
+      <Layout>
+        <Footer style={{ textAlign: "center", padding: "10px" }} >Icons made by
+          <a href="https://www.flaticon.com/authors/iconjam" title="Iconjam"> Iconjam</a>,
+          <a href="https://www.flaticon.com/authors/freepik" title="Freepik"> Freepik</a>,
+          <a href="https://www.flaticon.com/authors/paul-j" title="Andinur"> Paul J.</a>,
+          <a href="https://www.flaticon.com/authors/smashicons" title="Smashicons"> Smashicons</a>,
+          <a href="https://www.flaticon.com/authors/andinur" title="Andinur"> Andinur</a>,
+          <a href="https://www.flaticon.com/authors/pikepicture" title="Pikepicture"> Pikepicture</a>,
+          <a href="https://www.flaticon.com/authors/ranukumbololab" title="RanuKumbolo.lab"> RanuKumbolo.lab</a>,
+          <a href="https://www.flaticon.com/authors/aficons-studio" title="Aficons studio"> Aficons studio</a>,
+          <a href="https://www.flaticon.com/authors/meaicon" title="Aficons studio"> Meaicon</a>,
+          <a href="https://www.flaticon.com/authors/kliwir-art" title="Aficons studio"> Kliwir art </a>
+          from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
+        </Footer>
+      </Layout>
     </div>
   );
 };

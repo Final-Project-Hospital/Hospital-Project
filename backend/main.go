@@ -197,6 +197,7 @@ func main() {
 		public.PATCH("/update-or-create-bod/:d", bodcenter.UpdateOrCreateBOD)
 		public.DELETE("/delete-bod/:id", bodcenter.DeleteBOD)
 		public.DELETE("/delete-bod-day/:id", bodcenter.DeleteAllBODRecordsByDate)
+		public.GET("/get-beforeafter-bod", bodcenter.GetBeforeAfterBOD)
 		// public.DELETE("/delete-bod/:id",bodcenter.DeleterBOD)
 
 		//FOG
@@ -470,8 +471,8 @@ func main() {
 		c.String(http.StatusOK, "API RUNNING... PORT: %s", PORT)
 	})
 
-	//r.Run("localhost:" + PORT)
-	r.Run("0.0.0.0:" + PORT)
+	r.Run("localhost:" + PORT)
+	// r.Run("0.0.0.0:" + PORT)
 
 }
 

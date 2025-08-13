@@ -155,14 +155,6 @@ const UpdateBODCentralForm: React.FC<UpdateBODCentralFormProps> = ({
                 return;
             }
 
-            // ✅ เตรียม customStandardPayload ถ้าเป็นมาตรฐานใหม่
-            let customStandardPayload: any = null;
-            if (hasCustomSingle) {
-                customStandardPayload = { type: "middle", value: values.customSingle };
-            } else if (hasCustomRange) {
-                customStandardPayload = { type: "range", min: values.customMin, max: values.customMax };
-            }
-
             const combinedDateTime = dayjs(values.date)
                 .hour(dayjs(values.time).hour())
                 .minute(dayjs(values.time).minute())
@@ -174,50 +166,67 @@ const UpdateBODCentralForm: React.FC<UpdateBODCentralFormProps> = ({
             const unitID = isOther ? null : values.unit;
             const customUnitValue = isOther ? values.customUnit : null;
 
-            const payloads: any[] = [];
+            //const payloads: any[] = [];
             const deletes: number[] = [];
 
-            // ✅ ใส่ CustomStandard ลงใน payload ด้วย (ให้ backend ไปสร้างมาตรฐาน)
+            // สร้าง payload แรกก่อน
             const basePayload = {
                 Date: combinedDateTime,
                 UnitID: unitID,
                 StandardID: standardID,
-                CustomStandard: standardID === 0 ? customStandardPayload : null,
+                CustomStandard: standardID === 0
+                    ? (hasCustomSingle
+                        ? { type: "middle", value: values.customSingle }
+                        : { type: "range", min: values.customMin, max: values.customMax })
+                    : null,
                 EmployeeID: employeeID,
                 CustomUnit: customUnitValue,
             };
 
             if (values.beforeAfterTreatmentID === 3) {
-                payloads.push({
+                // --- Payload แรก (Before)
+                const beforePayload = {
                     ...basePayload,
                     ID: initialValues[0]?.ID ?? null,
                     Data: values.valueBefore,
                     Note: values.beforeNote ?? "",
                     BeforeAfterTreatmentID: 1,
                     ParameterID: initialValues[0]?.ParameterID,
-                });
-                payloads.push({
+                };
+
+                // ส่งไปสร้าง/อัปเดต และเก็บ StandardID ที่ backend คืนมา
+                const res = await UpdateOrCreateBOD(beforePayload);
+                standardID = res?.data?.StandardID ?? standardID;
+
+                // --- Payload สอง (After) ใช้ StandardID ที่สร้างแล้ว
+                const afterPayload = {
                     ...basePayload,
+                    StandardID: standardID,
+                    CustomStandard: null, // ป้องกันไม่ให้สร้างซ้ำ
                     ID: initialValues[1]?.ID ?? null,
                     Data: values.valueAfter,
                     Note: values.afterNote ?? "",
                     BeforeAfterTreatmentID: 2,
                     ParameterID: initialValues[1]?.ParameterID,
-                });
+                };
+                await UpdateOrCreateBOD(afterPayload);
+
             } else if (values.beforeAfterTreatmentID === 1) {
-                payloads.push({
+                await UpdateOrCreateBOD({
                     ...basePayload,
                     ID: initialValues[0]?.ID ?? null,
                     Data: values.valueBefore ?? values.data,
                     Note: values.beforeNote ?? "",
                     BeforeAfterTreatmentID: 1,
-                    ParameterID:initialValues[0]?.ParameterID,
+                    ParameterID: initialValues[0]?.ParameterID,
                 });
+
                 if (initialValues[1]?.ID) {
                     deletes.push(initialValues[1].ID);
                 }
+
             } else if (values.beforeAfterTreatmentID === 2) {
-                payloads.push({
+                await UpdateOrCreateBOD({
                     ...basePayload,
                     ID: initialValues[1]?.ID ?? null,
                     Data: values.valueAfter ?? values.data,
@@ -225,18 +234,17 @@ const UpdateBODCentralForm: React.FC<UpdateBODCentralFormProps> = ({
                     BeforeAfterTreatmentID: 2,
                     ParameterID: initialValues[1]?.ParameterID,
                 });
+
                 if (initialValues[0]?.ID) {
                     deletes.push(initialValues[0].ID);
                 }
             }
 
-            console.log("Payloads to send:", payloads);
-
-            // ✅ เรียก UpdateOrCreate BOD ตัวเดียว
-            await Promise.all(payloads.map((p) => UpdateOrCreateBOD(p)));
-
+            // ลบ record ที่ไม่ใช้แล้ว
             if (deletes.length > 0) {
-                await Promise.all(deletes.map((id) => DeleteBOD(id)));
+                for (const id of deletes) {
+                    await DeleteBOD(id);
+                }
             }
 
             messageApi.success("บันทึกข้อมูลสำเร็จ");

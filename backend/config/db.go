@@ -561,6 +561,14 @@ func SetupDatabase() {
 			continue
 		}
 
+		// --- เช็คค่าก่อนบำบัด ---
+		var statusIDBeforeBOD uint
+		if beforeValues[i] <= 20.00 {
+			statusIDBeforeBOD = status2.ID
+		} else {
+			statusIDBeforeBOD = status1.ID
+		}
+
 		beforeRecord := entity.EnvironmentalRecord{
 			Date:                   date,
 			Data:                   beforeValues[i],
@@ -570,7 +578,7 @@ func SetupDatabase() {
 			StandardID:             3,
 			UnitID:                 Unit.ID,
 			EmployeeID:             Admin.ID,
-			StatusID:               status2.ID,
+			StatusID:               statusIDBeforeBOD,
 		}
 		db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
 			Date:                   date,
@@ -578,6 +586,13 @@ func SetupDatabase() {
 			EnvironmentID:          Wastewater.ID,
 			ParameterID:            BodParameter.ID,
 		})
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterBOD uint
+		if afterValues[i] <= 20.00 {
+			statusIDAfterBOD = status2.ID
+		} else {
+			statusIDAfterBOD = status1.ID
+		}
 
 		afterRecord := entity.EnvironmentalRecord{
 			Date:                   date,
@@ -588,7 +603,7 @@ func SetupDatabase() {
 			StandardID:             3,
 			UnitID:                 Unit.ID,
 			EmployeeID:             Admin.ID,
-			StatusID:               status2.ID,
+			StatusID:               statusIDAfterBOD,
 		}
 		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
 			Date:                   date,
