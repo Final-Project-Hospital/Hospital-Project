@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
-import '../PHcenter/updatePHcenter.css';
+import '../TDScenter/updateTDScenter.css';
 import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input, message } from 'antd';
 import {
     ListBeforeAfterTreatment,
@@ -10,7 +10,6 @@ import {
 } from '../../../../../services/index';
 import { CheckUnit, CheckStandard } from '../../../../../services/tdsService';
 import { UpdateOrCreatePH, DeletePH } from '../../../../../services/wastewaterServices/ph';
-
 import { ListBeforeAfterTreatmentInterface } from '../../../../../interface/IBeforeAfterTreatment';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';
 import { ListUnitInterface } from '../../../../../interface/IUnit';
@@ -45,6 +44,7 @@ const UpdatePHCentralForm: React.FC<UpdatePHCentralFormProps> = ({
 
     const [standardType, setStandardType] = useState('middle');
     const [useCustomStandard, setUseCustomStandard] = useState(false);
+
 
     const renderCustomTreatmentLabel = (text: string) => (
         <>
@@ -89,8 +89,8 @@ const UpdatePHCentralForm: React.FC<UpdatePHCentralFormProps> = ({
                     standardType: stdType,
                     standardID: before.StandardID,
                     beforeAfterTreatmentID: 3,
-                    valueBefore: before?.Data ?? undefined, 
-                    valueAfter: after?.Data ?? undefined,
+                    valueBefore: before?.Data ?? undefined, // ✅ map เข้ากับ name="valueBefore"
+                    valueAfter: after?.Data ?? undefined,   // ✅ map เข้ากับ name="valueAfter"
                     beforeNote: before?.Note || '',
                     afterNote: after?.Note || ''
                 });
@@ -108,7 +108,7 @@ const UpdatePHCentralForm: React.FC<UpdatePHCentralFormProps> = ({
                     standardType: stdType,
                     standardID: single.StandardID,
                     beforeAfterTreatmentID: single.BeforeAfterTreatmentID,
-                    data: single?.Data ?? undefined,
+                    data: single?.Data ?? undefined, // ✅ map เข้ากับ name="data"
                     beforeNote: single.BeforeAfterTreatmentID === 1 ? single.Note || '' : '',
                     afterNote: single.BeforeAfterTreatmentID === 2 ? single.Note || '' : ''
                 });
@@ -138,113 +138,6 @@ const UpdatePHCentralForm: React.FC<UpdatePHCentralFormProps> = ({
         }
     };
 
-    // const handleFinish = async (values: any) => {
-    //     try {
-    //         let standardID = values.standardID ?? 0;
-
-    //         const hasCustomSingle = standardType === "middle" && useCustomStandard && values.customSingle !== undefined;
-    //         const hasCustomRange =
-    //             standardType === "range" &&
-    //             useCustomStandard &&
-    //             values.customMin !== undefined &&
-    //             values.customMax !== undefined;
-
-    //         if (!standardID && !hasCustomSingle && !hasCustomRange) {
-    //             message.error("กรุณาเลือกหรือกำหนดมาตรฐานก่อนบันทึก");
-    //             return;
-    //         }
-
-    //         // ✅ เตรียม customStandardPayload ถ้าเป็นมาตรฐานใหม่
-    //         let customStandardPayload: any = null;
-    //         if (hasCustomSingle) {
-    //             customStandardPayload = { type: "middle", value: values.customSingle };
-    //         } else if (hasCustomRange) {
-    //             customStandardPayload = { type: "range", min: values.customMin, max: values.customMax };
-    //         }
-
-    //         const combinedDateTime = dayjs(values.date)
-    //             .hour(dayjs(values.time).hour())
-    //             .minute(dayjs(values.time).minute())
-    //             .second(dayjs(values.time).second())
-    //             .toISOString();
-
-    //         const employeeID = user?.ID ?? Number(localStorage.getItem("employeeid"));
-    //         const isOther = values.unit === "other";
-    //         const unitID = isOther ? null : values.unit;
-    //         const customUnitValue = isOther ? values.customUnit : null;
-
-    //         const payloads: any[] = [];
-    //         const deletes: number[] = [];
-
-    //         // ✅ ใส่ CustomStandard ลงใน payload ด้วย (ให้ backend ไปสร้างมาตรฐาน)
-    //         const basePayload = {
-    //             Date: combinedDateTime,
-    //             UnitID: unitID,
-    //             StandardID: standardID,
-    //             CustomStandard: standardID === 0 ? customStandardPayload : null,
-    //             EmployeeID: employeeID,
-    //             CustomUnit: customUnitValue,
-    //         };
-
-    //         if (values.beforeAfterTreatmentID === 3) {
-    //             payloads.push({
-    //                 ...basePayload,
-    //                 ID: initialValues[0]?.ID ?? null,
-    //                 Data: values.valueBefore,
-    //                 Note: values.beforeNote ?? "",
-    //                 BeforeAfterTreatmentID: 1,
-    //                 ParameterID: initialValues[0]?.ParameterID,
-    //             });
-    //             payloads.push({
-    //                 ...basePayload,
-    //                 ID: initialValues[1]?.ID ?? null,
-    //                 Data: values.valueAfter,
-    //                 Note: values.afterNote ?? "",
-    //                 BeforeAfterTreatmentID: 2,
-    //                 ParameterID: initialValues[1]?.ParameterID,
-    //             });
-    //         } else if (values.beforeAfterTreatmentID === 1) {
-    //             payloads.push({
-    //                 ...basePayload,
-    //                 ID: initialValues[0]?.ID ?? null,
-    //                 Data: values.valueBefore ?? values.data,
-    //                 Note: values.beforeNote ?? "",
-    //                 BeforeAfterTreatmentID: 1,
-    //                 ParameterID:initialValues[0]?.ParameterID,
-    //             });
-    //             if (initialValues[1]?.ID) {
-    //                 deletes.push(initialValues[1].ID);
-    //             }
-    //         } else if (values.beforeAfterTreatmentID === 2) {
-    //             payloads.push({
-    //                 ...basePayload,
-    //                 ID: initialValues[1]?.ID ?? null,
-    //                 Data: values.valueAfter ?? values.data,
-    //                 Note: values.afterNote ?? "",
-    //                 BeforeAfterTreatmentID: 2,
-    //                 ParameterID: initialValues[1]?.ParameterID,
-    //             });
-    //             if (initialValues[0]?.ID) {
-    //                 deletes.push(initialValues[0].ID);
-    //             }
-    //         }
-
-    //         console.log("Payloads to send:", payloads);
-
-    //         // ✅ เรียก UpdateOrCreate PH ตัวเดียว
-    //         await Promise.all(payloads.map((p) => UpdateOrCreatePH(p)));
-
-    //         if (deletes.length > 0) {
-    //             await Promise.all(deletes.map((id) => DeletePH(id)));
-    //         }
-
-    //         messageApi.success("บันทึกข้อมูลสำเร็จ");
-    //         if (onSuccess) onSuccess();
-    //     } catch (error: any) {
-    //         console.error("Error updating PH:", error?.response?.data || error);
-    //         message.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล handfinish Update");
-    //     }
-    // };
     const handleFinish = async (values: any) => {
         try {
             let standardID = values.standardID ?? 0;
@@ -353,7 +246,7 @@ const UpdatePHCentralForm: React.FC<UpdatePHCentralFormProps> = ({
                 }
             }
 
-            messageApi.success("บันทึกข้อมูลสำเร็จ");
+            messageApi.success("แก้ไขข้อมูลสำเร็จ");
             if (onSuccess) onSuccess();
         } catch (error: any) {
             console.error("Error updating PH:", error?.response?.data || error);
@@ -367,7 +260,7 @@ const UpdatePHCentralForm: React.FC<UpdatePHCentralFormProps> = ({
     };
 
     return (
-        <div className="up-ph-container">
+        <div className="up-tds-container">
             {contextHolder}
             <Form
                 form={form}
@@ -380,18 +273,18 @@ const UpdatePHCentralForm: React.FC<UpdatePHCentralFormProps> = ({
                 }}
             >
                 {/* วันที่และเวลา */}
-                <div className="up-form-group-ph">
+                <div className="up-form-group-tds">
                     <Form.Item label="วันที่บันทึกข้อมูล" name="date">
-                        <DatePicker format="DD/MM/YYYY" className="full-width-ph" />
+                        <DatePicker format="DD/MM/YYYY" className="full-width-tds" />
                     </Form.Item>
                     <Form.Item label="เวลาที่บันทึกข้อมูล" name="time">
-                        <TimePicker format="HH:mm" className="full-width-ph" />
+                        <TimePicker format="HH:mm" className="full-width-tds" />
                     </Form.Item>
                 </div>
 
                 {/* หน่วยที่วัด และ มาตรฐาน */}
-                <div className="up-form-group-ph">
-                    <div className="up-form-group-mini-ph">
+                <div className="up-form-group-tds">
+                    <div className="up-form-group-mini-tds">
                         <Form.Item label="หน่วยที่วัด" required>
                             <Form.Item
                                 name="unit"
@@ -437,7 +330,7 @@ const UpdatePHCentralForm: React.FC<UpdatePHCentralFormProps> = ({
                         </Form.Item>
                     </div>
 
-                    <div className="up-form-group-mini-ph">
+                    <div className="up-form-group-mini-tds">
                         <Form.Item label="ประเภทมาตรฐาน" name="standardType">
                             <Select defaultValue="middle" onChange={handleStandardGroupChange}>
                                 <Option value="middle">ค่าเดี่ยว</Option>
@@ -516,7 +409,7 @@ const UpdatePHCentralForm: React.FC<UpdatePHCentralFormProps> = ({
 
                             {/* ===== ช่วง Min - Max แบบกรอกเอง ===== */}
                             {standardType === 'range' && useCustomStandard && (
-                                <div className="up-ph-fornt-small" style={{ display: 'flex', gap: '16px' }}>
+                                <div className="up-tds-fornt-small" style={{ display: 'flex', gap: '16px' }}>
                                     <Form.Item
                                         label="ค่าต่ำสุด (Min)"
                                         name="customMin"
@@ -576,8 +469,8 @@ const UpdatePHCentralForm: React.FC<UpdatePHCentralFormProps> = ({
                 </div>
 
                 {/* Before/After */}
-                <div className="up-form-group-ph">
-                    <div className="up-form-group-mini-ph">
+                <div className="up-form-group-tds">
+                    <div className="up-form-group-mini-tds">
                         <Form.Item
                             label="ก่อน / หลัง / ก่อนและหลังบำบัด"
                             name="beforeAfterTreatmentID"
@@ -592,7 +485,7 @@ const UpdatePHCentralForm: React.FC<UpdatePHCentralFormProps> = ({
                             </Select>
                         </Form.Item>
                     </div>
-                    <div className="up-form-group-mini-ph">
+                    <div className="up-form-group-mini-tds">
                         {selectedTreatmentID === 3 ? (
                             <div style={{ display: 'flex', gap: '30px' }}>
                                 <Form.Item
@@ -660,7 +553,7 @@ const UpdatePHCentralForm: React.FC<UpdatePHCentralFormProps> = ({
                 </div>
 
                 {/* หมายเหตุ */}
-                <div className="up-form-group-ph">
+                <div className="up-form-group-tds">
                     {selectedTreatmentID === 1 && (
                         <Form.Item label="หมายเหตุ (ก่อน)" name="beforeNote">
                             <Input.TextArea rows={2} placeholder="กรอกหมายเหตุก่อนบำบัด" />
@@ -685,14 +578,14 @@ const UpdatePHCentralForm: React.FC<UpdatePHCentralFormProps> = ({
                     )}
                 </div>
 
-                <Form.Item className="up-form-actions-ph">
-                    <Button className="cancel-up-ph" htmlType="button" onClick={handleCancelClick}>
+                <Form.Item className="up-form-actions-tds">
+                    <Button className="cancel-up-tds" htmlType="button" onClick={handleCancelClick}>
                         ยกเลิก
                     </Button>
-                    <Button htmlType="reset" className="reset-up-ph">
+                    <Button htmlType="reset" className="reset-up-tds">
                         รีเซ็ต
                     </Button>
-                    <Button type="primary" htmlType="submit" className="submit-up-ph">
+                    <Button type="primary" htmlType="submit" className="submit-up-tds">
                         บันทึก
                     </Button>
                 </Form.Item>

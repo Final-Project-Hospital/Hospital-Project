@@ -9,8 +9,7 @@ import {
     ListUnit
 } from '../../../../../services/index';
 import { CheckUnit, CheckStandard } from '../../../../../services/tdsService';
-import { UpdateOrCreateTDS, DeleteTDS } from '../../../../../services/tdsService';
-
+import { UpdateOrCreateTDS, DeleteTDS } from '../../../../../services/wastewaterServices/tds';
 import { ListBeforeAfterTreatmentInterface } from '../../../../../interface/IBeforeAfterTreatment';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';
 import { ListUnitInterface } from '../../../../../interface/IUnit';
@@ -45,6 +44,7 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
 
     const [standardType, setStandardType] = useState('middle');
     const [useCustomStandard, setUseCustomStandard] = useState(false);
+
 
     const renderCustomTreatmentLabel = (text: string) => (
         <>
@@ -89,8 +89,8 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
                     standardType: stdType,
                     standardID: before.StandardID,
                     beforeAfterTreatmentID: 3,
-                    valueBefore: before?.Data ?? undefined,
-                    valueAfter: after?.Data ?? undefined,
+                    valueBefore: before?.Data ?? undefined, // ✅ map เข้ากับ name="valueBefore"
+                    valueAfter: after?.Data ?? undefined,   // ✅ map เข้ากับ name="valueAfter"
                     beforeNote: before?.Note || '',
                     afterNote: after?.Note || ''
                 });
@@ -108,7 +108,7 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
                     standardType: stdType,
                     standardID: single.StandardID,
                     beforeAfterTreatmentID: single.BeforeAfterTreatmentID,
-                    data: single?.Data ?? undefined,
+                    data: single?.Data ?? undefined, // ✅ map เข้ากับ name="data"
                     beforeNote: single.BeforeAfterTreatmentID === 1 ? single.Note || '' : '',
                     afterNote: single.BeforeAfterTreatmentID === 2 ? single.Note || '' : ''
                 });
@@ -246,7 +246,7 @@ const UpdateTDSCentralForm: React.FC<UpdateTDSCentralFormProps> = ({
                 }
             }
 
-            messageApi.success("บันทึกข้อมูลสำเร็จ");
+            messageApi.success("แก้ไขข้อมูลสำเร็จ");
             if (onSuccess) onSuccess();
         } catch (error: any) {
             console.error("Error updating TDS:", error?.response?.data || error);

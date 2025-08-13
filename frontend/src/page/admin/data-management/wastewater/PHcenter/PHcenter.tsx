@@ -171,7 +171,8 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
         const combinedDateTime = dayjs(values.date)
             .hour(dayjs(values.time).hour())
             .minute(dayjs(values.time).minute())
-            .second(0);
+            .second(dayjs(values.time).second())
+            .millisecond(0);
         // ตรวจสอบค่ามาตรฐาน
         const isOther = values.unit === 'other';
         const unitID = isOther ? null : values.unit;
@@ -263,6 +264,10 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     form={form}
                     layout="vertical"
                     onFinish={handleFinish}
+                    initialValues={{
+                        date: dayjs(),
+                        time: dayjs(),
+                    }}
                 >
                     <div className="ph-form-group">
                         <Form.Item label="วันที่บันทึกข้อมูล" name="date">
@@ -542,7 +547,7 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
                                     ]}
                                 >
-                                    <InputNumber style={{ width: '100%' }} placeholder="กรุณากรอกค่าที่วัดได้" step={0.01} />
+                                    <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าที่วัดได้" step={0.01} />
                                 </Form.Item>
                             )}
                         </div>

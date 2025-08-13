@@ -6,9 +6,9 @@ import './EnvironmentGrabageTab.css'
 const tabsRow1 = [
   { label: 'Chemica-Waste', path: '/admin/data-management/garbage/chemica' },
   { label: 'General-Waste', path: '/admin/data-management/garbage/general' },
-  { label: 'hazardous-Waste', path: '/admin/data-management/garbage/hazardous' },
-  { label: 'infectious-Waste', path: '/admin/data-management/garbage/infectious' },
-  { label: 'recycled-Waste', path: '/admin/data-management/garbage/recycled' },];
+  { label: 'Hazardous-Waste', path: '/admin/data-management/garbage/hazardous' },
+  { label: 'Infectious-Waste', path: '/admin/data-management/garbage/infectious' },
+  { label: 'Recycled-Waste', path: '/admin/data-management/garbage/recycled' },];
 
 
 const EnvironmentLayout: React.FC = () => {
