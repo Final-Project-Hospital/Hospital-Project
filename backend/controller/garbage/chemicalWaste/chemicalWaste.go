@@ -1,4 +1,4 @@
-package hazardousWaste
+package chemicalWaste
 
 import (
 	"errors"
@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func CreateHazardous(c *gin.Context) {
+func CreateChemical(c *gin.Context) {
 	var input struct {
 		Date                time.Time
 		Quantity            uint
@@ -56,10 +56,10 @@ func CreateHazardous(c *gin.Context) {
 		}
 	}
 
-	// ดึง Parameter ที่ชื่อ "ขยะอันตราย"
+	// ดึง Parameter ที่ชื่อ "ขยะเคมีบำบัด"
 	var param entity.Parameter
-	if err := db.Where("parameter_name = ?", "ขยะอันตราย").First(&param).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบ Parameter ขยะอันตราย"})
+	if err := db.Where("parameter_name = ?", "ขยะเคมีบำบัด").First(&param).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบ Parameter ขยะเคมีบำบัด"})
 		return
 	}
 
@@ -99,23 +99,23 @@ func CreateHazardous(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "บันทึกขยะอันตรายสำเร็จ",
+		"message": "บันทึกขยะเคมีบำบัดสำเร็จ",
 		"data":    garbage,
 	})
 }
 
-func GetfirstHazardous(c *gin.Context) {
+func GetfirstChemical(c *gin.Context) {
 	db := config.DB()
 
 	var parameter entity.Parameter
-	if err := db.Where("parameter_name = ?", "ขยะอันตราย").First(&parameter).Error; err != nil {
+	if err := db.Where("parameter_name = ?", "ขยะเคมีบำบัด").First(&parameter).Error; err != nil {
 		fmt.Println("Error fetching parameter:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
 	}
 
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
-	var firstHaz struct {
+	var firstchem struct {
 		ID                  uint      `json:"ID"`
 		Date                time.Time `json:"Date"`
 		Quantity            uint      `json:"Quantity"`
@@ -137,7 +137,7 @@ func GetfirstHazardous(c *gin.Context) {
 		Joins("inner join units on garbages.unit_id = units.id").
 		Where("parameter_id = ?", parameter.ID).
 		Order("garbages.created_at desc").
-		Scan(&firstHaz)
+		Scan(&firstchem)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
 	if result.Error != nil {
@@ -146,7 +146,7 @@ func GetfirstHazardous(c *gin.Context) {
 	}
 
 	// ส่งข้อมูลกลับในรูปแบบ JSON
-	c.JSON(http.StatusOK, firstHaz)
+	c.JSON(http.StatusOK, firstchem)
 }
 
 var thaiMonths = [...]string{
@@ -161,11 +161,11 @@ func formatThaiDate(t time.Time) string {
 	return strconv.Itoa(day) + " " + month + " " + strconv.Itoa(year)
 }
 
-func ListHazardous(c *gin.Context) {
+func ListChemical(c *gin.Context) {
 	db := config.DB()
 
 	var parameter entity.Parameter
-	if err := db.Where("parameter_name = ?", "ขยะอันตราย").First(&parameter).Error; err != nil {
+	if err := db.Where("parameter_name = ?", "ขยะเคมีบำบัด").First(&parameter).Error; err != nil {
 		fmt.Println("Error fetching parameter:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
@@ -178,7 +178,7 @@ func ListHazardous(c *gin.Context) {
 	}
 
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
-	var firstha []struct {
+	var firstchem []struct {
 		ID                     uint      `json:"ID"`
 		Date                   time.Time `json:"Date"`
 		Data                   float64   `json:"Data"`
@@ -206,7 +206,7 @@ func ListHazardous(c *gin.Context) {
 		Joins("inner join before_after_treatments on environmental_records.before_after_treatment_id = before_after_treatments.id").
 		Joins("inner join statuses on environmental_records.status_id = statuses.id").
 		Where("environmental_records.parameter_id = ? ", parameter.ID).
-		Find(&firstha)
+		Find(&firstchem)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
 	if result.Error != nil {
@@ -215,10 +215,10 @@ func ListHazardous(c *gin.Context) {
 	}
 
 	// ส่งข้อมูลกลับในรูปแบบ JSON
-	c.JSON(http.StatusOK, firstha)
+	c.JSON(http.StatusOK, firstchem)
 }
 
-func DeleterHazardous(c *gin.Context) {
+func DeleterChemical(c *gin.Context) {
 	id := c.Param("id")
 	db := config.DB()
 
@@ -231,23 +231,23 @@ func DeleterHazardous(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Soft Deleted Environmental Records Successfully"})
 }
 
-func GetHazardousTABLE(c *gin.Context) {
+func GetChemicalTABLE(c *gin.Context) {
 	db := config.DB()
 
-	// หา ParameterID ของ "ขยะอันตราย"
+	// หา ParameterID ของ "ขยะเคมีบำบัด"
 	var param entity.Parameter
-	if err := db.Where("parameter_name = ?", "ขยะอันตราย").First(&param).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่พบ Parameter ขยะอันตราย"})
+	if err := db.Where("parameter_name = ?", "ขยะเคมีบำบัด").First(&param).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่พบ Parameter ขยะเคมีบำบัด"})
 		return
 	}
 
-	var ha []entity.EnvironmentalRecord
+	var chem []entity.EnvironmentalRecord
 	result := db.Preload("BeforeAfterTreatment").
 		Preload("Environment").
 		Preload("Unit").
 		Preload("Employee").
 		Where("parameter_id = ?", param.ID).
-		Find(&ha)
+		Find(&chem)
 
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
@@ -259,7 +259,7 @@ func GetHazardousTABLE(c *gin.Context) {
 		EnvironmentID uint
 	}
 
-	type HazardousRecord struct {
+	type ChemicalRecord struct {
 		Date          string   `json:"date"`
 		Unit          string   `json:"unit"`
 		StandardValue string   `json:"standard_value"`
@@ -273,9 +273,9 @@ func GetHazardousTABLE(c *gin.Context) {
 		Status        string   `json:"status"`
 	}
 
-	haMap := make(map[keyType]*HazardousRecord)
+	chemMap := make(map[keyType]*ChemicalRecord)
 
-	for _, rec := range ha {
+	for _, rec := range chem {
 		dateStr := rec.Date.Format("2006-01-02")
 		k := keyType{
 			Date:          dateStr,
@@ -286,7 +286,7 @@ func GetHazardousTABLE(c *gin.Context) {
 		var latestRec entity.EnvironmentalRecord
 		err := db.
 			Joins("JOIN parameters p ON p.id = environmental_records.parameter_id").
-			Where("p.parameter_name = ?", "ขยะอันตราย").
+			Where("p.parameter_name = ?", "ขยะเคมีบำบัด").
 			Where("DATE(environmental_records.date) = ?", dateStr).
 			Order("environmental_records.date DESC").
 			First(&latestRec).Error
@@ -302,7 +302,7 @@ func GetHazardousTABLE(c *gin.Context) {
 				}
 			}
 		}
-		if _, exists := haMap[k]; !exists {
+		if _, exists := chemMap[k]; !exists {
 			unitName := rec.Unit.UnitName // default
 
 			// ลองใช้ unit ของ latestRec ถ้ามี
@@ -313,7 +313,7 @@ func GetHazardousTABLE(c *gin.Context) {
 				}
 			}
 
-			haMap[k] = &HazardousRecord{
+			chemMap[k] = &ChemicalRecord{
 				Date:          dateStr,
 				Unit:          unitName,
 				StandardValue: stdVal,
@@ -323,40 +323,40 @@ func GetHazardousTABLE(c *gin.Context) {
 		// Before / After
 		val := rec.Data
 		if rec.BeforeAfterTreatmentID == 1 {
-			haMap[k].BeforeValue = &val
-			haMap[k].BeforeID = &rec.ID
+			chemMap[k].BeforeValue = &val
+			chemMap[k].BeforeID = &rec.ID
 		} else if rec.BeforeAfterTreatmentID == 2 {
-			haMap[k].AfterValue = &val
-			haMap[k].AfterID = &rec.ID
+			chemMap[k].AfterValue = &val
+			chemMap[k].AfterID = &rec.ID
 		}
 
 		// Efficiency
-		if haMap[k].BeforeValue != nil && haMap[k].AfterValue != nil && *haMap[k].BeforeValue != 0 {
-			eff := ((*haMap[k].BeforeValue - *haMap[k].AfterValue) / (*haMap[k].BeforeValue)) * 100
+		if chemMap[k].BeforeValue != nil && chemMap[k].AfterValue != nil && *chemMap[k].BeforeValue != 0 {
+			eff := ((*chemMap[k].BeforeValue - *chemMap[k].AfterValue) / (*chemMap[k].BeforeValue)) * 100
 			// ✅ ถ้าค่าติดลบให้กลายเป็น 0.00
 			//fmt.Printf("Efficiency2: %.2f\n", eff)
 			if eff < 0 {
 				eff = 0.00
 			}
-			haMap[k].Efficiency = &eff
+			chemMap[k].Efficiency = &eff
 		}
 
 		// Status
-		if haMap[k].AfterValue != nil && latestRec.StandardID != 0 {
+		if chemMap[k].AfterValue != nil && latestRec.StandardID != 0 {
 			var std entity.Standard
 			if db.First(&std, latestRec.StandardID).Error == nil {
-				after := *haMap[k].AfterValue
+				after := *chemMap[k].AfterValue
 				if std.MinValue != 0 || std.MaxValue != 0 {
 					if after < float64(std.MinValue) || after > float64(std.MaxValue) {
-						haMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
+						chemMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
-						haMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
+						chemMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
 					}
 				} else {
 					if after > float64(std.MiddleValue) {
-						haMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
+						chemMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
-						haMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
+						chemMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
 					}
 				}
 			}
@@ -365,12 +365,12 @@ func GetHazardousTABLE(c *gin.Context) {
 
 	// สร้าง map รวบรวม id -> note เพื่อดึง note ของ before และ after จากข้อมูลดิบ
 	noteMap := make(map[uint]string)
-	for _, rec := range ha {
+	for _, rec := range chem {
 		noteMap[rec.ID] = rec.Note
 	}
 
-	// เติม BeforeNote และ AfterNote ใน haMap
-	for _, val := range haMap {
+	// เติม BeforeNote และ AfterNote ใน chemMap
+	for _, val := range chemMap {
 		if val.BeforeID != nil {
 			if note, ok := noteMap[*val.BeforeID]; ok {
 				val.BeforeNote = note
@@ -384,15 +384,15 @@ func GetHazardousTABLE(c *gin.Context) {
 	}
 
 	// รวมข้อมูลส่งกลับ
-	var mergedRecords []HazardousRecord
-	for _, val := range haMap {
+	var mergedRecords []ChemicalRecord
+	for _, val := range chemMap {
 		mergedRecords = append(mergedRecords, *val)
 	}
 
 	c.JSON(http.StatusOK, mergedRecords)
 }
 
-func UpdateOrCreateHazardous(c *gin.Context) {
+func UpdateOrCreateChemical(c *gin.Context) {
 	var input struct {
 		entity.EnvironmentalRecord
 		CustomStandard *struct {
@@ -542,7 +542,7 @@ func UpdateOrCreateHazardous(c *gin.Context) {
 	}
 }
 
-func DeleteHazardous(c *gin.Context) {
+func DeleteChemical(c *gin.Context) {
 	id := c.Param("id")
 	uintID, err := strconv.ParseUint(id, 10, 32)
 
@@ -558,14 +558,14 @@ func DeleteHazardous(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "ลบข้อมูล Hazardous สำเร็จ"})
+	c.JSON(http.StatusOK, gin.H{"message": "ลบข้อมูล Chemical สำเร็จ"})
 }
 
-func GetHazardousbyID(c *gin.Context) {
+func GetChemicalbyID(c *gin.Context) {
 	id := c.Param("id")
 	db := config.DB()
 
-	var ha struct {
+	var chem struct {
 		ID                     uint      `json:"ID"`
 		Date                   time.Time `json:"Date"`
 		Data                   float64   `json:"Data"`
@@ -588,17 +588,17 @@ func GetHazardousbyID(c *gin.Context) {
 			standards.min_value, standards.middle_value, standards.max_value`).
 		Joins("inner join standards on environmental_records.standard_id = standards.id").
 		Where("environmental_records.id = ?", id).
-		Scan(&ha)
+		Scan(&chem)
 
 	if result.Error != nil || result.RowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Record not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, ha)
+	c.JSON(http.StatusOK, chem)
 }
 
-func DeleteAllHazardousRecordsByDate(c *gin.Context) {
+func DeleteAllChemicalRecordsByDate(c *gin.Context) {
 	id := c.Param("id")
 	uintID, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
@@ -624,7 +624,7 @@ func DeleteAllHazardousRecordsByDate(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "ลบข้อมูล Hazardous สำเร็จ",
+		"message": "ลบข้อมูล Chemical สำเร็จ",
 		"date":    dateKey,
 	})
 }

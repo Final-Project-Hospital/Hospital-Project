@@ -1,4 +1,4 @@
-export interface HazardouscenterInterface {
+export interface RecycledcenterInterface {
   Date?: string;
   Quantity?: number;
   // AADC?: number;
@@ -12,7 +12,7 @@ export interface HazardouscenterInterface {
   EmployeeID?: number;  
 }
 
-export interface listHazardousInterface {
+export interface listRecycledInterface {
     ID: number;
     Date: string;
     Quantity: number;
@@ -31,6 +31,6 @@ export interface listHazardousInterface {
     UnitName: string;
 }
 
-export interface DeleteHazardousInterface {
+export interface DeleteRecycledInterface {
     ID: number;
 }

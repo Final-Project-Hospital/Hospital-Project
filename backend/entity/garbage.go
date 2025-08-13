@@ -21,13 +21,13 @@ type Garbage struct {
 	ParameterID uint       `gorm:"column:parameter_id"`
 	Parameter   *Parameter `gorm:"foreignKey:ParameterID"`
 
-	TargetID uint       `gorm:"column:target_id"`
+	TargetID *uint       `gorm:"column:target_id"`
 	Target   *Target  `gorm:"foreignKey:TargetID"`
 
 	UnitID uint     `gorm:"column:unit_id"`
 	Unit   *Unit    `gorm:"foreignKey:UnitID"`
 
-	StatusID uint     `gorm:"column:status_id"`
+	StatusID *uint     `gorm:"column:status_id"`
 	Status   *Status    `gorm:"foreignKey:StatusID"`
 
 	EmployeeID uint       `gorm:"column:employee_id"`

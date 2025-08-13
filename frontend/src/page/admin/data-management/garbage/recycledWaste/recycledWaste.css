@@ -1,0 +1,157 @@
+.recy-container {
+  background: white;
+  padding: 20px 30px;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px #7b61ff3b;
+  max-width: 80%;
+  margin: 0 auto;
+  margin-bottom: 40px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+/* ปรับ input ให้มี border-radius 50px */
+.recy-container .ant-input,
+.recy-container .ant-input-number,
+.recy-container .ant-picker,
+.recy-container .ant-select-selector {
+  border-radius: 50px !important;
+}
+
+.recy-container .ant-input-number-handler-wrap {
+  border-radius: 0 50px 50px 0 !important;
+  overflow: hidden;
+}
+
+.recy-form-group {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.recy-form-group .ant-form-item {
+  flex: 1 1 300px;
+}
+
+.recy-from-mini {
+  width: 48%;
+}
+
+.recy-full-width {
+  width: 100%;
+}
+
+.recy-red-text {
+  color: red;
+  font-weight: bold;
+}
+
+.recy-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 9px;
+  margin-bottom: 9px;
+}
+
+.recy-cancel,
+.recy-reset,
+.recy-submit {
+  padding: 10px 10px;
+  min-width: 80px;
+  height: inherit;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 50px;
+  border: none;
+  margin-top: -15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* ปุ่มแต่ละแบบ */
+.recy-cancel {
+  background-color: #949494;
+  color: white;
+  margin-right: 10px;
+  transition: all 0.2s ease-in-out;
+}
+
+.recy-reset {
+  background-color: #ffffff;
+  color: #326667;
+  margin-right: 10px;
+  transition: all 0.2s ease-in-out;
+}
+
+.recy-submit {
+  background-color: #326667;
+  color: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.recy-submit:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #358788 !important;
+  transform: scale(1.05) !important;
+}
+
+.recy-reset:hover {
+  color: #326667 !important;
+  background-color: #ffffff !important;
+  transform: scale(1.05) !important;
+}
+
+.recy-cancel:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #646464 !important;
+  transform: scale(1.05) !important;
+}
+.recy-fornt-small {
+  display: flex;
+  gap: 16px;
+}
+.recy-chat-modal{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+  .recy-form-group {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .recy-form-group .ant-form-item {
+    flex: 1 1 100%;
+  }
+
+  .recy-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .recy-cancel,
+  .recy-reset,
+  .recy-submit {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .recy-from-mini {
+    width: 100%;
+  }
+  .recy-fornt-small .ant-form-item-label > label {
+  font-size: small !important;}
+  
+}
+
+@media (max-width: 1024px) {
+  .recy-from-mini {
+    width: 100%;
+  }
+}

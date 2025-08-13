@@ -206,6 +206,11 @@ const DFCBCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
                 messageApi.success('บันทึกข้อมูล FCB ก่อนและหลังบำบัดสำเร็จ');
                 form.resetFields();
+                setIsOtherunitSelected(false);
+                setUseCustomStandard(false);
+                setCustomSingleValue(undefined);
+                setCustomMinValue(undefined);
+                setCustomMaxValue(undefined);
                 GetfirstrowDFCB();
                 fetchInitialData();
                 await delay(500);
@@ -233,6 +238,11 @@ const DFCBCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     content: 'การบันทึกข้อมูล FCB สำเร็จ',
                 });
                 form.resetFields();
+                setIsOtherunitSelected(false);
+                setUseCustomStandard(false);
+                setCustomSingleValue(undefined);
+                setCustomMinValue(undefined);
+                setCustomMaxValue(undefined);
                 GetfirstrowDFCB();
                 fetchInitialData();
                 await delay(500);
