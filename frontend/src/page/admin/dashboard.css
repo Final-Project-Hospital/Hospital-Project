@@ -1,18 +1,18 @@
-.title-header {
+.dashboard-title-header {
   background: linear-gradient(90deg, #356768, #5AEEF0);
   padding: 30px;
   border-radius: 0 0 25px 25px;
   color: white;
 }
 
-.title-header h1 {
+.dashboard-title-header h1 {
   font-size: 2rem;
   font-weight: 500;
   margin: 0;
   text-shadow: 0 4px 5px #000000ba;
 }
 
-.title-header p {
+.dashboard-title-header p {
   font-size: 1rem;
   margin-top: 4px;
   line-height: 1.3;
@@ -49,15 +49,15 @@
 }
 
 /* Controls ด้านบน */
-.ant-select {
+.dashboard-ant-select {
   min-width: 120px;
 }
 
-.ant-picker {
+.dashboard-ant-picker {
   min-width: 160px;
 }
 
-.row-gutter {
+.dashboard-row-gutter {
   margin-bottom: 16px;
   display: flex;
   gap: 16px;
@@ -68,11 +68,11 @@
 
 /* Responsive เบื้องต้น */
 @media (max-width: 768px) {
-  .title-header h1 {
+  .dashboard-title-header h1 {
     font-size: 1.5rem;
     text-align: center;
   }
-  .title-header p {
+  .dashboard-title-header p {
     font-size: 0.9rem;
     text-align: center;
   }
@@ -84,7 +84,7 @@
   }
 }
 
-.profile-upload {
+.dashboard-profile-upload {
   width: 100px;
   height: 100px;
   border-radius: 50%;
@@ -94,7 +94,7 @@
 }
 
 /* ===== Efficiency Graph Styling (ไม่ยุ่งกับ dashboard-*) ===== */
-.efficiency-card {
+.dashboard-efficiency-card {
   background: #ffffff;
   padding: 20px;
   border-radius: 20px;
@@ -106,7 +106,7 @@
   justify-content: flex-start;
 }
 
-.efficiency-header {
+.dashboard-efficiency-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -116,13 +116,13 @@
   color: #1b4242;
 }
 
-.efficiency-header > div:first-child {
+.dashboard-efficiency-header > div:first-child {
   background-image: linear-gradient(to right, #5DDFE2, #ffffff);
   padding: 6px 12px;
   border-radius: 5px;
 }
 
-.efficiency-chart-wrapper {
+.dashboard-efficiency-chart-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -131,19 +131,19 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .efficiency-card {
+  .dashboard-efficiency-card {
     min-height: 350px;
     padding: 16px;
   }
 
-  .efficiency-header {
+  .dashboard-efficiency-header {
     font-size: 0.95rem;
     flex-direction: column;
     gap: 8px;
     align-items: flex-start;
   }
 
-  .efficiency-header > div:first-child {
+  .dashboard-efficiency-header > div:first-child {
     font-size: 0.95rem;
   }
 }

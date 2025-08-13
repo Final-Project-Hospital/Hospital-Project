@@ -3,11 +3,16 @@ import React, { useEffect, useState } from "react";
 import { Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { LeftOutlined, SearchOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled, CloseCircleFilled, CheckCircleFilled, QuestionCircleFilled } from "@ant-design/icons";
+import { LeftOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled, CloseCircleFilled, CheckCircleFilled, QuestionCircleFilled } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import './BODdataviz.css';
 import dayjs, { Dayjs } from "dayjs";
 import { GetlistBOD, GetfirstBOD } from "../../../../../services/bodService";
+import BeforeWater from "../../../../../assets/mineral.png"
+import AftereWater from "../../../../../assets/rain.png"
+import Efficiency from "../../../../../assets/productivity.png"
+import { GetBeforeAfterBOD } from "../../../../../services/bodService";
+
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -30,6 +35,7 @@ const normalizeString = (str: any) =>
 
 
 
+
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';
 import th_TH from 'antd/es/date-picker/locale/th_TH';
@@ -48,6 +54,7 @@ const BODdataviz: React.FC = () => {
   const [, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [filterMode, setFilterMode] = useState<"dateRange" | "month" | "year">("year");
+  const [BeforeAfter, setBeforeAfter] = useState<{ before: any; after: any } | null>(null);
 
   //ใช้กับกราฟ
   const [chartTypeBefore, setChartTypeBefore] = useState<'bar' | 'line'>('line');
@@ -55,12 +62,12 @@ const BODdataviz: React.FC = () => {
   const [chartTypeCompare, setChartTypeCompare] = useState<'bar' | 'line'>('line');
   const [chartpercentChange, setpercentChange] = useState<'bar' | 'line'>('line');
   const [compareData, setCompareData] = useState<{ date: string; before: number; after: number }[]>([]);
-  const [beforeData, setBeforeData] = useState<{ date: string; data: number }[]>([]);
-  const [afterData, setAfterData] = useState<{ date: string; data: number }[]>([]);
-  const [colorBefore, setColorBefore] = useState<string>("#7B61FF");
-  const [colorAfter, setColorAfter] = useState<string>("#33E944");
-  const [colorCompareBefore, setColorCompareBefore] = useState<string>("#FF4560");
-  const [colorCompareAfter, setColorCompareAfter] = useState<string>("#775DD0");
+  const [beforeData, setBeforeData] = useState<{ unit: string; date: string; data: number }[]>([]);
+  const [afterData, setAfterData] = useState<{ unit: string; date: string; data: number }[]>([]);
+  const [colorBefore, setColorBefore] = useState<string>("#2abdbf");
+  const [colorAfter, setColorAfter] = useState<string>("#1a4b57");
+  const [colorCompareBefore, setColorCompareBefore] = useState<string>("#2abdbf");
+  const [colorCompareAfter, setColorCompareAfter] = useState<string>("#1a4b57");
   const [unit, setUnit] = useState<string>("-");
   const [middlestandard, setMiddleStandard] = useState<number | undefined>(undefined);
   const [minstandard, setMinStandard] = useState<number | undefined>(undefined);
@@ -68,11 +75,10 @@ const BODdataviz: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalGraphType, setModalGraphType] = useState<"before" | "after" | "compare" | "percentChange" | null>(null);
   const [percentChangeData, setPercentChangeData] = useState<{ date: string; percent: number }[]>([]);
-  const [colorPercentChange, setcolorPercentChange] = useState<string>("#FF4560");
-
+  const [colorPercentChange, setcolorPercentChange] = useState<string>("#FF6F61");
 
   //ใช้กับตาราง
-  const [search, setSearch] = useState("");
+  const [search] = useState(""); //setSearch
   const [isModalVisible, setIsModalVisible] = useState(false);  // --- Modal สำหรับเพิ่ม/แก้ไข BOD (ถ้าต้องการใช้) ---
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingRecord, setEditRecord] = useState<any>(null);
@@ -80,8 +86,13 @@ const BODdataviz: React.FC = () => {
   const [statusOptions, setStatusOptions] = useState<ListStatusInterface[]>([]);
   const [tableFilterMode, setTableFilterMode] = useState<"dateRange" | "month" | "year">("year");
   const [tableDateRange, setTableDateRange] = useState<[Dayjs, Dayjs] | null>(null);
-
-
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [efficiencyFilter, setEfficiencyFilter] = useState<string | null>(null);
+  const totalTasks = data.length;
+  const doneTasks = data.filter((d: any) => {
+    const status = (d.status ?? "").trim(); return status.includes("ผ่าน") && !status.includes("ไม่ผ่าน");
+  }).length;
+  const inProgressTasks = data.filter((d: any) => normalizeString(d.status ?? "").includes(normalizeString("ไม่ผ่าน"))).length;
 
 
   //ใช้กับกราฟ ---โหลดสีจาก localStorage----
@@ -98,27 +109,33 @@ const BODdataviz: React.FC = () => {
     if (storedcolorPercentChange) setcolorPercentChange(storedcolorPercentChange);
   }, []);
 
-
   // ใช้กับกราฟ
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [lastbod, response] = await Promise.all([
+      const [lastbod, response, bodRes] = await Promise.all([
         GetfirstBOD(),
         GetlistBOD(),
+        GetBeforeAfterBOD(),
       ]);
 
       if (response) {
-        const grouped: Record<string, { before: number[]; after: number[] }> = {};
+        const grouped: Record<string, { before: number[]; after: number[]; beforeUnit?: string; afterUnit?: string }> = {};
         response.data.forEach((item: any) => {
           const key = filterMode === "year"
             ? dayjs(item.Date).format("YYYY-MM")
             : dayjs(item.Date).format("YYYY-MM-DD");
 
-          if (!grouped[key]) grouped[key] = { before: [], after: [] };
-          if (item.BeforeAfterTreatmentID === 1) grouped[key].before.push(item.Data);
-          else if (item.BeforeAfterTreatmentID === 2) grouped[key].after.push(item.Data);
+          if (!grouped[key]) grouped[key] = { before: [], after: [], beforeUnit: "", afterUnit: "" };
+
+          if (item.BeforeAfterTreatmentID === 1) {
+            grouped[key].before.push(item.Data);
+            grouped[key].beforeUnit = item.UnitName;
+          } else if (item.BeforeAfterTreatmentID === 2) {
+            grouped[key].after.push(item.Data);
+            grouped[key].afterUnit = item.UnitName;
+          }
         });
 
         const createDateRange = (start: Dayjs, end: Dayjs): string[] => {
@@ -132,32 +149,88 @@ const BODdataviz: React.FC = () => {
           }
           return arr;
         };
+        ////วันออกหมดแม้ไม่มีข้อมูล
+        // let allDates: string[] = [];
+        // if (dateRange) {
+        //   allDates = createDateRange(dateRange[0], dateRange[1]);
+        // } else {
+        //   const allDatesInData = Object.keys(grouped).sort();
+        //   if (allDatesInData.length > 0) {
+        //     const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
+        //     let start;
+        //     let end = latestDate;
 
+        //     if (filterMode === "year") {
+        //       start = latestDate.subtract(3, "year").startOf("month");
+        //     } else if (filterMode === "month") {
+        //       start = latestDate.startOf("month");
+        //       end = latestDate.endOf("month");
+        //     } else {
+        //       start = latestDate.subtract(6, "day").startOf("day");
+        //     }
+
+        //     allDates = createDateRange(start, end);
+        //   }
+        // }
+
+        //ออกเฉพาะวันที่มีข้อมูล
         let allDates: string[] = [];
+
         if (dateRange) {
-          allDates = createDateRange(dateRange[0], dateRange[1]);
+          if (filterMode === "year") {
+            // กรองเดือนที่มีข้อมูลและอยู่ในช่วงปีที่เลือก
+            const startYear = dateRange[0].year();
+            const endYear = dateRange[1].year();
+
+            allDates = Object.keys(grouped)
+              .filter(monthStr => {
+                const year = dayjs(monthStr).year();
+                return year >= startYear && year <= endYear;
+              })
+              .sort();
+          } else if (filterMode === "month") {
+            // สร้างช่วงเดือนเต็มตามช่วง dateRange ที่เลือก (จะใช้ createDateRange)
+            allDates = createDateRange(dateRange[0], dateRange[1]);
+          } else {
+            // กรองช่วงวัน (dateRange) ใช้ createDateRange
+            allDates = createDateRange(dateRange[0], dateRange[1]);
+          }
         } else {
-          const allDatesInData = Object.keys(grouped).sort();
-          if (allDatesInData.length > 0) {
-            const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
-            let start;
-            let end = latestDate;
+          // กรณีไม่ได้เลือก dateRange เอง
+          if (filterMode === "year") {
+            const monthsWithData = Object.keys(grouped).sort();
+            if (monthsWithData.length > 0) {
+              const latestMonth = dayjs(monthsWithData[monthsWithData.length - 1]);
+              const startLimit = latestMonth.subtract(3, "year").startOf("month");
 
-            if (filterMode === "year") {
-              start = latestDate.subtract(3, "year").startOf("month");
-            } else if (filterMode === "month") {
-              start = latestDate.startOf("month");
-              end = latestDate.endOf("month");
+              allDates = monthsWithData.filter(monthStr => {
+                const monthDate = dayjs(monthStr);
+                return monthDate.isSame(startLimit) || monthDate.isAfter(startLimit);
+              });
             } else {
-              start = latestDate.subtract(6, "day").startOf("day");
+              allDates = [];
             }
-
-            allDates = createDateRange(start, end);
+          } else if (filterMode === "month") {
+            const allDatesInData = Object.keys(grouped).sort();
+            if (allDatesInData.length > 0) {
+              const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
+              const start = latestDate.startOf("month");
+              const end = latestDate.endOf("month");
+              allDates = createDateRange(start, end);
+            }
+          } else {
+            const allDatesInData = Object.keys(grouped).sort();
+            if (allDatesInData.length > 0) {
+              const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
+              const start = latestDate.subtract(6, "day").startOf("day");
+              const end = latestDate.endOf("day");
+              allDates = createDateRange(start, end);
+            }
           }
         }
 
-        const before: { date: string; data: number }[] = [];
-        const after: { date: string; data: number }[] = [];
+        const before: { date: string; data: number; unit: string; }[] = [];
+        const after: { date: string; data: number; unit: string; }[] = [];
         const compare: { date: string; before: number; after: number }[] = [];
 
         allDates.forEach(date => {
@@ -168,11 +241,11 @@ const BODdataviz: React.FC = () => {
           const avgAfter = values?.after.length
             ? values.after.reduce((a, b) => a + b, 0) / values.after.length
             : 0;
-          before.push({ date, data: avgBefore });
-          after.push({ date, data: avgAfter });
+          before.push({ date, data: avgBefore, unit: values?.beforeUnit || "" });
+          after.push({ date, data: avgAfter, unit: values?.afterUnit || "" });
           compare.push({ date, before: avgBefore, after: avgAfter });
         });
-        console.log(lastbod.data)
+        // console.log(lastbod.data)
         if (lastbod.data.MiddleValue !== 0) {
           setMiddleStandard(lastbod.data.MiddleValue);
           setMaxStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
@@ -190,12 +263,16 @@ const BODdataviz: React.FC = () => {
           const percent = rawPercent < 0 ? 0 : rawPercent;
           return { date: item.date, percent };
         });
-
+        console.log(response.data);
         setUnit(lastbod.data.UnitName);
         setBeforeData(before);
         setAfterData(after);
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
+        // เซ็ตข้อมูลจาก GetBeforeAfterBOD
+        if (bodRes) {
+          setBeforeAfter(bodRes.data);
+        }
       } else {
         setError("ไม่พบข้อมูล BOD");
       }
@@ -261,7 +338,6 @@ const BODdataviz: React.FC = () => {
     loadStatus();
   }, []);
 
-
   //ใช้กับกราฟ
   const getChartOptions = (
     categories: string[],
@@ -312,10 +388,10 @@ const BODdataviz: React.FC = () => {
               ? [
                 {
                   y: middlestandard,
-                  borderColor: "rgba(255, 163, 24, 0.77)",
+                  borderColor: "#FF6F61",
                   borderWidth: 1.5,
                   strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middlestandard}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
+                  label: { text: `มาตรฐาน ${middlestandard}`, style: { background: "#FF6F61", color: "#fff" } },
                 },
               ]
               : []
@@ -335,8 +411,10 @@ const BODdataviz: React.FC = () => {
             return dayjs(value).format("D MMM");
           },
         },
+        tooltip: {
+          enabled: false, // << ปิด tooltip ที่แกน X
+        },
       },
-
       yaxis: {
         min: 0,
         max: isPercentChart ? 100 : adjustedMax,
@@ -349,7 +427,35 @@ const BODdataviz: React.FC = () => {
       },
       tooltip: {
         y: {
-          formatter: (val: number) => isPercentChart ? `${val.toFixed(2)}%` : `${val.toFixed(2)} ${unit}`,
+          formatter: (val: number, opts) => {
+            const seriesName = opts.w.config.series[opts.seriesIndex]?.name || '';
+            const seriesIndex = opts.seriesIndex;
+            const dataPointIndex = opts.dataPointIndex;
+
+            console.log('seriesIndex:', seriesIndex, 'seriesName:', seriesName, 'val:', val);
+
+            if (isPercentChart) {
+              return `${val.toFixed(2)}%`;
+            }
+
+            // กรณี beforeSeries หรือ compareSeries "ก่อนบำบัด"
+            if ((seriesName === "ก่อนบำบัด" || seriesName === "BOD") && beforeData && beforeData.length > dataPointIndex) {
+              const unit = beforeData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดก่อนบำบัด';
+              if (unit === 'ไม่มีการตรวจวัดก่อนบำบัด') return unit;
+              return `${val.toFixed(2)} ${unit}`;
+            }
+
+            // กรณี afterSeries หรือ compareSeries "หลังบำบัด"
+            if ((seriesName === "หลังบำบัด" || seriesName === "BOD") && afterData && afterData.length > dataPointIndex) {
+              const unit = afterData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดหลังบำบัด';
+              if (unit === 'ไม่มีการตรวจวัดหลังบำบัด') return unit;
+              return `${val.toFixed(2)} ${unit}`;
+            }
+
+            // กรณีอื่น ๆ
+            return `${val.toFixed(2)}`;
+          }
+
         },
       },
       dataLabels: {
@@ -367,10 +473,10 @@ const BODdataviz: React.FC = () => {
     };
   };
   const beforeSeries = [
-    { name: "BOD", data: beforeData.map(item => item.data), color: colorBefore }
+    { name: "ก่อนบำบัด", data: beforeData.map(item => item.data), color: colorBefore }
   ];
   const afterSeries = [
-    { name: "BOD", data: afterData.map(item => item.data), color: colorAfter }
+    { name: "หลังบำบัด", data: afterData.map(item => item.data), color: colorAfter }
   ];
   const compareSeries = [
     { name: "ก่อนบำบัด", data: compareData.map(item => item.before), color: colorCompareBefore },
@@ -414,12 +520,19 @@ const BODdataviz: React.FC = () => {
       dataIndex: 'date',
       key: 'date',
       width: 140,
+      sorter: (a, b) => {
+        const da = dayjs(a.date);
+        const db = dayjs(b.date);
+        if (!da.isValid() && !db.isValid()) return 0;
+        if (!da.isValid()) return -1;
+        if (!db.isValid()) return 1;
+        return da.valueOf() - db.valueOf(); // เรียงจากเก่าไปใหม่
+      },
+      // defaultSortOrder: 'descend', // ตั้งค่าให้เริ่มต้นเรียงจากใหม่ไปเก่า
       render: (date: string) => {
         if (!date) return '-';
         const d = dayjs(date);
         if (!d.isValid()) return '-';
-
-        // แปลงปี ค.ศ. เป็น พ.ศ. (+543) และฟอร์แมตเป็นวัน เดือน(ภาษาไทย) ปี
         return d.format('DD MMM ') + (d.year() + 543);
       }
     },
@@ -458,34 +571,6 @@ const BODdataviz: React.FC = () => {
       title: <>ประสิทธิภาพ<br />(%)</>,
       key: "efficiency",
       width: 80,
-      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
-        <div style={{ padding: 8 }}>
-          <Select
-            allowClear
-            placeholder="เลือกเงื่อนไข"
-            value={selectedKeys[0]}
-            onChange={(v) => { setSelectedKeys(v ? [v] : []); confirm({ closeDropdown: false }); }}
-            style={{ width: 180 }} // ✅ เพิ่มความกว้าง
-            options={[
-              { label: "มากกว่า 50%", value: "gt" },
-              { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
-            ]}
-          />
-        </div>
-      ),
-      filterIcon: (f) => (
-        <SearchOutlined style={{
-          color: f ? "#007b8a" : "#6e6e76",
-          fontSize: 20, fontWeight: f ? "bold" : undefined,
-          borderRadius: "50%", padding: 5,
-          background: f ? "#fff" : undefined,
-          boxShadow: f ? "0 0 8px 4px rgba(255,255,255,1)" : undefined,
-        }} />
-      ),
-      onFilter: (v, r) => {
-        const eff = Number(r.efficiency ?? -1);
-        return v === "gt" ? eff > 50 : v === "lte" ? eff <= 50 : true;
-      },
       render: (_, r) => {
         const eff = Number(r.efficiency);
         return isNaN(eff) ? "-" : Math.max(eff, 0).toFixed(2);
@@ -502,96 +587,27 @@ const BODdataviz: React.FC = () => {
       title: "สถานะ",
       key: "status",
       width: 200,
-      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
-        <div style={{ padding: 8, width: 190 }}>
-          <Select
-            allowClear
-            placeholder="เลือกสถานะ"
-            value={selectedKeys[0]}
-            onChange={(value) => {
-              setSelectedKeys(value ? [value] : []);
-              confirm({ closeDropdown: false });
-            }}
-            style={{ width: "100%" }}
-            options={statusOptions.map((item) => ({
-              label: item.StatusName,
-              value: item.StatusName,
-            }))}
-            autoFocus
-            size="middle"
-          />
-        </div>
-      ),
-      filterIcon: (filtered: boolean) => (
-        <SearchOutlined
-          style={{
-            color: filtered ? "#007b8a" : "#6e6e76",
-            backgroundColor: filtered ? "#ffffffff" : undefined,
-            fontSize: 20,
-            fontWeight: filtered ? "bold" : undefined,
-            borderRadius: 50,
-            padding: 5,
-            boxShadow: filtered
-              ? "0 0 8px 4px rgba(255, 255, 255, 1)" // 💡 ขอบเบลอรอบไอคอน
-              : undefined,
-          }}
-        />
-      )
-      ,
-      onFilter: (value: any, record: any) => {
-        if (!value) return true;
-        return normalizeString(record.status ?? "") === normalizeString(value);
-      },
       render: (_, record) => {
         const statusName = record.status;
-
         if (!statusName) {
           return (
-            <span className="status-badge status-none">
+            <span className="bod-status-badge status-none">
               <QuestionCircleFilled style={{ fontSize: 20 }} />
               ไม่มีข้อมูล
             </span>
           );
         }
-
-        // if (statusName.includes("ต่ำกว่า")) {
-        //   return (
-        //     <span className="status-badge status-low">
-        //       <ExclamationCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
-        //       {statusName}
-        //     </span>
-        //   );
-        // }
-
-        // if (statusName.includes("เกิน")) {
-        //   return (
-        //     <span className="status-badge status-high">
-        //       <CloseCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
-        //       {statusName}
-        //     </span>
-        //   );
-        // }
-
-        // if (statusName.includes("อยู่ใน")) {
-        //   return (
-        //     <span className="status-badge status-good">
-        //       <CheckCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
-        //       {statusName}
-        //     </span>
-        //   );
-        // }
         if (statusName.includes("ไม่ผ่าน")) {
           return (
-            <span className="status-badge status-high">
+            <span className="bod-status-badge status-high">
               <CloseCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
               {statusName}
             </span>
           );
         }
-
         if (statusName.includes("ผ่าน")) {
           return (
-            <span className="status-badge status-good">
+            <span className="bod-status-badge status-good">
               <CheckCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
               {statusName}
             </span>
@@ -619,15 +635,14 @@ const BODdataviz: React.FC = () => {
     {
       title: 'จัดการข้อมูล',
       key: 'action',
-      className: 'darker-column',
       width: 120,
       render: (_: any, record: any) => {
         // console.log('record:', record);
         return (
-          <div className="action-buttons">
+          <div className="bod-action-buttons">
             <Tooltip title="แก้ไข">
               <button
-                className="circle-btn edit-btn"
+                className="bod-circle-btn bod-edit-btn"
                 onClick={() => handleEdit([record.before_id, record.after_id])}
               >
                 <EditOutlined />
@@ -635,7 +650,7 @@ const BODdataviz: React.FC = () => {
             </Tooltip>
             <Tooltip title="ลบ">
               <button
-                className="circle-btn delete-btn"
+                className="bod-circle-btn bod-delete-btn"
                 onClick={() => handleDelete([record.before_id, record.after_id])}  // ✅ ส่ง ID เดียว
               >
                 <DeleteOutlined />
@@ -729,10 +744,85 @@ const BODdataviz: React.FC = () => {
   return (
     <div>
       <div className="bod-title-header">
-        <h1>BOD-Central</h1>
-        <p>โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดค่า BOD น้ำเสีย</p>
+        <div>
+          <h1>BOD Central</h1>
+          <p>ค่าความต้องการออกซิเจนทางชีวภาพแสดงปริมาณสารอินทรีย์ที่ย่อยสลายได้</p>
+        </div>
+        <div className="bod-card">
+          <img src={BeforeWater} alt="Before Water" className="bod-photo" />
+          <div>
+            <h4>น้ำก่อนบำบัดล่าสุด</h4>
+            <div className="bod-main">
+              <span>{BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined ? (<><span className="bod-value">{BeforeAfter.before.Data}</span>{" "}{BeforeAfter.before.UnitName || ""}</>) : "-"}</span>
+            </div>
+            {BeforeAfter ? (
+              <p>
+                มาตรฐาน{" "}
+                <span>
+                  {BeforeAfter.before.MiddleValue !== null || BeforeAfter.before.MinValue !== null || BeforeAfter.before.MaxValue !== null || (BeforeAfter.before.UnitName && BeforeAfter.before.UnitName.trim() !== "") ? (BeforeAfter.before.MiddleValue !== null ? BeforeAfter.before.MiddleValue : `${BeforeAfter.before.MinValue} - ${BeforeAfter.before.MaxValue}`) : "-"}
+                </span>{" "}
+                {BeforeAfter.before.UnitName || ""}
+              </p>
+            ) : (
+              <p>Loading...</p>
+            )}
+          </div>
+          <img src={AftereWater} alt="After Water" className="bod-photo" />
+          <div>
+            <h4>น้ำหลังบำบัดล่าสุด</h4>
+            <div className="bod-main">
+              <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="bod-value">{BeforeAfter.after.Data}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
+              <span className="bod-change">
+                {(() => {
+                  if (BeforeAfter?.after.Data != null && BeforeAfter?.before.Data != null) {
+                    const diff = BeforeAfter.after.Data - BeforeAfter.before.Data;
+                    const arrowStyle = { fontWeight: 'bold', fontSize: '17px', marginLeft: 4 };
+                    return (<> {diff >= 0 ? '+' : ''}{diff.toFixed(2)}{diff > 0 && <span style={{ ...arrowStyle, color: '#14C18B' }}>↑</span>}{diff < 0 && <span style={{ ...arrowStyle, color: '#EE404C' }}>↓</span>}{diff === 0 && null}</>);
+                  } return '-';
+                })()}
+              </span>
+            </div>
+            {BeforeAfter ? (
+              <p>
+                มาตรฐาน{" "}
+                <span>
+                  {BeforeAfter.after.MiddleValue !== null || BeforeAfter.after.MinValue !== null || BeforeAfter.after.MaxValue !== null || (BeforeAfter.after.UnitName && BeforeAfter.after.UnitName.trim() !== "") ? (BeforeAfter.after.MiddleValue !== null ? BeforeAfter.after.MiddleValue : `${BeforeAfter.after.MinValue} - ${BeforeAfter.after.MaxValue}`) : "-"}
+                </span>{" "}
+                {BeforeAfter.after.UnitName || ""}
+              </p>
+            ) : (
+              <p>Loading...</p>
+            )}
+          </div>
+          <img src={Efficiency} alt="Before Water" className="bod-photo" />
+          <div>
+            <h4>ประสิทธิภาพล่าสุด</h4>
+            <div className="bod-main">
+              <span>
+                {BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined &&
+                  BeforeAfter.before.Data !== 0 &&
+                  BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined
+                  ? (
+                    <>
+                      <span className="bod-value">
+                        {Math.max(
+                          0,
+                          ((BeforeAfter.before.Data - BeforeAfter.after.Data) / BeforeAfter.before.Data) * 100
+                        ).toFixed(2)}
+                      </span>{" "}
+                      %
+                    </>
+                  )
+                  : "-"
+                }
+              </span>
+
+            </div>
+            <br />
+          </div>
+        </div>
       </div>
-      <div style={{ padding: "20px" }}>
+      <div style={{ padding: "20px", backgroundColor: "#F8F9FA" }}>
         <div className="bod-title">
           <div>
             <h1
@@ -741,7 +831,7 @@ const BODdataviz: React.FC = () => {
               style={{ cursor: 'pointer' }}
             >
               <LeftOutlined className="bod-back-icon" />
-              BOD-GRAPH
+              กราฟ Biochemical Oxygen Demand
             </h1>
           </div>
           <div className="bod-select-date">
@@ -828,7 +918,7 @@ const BODdataviz: React.FC = () => {
           {/* ตารางน้ำก่อนบำบัดนะจ๊ะ */}
           <div className="bod-graph-card">
             <div className="bod-head-graph-card">
-              <div className="width25">
+              <div className="bod-width25">
                 <h2 className="bod-head-graph-card-text">น้ำก่อนบำบัด</h2>
               </div>
               <div>
@@ -840,7 +930,7 @@ const BODdataviz: React.FC = () => {
                     localStorage.setItem('colorBefore', hex);
                   }}
                 />
-                <Button className="expand-chat" onClick={() => openModal("before")}><Maximize2 /></Button>
+                <Button className="bod-expand-chat" onClick={() => openModal("before")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="bod-right-select-graph">
@@ -879,7 +969,7 @@ const BODdataviz: React.FC = () => {
 
           <div className="bod-graph-card">
             <div className="bod-head-graph-card">
-              <div className="width25">
+              <div className="bod-width25">
                 <h2 className="bod-head-graph-card-text">น้ำหลังบำบัด</h2>
               </div>
               <div>
@@ -891,7 +981,7 @@ const BODdataviz: React.FC = () => {
                     localStorage.setItem('colorAfter', hex);
                   }}
                 />
-                <Button className="expand-chat" onClick={() => openModal("after")}><Maximize2 /></Button>
+                <Button className="bod-expand-chat" onClick={() => openModal("after")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="bod-right-select-graph">
@@ -929,7 +1019,7 @@ const BODdataviz: React.FC = () => {
           </div>
           <div className="bod-graph-card">
             <div className="bod-head-graph-card">
-              <div className="width40">
+              <div className="bod-width40">
                 <h2 className="bod-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
               </div>
               <div>
@@ -949,7 +1039,7 @@ const BODdataviz: React.FC = () => {
                     localStorage.setItem('colorCompareAfter', hex);
                   }}
                 />
-                <Button className="expand-chat" onClick={() => openModal("compare")}><Maximize2 /></Button>
+                <Button className="bod-expand-chat" onClick={() => openModal("compare")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="bod-right-select-graph">
@@ -987,7 +1077,7 @@ const BODdataviz: React.FC = () => {
           </div>
           <div className="bod-graph-card">
             <div className="bod-head-graph-card">
-              <div className="width25">
+              <div className="bod-width25">
                 <h2 className="bod-head-graph-card-text" >ประสิทธิภาพ</h2>
               </div>
               <div>
@@ -1037,105 +1127,165 @@ const BODdataviz: React.FC = () => {
           </div>
         </div>
         <div className="bod-header-vis">
-
-          <h1 className="bod-title-text-vis">BOD DATA</h1>
-
+          <h1 className="bod-title-text-vis">ข้อมูล Biochemical Oxygen Demand</h1>
           <div className="bod-btn-container">
             <button className="bod-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
           </div>
         </div>
         <div className="bod-select-date">
-          <div>
+          <div className="bod-filter-status-and-efficiency">
+            <p>ประสิทธิภาพ</p>
             <Select
-              value={tableFilterMode}
-              onChange={(val) => {
-                setTableFilterMode(val);
-                setTableDateRange(null);
-              }}
-              className="bod-select-filter"
+              allowClear
+              placeholder="เลือกประสิทธิภาพ"
+              value={efficiencyFilter}
+              onChange={(v) => setEfficiencyFilter(v || null)}
+              style={{ width: 200 }}
               options={[
-                { label: "เลือกช่วงวัน", value: "dateRange" },
-                { label: "เลือกเดือน", value: "month" },
-                { label: "เลือกปี", value: "year" },
+                { label: "มากกว่า 50%", value: "gt" },
+                { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
               ]}
             />
+            <p>สถานะ</p>
+            <Select
+              allowClear
+              placeholder="เลือกสถานะ"
+              value={statusFilter}
+              onChange={(v) => setStatusFilter(v || null)}
+              style={{ width: 200 }}
+              options={statusOptions.map((item) => ({
+                label: item.StatusName,
+                value: item.StatusName,
+              }))}
+            />
           </div>
-          <div>
-            {tableFilterMode === "dateRange" && (
-              <RangePicker
-                value={tableDateRange}
-                onChange={(dates) => {
-                  if (dates && dates[0] && dates[1]) {
-                    setTableDateRange([dates[0], dates[1]]);
-                  } else {
-                    setTableDateRange(null);
-                  }
+          <div className="bod-filter-date">
+            <div >
+              <Select
+                value={tableFilterMode}
+                onChange={(val) => {
+                  setTableFilterMode(val);
+                  setTableDateRange(null);
                 }}
-                locale={th_TH}
-                allowClear={true}
-                format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
-                style={{ width: 300 }}
-                placeholder={["วันเริ่มต้น", "วันสิ้นสุด"]}
+                className="bod-select-filter"
+                options={[
+                  { label: "เลือกช่วงวัน", value: "dateRange" },
+                  { label: "เลือกเดือน", value: "month" },
+                  { label: "เลือกปี", value: "year" },
+                ]}
               />
-            )}
+            </div>
+            <div>
+              {tableFilterMode === "dateRange" && (
+                <RangePicker
+                  value={tableDateRange}
+                  onChange={(dates) => {
+                    if (dates && dates[0] && dates[1]) {
+                      setTableDateRange([dates[0], dates[1]]);
+                    } else {
+                      setTableDateRange(null);
+                    }
+                  }}
+                  locale={th_TH}
+                  allowClear={true}
+                  format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
+                  style={{ width: 300 }}
+                  placeholder={["วันเริ่มต้น", "วันสิ้นสุด"]}
+                />
+              )}
 
-            {tableFilterMode === "month" && (
-              <DatePicker
-                picker="month"
-                onChange={(date) => {
-                  if (date) {
-                    const start = date.startOf('month');
-                    const end = date.endOf('month');
-                    setTableDateRange([start, end]);
-                  } else {
-                    setTableDateRange(null);
-                  }
-                }}
-                locale={th_TH}
-                placeholder="เลือกเดือน"
-                style={{ width: 150 }}
-                allowClear={true}
-                value={tableDateRange ? tableDateRange[0] : null}
-                format={(value) => value ? `${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
-              />
-            )}
+              {tableFilterMode === "month" && (
+                <DatePicker
+                  picker="month"
+                  onChange={(date) => {
+                    if (date) {
+                      const start = date.startOf('month');
+                      const end = date.endOf('month');
+                      setTableDateRange([start, end]);
+                    } else {
+                      setTableDateRange(null);
+                    }
+                  }}
+                  locale={th_TH}
+                  placeholder="เลือกเดือน"
+                  style={{ width: 150 }}
+                  allowClear={true}
+                  value={tableDateRange ? tableDateRange[0] : null}
+                  format={(value) => value ? `${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
+                />
+              )}
 
-            {tableFilterMode === "year" && (
-              <DatePicker.RangePicker
-                picker="year"
-                onChange={(dates) => {
-                  if (dates && dates[0] && dates[1]) {
-                    const start = dates[0].startOf('year');
-                    const end = dates[1].endOf('year');
-                    setTableDateRange([start, end]);
-                  } else {
-                    setTableDateRange(null);
-                  }
-                }}
-                locale={th_TH}
-                placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
-                style={{ width: 300 }}
-                allowClear={true}
-                value={tableDateRange}
-                format={(value) => value ? `${value.year() + 543}` : ''}
-              />
-            )}
-
+              {tableFilterMode === "year" && (
+                <DatePicker.RangePicker
+                  picker="year"
+                  onChange={(dates) => {
+                    if (dates && dates[0] && dates[1]) {
+                      const start = dates[0].startOf('year');
+                      const end = dates[1].endOf('year');
+                      setTableDateRange([start, end]);
+                    } else {
+                      setTableDateRange(null);
+                    }
+                  }}
+                  locale={th_TH}
+                  placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
+                  style={{ width: 300 }}
+                  allowClear={true}
+                  value={tableDateRange}
+                  format={(value) => value ? `${value.year() + 543}` : ''}
+                />
+              )}
+            </div>
           </div>
         </div>
-
+        <br />
         <div className="bod-table-data">
-          <h1 className="bod-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
+          <div className="bod-width40">
+            <h1 className="bod-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
+          </div>
+          <div className="bod-task-summary">
+            <div className="bod-task-total">จำนวนทั้งหมด <span style={{ color: "#157071", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
+            <div className="bod-task-stats">
+              <div className="bod-task-item">
+                <div className="bod-task-number">{doneTasks}</div>
+                <div className="bod-task-label">ผ่านเกณฑ์มาตรฐาน</div>
+              </div>
+              <div className="bod-task-divider" />
+              <div className="bod-task-item">
+                <div className="bod-task-number">{inProgressTasks}</div>
+                <div className="bod-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
+              </div>
+            </div>
+          </div>
           <Table
+            locale={{
+              triggerAsc: "คลิกเพื่อเรียงจากเก่าไปใหม่",
+              triggerDesc: "คลิกเพื่อเรียงจากใหม่ไปเก่า",
+              cancelSort: "คลิกเพื่อยกเลิกการเรียงลำดับ",
+              emptyText: "ไม่มีข้อมูล",
+            }}
             columns={columns.map((col) => ({ ...col, align: 'center' }))}
             dataSource={data
               .filter((d: any) =>
-                dayjs(d.date).format('YYYY-MM-DD').includes(search) // filter จาก input search ปกติ
+                dayjs(d.date).format('YYYY-MM-DD').includes(search)
               )
               .filter((d: any) => {
                 if (!tableDateRange) return true;
                 const recordDate = dayjs(d.date);
                 return recordDate.isBetween(tableDateRange[0], tableDateRange[1], null, '[]');
+              })
+              .filter((d: any) => {
+                // กรองประสิทธิภาพ
+                if (!efficiencyFilter) return true;
+                const eff = Number(d.efficiency ?? -1);
+                if (efficiencyFilter === "gt") return eff > 50;
+                if (efficiencyFilter === "lte") return eff <= 50;
+                return true;
+              })
+              .filter((d: any) => {
+                // กรองสถานะ
+                if (!statusFilter) return true;
+                return normalizeString(d.status ?? "") === normalizeString(statusFilter);
               })
             }
             rowKey="ID"
@@ -1145,9 +1295,8 @@ const BODdataviz: React.FC = () => {
               showSizeChanger: true,
               pageSizeOptions: ['7', '10', '15', '30', '100'],
             }}
-            bordered
-          />
 
+          />
         </div>
 
         <Modal
@@ -1166,27 +1315,6 @@ const BODdataviz: React.FC = () => {
             }}
           />
         </Modal>
-
-        {/* <Modal
-          title="แก้ไขข้อมูล BOD"
-          open={isEditModalVisible}
-          footer={null}
-          width={1100}
-          closable={false}
-        >
-          {editingRecord && (
-            <UpdateBODCentralForm
-              initialValues={editingRecord}
-              onSuccess={() => {
-                setIsEditModalVisible(false);
-                setEditRecord(null);
-                fetchData();
-                loadBODTable();
-              }}
-              onCancel={handleEditModalCancel}
-            />
-          )}
-        </Modal> */}
         <Modal
           title="แก้ไขข้อมูล BOD"
           open={isEditModalVisible}
@@ -1217,7 +1345,7 @@ const BODdataviz: React.FC = () => {
           visible={modalVisible}
           onCancel={closeModal}
           footer={null}
-          className="custom-modal"
+          className="bod-custom-modal"
           centered
           destroyOnClose
           maskClosable={true}
@@ -1225,7 +1353,7 @@ const BODdataviz: React.FC = () => {
           {modalGraphType === "before" && (
             <div className="bod-chat-modal" >
               <div className="bod-head-graph-card">
-                <div className="width25">
+                <div className="bod-width25">
                   <h2 className="bod-head-graph-card-text">น้ำก่อนบำบัด</h2>
                 </div>
               </div>
@@ -1269,7 +1397,7 @@ const BODdataviz: React.FC = () => {
           {modalGraphType === "after" && (
             <div className="bod-chat-modal">
               <div className="bod-head-graph-card">
-                <div className="width25">
+                <div className="bod-width25">
                   <h2 className="bod-head-graph-card-text">น้ำหลังบำบัด</h2>
                 </div>
               </div>
@@ -1313,7 +1441,7 @@ const BODdataviz: React.FC = () => {
           {modalGraphType === "compare" && (
             <div className="bod-chat-modal">
               <div className="bod-head-graph-card" >
-                <div className="width40">
+                <div className="bod-width40">
                   <h2 className="bod-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
                 </div>
               </div>

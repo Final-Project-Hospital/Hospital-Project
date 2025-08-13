@@ -12,7 +12,7 @@ import { GetfirstBOD } from '../../../../../services/bodService';
 import { ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, } from '../../../../../services/index';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';
 // import { CheckUnit, CheckStandard } from '../../../../../';
-import { CheckUnit,CheckStandard } from '../../../../../services/tdsService';
+import { CheckUnit, CheckStandard } from '../../../../../services/tdsService';
 
 type Props = {
     onCancel?: () => void;
@@ -178,7 +178,8 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
         const combinedDateTime = dayjs(values.date)
             .hour(dayjs(values.time).hour())
             .minute(dayjs(values.time).minute())
-            .second(0);
+            .second(dayjs(values.time).second())
+            .millisecond(0);
         // ตรวจสอบค่ามาตรฐาน
         const isOther = values.unit === 'other';
         const unitID = isOther ? null : values.unit;
@@ -213,7 +214,13 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
             if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
                 messageApi.success('บันทึกข้อมูลBODก่อนและหลังบำบัดสำเร็จ');
+                // รีเซ็ตฟอร์มและ state
                 form.resetFields();
+                setIsOtherunitSelected(false);
+                setUseCustomStandard(false);
+                setCustomSingleValue(undefined);
+                setCustomMinValue(undefined);
+                setCustomMaxValue(undefined);
                 await GetfirstrowBOD();
                 await fetchInitialData();
                 await delay(1500);  // หน่วงเวลา 1.5 วินาที
@@ -244,6 +251,11 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     content: 'การบันทึกข้อมูลBODสำเร็จ',
                 });
                 form.resetFields();
+                setIsOtherunitSelected(false);
+                setUseCustomStandard(false);
+                setCustomSingleValue(undefined);
+                setCustomMinValue(undefined);
+                setCustomMaxValue(undefined);
                 await GetfirstrowBOD();
                 await fetchInitialData();
                 await delay(1500);  // หน่วงเวลา 1.5 วินาที
@@ -266,6 +278,10 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     form={form}
                     layout="vertical"
                     onFinish={handleFinish}
+                    initialValues={{
+                        date: dayjs(),       // วันที่ปัจจุบันตอนเปิดฟอร์มครั้งแรก
+                        time: dayjs(),       // เวลา ณ ตอนเปิดฟอร์มครั้งแรก
+                    }}
                 >
                     <div className="bod-form-group">
                         <Form.Item label="วันที่บันทึกข้อมูล" name="date">

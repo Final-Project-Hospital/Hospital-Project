@@ -31,33 +31,6 @@
   margin: 0;
 }
 
-/* Responsive Behavior */
-@media (max-width: 768px) {
-  .title-header {
-    margin-top: 50px;
-  }
-
-  .title-header h1 {
-    font-size: 2.5rem;
-    text-align: center;
-  }
-
-  .title-header p {
-    font-size: 1rem;
-    text-align: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .title-header {
-    padding: 20px;
-  }
-
-  .title-header h1 {
-    font-size: 1.5rem;
-  }
-}
-
 .wqc-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr); /* ✅ แถวละ 3 */
@@ -130,7 +103,7 @@
   background-color: #A1EFF090;
 }
 
-.wqc-grid {
+/* .wqc-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr); 
   gap: 3rem;
@@ -138,7 +111,7 @@
   border-radius: 1rem;
   padding: 3.6rem;
   color: #333;
-}
+} */
 
 .custom-tooltip .ant-tooltip-inner {
   background-color: #A1EFF090;
@@ -154,6 +127,11 @@
   line-height: 1.3;
   text-align: center;
 }
+
+.buttom-footer{
+  min-height: 75vh;
+}
+
 
 @media (max-width: 992px) {
   .wqc-grid {
@@ -185,5 +163,31 @@
   .wqc-icon {
     width: 60px;
     height: 60px;
+  }
+}
+/* Responsive Behavior */
+@media (max-width: 768px) {
+  .title-header {
+    margin-top: 50px;
+  }
+
+  .title-header h1 {
+    font-size: 2.5rem;
+    text-align: center;
+  }
+
+  .title-header p {
+    font-size: 1rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .title-header {
+    padding: 20px;
+  }
+
+  .title-header h1 {
+    font-size: 1.5rem;
   }
 }

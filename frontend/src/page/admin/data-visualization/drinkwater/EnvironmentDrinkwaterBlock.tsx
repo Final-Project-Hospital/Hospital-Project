@@ -10,6 +10,8 @@ import { GetfirstFOG } from '../../../../services/fogService';
 import ecoli from '../../../../../src/assets/drinkwater/E-Coli-Center.png';
 import dfcb from '../../../../../src/assets/drinkwater/FCB-Center.png';
 import dtcb from '../../../../../src/assets/drinkwater/TCB.png';
+import { Layout } from 'antd';
+const { Footer } = Layout;
 
 const EnvironmentBlock = () => {
   const navigate = useNavigate();
@@ -99,7 +101,7 @@ const EnvironmentBlock = () => {
           โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
         </p>
       </div>
-
+    <div className='buttom-footer'>
       <div className="wqc-grid">
         {centers.map((center, index) => (
           <Tooltip title={getTooltip(center.name)} overlayClassName="custom-tooltip" key={index}>
@@ -119,8 +121,24 @@ const EnvironmentBlock = () => {
           </Tooltip>
         ))}
       </div>
-
-      <Outlet />
+       <Outlet />
+</div>
+     
+      <Layout>
+        <Footer style={{textAlign:"center",padding:"10px"}} >Icons made by 
+           <a href="https://www.flaticon.com/authors/iconjam" title="Iconjam"> Iconjam</a>,
+          <a href="https://www.flaticon.com/authors/freepik" title="Freepik"> Freepik</a>,
+          <a href="https://www.flaticon.com/authors/paul-j" title="Andinur"> Paul J.</a>,
+          <a href="https://www.flaticon.com/authors/smashicons" title="Smashicons"> Smashicons</a>,
+          <a href="https://www.flaticon.com/authors/andinur" title="Andinur"> Andinur</a>,
+          <a href="https://www.flaticon.com/authors/pikepicture" title="Pikepicture"> Pikepicture</a>,
+          <a href="https://www.flaticon.com/authors/ranukumbololab" title="RanuKumbolo.lab"> RanuKumbolo.lab</a>,
+          <a href="https://www.flaticon.com/authors/aficons-studio" title="Aficons studio"> Aficons studio</a>,
+          <a href="https://www.flaticon.com/authors/meaicon" title="Aficons studio"> Meaicon</a>,
+          <a href="https://www.flaticon.com/authors/kliwir-art" title="Aficons studio"> Kliwir art </a>
+          from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
+        </Footer>
+      </Layout>
     </div>
   );
 };

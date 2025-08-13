@@ -49,7 +49,7 @@ const AdminDashboard: React.FC = () => {
   // ฟอร์แมตวันที่ใช้ส่ง API
   const formattedDate = date ? dayjs(date).format(
     dateType === "year" ? "YYYY" :
-    dateType === "month" ? "YYYY-MM" : "YYYY-MM-DD") : undefined;
+      dateType === "month" ? "YYYY-MM" : "YYYY-MM-DD") : undefined;
 
   // โหลด environmental records (เหมือนเดิม)
   useEffect(() => {
@@ -200,7 +200,7 @@ const AdminDashboard: React.FC = () => {
       {/* header และ controls ตามเดิม */}
       <div>
         {/* header */}
-        <div className="title-header">
+        <div className="dashboard-title-header">
           <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-lg sm:text-xl md:text-2xl font-semibold drop-shadow-md">
@@ -250,75 +250,75 @@ const AdminDashboard: React.FC = () => {
         </Row>
 
         {/* กราฟซ้าย */}
-<Col span={12}>
-  <div className="dashboard-graph-card">
-    <div className="dashboard-head-graph-card">
-      <div>{view === "before" ? "น้ำก่อนบำบัด" : view === "after" ? "น้ำหลังบำบัด" : "เปรียบเทียบก่อน-หลัง"}</div>
-      <div>
-        {(view === "before" || view === "after") && (
-          <ColorPicker
-            value={view === "before" ? chartColor.before : chartColor.after}
-            onChange={(c: Color) => {
-              const hex = c.toHexString();
-              if (view === "before") setChartColor({ ...chartColor, before: hex });
-              else setChartColor({ ...chartColor, after: hex });
-            }}
-          />
-        )}
-        {view === "compare" && (
-          <>
-            <ColorPicker
-              value={chartColor.compareBefore}
-              onChange={(c) => setChartColor({ ...chartColor, compareBefore: c.toHexString() })}
+        <Col span={12}>
+          <div className="dashboard-graph-card">
+            <div className="dashboard-head-graph-card">
+              <div>{view === "before" ? "น้ำก่อนบำบัด" : view === "after" ? "น้ำหลังบำบัด" : "เปรียบเทียบก่อน-หลัง"}</div>
+              <div>
+                {(view === "before" || view === "after") && (
+                  <ColorPicker
+                    value={view === "before" ? chartColor.before : chartColor.after}
+                    onChange={(c: Color) => {
+                      const hex = c.toHexString();
+                      if (view === "before") setChartColor({ ...chartColor, before: hex });
+                      else setChartColor({ ...chartColor, after: hex });
+                    }}
+                  />
+                )}
+                {view === "compare" && (
+                  <>
+                    <ColorPicker
+                      value={chartColor.compareBefore}
+                      onChange={(c) => setChartColor({ ...chartColor, compareBefore: c.toHexString() })}
+                    />
+                    <ColorPicker
+                      value={chartColor.compareAfter}
+                      onChange={(c) => setChartColor({ ...chartColor, compareAfter: c.toHexString() })}
+                    />
+                  </>
+                )}
+                <Maximize2 style={{ cursor: "pointer", marginLeft: 8 }} onClick={() => setShowModal(true)} />
+              </div>
+            </div>
+            <ApexChart
+              key={view + chartType}
+              options={buildOpts("")}
+              series={
+                view === "before"
+                  ? [{ name: "ก่อน", data: makeSeries("ก่อน"), color: chartColor.before }]
+                  : view === "after"
+                    ? [{ name: "หลัง", data: makeSeries("หลัง"), color: chartColor.after }]
+                    : [
+                      { name: "ก่อน", data: makeSeries("ก่อน"), color: chartColor.compareBefore },
+                      { name: "หลัง", data: makeSeries("หลัง"), color: chartColor.compareAfter },
+                    ]
+              }
+              type={chartType}
+              height={graphHeight}
             />
-            <ColorPicker
-              value={chartColor.compareAfter}
-              onChange={(c) => setChartColor({ ...chartColor, compareAfter: c.toHexString() })}
-            />
-          </>
-        )}
-        <Maximize2 style={{ cursor: "pointer", marginLeft: 8 }} onClick={() => setShowModal(true)} />
-      </div>
-    </div>
-    <ApexChart
-      key={view + chartType}
-      options={buildOpts("")}
-      series={
-        view === "before"
-          ? [{ name: "ก่อน", data: makeSeries("ก่อน"), color: chartColor.before }]
-          : view === "after"
-          ? [{ name: "หลัง", data: makeSeries("หลัง"), color: chartColor.after }]
-          : [
-              { name: "ก่อน", data: makeSeries("ก่อน"), color: chartColor.compareBefore },
-              { name: "หลัง", data: makeSeries("หลัง"), color: chartColor.compareAfter },
-            ]
-      }
-      type={chartType}
-      height={graphHeight}
-    />
-  </div>
-</Col>
+          </div>
+        </Col>
 
-{/* กราฟขวา efficiency */}
-<Col span={12}>
-  <div className="dashboard-graph-card">
-    <div className="dashboard-head-graph-card">
-      <div>ประสิทธิภาพ (%)</div>
-      <div>
-        <ColorPicker
-          value={chartColor.efficiency}
-          onChange={(c) => setChartColor({ ...chartColor, efficiency: c.toHexString() })}
-        />
-      </div>
-    </div>
-    <ApexChart
-      options={buildOpts("Efficiency (%)")}
-      series={[{ name: "Efficiency", data: effSeriesData, color: chartColor.efficiency }]}
-      type="bar"
-      height={graphHeight}
-    />
-  </div>
-</Col>
+        {/* กราฟขวา efficiency */}
+        <Col span={12}>
+          <div className="dashboard-graph-card">
+            <div className="dashboard-head-graph-card">
+              <div>ประสิทธิภาพ (%)</div>
+              <div>
+                <ColorPicker
+                  value={chartColor.efficiency}
+                  onChange={(c) => setChartColor({ ...chartColor, efficiency: c.toHexString() })}
+                />
+              </div>
+            </div>
+            <ApexChart
+              options={buildOpts("Efficiency (%)")}
+              series={[{ name: "Efficiency", data: effSeriesData, color: chartColor.efficiency }]}
+              type="bar"
+              height={graphHeight}
+            />
+          </div>
+        </Col>
 
         {/* MODAL */}
         <Modal open={showModal} footer={null} onCancel={() => setShowModal(false)} width={1000}>
@@ -329,8 +329,8 @@ const AdminDashboard: React.FC = () => {
               view === "before"
                 ? [{ name: "ก่อน", data: makeSeries("ก่อน"), color: chartColor.before }]
                 : view === "after"
-                ? [{ name: "หลัง", data: makeSeries("หลัง"), color: chartColor.after }]
-                : [
+                  ? [{ name: "หลัง", data: makeSeries("หลัง"), color: chartColor.after }]
+                  : [
                     { name: "ก่อน", data: makeSeries("ก่อน"), color: chartColor.compareBefore },
                     { name: "หลัง", data: makeSeries("หลัง"), color: chartColor.compareAfter },
                   ]
