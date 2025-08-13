@@ -151,10 +151,10 @@ const RoomAdminTable: React.FC = () => {
             render: (_, r) => r.Building?.BuildingName ?? "-",
         },
         {
-            title: <span className="text-teal-600 font-bold">IP Address</span>,
+            title: <span className="text-teal-600 font-bold">MAC Address</span>,
             key: "HardwareIP",
             render: (_, r) => (
-                <span className="text-cyan-600 font-semibold">{r.Hardware?.IpAddress ?? "-"}</span>
+                <span className="text-cyan-600 font-semibold">{r.Hardware?.MacAddress ?? "-"}</span>
             ),
         },
         {

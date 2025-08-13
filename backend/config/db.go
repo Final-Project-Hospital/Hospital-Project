@@ -56,15 +56,21 @@ func SetupDatabase() {
 		&entity.HardwareParameter{},
 		&entity.HardwareParameterColor{},
 		&entity.Status{},
+		&entity.Target{},
+		&entity.Garbage{},
+		&entity.Garbage{},
+		&entity.Notification{},
 	)
 	// Enviroment
-	Wastewater := entity.Environment{EnvironmentName: "น้ำเสีย",}
-	Drinkwater := entity.Environment{EnvironmentName: "น้ำดื่ม",}
+	Wastewater := entity.Environment{EnvironmentName: "น้ำเสีย"}
+	Drinkwater := entity.Environment{EnvironmentName: "น้ำดื่ม"}
 	Tapwater := entity.Environment{EnvironmentName: "น้ำประปา"}
+	Garbage := entity.Environment{EnvironmentName: "ขยะ"}
 
 	db.FirstOrCreate(&Wastewater, &entity.Environment{EnvironmentName: "น้ำเสีย"})
 	db.FirstOrCreate(&Drinkwater, &entity.Environment{EnvironmentName: "น้ำดื่ม"})
 	db.FirstOrCreate(&Tapwater, &entity.Environment{EnvironmentName: "น้ำประปา"})
+	db.FirstOrCreate(&Garbage, &entity.Environment{EnvironmentName: "ขยะ"})
 	// Standard
 	ranges := []struct {
 		min float32
@@ -187,17 +193,17 @@ func SetupDatabase() {
 		db.FirstOrCreate(&stackedGraph, entity.HardwareGraph{Graph: "Stacked"})
 
 		// ----- สร้าง StandardHardware 5 ค่า -----
-		formaldehydeStd := entity.StandardHardware{Standard: 5}
-		temperatureStd := entity.StandardHardware{Standard: 30}
-		humidityStd := entity.StandardHardware{Standard: 70}
-		lightStd := entity.StandardHardware{Standard: 200}
-		gasStd := entity.StandardHardware{Standard: 7}
+		formaldehydeStd := entity.StandardHardware{MaxValueStandard: 5,MinValueStandard: 2}
+		temperatureStd := entity.StandardHardware{MaxValueStandard: 30,MinValueStandard: 20}
+		humidityStd := entity.StandardHardware{MaxValueStandard: 70,MinValueStandard: 30}
+		lightStd := entity.StandardHardware{MaxValueStandard: 200,MinValueStandard: 100}
+		gasStd := entity.StandardHardware{MaxValueStandard: 7,MinValueStandard: 3}
 
-		db.FirstOrCreate(&formaldehydeStd, entity.StandardHardware{Standard: 5})
-		db.FirstOrCreate(&temperatureStd, entity.StandardHardware{Standard: 30})
-		db.FirstOrCreate(&humidityStd, entity.StandardHardware{Standard: 70})
-		db.FirstOrCreate(&lightStd, entity.StandardHardware{Standard: 200})
-		db.FirstOrCreate(&gasStd, entity.StandardHardware{Standard: 7})
+		db.FirstOrCreate(&formaldehydeStd, entity.StandardHardware{MaxValueStandard: 5,MinValueStandard: 2})
+		db.FirstOrCreate(&temperatureStd, entity.StandardHardware{MaxValueStandard: 30,MinValueStandard: 20})
+		db.FirstOrCreate(&humidityStd, entity.StandardHardware{MaxValueStandard: 70,MinValueStandard: 30})
+		db.FirstOrCreate(&lightStd, entity.StandardHardware{MaxValueStandard: 200,MinValueStandard: 100})
+		db.FirstOrCreate(&gasStd, entity.StandardHardware{MaxValueStandard: 7,MinValueStandard: 3})
 
 		// ----- สร้าง UnitHardware -----
 		unitPPM := entity.UnitHardware{Unit: "ppm"}
@@ -217,15 +223,19 @@ func SetupDatabase() {
 			Parameter:                "Formaldehyde",
 			Icon:                     "GiChemicalDrop",
 			GroupDisplay:             false,
+			LayoutDisplay: 		  false,
+			Alert:                    false,
 			HardwareParameterColorID: colorPurple.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       formaldehydeStd.ID,
 			UnitHardwareID:           unitPPM.ID,
 		}
 		paramhardware2 := entity.HardwareParameter{
-			Parameter:                "Temperature",
-			Icon:                     "GiChemicalDrop",
-			GroupDisplay:             false,
+			Parameter:    "Temperature",
+			Icon:         "GiChemicalDrop",
+			GroupDisplay: false,
+			LayoutDisplay: false,
+			Alert: false,
 			HardwareParameterColorID: colorBlue.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       temperatureStd.ID,
@@ -235,6 +245,8 @@ func SetupDatabase() {
 			Parameter:                "Humidity",
 			Icon:                     "GiChemicalDrop",
 			GroupDisplay:             false,
+			LayoutDisplay: false,
+			Alert:                    false,
 			HardwareParameterColorID: colorOrange.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       humidityStd.ID,
@@ -244,6 +256,8 @@ func SetupDatabase() {
 			Parameter:                "Light",
 			Icon:                     "GiChemicalDrop",
 			GroupDisplay:             false,
+			LayoutDisplay: false,
+			Alert:                    false,
 			HardwareParameterColorID: colorYellow.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       lightStd.ID,
@@ -253,6 +267,8 @@ func SetupDatabase() {
 			Parameter:                "Gas",
 			Icon:                     "GiChemicalDrop",
 			GroupDisplay:             false,
+			LayoutDisplay: false,
+			Alert:                    false,
 			HardwareParameterColorID: colorGreen.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       gasStd.ID,
@@ -313,8 +329,8 @@ func SetupDatabase() {
 
 	// Hardware
 	Hardware1 := entity.Hardware{
-		Name:      "Hardware",
-		IpAddress: "192.168.19.1",
+		Name:       "Hardware",
+		MacAddress: "24:6F:28:3C:D1:AB",
 	}
 	db.FirstOrCreate(&Hardware1, entity.Hardware{Name: "Hardware"})
 
@@ -383,9 +399,11 @@ func SetupDatabase() {
 	param14 := entity.Parameter{ParameterName: "Color"}
 	param15 := entity.Parameter{ParameterName: "Total Hardness"}
 	param16 := entity.Parameter{ParameterName: "Nitrate"}
-	param17 := entity.Parameter{ParameterName: "Alurminnium"}
+	param17 := entity.Parameter{ParameterName: "Aluminium"}
 	param18 := entity.Parameter{ParameterName: "Iron"}
 	param19 := entity.Parameter{ParameterName: "Manganese"}
+	param20 := entity.Parameter{ParameterName: "Nephelometric Turbidity Unit"}
+	param21 := entity.Parameter{ParameterName: "Total Phosphorus"}
 
 	//น้ำเสีย
 	db.FirstOrCreate(&param1, entity.Parameter{ParameterName: "Total Kjeldahl Nitrogen"})
@@ -408,9 +426,25 @@ func SetupDatabase() {
 	db.FirstOrCreate(&param14, entity.Parameter{ParameterName: "Color"})
 	db.FirstOrCreate(&param15, entity.Parameter{ParameterName: "Total Hardness"})
 	db.FirstOrCreate(&param16, entity.Parameter{ParameterName: "Nitrate"})
-	db.FirstOrCreate(&param17, entity.Parameter{ParameterName: "Alurminnium"})
+	db.FirstOrCreate(&param17, entity.Parameter{ParameterName: "Aluminium"})
 	db.FirstOrCreate(&param18, entity.Parameter{ParameterName: "Iron"})
 	db.FirstOrCreate(&param19, entity.Parameter{ParameterName: "Manganese"})
+	db.FirstOrCreate(&param20, entity.Parameter{ParameterName: "Nephelometric Turbidity Unit"})
+	db.FirstOrCreate(&param21, entity.Parameter{ParameterName: "Total Phosphorus"})
+
+	//ขยะ
+	param22 := entity.Parameter{ParameterName: "ขยะติดเชื้อ"}
+	param23 := entity.Parameter{ParameterName: "ขยะทั่วไป"}
+	param24 := entity.Parameter{ParameterName: "ขยะรีไซเคิล"}
+	param25 := entity.Parameter{ParameterName: "ขยะอันตราย"}
+	param26 := entity.Parameter{ParameterName: "ขยะเคมีบำบัด"}
+
+	db.FirstOrCreate(&param22, entity.Parameter{ParameterName: "ขยะติดเชื้อ"})
+	db.FirstOrCreate(&param23, entity.Parameter{ParameterName: "ขยะทั่วไป"})
+	db.FirstOrCreate(&param24, entity.Parameter{ParameterName: "ขยะรีไซเคิล"})
+	db.FirstOrCreate(&param25, entity.Parameter{ParameterName: "ขยะอันตราย"})
+	db.FirstOrCreate(&param26, entity.Parameter{ParameterName: "ขยะเคมีบำบัด"})
+
 	count := int64(0)
 	db.Model(&entity.SensorDataParameter{}).Count(&count)
 
@@ -430,6 +464,8 @@ func SetupDatabase() {
 					SensorDataID:        1,
 					HardwareParameterID: 1,
 					Date:                date,
+					Note: 			 "",
+					Status: true,
 				}
 				db.Create(&param1)
 				formIndex++
@@ -441,6 +477,8 @@ func SetupDatabase() {
 					SensorDataID:        1,
 					HardwareParameterID: 2,
 					Date:                date,
+					Note: 			 "",
+					Status: true,
 				}
 				db.Create(&param2)
 				index++
@@ -451,6 +489,8 @@ func SetupDatabase() {
 					SensorDataID:        1,
 					HardwareParameterID: 3,
 					Date:                date,
+					Note: 			 "",
+					Status: true,
 				}
 				db.Create(&param3)
 				index++
@@ -461,6 +501,8 @@ func SetupDatabase() {
 					SensorDataID:        1,
 					HardwareParameterID: 4,
 					Date:                date,
+					Note: 			 "",
+					Status: true,
 				}
 				db.Create(&param4)
 				index++
@@ -471,6 +513,8 @@ func SetupDatabase() {
 					SensorDataID:        1,
 					HardwareParameterID: 5,
 					Date:                date,
+					Note: 			 "",
+					Status: true,
 				}
 				db.Create(&param5)
 				index++

@@ -6,7 +6,8 @@ import (
 
 type StandardHardware struct {
 	gorm.Model
-	Standard float64 
+	MaxValueStandard float64 
+	MinValueStandard float64 
 	
 	HardwareParameter	[]HardwareParameter `gorm:"foreignKey: StandardHardwareID"`
 }

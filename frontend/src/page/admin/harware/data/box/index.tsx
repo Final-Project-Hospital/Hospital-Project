@@ -218,7 +218,7 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
               })
             ) : (
               <div className="col-span-4 flex justify-center items-center min-h-[110px]">
-                <p>No data</p>
+                <p className="text-center text-gray-500 font-semibold">ไม่พบข้อมูล</p>
               </div>
             )}
           </div>

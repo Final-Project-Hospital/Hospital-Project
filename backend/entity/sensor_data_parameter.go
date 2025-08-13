@@ -10,6 +10,8 @@ type SensorDataParameter struct {
 	gorm.Model
 	Date time.Time
 	Data	float64
+	Note string
+	Status bool
 
 	SensorDataID	uint
 	SensorData	*SensorData `gorm:"foreignKey: SensorDataID"`

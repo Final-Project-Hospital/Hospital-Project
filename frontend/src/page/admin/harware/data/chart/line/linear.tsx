@@ -119,7 +119,8 @@ const LineChart: React.FC<LineChartProps> = ({
         if (!Array.isArray(raw) || raw.length === 0) throw new Error("No sensor");
 
         const parameterMap: Record<string, { x: Date; y: number }[]> = {};
-        const standardMap: Record<string, number> = {};
+        const maxStandardMap: Record<string, number> = {};
+        const minStandardMap: Record<string, number> = {};
         const unitMapping: Record<string, string> = {};
 
         for (const sensor of raw) {
@@ -129,7 +130,8 @@ const LineChart: React.FC<LineChartProps> = ({
           for (const param of params) {
             const name = param.HardwareParameter?.Parameter;
             const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
-            const standard = param.HardwareParameter?.StandardHardware?.Standard;
+            const maxStandard = param.HardwareParameter?.StandardHardware?.MaxValueStandard;
+            const minStandard = param.HardwareParameter?.StandardHardware?.MinValueStandard;
             const unit = param.HardwareParameter?.UnitHardware?.Unit;
             const date = new Date(param.Date);
 
@@ -142,8 +144,7 @@ const LineChart: React.FC<LineChartProps> = ({
               if (!start || !end) continue;
               const startDate = new Date(start);
               const endDate = new Date(end);
-              endDate.setHours(23, 59, 59, 999); // แก้ไขตรงนี้
-
+              endDate.setHours(23, 59, 59, 999);
               inRange = date >= startDate && date <= endDate;
             }
             else if (timeRangeType === 'month') {
@@ -160,8 +161,11 @@ const LineChart: React.FC<LineChartProps> = ({
             parameterMap[name] ??= [];
             parameterMap[name].push({ x: date, y: value });
 
-            if (standard && !standardMap[name]) {
-              standardMap[name] = standard;
+            if (maxStandard && !maxStandardMap[name]) {
+              maxStandardMap[name] = maxStandard;
+            }
+            if (minStandard && !minStandardMap[name]) {
+              minStandardMap[name] = minStandard;
             }
 
             if (unit && name && !unitMapping[unit]) {
@@ -170,17 +174,15 @@ const LineChart: React.FC<LineChartProps> = ({
           }
         }
 
-        let series: any[] = [];
-        const createStandardLine = (//@ts-ignore
-          name: string,
+        const createStandardLine = (
           standard: number,
           data: { x: Date }[]
         ) => {
           const sorted = data.sort((a, b) => a.x.getTime() - b.x.getTime());
           if (sorted.length === 1) {
             const d = sorted[0];
-            const prev = new Date(d.x.getTime() - 1000 * 60 * 60); // -1 ชม.
-            const next = new Date(d.x.getTime() + 1000 * 60 * 60); // +1 ชม.
+            const prev = new Date(d.x.getTime() - 1000 * 60 * 60);
+            const next = new Date(d.x.getTime() + 1000 * 60 * 60);
             return [
               { x: prev, y: standard },
               { x: next, y: standard },
@@ -189,7 +191,7 @@ const LineChart: React.FC<LineChartProps> = ({
           return sorted.map(d => ({ x: d.x, y: standard }));
         };
 
-
+        let series: any[] = [];
 
         for (const [name, data] of Object.entries(parameterMap)) {
           const sortedData = data.sort((a, b) => a.x.getTime() - b.x.getTime());
@@ -204,6 +206,7 @@ const LineChart: React.FC<LineChartProps> = ({
                 ? groupByDayAvg(sortedData)
                 : groupByDayAvg(sortedData);
 
+          // ค่าจริง
           series.push({
             dataSource,
             xName: 'x',
@@ -215,13 +218,30 @@ const LineChart: React.FC<LineChartProps> = ({
             fill: fillColor,
           });
 
-          if (standardMap[name]) {
-            const stdData = createStandardLine(name, standardMap[name], dataSource);
+          // เส้น Max Standard (สีแดง)
+          if (maxStandardMap[name]) {
+            const stdData = createStandardLine(maxStandardMap[name], dataSource);
             series.push({
               dataSource: stdData,
               xName: 'x',
               yName: 'y',
-              name: `${name} (Standard)`,
+              name: `${name} (Max)`,
+              width: 2,
+              dashArray: '5,5',
+              marker: { visible: false },
+              type: 'Line',
+              fill: 'red',
+            });
+          }
+
+          // เส้น Min Standard (สีทอง)
+          if (minStandardMap[name]) {
+            const stdDataMin = createStandardLine(minStandardMap[name], dataSource);
+            series.push({
+              dataSource: stdDataMin,
+              xName: 'x',
+              yName: 'y',
+              name: `${name} (Min)`,
               width: 2,
               dashArray: '5,5',
               marker: { visible: false },
@@ -232,7 +252,7 @@ const LineChart: React.FC<LineChartProps> = ({
         }
 
         if (mounted.current && !stop) {
-          const filteredUnitMap = Object.fromEntries(//@ts-ignore
+          const filteredUnitMap = Object.fromEntries(
             Object.entries(unitMapping).filter(([unit, param]) => parameters.includes(param))
           );
 
@@ -323,6 +343,7 @@ const LineChart: React.FC<LineChartProps> = ({
         }}
         primaryYAxis={{
           labelFormat: '{value}',
+          minimum: 0,
           rangePadding: 'None',
           lineStyle: { width: 0 },
           majorTickLines: { width: 0 },
@@ -330,6 +351,12 @@ const LineChart: React.FC<LineChartProps> = ({
         }}
         chartArea={{ border: { width: 0 } }}
         tooltip={{ enable: true }}
+        tooltipRender={(args) => {
+          if (args.point && typeof args.point.y === 'number') {
+            const formattedValue = args.point.y.toFixed(2); 
+            args.text = `${args.point.x.toLocaleDateString()} : ${formattedValue}`;
+          }
+        }}
         background={currentMode === 'Dark' ? '#33373E' : '#fff'}
         legendSettings={{ background: 'white' }}
       >

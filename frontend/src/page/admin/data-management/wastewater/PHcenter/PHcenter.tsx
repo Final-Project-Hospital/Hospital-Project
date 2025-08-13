@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input, message } from 'antd';
 import dayjs from 'dayjs';
 import './PHcenter.css';
-import { PHcenterInterface } from '../../../../../interface/IpH';
-import { createPH } from '../../../../../services/phService';
+import { PHcenterInterface } from '../../../../../interface/Iwastewater/Iph';
+import { createPH } from '../../../../../services/wastewaterServices/ph';
 import { ListBeforeAfterTreatment, ListUnit } from '../../../../../services/index';
 import { ListBeforeAfterTreatmentInterface } from '../../../../../interface/IBeforeAfterTreatment';
 import { ListUnitInterface } from '../../../../../interface/IUnit';
-import { GetfirstPH } from '../../../../../services/phService';
+import { GetfirstPH } from '../../../../../services/wastewaterServices/ph';
 import { ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, } from '../../../../../services/index';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';
 import { CheckUnit, CheckStandard } from '../../../../../services/tdsService';
@@ -207,6 +207,11 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
                 messageApi.success('บันทึกข้อมูล PH ก่อนและหลังบำบัดสำเร็จ');
                 form.resetFields();
+                setIsOtherunitSelected(false);
+                setUseCustomStandard(false);
+                setCustomSingleValue(undefined);
+                setCustomMinValue(undefined);
+                setCustomMaxValue(undefined);
                 GetfirstrowPH();
                 fetchInitialData();
                 await delay(500);
@@ -234,6 +239,11 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     content: 'การบันทึกข้อมูล PH สำเร็จ',
                 });
                 form.resetFields();
+                setIsOtherunitSelected(false);
+                setUseCustomStandard(false);
+                setCustomSingleValue(undefined);
+                setCustomMinValue(undefined);
+                setCustomMaxValue(undefined);
                 GetfirstrowPH();
                 fetchInitialData();
                 await delay(500);

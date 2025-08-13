@@ -1,7 +1,11 @@
 // services/DashboardService.ts
 import axios from "axios";
-import { apiUrl, getAuthHeader } from "./index";
-
+import { apiUrl } from "./index";
+const getAuthHeader = () => {
+  const token = localStorage.getItem("token");
+  const tokenType = localStorage.getItem("token_type");
+  return { Authorization: `${tokenType} ${token}` };
+};
 export interface RecordItem {
   date: string;
   value: number;

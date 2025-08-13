@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, message, Spin, Select } from "antd";
+import { Modal, Form, Input, message, Spin, Select, Tooltip } from "antd";
 import {
   ListHardwareParameterByHardwareID,
   UpdateStandardHardwareByID,
   UpdateUnitHardwareByID,
   UpdateIconByHardwareParameterID,
 } from "../../../../../services/hardware";
+
+// React Icons
 import * as FaIcons from "react-icons/fa";
 import * as GiIcons from "react-icons/gi";
 import * as BiIcons from "react-icons/bi";
 import * as AiIcons from "react-icons/ai";
 import * as MdIcons from "react-icons/md";
+import type { IconType } from "react-icons";
 
 const { Option } = Select;
 
@@ -21,23 +24,199 @@ interface EditStandardUnitModalProps {
   hardwareID: number;
 }
 
-const iconOptions = [
-  { name: "FaMicroscope", icon: <FaIcons.FaMicroscope />, label: "กล้องจุลทรรศน์" },
-  { name: "FaTemperatureHigh", icon: <FaIcons.FaTemperatureHigh />, label: "อุณหภูมิสูง" },
-  { name: "FaTint", icon: <FaIcons.FaTint />, label: "หยดน้ำ" },
-  { name: "FaThermometerHalf", icon: <FaIcons.FaThermometerHalf />, label: "เทอร์โมมิเตอร์" },
-  { name: "GiChemicalDrop", icon: <GiIcons.GiChemicalDrop />, label: "สารเคมี" },
-  { name: "GiFireBottle", icon: <GiIcons.GiFireBottle />, label: "ขวดไฟ" },
-  { name: "GiGasMask", icon: <GiIcons.GiGasMask />, label: "หน้ากากกันแก๊ส" },
-  { name: "GiWaterDrop", icon: <GiIcons.GiWaterDrop />, label: "หยดน้ำบริสุทธิ์" },
-  { name: "BiTestTube", icon: <BiIcons.BiTestTube />, label: "หลอดทดลอง" },
-  { name: "GiRoundBottomFlask", icon: <GiIcons.GiRoundBottomFlask />, label: "ขวดฟลาสก์" },
-  { name: "AiOutlineDotChart", icon: <AiIcons.AiOutlineDotChart />, label: "กราฟจุด" },
-  { name: "MdScience", icon: <MdIcons.MdScience />, label: "วิทยาศาสตร์" },
-  { name: "MdWaterDrop", icon: <MdIcons.MdWaterDrop />, label: "หยดน้ำ" },
-  { name: "MdOutlineWbSunny", icon: <MdIcons.MdOutlineWbSunny />, label: "แสงแดด" },
-  { name: "MdAir", icon: <MdIcons.MdAir />, label: "อากาศ" },
+type IconOption = { name: string; label: string; component: IconType };
+
+// ✅ รายการไอคอน (component mapping)
+const iconOptions: IconOption[] = [
+  { name: "FaMicroscope", label: "กล้องจุลทรรศน์", component: FaIcons.FaMicroscope },
+  { name: "FaTemperatureHigh", label: "อุณหภูมิสูง", component: FaIcons.FaTemperatureHigh },
+  { name: "FaTint", label: "หยดน้ำ", component: FaIcons.FaTint },
+  { name: "FaThermometerHalf", label: "เทอร์โมมิเตอร์", component: FaIcons.FaThermometerHalf },
+  { name: "GiChemicalDrop", label: "สารเคมี", component: GiIcons.GiChemicalDrop },
+  { name: "GiFireBottle", label: "ขวดไฟ", component: GiIcons.GiFireBottle },
+  { name: "GiGasMask", label: "หน้ากากกันแก๊ส", component: GiIcons.GiGasMask },
+  { name: "GiWaterDrop", label: "หยดน้ำบริสุทธิ์", component: GiIcons.GiWaterDrop },
+  { name: "BiTestTube", label: "หลอดทดลอง", component: BiIcons.BiTestTube },
+  { name: "GiRoundBottomFlask", label: "ขวดฟลาสก์", component: GiIcons.GiRoundBottomFlask },
+  { name: "AiOutlineDotChart", label: "กราฟจุด", component: AiIcons.AiOutlineDotChart },
+  { name: "MdScience", label: "วิทยาศาสตร์", component: MdIcons.MdScience },
+  { name: "MdWaterDrop", label: "หยดน้ำ", component: MdIcons.MdWaterDrop },
+  { name: "MdOutlineWbSunny", label: "แสงแดด", component: MdIcons.MdOutlineWbSunny },
+  { name: "MdAir", label: "อากาศ", component: MdIcons.MdAir },
 ];
+
+// แปลงเป็น map เพื่อ lookup จากชื่อ → component
+const iconMap: Record<string, IconType> = iconOptions.reduce((acc, cur) => {
+  acc[cur.name] = cur.component;
+  return acc;
+}, {} as Record<string, IconType>);
+
+// ---------- UI helper ----------
+const SectionHeader: React.FC<{ title: string; hint?: string }> = ({ title, hint }) => (
+  <div className="flex items-center justify-between mb-4">
+    <div className="text-[1.05rem] font-semibold text-teal-700">{title}</div>
+    {hint ? <span className="text-xs text-gray-500">{hint}</span> : null}
+  </div>
+);
+
+const NumberItem: React.FC<{
+  name: string;
+  placeholder: string;
+  requiredMsg: string;
+}> = ({ name, placeholder, requiredMsg }) => (
+  <Form.Item
+    name={name}
+    rules={[
+      {
+        required: true,
+        validator: (_, value) => {
+          const text = value?.toString?.() ?? "";
+          if (text === "") return Promise.reject(requiredMsg);
+          if (Number.isNaN(Number(text))) return Promise.reject("ต้องเป็นตัวเลข");
+          return Promise.resolve();
+        },
+      },
+    ]}
+    noStyle
+  >
+    <Input
+      type="number"
+      step="0.01"
+      placeholder={placeholder}
+      className="w-full rounded-md border border-gray-300 h-10"
+    />
+  </Form.Item>
+);
+
+// ✅ แยกเป็นคอมโพเนนต์ย่อยเพื่อให้ใช้ Hooks ได้อย่างถูกต้อง
+const ParamRow: React.FC<{
+  form: any;
+  param: any;
+}> = ({ form, param }) => {
+  const fieldIcon = `icon_${param.ID}`;
+  const iconName = Form.useWatch(fieldIcon, form) as string | undefined;
+  const IconPreview = iconMap[iconName || "FaMicroscope"];
+
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // ฟิลเตอร์ใน Select
+  const filterOption = (input: string, option?: any) =>
+    (option?.label as string)?.toLowerCase().includes(input.toLowerCase());
+
+  return (
+    <div className="bg-white border border-teal-100 rounded-2xl px-6 py-5 mb-5 shadow-sm hover:shadow-md transition-shadow">
+      <SectionHeader
+        title={param.Parameter}
+        hint={isMobile ? undefined : "ปรับค่าและไอคอนให้เหมาะกับพารามิเตอร์นี้"}
+      />
+
+      <div className="grid grid-cols-1 xl:grid-cols-12 lg:grid-cols-12 gap-6">
+        {/* LEFT: Icon Preview */}
+        <div className="xl:col-span-2 lg:col-span-3 flex lg:block items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-md border border-teal-500">
+              {IconPreview ? <IconPreview size={42} className="text-teal-600" /> : null}
+            </div>
+            <div className="text-xs text-gray-500">ไอคอนปัจจุบัน</div>
+          </div>
+        </div>
+
+        {/* RIGHT: Form */}
+        <div className="xl:col-span-10 lg:col-span-9">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+            {/* Min */}
+            <div className="md:col-span-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                * Min Standard
+              </label>
+              <NumberItem
+                name={`min_standard_${param.ID}`}
+                placeholder="เช่น 0.00"
+                requiredMsg="กรุณากรอกค่า Min Standard"
+              />
+              <div className="text-[11px] text-gray-400 mt-1">ค่านี้ใช้เป็นเกณฑ์ต่ำสุด</div>
+            </div>
+
+            {/* Max */}
+            <div className="md:col-span-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                * Max Standard
+              </label>
+              <NumberItem
+                name={`max_standard_${param.ID}`}
+                placeholder="เช่น 10.00"
+                requiredMsg="กรุณากรอกค่า Max Standard"
+              />
+              <div className="text-[11px] text-gray-400 mt-1">ค่านี้ใช้เป็นเกณฑ์สูงสุด</div>
+            </div>
+
+            {/* Unit */}
+            <div className="md:col-span-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">* หน่วย</label>
+              <Form.Item
+                name={`unit_${param.ID}`}
+                rules={[{ required: true, message: "กรุณากรอกหน่วย" }]}
+                noStyle
+              >
+                <Input
+                  className="w-full rounded-md border border-gray-300 h-10"
+                  placeholder="เช่น ppm, °C, %"
+                />
+              </Form.Item>
+              <div className="text-[11px] text-gray-400 mt-1">หน่วยแสดงผลของพารามิเตอร์นี้</div>
+            </div>
+
+            {/* Icon Select */}
+            <div className="md:col-span-3">
+              <div className="flex items-center gap-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  * Icon
+                </label>
+                <Tooltip title="เลือกไอคอนที่สื่อความหมายกับพารามิเตอร์">
+                  <AiIcons.AiOutlineQuestionCircle className="text-gray-400" />
+                </Tooltip>
+              </div>
+              <Form.Item
+                name={fieldIcon}
+                rules={[{ required: true, message: "กรุณาเลือกไอคอน" }]}
+                noStyle
+              >
+                <Select
+                  className="w-full"
+                  showSearch
+                  optionLabelProp="label"
+                  filterOption={filterOption}
+                  placeholder="เลือกไอคอน"
+                  dropdownStyle={{ padding: 6 }}
+                >
+                  {iconOptions.map(({ name, label, component: Icon }) => (
+                    <Option key={name} value={name} label={label}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-white border border-teal-600 flex items-center justify-center shadow">
+                          <Icon size={18} className="text-teal-600" />
+                        </div>
+                        <span className="text-gray-800 text-sm">{label}</span>
+                      </div>
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+              <div className="text-[11px] text-gray-400 mt-1">
+                ระบบจะแสดงตัวอย่างไอคอนด้านซ้าย
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
   open,
@@ -60,17 +239,22 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
 
         const initialValues: Record<string, any> = {};
         data.forEach((param) => {
-          const std = param.StandardHardware?.Standard;
-          initialValues[`standard_${param.ID}`] = typeof std === "number" ? std : "";
-          initialValues[`unit_${param.ID}`] = param.UnitHardware?.Unit ?? "";
-          initialValues[`icon_${param.ID}`] = param.Icon || "FaMicroscope";
+          const maxStd = param.StandardHardware?.MaxValueStandard;
+          const minStd = param.StandardHardware?.MinValueStandard;
+
+          initialValues[`max_standard_${param.ID}`] =
+            typeof maxStd === "number" ? maxStd : "";
+          initialValues[`min_standard_${param.ID}`] =
+            typeof minStd === "number" ? minStd : "";
+          initialValues[`unit_${param.ID}`] = param?.UnitHardware?.Unit ?? "";
+          initialValues[`icon_${param.ID}`] = param?.Icon || "FaMicroscope";
         });
 
         form.setFieldsValue(initialValues);
       })
       .catch(() => message.error("ไม่สามารถโหลดข้อมูลพารามิเตอร์ได้"))
       .finally(() => setLoading(false));
-  }, [open, hardwareID]);
+  }, [open, hardwareID, form]);
 
   const handleSave = async () => {
     try {
@@ -79,22 +263,46 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
 
       await Promise.all(
         params.map(async (param) => {
-          const rawStandard = values[`standard_${param.ID}`];
+          const rawMax = values[`max_standard_${param.ID}`];
+          const rawMin = values[`min_standard_${param.ID}`];
           const rawUnit = values[`unit_${param.ID}`];
           const icon = values[`icon_${param.ID}`];
 
-          const newStandard = parseFloat(rawStandard);
-          if (isNaN(newStandard)) {
-            throw new Error(`Standard ของ ${param.Parameter} ไม่ถูกต้อง`);
+          const maxVal = Number(rawMax);
+          const minVal = Number(rawMin);
+
+          if (Number.isNaN(maxVal)) {
+            throw new Error(`Max Standard ของ ${param.Parameter} ไม่ถูกต้อง`);
+          }
+          if (Number.isNaN(minVal)) {
+            throw new Error(`Min Standard ของ ${param.Parameter} ไม่ถูกต้อง`);
+          }
+          if (minVal > maxVal) {
+            throw new Error(
+              `Min (${minVal}) ต้องน้อยกว่าหรือเท่ากับ Max (${maxVal}) ของ ${param.Parameter}`
+            );
           }
 
-          await UpdateStandardHardwareByID(param.StandardHardware.ID, {
-            Standard: newStandard,
-          });
-          await UpdateUnitHardwareByID(param.UnitHardware.ID, {
-            Unit: rawUnit,
-          });
-          await UpdateIconByHardwareParameterID(param.ID, icon);
+          const tasks: Promise<any>[] = [];
+
+          if (param?.StandardHardware?.ID) {
+            tasks.push(
+              UpdateStandardHardwareByID(param.StandardHardware.ID, {
+                MaxValueStandard: maxVal,
+                MinValueStandard: minVal,
+              })
+            );
+          }
+          if (param?.UnitHardware?.ID) {
+            tasks.push(
+              UpdateUnitHardwareByID(param.UnitHardware.ID, {
+                Unit: String(rawUnit ?? ""),
+              })
+            );
+          }
+          tasks.push(UpdateIconByHardwareParameterID(param.ID, icon));
+
+          await Promise.all(tasks);
         })
       );
 
@@ -103,7 +311,7 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
       onClose();
     } catch (err: any) {
       console.error(err);
-      message.error(err.message || "เกิดข้อผิดพลาดในการบันทึก");
+      message.error(err?.message || "เกิดข้อผิดพลาดในการบันทึก");
     } finally {
       setLoading(false);
     }
@@ -114,106 +322,36 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
       open={open}
       onCancel={onClose}
       footer={null}
-      width={900}
+      style={{ top: 50 }}
+      width={"min(1280px, 96vw)"}
       closable={false}
       className="rounded-xl"
     >
-      <div className="bg-teal-500 text-white text-lg font-semibold text-center py-2 rounded-t-xl">
-        แก้ไขค่า Standard, หน่วย และไอคอนของพารามิเตอร์
+      {/* Header */}
+      <div className="bg-teal-600 text-white text-[1.15rem] font-semibold text-center py-3 rounded-t-xl tracking-wide">
+        แก้ไขค่า Standard (Min/Max), หน่วย และไอคอนของพารามิเตอร์
       </div>
 
-      <div className="px-4 sm:px-6 pt-4 pb-2 max-h-[80vh] overflow-y-auto">
+      <div className="px-4 sm:px-6 pt-4 pb-2 max-h-[80vh] overflow-y-auto bg-white">
         <Spin spinning={loading}>
-          <Form layout="vertical" form={form}>
+          <Form layout="vertical" form={form} scrollToFirstError>
             {params.map((param) => (
-              <div
-                key={param.ID}
-                className="bg-white border border-teal-100 rounded-lg px-4 py-3 mb-4 shadow-sm"
-              >
-                <div className="text-base font-semibold text-teal-700 mb-3">
-                  {param.Parameter}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
-                  <div className="sm:col-span-2 text-sm font-medium text-gray-700">* Standard</div>
-                  <div className="sm:col-span-2">
-                    <Form.Item
-                      name={`standard_${param.ID}`}
-                      rules={[
-                        {
-                          required: true,
-                          validator: (_, value) => {
-                            if (
-                              value === null ||
-                              value === undefined ||
-                              value.toString().trim() === ""
-                            ) {
-                              return Promise.reject("กรุณากรอกค่า Standard");
-                            }
-                            if (isNaN(parseFloat(value))) {
-                              return Promise.reject("Standard ต้องเป็นตัวเลข");
-                            }
-                            return Promise.resolve();
-                          },
-                        },
-                      ]}
-                      noStyle
-                    >
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="ยังไม่ได้ตั้งค่ามาตรฐาน"
-                        className="w-full rounded-md border border-gray-300"
-                      />
-                    </Form.Item>
-                  </div>
-
-                  <div className="sm:col-span-1 text-sm font-medium text-gray-700">* หน่วย</div>
-                  <div className="sm:col-span-2">
-                    <Form.Item
-                      name={`unit_${param.ID}`}
-                      rules={[{ required: true, message: "กรุณากรอกหน่วย" }]}
-                      noStyle
-                    >
-                      <Input className="w-full rounded-md border border-gray-300" />
-                    </Form.Item>
-                  </div>
-
-                  <div className="sm:col-span-1 text-sm font-medium text-gray-700">* Icon</div>
-                  <div className="sm:col-span-4">
-                    <Form.Item
-                      name={`icon_${param.ID}`}
-                      rules={[{ required: true, message: "กรุณาเลือกไอคอน" }]}
-                      noStyle
-                    >
-                      <Select className="w-full">
-                        {iconOptions.map((opt) => (
-                          <Option key={opt.name} value={opt.name}>
-                            <span className="flex items-center gap-2">
-                              {opt.icon} {opt.label}
-                            </span>
-                          </Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                  </div>
-                </div>
-              </div>
+              <ParamRow key={param.ID} form={form} param={param} />
             ))}
           </Form>
         </Spin>
 
-        <div className="flex flex-col sm:flex-row justify-end gap-2 pt-2 pb-4">
+        {/* Footer Buttons */}
+        <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 pb-5">
           <button
-            className="px-4 py-1.5 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100"
+            className="px-4 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100"
             onClick={onClose}
           >
             ยกเลิก
           </button>
           <button
             onClick={handleSave}
-            disabled={loading}
-            className="px-4 py-1.5 text-sm rounded-md text-white bg-teal-500 hover:bg-teal-600 transition disabled:opacity-50"
+            className="px-4 py-2 text-sm rounded-md text-white bg-teal-600 hover:bg-teal-700 transition"
           >
             บันทึก
           </button>

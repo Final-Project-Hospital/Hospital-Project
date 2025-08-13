@@ -2,12 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input, message } from 'antd';
 import dayjs from 'dayjs';
 import './CODcenter.css';
-import { CreateCODInterface } from '../../../../../interface/IEnvironmentalRecord';
-import { CreateCOD } from '../../../../../services/enviromentrecord';
+import { CODcenterInterface } from '../../../../../interface/Iwastewater/Icod';
 import { ListBeforeAfterTreatment, ListUnit } from '../../../../../services/index';
 import { ListBeforeAfterTreatmentInterface } from '../../../../../interface/IBeforeAfterTreatment';
 import { ListUnitInterface } from '../../../../../interface/IUnit';
-import { GetfirstCOD } from '../../../../../services/enviromentrecord';
+import { GetfirstCOD, createCOD } from '../../../../../services/wastewaterServices/cod';
 import { ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, } from '../../../../../services/index';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';
 import { CheckUnit, CheckStandard } from '../../../../../services/tdsService';
@@ -179,7 +178,7 @@ const CODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
         if (selectedTreatmentID === 3) {
             // กรณี "ก่อนและหลังบำบัด" ส่งข้อมูล 2 ชุด
-            const payloadBefore: CreateCODInterface = {
+            const payloadBefore: CODcenterInterface = {
                 Date: combinedDateTime.toISOString(),
                 Data: values.valueBefore,
                 BeforeAfterTreatmentID: 1,
@@ -190,7 +189,7 @@ const CODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                 Note: values.note,
             };
 
-            const payloadAfter: CreateCODInterface = {
+            const payloadAfter: CODcenterInterface = {
                 Date: combinedDateTime.toISOString(),
                 Data: values.valueAfter,
                 BeforeAfterTreatmentID: 2,
@@ -201,12 +200,17 @@ const CODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                 Note: values.note,
             };
 
-            const res1 = await CreateCOD(payloadBefore);
-            const res2 = await CreateCOD(payloadAfter);
+            const res1 = await createCOD(payloadBefore);
+            const res2 = await createCOD(payloadAfter);
 
             if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
                 messageApi.success('บันทึกข้อมูล COD ก่อนและหลังบำบัดสำเร็จ');
                 form.resetFields();
+                setIsOtherunitSelected(false);
+                setUseCustomStandard(false);
+                setCustomSingleValue(undefined);
+                setCustomMinValue(undefined);
+                setCustomMaxValue(undefined);
                 GetfirstrowCOD();
                 fetchInitialData();
                 await delay(500);
@@ -216,7 +220,7 @@ const CODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                 message.error('ไม่สามารถบันทึกข้อมูลก่อนหรือหลังได้');
             }
         } else {
-            const codData: CreateCODInterface = {
+            const codData: CODcenterInterface = {
                 Date: combinedDateTime.toISOString(),
                 Data: values.data,
                 Note: values.note,
@@ -226,7 +230,7 @@ const CODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                 CustomUnit: customUintValue,
                 EmployeeID: employeeID,
             }
-            const response = await CreateCOD(codData);
+            const response = await createCOD(codData);
             console.log(codData);
             if (response.status === 201) {
                 messageApi.open({
@@ -234,6 +238,11 @@ const CODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     content: 'การบันทึกข้อมูล COD สำเร็จ',
                 });
                 form.resetFields();
+                setIsOtherunitSelected(false);
+                setUseCustomStandard(false);
+                setCustomSingleValue(undefined);
+                setCustomMinValue(undefined);
+                setCustomMaxValue(undefined);
                 GetfirstrowCOD();
                 fetchInitialData();
                 await delay(500);

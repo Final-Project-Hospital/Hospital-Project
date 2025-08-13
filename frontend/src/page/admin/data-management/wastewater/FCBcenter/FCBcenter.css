@@ -11,6 +11,7 @@
   font-size: 14px;
 }
 
+/* ปรับ input ให้มี border-radius 50px */
 .fcb-container .ant-input,
 .fcb-container .ant-input-number,
 .fcb-container .ant-picker,
@@ -27,15 +28,13 @@
   display: flex;
   gap: 30px;
   flex-wrap: wrap;
-  
 }
 
 .fcb-form-group .ant-form-item {
   flex: 1 1 300px;
 }
 
-
-.fcb-form-mini {
+.fcb-from-mini {
   width: 48%;
 }
 
@@ -113,6 +112,11 @@
 .fcb-fornt-small {
   display: flex;
   gap: 16px;
+}
+.fcb-chat-modal{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Responsive behavior */
