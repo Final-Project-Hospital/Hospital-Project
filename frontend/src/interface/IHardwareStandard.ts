@@ -1,4 +1,5 @@
 export interface HardwareStandardInterface {
     ID?: number;
-    Standard?: string;
+    MaxValueStandard?: string;
+    MinValueStandard?: string;
 }

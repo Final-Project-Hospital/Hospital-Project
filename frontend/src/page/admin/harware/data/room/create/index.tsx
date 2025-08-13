@@ -129,7 +129,8 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
 
     if (res) {
       message.success('บันทึกสำเร็จ');
-      onCreateSuccess();
+      onCreateSuccess()
+      onClose()
     } else {
       message.error('เกิดข้อผิดพลาดในการบันทึก');
     }

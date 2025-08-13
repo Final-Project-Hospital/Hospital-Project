@@ -5,6 +5,8 @@ export interface SensorDataParameterInterface {
   ID?: number;
   Date: string;
   Data: number;
+  Note: string;
+  Status?: boolean;
   SensorDataID: SensorDataInterface;
   ParameterID: HardwareParameterInterface;
   SensorData?: any;

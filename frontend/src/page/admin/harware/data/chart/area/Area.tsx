@@ -119,7 +119,8 @@ const Area: React.FC<ChartdataProps> = ({
         if (!Array.isArray(raw) || raw.length === 0) throw new Error("No sensor");
 
         const parameterMap: Record<string, { x: Date; y: number }[]> = {};
-        const standardMap: Record<string, number> = {};
+        const maxStandardMap: Record<string, number> = {};
+        const minStandardMap: Record<string, number> = {};
         const unitMapping: Record<string, string> = {};
 
         for (const sensor of raw) {
@@ -128,8 +129,10 @@ const Area: React.FC<ChartdataProps> = ({
             const name = param.HardwareParameter?.Parameter;
             const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
             const date = new Date(param.Date);
-            const standard = param.HardwareParameter?.StandardHardware?.Standard;
+            const maxStandard = param.HardwareParameter?.StandardHardware?.MaxValueStandard;
+            const minStandard = param.HardwareParameter?.StandardHardware?.MinValueStandard;
             const unit = param.HardwareParameter?.UnitHardware?.Unit;
+
             if (!name || !parameters.includes(name) || isNaN(value) || isNaN(date.getTime())) continue;
 
             let inRange = false;
@@ -138,8 +141,7 @@ const Area: React.FC<ChartdataProps> = ({
               if (!start || !end) continue;
               const startDate = new Date(start);
               const endDate = new Date(end);
-              endDate.setHours(23, 59, 59, 999); // แก้ไขตรงนี้
-
+              endDate.setHours(23, 59, 59, 999);
               inRange = date >= startDate && date <= endDate;
             } else if (timeRangeType === 'month') {
               inRange = date.getMonth() + 1 === +selectedRange?.month &&
@@ -150,10 +152,12 @@ const Area: React.FC<ChartdataProps> = ({
             }
 
             if (!inRange) continue;
+
             parameterMap[name] ??= [];
             parameterMap[name].push({ x: date, y: value });
 
-            if (standard && !standardMap[name]) standardMap[name] = standard;
+            if (maxStandard && !maxStandardMap[name]) maxStandardMap[name] = maxStandard;
+            if (minStandard && !minStandardMap[name]) minStandardMap[name] = minStandard;
             if (unit && !unitMapping[unit]) unitMapping[unit] = name;
           }
         }
@@ -161,18 +165,15 @@ const Area: React.FC<ChartdataProps> = ({
         const series: any[] = [];
         const createStandardLine = (standard: number, data: { x: Date }[]) => {
           const sorted = data.sort((a, b) => a.x.getTime() - b.x.getTime());
-
           if (sorted.length === 1) {
             const d = sorted[0];
-            const prev = new Date(d.x.getTime() - 1000 * 60 * 60); // -1 ชั่วโมง
-            const next = new Date(d.x.getTime() + 1000 * 60 * 60); // +1 ชั่วโมง
-
+            const prev = new Date(d.x.getTime() - 1000 * 60 * 60);
+            const next = new Date(d.x.getTime() + 1000 * 60 * 60);
             return [
               { x: prev, y: standard },
               { x: next, y: standard },
             ];
           }
-
           return sorted.map(d => ({ x: d.x, y: standard }));
         };
 
@@ -189,6 +190,7 @@ const Area: React.FC<ChartdataProps> = ({
                 ? groupByDayAvg(sorted)
                 : groupByDayAvg(sorted);
 
+          // ค่าจริง
           series.push({
             dataSource,
             xName: 'x',
@@ -201,13 +203,30 @@ const Area: React.FC<ChartdataProps> = ({
             fill: fillColor,
           });
 
-          if (standardMap[name]) {
-            const stdData = createStandardLine(standardMap[name], dataSource);
+          // Max Standard (สีแดง)
+          if (maxStandardMap[name]) {
+            const stdData = createStandardLine(maxStandardMap[name], dataSource);
             series.push({
               dataSource: stdData,
               xName: 'x',
               yName: 'y',
-              name: `${name} (Standard)`,
+              name: `${name} (Max)`,
+              width: 2,
+              dashArray: '5,5',
+              marker: { visible: false },
+              type: 'Line',
+              fill: 'red',
+            });
+          }
+
+          // Min Standard (สีทอง)
+          if (minStandardMap[name]) {
+            const stdDataMin = createStandardLine(minStandardMap[name], dataSource);
+            series.push({
+              dataSource: stdDataMin,
+              xName: 'x',
+              yName: 'y',
+              name: `${name} (Min)`,
               width: 2,
               dashArray: '5,5',
               marker: { visible: false },
@@ -288,11 +307,20 @@ const Area: React.FC<ChartdataProps> = ({
         primaryYAxis={{
           labelFormat: '{value}',
           rangePadding: 'None',
+          minimum: 0,
           lineStyle: { width: 0 },
           majorTickLines: { width: 0 },
           minorTickLines: { width: 0 },
         }}
-        tooltip={{ enable: true }}
+        tooltip={{
+          enable: true,
+          format: '${series.name} : ${point.y}',
+        }}
+        tooltipRender={(args) => {
+          if (args.point && typeof args.point.y === 'number') {
+            args.text = `${args.series.name} : ${args.point.y.toFixed(2)}`;
+          }
+        }}
         chartArea={{ border: { width: 0 } }}
         background={currentMode === 'Dark' ? '#33373E' : '#fff'}
         legendSettings={{ background: 'white' }}

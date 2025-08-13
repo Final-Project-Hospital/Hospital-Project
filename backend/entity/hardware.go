@@ -7,7 +7,7 @@ import (
 type Hardware struct {
 	gorm.Model
 	Name string
-	IpAddress	string
+	MacAddress	string
 
 	Room []Room `gorm:"foreignKey: HardwareID"`
 

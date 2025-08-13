@@ -400,6 +400,10 @@ func main() {
 		public.GET("/hardware-parameter-ids", hardware.GetHardwareParametersWithGraph)
 		public.PATCH("/hardware-parameters/:id/icon", hardware.UpdateIconByHardwareParameterID)
 		public.PUT("/hardware-parameter/:id/group-display", hardware.UpdateGroupDisplayByID)
+		public.PATCH("/sensor-data-parameter/:id/note", hardware.CreateNoteBySensorDataParameterID)
+
+		// Line + Webhook
+		public.POST("/webhook/notification", hardware.WebhookNotification)
 
 		//report hardware
 		public.GET("/report-hardware", report.ListReportHardware)
@@ -422,6 +426,9 @@ func main() {
 		public.GET("/hardware-parameters-by-parameter", sensordata.ListDataHardwareParameterByParameter)
 		public.GET("/sensor-data-parameters/:id", sensordata.GetSensorDataParametersBySensorDataID)
 		public.GET("/sensor-data-by-hardware/:id", sensordata.GetSensorDataIDByHardwareID)
+		public.DELETE("/sensor-data-parameters", hardware.DeleteSensorDataParametersByIds)
+		public.DELETE("/sensor-data-parameters/all/:sensorDataID", hardware.DeleteAllSensorDataParametersBySensorID)
+
 
 		//Calendar
 		public.GET("/calendars", calendar.ListCalendar)
@@ -463,8 +470,8 @@ func main() {
 		c.String(http.StatusOK, "API RUNNING... PORT: %s", PORT)
 	})
 
-	r.Run("localhost:" + PORT)
-	// r.Run("0.0.0.0:" + PORT)
+	//r.Run("localhost:" + PORT)
+	r.Run("0.0.0.0:" + PORT)
 
 }
 
