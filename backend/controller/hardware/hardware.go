@@ -457,6 +457,57 @@ func UpdateGroupDisplayByID(c *gin.Context) {
 	})
 }
 
+type UpdateLayoutDisplayInput struct {
+	LayoutDisplay *bool `json:"layout_display" binding:"required"`
+}
+
+func UpdateLayoutDisplayByID(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	var input UpdateLayoutDisplayInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON input", "detail": err.Error()})
+		return
+	}
+
+	db := config.DB()
+
+	// ตรวจว่ามี record นี้จริง
+	var hp entity.HardwareParameter
+	if err := db.First(&hp, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "HardwareParameter not found", "detail": err.Error()})
+		return
+	}
+
+	// อัปเดตเฉพาะคอลัมน์ layout_display
+	if err := db.Model(&entity.HardwareParameter{}).
+		Where("id = ?", id).
+		Update("layout_display", *input.LayoutDisplay).Error; err != nil {
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update LayoutDisplay", "detail": err.Error()})
+		return
+	}
+
+	// โหลดค่าล่าสุดส่งกลับ
+	if err := db.First(&hp, id).Error; err != nil {
+		// อัปเดตได้แล้ว แต่โหลดกลับพลาดก็ยังถือว่าสำเร็จ
+		c.JSON(http.StatusOK, gin.H{
+			"message": "LayoutDisplay updated successfully",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":        "LayoutDisplay updated successfully",
+		"hardware_param": hp,
+	})
+}
+
 type DeleteSensorDataParameterRequest struct {
 	IDs []uint `json:"ids" binding:"required"`
 }
