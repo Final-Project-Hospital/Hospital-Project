@@ -118,8 +118,10 @@ func SetupDatabase() {
 	// Unit
 	Unit := entity.Unit{UnitName: "mg/L"}
 	Unit2 := entity.Unit{UnitName: "ไม่มีหน่วย"}
+	Unit3 := entity.Unit{UnitName: "Kg"}
 	db.FirstOrCreate(&Unit, &entity.Unit{UnitName: "mg/L"})
 	db.FirstOrCreate(&Unit2, &entity.Unit{UnitName: "ไม่มีหน่วย"})
+	db.FirstOrCreate(&Unit3, &entity.Unit{UnitName: "Kg"})
 
 	//BeforeAfter
 	Before := entity.BeforeAfterTreatment{TreatmentName: "ก่อน"}
@@ -776,6 +778,61 @@ func SetupDatabase() {
 		})
 	}
 	fmt.Println("Insert TDS seed data done!")
+	target1 := entity.Target{
+		MaxTarget:    0,
+		MiddleTarget: 0.7,
+		MinTarget:    0,
+	}
+	db.FirstOrCreate(&target1, entity.Target{MaxTarget: 0, MiddleTarget: 0.7, MinTarget: 0})
+
+	target2 := entity.Target{
+		MaxTarget:    0,
+		MiddleTarget: 1,
+		MinTarget:    0,
+	}
+	db.FirstOrCreate(&target2, entity.Target{MaxTarget: 0, MiddleTarget: 1, MinTarget: 0})
+
+	infectiousWastePerDay := []float64{794.26, 920.71, 7615.73, 6823.23, 6033.60}
+	infectiousWastePerMonth := []float64{24622.00, 25780.00, 228472.00, 211520.00, 181008.00}
+	infectiousWastePerAADC := []float64{0.02, 0.77, 5.67, 5.04, 3.89}
+	// infectiousWastetargetAADC := []float64{0.70, 0.70, 0.70, 0.70, 0.70}
+	infectiousWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(infectiousWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", infectiousWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะติดเชื้อ Parse date error :", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		var statusIDBeforeinfec uint
+		if infectiousWastePerAADC[i] <= 0.7 {
+			statusIDBeforeinfec = status2.ID
+		} else {
+			statusIDBeforeinfec = status1.ID
+		}
+
+		// --- ก่อนบำบัด ---
+		infectiousWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      infectiousWastePerMonth[i],
+			Quantity:            1200,
+			AverageDailyGarbage: infectiousWastePerDay[i],
+			AADC:                infectiousWastePerAADC[i],
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param22.ID,
+			TargetID:            &target1.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            &statusIDBeforeinfec,
+		}
+		db.FirstOrCreate(&infectiousWaste, entity.Garbage{
+			Date:          date,
+            EnvironmentID: Garbage.ID,
+            ParameterID:   param22.ID,
+            TargetID:      &target1.ID,
+		})
+	}
 
 	// TS
 	beforeValuesTS := []float64{
