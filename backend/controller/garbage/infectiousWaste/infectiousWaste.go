@@ -104,7 +104,7 @@ func CreateInfectious(c *gin.Context) {
 		daysInMonth := time.Date(input.Date.Year(), input.Date.Month()+1, 0, 0, 0, 0, 0, input.Date.Location()).Day()
 		input.AverageDailyGarbage = input.MonthlyGarbage / float64(daysInMonth)
 	}
-		// แปลง uint เป็น *uint สำหรับ TargetID และ StatusID
+	// แปลง uint เป็น *uint สำหรับ TargetID และ StatusID
 	var targetIDPtr *uint
 	if input.TargetID != 0 {
 		targetIDPtr = &input.TargetID
@@ -130,7 +130,7 @@ func CreateInfectious(c *gin.Context) {
 		Note:                input.Note,
 		EnvironmentID:       env.ID,
 		ParameterID:         param.ID,
-		TargetID:           targetIDPtr,
+		TargetID:            targetIDPtr,
 		UnitID:              input.UnitID,
 		StatusID:            statusIDPtr,
 		EmployeeID:          input.EmployeeID,
@@ -237,9 +237,9 @@ func ListInfectious(c *gin.Context) {
 		StandardID             uint      `json:"StandardID"`
 		UnitID                 uint      `json:"UnitID"`
 		EmployeeID             uint      `json:"EmployeeID"`
-		MinValue               float64   `json:"MinValue"`
-		MiddleValue            float64   `json:"MiddleValue"`
-		MaxValue               float64   `json:"MaxValue"`
+		MinTarget              float64   `json:"MinTarget"`
+		MiddleTarget           float64   `json:"MiddleTarget"`
+		MaxTarget              float64   `json:"MaxTarget"`
 		UnitName               string
 		TreatmentName          string
 		StatusName             string

@@ -41,7 +41,7 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
         return (
             <>
-                ค่า PH บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
+                ค่า pH บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
             </>
         );
     };
@@ -171,7 +171,8 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
         const combinedDateTime = dayjs(values.date)
             .hour(dayjs(values.time).hour())
             .minute(dayjs(values.time).minute())
-            .second(0);
+            .second(dayjs(values.time).second())
+            .millisecond(0);
         // ตรวจสอบค่ามาตรฐาน
         const isOther = values.unit === 'other';
         const unitID = isOther ? null : values.unit;
@@ -205,7 +206,7 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             const res2 = await createPH(payloadAfter);
 
             if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
-                messageApi.success('บันทึกข้อมูล PH ก่อนและหลังบำบัดสำเร็จ');
+                messageApi.success('บันทึกข้อมูล pH ก่อนและหลังบำบัดสำเร็จ');
                 form.resetFields();
                 setIsOtherunitSelected(false);
                 setUseCustomStandard(false);
@@ -236,7 +237,7 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             if (response.status === 201) {
                 messageApi.open({
                     type: 'success',
-                    content: 'การบันทึกข้อมูล PH สำเร็จ',
+                    content: 'การบันทึกข้อมูล pH สำเร็จ',
                 });
                 form.resetFields();
                 setIsOtherunitSelected(false);
@@ -263,6 +264,10 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     form={form}
                     layout="vertical"
                     onFinish={handleFinish}
+                    initialValues={{
+                        date: dayjs(),
+                        time: dayjs(),
+                    }}
                 >
                     <div className="ph-form-group">
                         <Form.Item label="วันที่บันทึกข้อมูล" name="date">
@@ -542,7 +547,7 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
                                     ]}
                                 >
-                                    <InputNumber style={{ width: '100%' }} placeholder="กรุณากรอกค่าที่วัดได้" step={0.01} />
+                                    <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าที่วัดได้" step={0.01} />
                                 </Form.Item>
                             )}
                         </div>

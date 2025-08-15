@@ -194,3 +194,25 @@ export const DeleteAllNTURecordsByDate = async (
     return null;
   }
 };
+
+export const GetBeforeAfterNTU = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-beforeafter-ntu`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating NTU record:", error.response?.data || error.message);
+    return null;
+  }
+};

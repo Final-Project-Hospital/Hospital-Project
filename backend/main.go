@@ -103,6 +103,7 @@ func main() {
 		public.PATCH("/update-or-create-ph/:d", phcenter.UpdateOrCreatePH)
 		public.DELETE("/delete-ph/:id", phcenter.DeletePH)
 		public.DELETE("/delete-ph-day/:id", phcenter.DeleteAllPHRecordsByDate)
+		public.GET("/get-beforeafter-ph", phcenter.GetBeforeAfterPH)
 
 		//TDS
 		public.POST("/create-tds", tdscenter.CreateTDS)
@@ -113,11 +114,11 @@ func main() {
 		public.PATCH("/update-or-create-tds/:d", tdscenter.UpdateOrCreateTDS)
 		public.DELETE("/delete-tds/:id", tdscenter.DeleteTDS)
 		public.DELETE("/delete-tds-day/:id", tdscenter.DeleteAllTDSRecordsByDate)
+		public.GET("/get-beforeafter-tds", tdscenter.GetBeforeAfterTDS)
 
 		public.GET("/check-units", tdscenter.CheckUnit)
 		public.GET("/check-standard", tdscenter.CheckStandard)
 
-		
 		//TKN
 		public.POST("/create-tkn", tkncenter.CreateTKN)
 		public.GET("/get-first-tkn", tkncenter.GetfirstTKN)
@@ -127,6 +128,7 @@ func main() {
 		public.PATCH("/update-or-create-tkn/:d", tkncenter.UpdateOrCreateTKN)
 		public.DELETE("/delete-tkn/:id", tkncenter.DeleteTKN)
 		public.DELETE("/delete-tkn-day/:id", tkncenter.DeleteAllTKNRecordsByDate)
+		public.GET("/get-beforeafter-tkn", tkncenter.GetBeforeAfterTKN)
 
 		//TS
 		public.POST("/create-ts", tscenter.CreateTS)
@@ -137,6 +139,7 @@ func main() {
 		public.PATCH("/update-or-create-ts/:d", tscenter.UpdateOrCreateTS)
 		public.DELETE("/delete-ts/:id", tscenter.DeleteTS)
 		public.DELETE("/delete-ts-day/:id", tscenter.DeleteAllTSRecordsByDate)
+		public.GET("/get-beforeafter-ts", tscenter.GetBeforeAfterTS)
 
 		//COD
 		public.POST("/create-cod", codcenter.CreateCOD)
@@ -147,6 +150,7 @@ func main() {
 		public.PATCH("/update-or-create-cod/:d", codcenter.UpdateOrCreateCOD)
 		public.DELETE("/delete-cod/:id", codcenter.DeleteCOD)
 		public.DELETE("/delete-cod-day/:id", codcenter.DeleteAllCODRecordsByDate)
+		public.GET("/get-beforeafter-cod", codcenter.GetBeforeAfterCOD)
 
 		//FCB
 		public.POST("/create-fcb", fcbcenter.CreateFCB)
@@ -157,6 +161,7 @@ func main() {
 		public.PATCH("/update-or-create-fcb/:d", fcbcenter.UpdateOrCreateFCB)
 		public.DELETE("/delete-fcb/:id", fcbcenter.DeleteFCB)
 		public.DELETE("/delete-fcb-day/:id", fcbcenter.DeleteAllFCBRecordsByDate)
+		public.GET("/get-beforeafter-fcb", fcbcenter.GetBeforeAfterFCB)
 
 		//RES
 		public.POST("/create-res", rescenter.CreateRES)
@@ -167,6 +172,7 @@ func main() {
 		public.PATCH("/update-or-create-res/:d", rescenter.UpdateOrCreateRES)
 		public.DELETE("/delete-res/:id", rescenter.DeleteRES)
 		public.DELETE("/delete-res-day/:id", rescenter.DeleteAllRESRecordsByDate)
+		public.GET("/get-beforeafter-res", rescenter.GetBeforeAfterRES)
 
 		//SUL
 		public.POST("/create-sul", sulcenter.CreateSUL)
@@ -177,6 +183,7 @@ func main() {
 		public.PATCH("/update-or-create-sul/:d", sulcenter.UpdateOrCreateSUL)
 		public.DELETE("/delete-sul/:id", sulcenter.DeleteSUL)
 		public.DELETE("/delete-sul-day/:id", sulcenter.DeleteAllSULRecordsByDate)
+		public.GET("/get-beforeafter-sul", sulcenter.GetBeforeAfterSUL)
 
 		//TCB
 		public.POST("/create-tcb", tcbcenter.CreateTCB)
@@ -187,6 +194,7 @@ func main() {
 		public.PATCH("/update-or-create-tcb/:d", tcbcenter.UpdateOrCreateTCB)
 		public.DELETE("/delete-tcb/:id", tcbcenter.DeleteTCB)
 		public.DELETE("/delete-tcb-day/:id", tcbcenter.DeleteAllTCBRecordsByDate)
+		public.GET("/get-beforeafter-tcb", tcbcenter.GetBeforeAfterTCB)
 
 		//BOD
 		public.POST("/create-bod", bodcenter.CreateBod)
@@ -197,8 +205,7 @@ func main() {
 		public.PATCH("/update-or-create-bod/:d", bodcenter.UpdateOrCreateBOD)
 		public.DELETE("/delete-bod/:id", bodcenter.DeleteBOD)
 		public.DELETE("/delete-bod-day/:id", bodcenter.DeleteAllBODRecordsByDate)
-		public.GET("/get-beforeafter-bod", bodcenter.GetBeforeAfterBOD)
-		// public.DELETE("/delete-bod/:id",bodcenter.DeleterBOD)
+		public.GET("/get-beforeafter-bod", bodcenter.GetBeforeAfterBOD)  //เพิ่ม
 
 		//FOG
 		public.POST("/create-fog", fogcenter.CreateFOG)
@@ -209,6 +216,7 @@ func main() {
 		public.PATCH("/update-or-create-fog/:d", fogcenter.UpdateOrCreateFOG)
 		public.DELETE("/delete-fog/:id", fogcenter.DeleteFOG)
 		public.DELETE("/delete-fog-day/:id", fogcenter.DeleteAllFOGRecordsByDate)
+		public.GET("/get-beforeafter-fog", fogcenter.GetBeforeAfterFOG)
 
 		//drinkwater
 		//ecoin
@@ -220,6 +228,7 @@ func main() {
 		public.PATCH("/update-or-create-eco/:d", ecocenter.UpdateOrCreateECO)
 		public.DELETE("/delete-eco/:id", ecocenter.DeleteECO)
 		public.DELETE("/delete-eco-day/:id", ecocenter.DeleteAllECORecordsByDate)
+		public.GET("/get-beforeafter-eco", ecocenter.GetBeforeAfterECO)
 
 		//DFCB
 		public.POST("/create-dfcb", dfcbcenter.CreateDFCB)
@@ -230,6 +239,7 @@ func main() {
 		public.PATCH("/update-or-create-dfcb/:d", dfcbcenter.UpdateOrCreateDFCB)
 		public.DELETE("/delete-dfcb/:id", dfcbcenter.DeleteDFCB)
 		public.DELETE("/delete-dfcb-day/:id", dfcbcenter.DeleteAllDFCBRecordsByDate)
+		public.GET("/get-beforeafter-dfcb", dfcbcenter.GetBeforeAfterDFCB)
 
 		//DTCB
 		public.POST("/create-dtcb", dtcbcenter.CreateDTCB)
@@ -240,7 +250,9 @@ func main() {
 		public.PATCH("/update-or-create-dtcb/:d", dtcbcenter.UpdateOrCreateDTCB)
 		public.DELETE("/delete-dtcb/:id", dtcbcenter.DeleteDTCB)
 		public.DELETE("/delete-dtcb-day/:id", dtcbcenter.DeleteAllDTCBRecordsByDate)
+		public.GET("/get-beforeafter-dtcb", dtcbcenter.GetBeforeAfterDTCB)
 
+		
 		//tapwater
 		//al
 		public.POST("/create-al", alcenter.CreateAL)
@@ -251,6 +263,7 @@ func main() {
 		public.PATCH("/update-or-create-al/:d", alcenter.UpdateOrCreateAL)
 		public.DELETE("/delete-al/:id", alcenter.DeleteAL)
 		public.DELETE("/delete-al-day/:id", alcenter.DeleteAllALRecordsByDate)
+		public.GET("/get-beforeafter-al", alcenter.GetBeforeAfterAL)
 
 		//iron
 		public.POST("/create-iron", ironcenter.CreateIRON)
@@ -261,6 +274,7 @@ func main() {
 		public.PATCH("/update-or-create-iron/:d", ironcenter.UpdateOrCreateIRON)
 		public.DELETE("/delete-iron/:id", ironcenter.DeleteIRON)
 		public.DELETE("/delete-iron-day/:id", ironcenter.DeleteAllIRONRecordsByDate)
+		public.GET("/get-beforeafter-iron", ironcenter.GetBeforeAfterIRON)
 
 		//mn
 		public.POST("/create-mn", mncenter.CreateMN)
@@ -271,6 +285,7 @@ func main() {
 		public.PATCH("/update-or-create-mn/:d", mncenter.UpdateOrCreateMN)
 		public.DELETE("/delete-mn/:id", mncenter.DeleteMN)
 		public.DELETE("/delete-mn-day/:id", mncenter.DeleteAllMNRecordsByDate)
+		public.GET("/get-beforeafter-mn", mncenter.GetBeforeAfterMN)
 		
 		//ni
 		public.POST("/create-ni", nicenter.CreateNI)
@@ -281,6 +296,7 @@ func main() {
 		public.PATCH("/update-or-create-ni/:d", nicenter.UpdateOrCreateNI)
 		public.DELETE("/delete-ni/:id", nicenter.DeleteNI)
 		public.DELETE("/delete-ni-day/:id", nicenter.DeleteAllNIRecordsByDate)
+		public.GET("/get-beforeafter-ni", nicenter.GetBeforeAfterNI)
 
 		//ntu
 		public.POST("/create-ntu", ntucenter.CreateNTU)
@@ -291,6 +307,7 @@ func main() {
 		public.PATCH("/update-or-create-ntu/:d", ntucenter.UpdateOrCreateNTU)
 		public.DELETE("/delete-ntu/:id", ntucenter.DeleteNTU)
 		public.DELETE("/delete-ntu-day/:id", ntucenter.DeleteAllNTURecordsByDate)
+		public.GET("/get-beforeafter-ntu", ntucenter.GetBeforeAfterNTU)
 
 		//pt
 		public.POST("/create-pt", ptcenter.CreatePT)
@@ -301,6 +318,7 @@ func main() {
 		public.PATCH("/update-or-create-pt/:d", ptcenter.UpdateOrCreatePT)
 		public.DELETE("/delete-pt/:id", ptcenter.DeletePT)
 		public.DELETE("/delete-pt-day/:id", ptcenter.DeleteAllPTRecordsByDate)
+		public.GET("/get-beforeafter-pt", ptcenter.GetBeforeAfterPT)
 
 		//tcod
 		public.POST("/create-tcod", tcodcenter.CreateTCOD)
@@ -311,6 +329,7 @@ func main() {
 		public.PATCH("/update-or-create-tcod/:d", tcodcenter.UpdateOrCreateTCOD)
 		public.DELETE("/delete-tcod/:id", tcodcenter.DeleteTCOD)
 		public.DELETE("/delete-tcod-day/:id", tcodcenter.DeleteAllTCODRecordsByDate)
+		public.GET("/get-beforeafter-tcod", tcodcenter.GetBeforeAfterTCOD)
 
 		//th
 		public.POST("/create-th", thcenter.CreateTH)
@@ -321,6 +340,7 @@ func main() {
 		public.PATCH("/update-or-create-th/:d", thcenter.UpdateOrCreateTH)
 		public.DELETE("/delete-th/:id", thcenter.DeleteTH)
 		public.DELETE("/delete-th-day/:id", thcenter.DeleteAllTHRecordsByDate)
+		public.GET("/get-beforeafter-th", thcenter.GetBeforeAfterTH)
 		
 		//ttcb
 		public.POST("/create-ttcb", ttcbcenter.CreateTTCB)
@@ -331,6 +351,7 @@ func main() {
 		public.PATCH("/update-or-create-ttcb/:d", ttcbcenter.UpdateOrCreateTTCB)
 		public.DELETE("/delete-ttcb/:id", ttcbcenter.DeleteTTCB)
 		public.DELETE("/delete-ttcb-day/:id", ttcbcenter.DeleteAllTTCBRecordsByDate)
+		public.GET("/get-beforeafter-ttcb", ttcbcenter.GetBeforeAfterTTCB)
 
 
 		//Garbage

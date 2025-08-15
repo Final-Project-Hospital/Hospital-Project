@@ -3,6 +3,7 @@ package tdscenter
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,6 +13,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+type Float64TwoDecimal float64
+
+func (f Float64TwoDecimal) MarshalJSON() ([]byte, error) {
+	rounded := math.Round(float64(f)*100) / 100
+	s := fmt.Sprintf("%.2f", rounded)
+	return []byte(s), nil
+}
 
 func CreateTDS(c *gin.Context) {
 	fmt.Println("Creating Environment Record")
@@ -82,13 +91,13 @@ func CreateTDS(c *gin.Context) {
 
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-		if standard.MiddleValue != 0 {  // ค่าเดี่ยว
+		if standard.MiddleValue != 0 { // ค่าเดี่ยว
 			if value > float64(standard.MiddleValue) {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
-		} else {  // ค่าเป็นช่วง
+		} else { // ค่าเป็นช่วง
 			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
@@ -135,20 +144,20 @@ func GetfirstTDS(c *gin.Context) {
 
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
 	var firsttds struct {
-		ID                     uint      `json:"ID"`
-		Date                   time.Time `json:"Date"`
-		Data                   float64   `json:"Data"`
-		Note                   string    `json:"Note"`
-		BeforeAfterTreatmentID uint      `json:"BeforeAfterTreatmentID"`
-		EnvironmentID          uint      `json:"EnvironmentID"`
-		ParameterID            uint      `json:"ParameterID"`
-		StandardID             uint      `json:"StandardID"`
-		UnitID                 uint      `json:"UnitID"`
-		EmployeeID             uint      `json:"EmployeeID"`
-		MinValue               float64   `json:"MinValue"`
-		MiddleValue            float64   `json:"MiddleValue"`
-		MaxValue               float64   `json:"MaxValue"`
-		UnitName               string    `json:"UnitName"`
+		ID                     uint              `json:"ID"`
+		Date                   time.Time         `json:"Date"`
+		Data                   float64           `json:"Data"`
+		Note                   string            `json:"Note"`
+		BeforeAfterTreatmentID uint              `json:"BeforeAfterTreatmentID"`
+		EnvironmentID          uint              `json:"EnvironmentID"`
+		ParameterID            uint              `json:"ParameterID"`
+		StandardID             uint              `json:"StandardID"`
+		UnitID                 uint              `json:"UnitID"`
+		EmployeeID             uint              `json:"EmployeeID"`
+		MinValue               Float64TwoDecimal `json:"MinValue"`
+		MiddleValue            Float64TwoDecimal `json:"MiddleValue"`
+		MaxValue               Float64TwoDecimal `json:"MaxValue"`
+		UnitName               string            `json:"UnitName"`
 	}
 
 	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
@@ -187,19 +196,12 @@ func ListTDS(c *gin.Context) {
 
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?", "Total Dissolved Solids").First(&parameter).Error; err != nil {
-		fmt.Println("Error fetching parameter:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
-		return
-	}
-	var before entity.BeforeAfterTreatment
-	if err := db.Where("treatment_name = ?", "ก่อน").First(&before).Error; err != nil {
-		fmt.Println("Error fetching parameter:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
 	}
 
-	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
-	var firsttds []struct {
+	// โครงสร้างผลลัพธ์
+	var resultds []struct {
 		ID                     uint      `json:"ID"`
 		Date                   time.Time `json:"Date"`
 		Data                   float64   `json:"Data"`
@@ -218,25 +220,32 @@ func ListTDS(c *gin.Context) {
 		StatusName             string
 	}
 
-	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
-	result := db.Model(&entity.EnvironmentalRecord{}).
-		Select(`environmental_records.id, environmental_records.date,environmental_records.data,environmental_records.note,environmental_records.before_after_treatment_id,environmental_records.environment_id ,environmental_records.parameter_id 
-		,environmental_records.standard_id ,environmental_records.unit_id ,environmental_records.employee_id,units.unit_name,before_after_treatments.treatment_name,standards.min_value,standards.middle_value,standards.max_value,statuses.status_name`).
+	// Query หลัก โดยใช้ subquery เพื่อหา record ล่าสุดของแต่ละวัน และแต่ละ treatment (before_after_treatment_id)
+	subQuery := db.Model(&entity.EnvironmentalRecord{}).
+		Select("MAX(id)").
+		Where("parameter_id = ?", parameter.ID).
+		Group("DATE(date), before_after_treatment_id")
+
+	// ดึงข้อมูลหลักโดย join กับ subQuery ข้างบน
+	err := db.Model(&entity.EnvironmentalRecord{}).
+		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note, 
+			environmental_records.before_after_treatment_id, environmental_records.environment_id, environmental_records.parameter_id,
+			environmental_records.standard_id, environmental_records.unit_id, environmental_records.employee_id, 
+			units.unit_name, before_after_treatments.treatment_name, standards.min_value, standards.middle_value, standards.max_value, statuses.status_name`).
 		Joins("inner join standards on environmental_records.standard_id = standards.id").
 		Joins("inner join units on environmental_records.unit_id = units.id").
 		Joins("inner join before_after_treatments on environmental_records.before_after_treatment_id = before_after_treatments.id").
 		Joins("inner join statuses on environmental_records.status_id = statuses.id").
-		Where("environmental_records.parameter_id = ? ", parameter.ID).
-		Find(&firsttds)
+		Where("environmental_records.id IN (?)", subQuery).
+		Order("environmental_records.date DESC").
+		Find(&resultds).Error
 
-	// จัดการกรณีที่เกิดข้อผิดพลาด
-	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": result.Error.Error()})
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
-	// ส่งข้อมูลกลับในรูปแบบ JSON
-	c.JSON(http.StatusOK, firsttds)
+	c.JSON(http.StatusOK, resultds)
 }
 
 func DeleterTDS(c *gin.Context) {
@@ -268,6 +277,7 @@ func GetTDSTABLE(c *gin.Context) {
 		Preload("Unit").
 		Preload("Employee").
 		Where("parameter_id = ?", param.ID).
+		Order("date ASC").
 		Find(&tds)
 
 	if result.Error != nil {
@@ -309,6 +319,7 @@ func GetTDSTABLE(c *gin.Context) {
 			Joins("JOIN parameters p ON p.id = environmental_records.parameter_id").
 			Where("p.parameter_name = ?", "Total Dissolved Solids").
 			Where("DATE(environmental_records.date) = ?", dateStr).
+			Where("environmental_records.environment_id = ?", rec.EnvironmentID).
 			Order("environmental_records.date DESC").
 			First(&latestRec).Error
 
@@ -323,7 +334,8 @@ func GetTDSTABLE(c *gin.Context) {
 				}
 			}
 		}
-		if _, exists := tdsMap[k]; !exists {
+
+		if _, existds := tdsMap[k]; !existds {
 			unitName := rec.Unit.UnitName // default
 
 			// ลองใช้ unit ของ latestRec ถ้ามี
@@ -362,7 +374,7 @@ func GetTDSTABLE(c *gin.Context) {
 			tdsMap[k].Efficiency = &eff
 		}
 
-		// Status
+		// คำนวณ Status
 		if tdsMap[k].AfterValue != nil && latestRec.StandardID != 0 {
 			var std entity.Standard
 			if db.First(&std, latestRec.StandardID).Error == nil {
@@ -379,6 +391,13 @@ func GetTDSTABLE(c *gin.Context) {
 					} else {
 						tdsMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
 					}
+				}
+
+				// ✅ อัปเดตลง DB ทันที (อัปเดต record หลังการบำบัด)
+				if tdsMap[k].AfterID != nil {
+					db.Model(&entity.EnvironmentalRecord{}).
+						Where("id = ?", *tdsMap[k].AfterID).
+						Update("status_id", getStatusIDFromName(tdsMap[k].Status)) // แปลงชื่อเป็น ID
 				}
 			}
 		}
@@ -411,6 +430,14 @@ func GetTDSTABLE(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, mergedRecords)
+}
+
+func getStatusIDFromName(name string) uint {
+	var status entity.Status
+	if err := config.DB().Where("status_name = ?", name).First(&status).Error; err == nil {
+		return status.ID
+	}
+	return 0 // หรือค่าดีฟอลต์ถ้าไม่เจอ
 }
 
 func UpdateOrCreateTDS(c *gin.Context) {
@@ -536,11 +563,13 @@ func UpdateOrCreateTDS(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปเดตข้อมูลล้มเหลว"})
 			return
 		}
-
 		// ✅ อัปเดต Unit ให้ record ทั้งวันเดียวกัน
-		sameDay := input.Date.Truncate(24 * time.Hour)
+		sameDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
+		startOfDay := sameDay
+		endOfDay := sameDay.Add(24 * time.Hour)
+
 		db.Model(&entity.EnvironmentalRecord{}).
-			Where("DATE(date) = ?", sameDay.Format("2006-01-02")).
+			Where("date >= ? AND date < ?", startOfDay, endOfDay).
 			Update("unit_id", input.UnitID)
 
 		c.JSON(http.StatusOK, gin.H{"message": "อัปเดตข้อมูลสำเร็จ", "data": existing})
@@ -552,11 +581,13 @@ func UpdateOrCreateTDS(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "สร้างข้อมูลล้มเหลว"})
 			return
 		}
-
 		// ✅ อัปเดต Unit ให้ record ทั้งวันเดียวกัน
-		sameDay := input.Date.Truncate(24 * time.Hour)
+		sameDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
+		startOfDay := sameDay
+		endOfDay := sameDay.Add(24 * time.Hour)
+
 		db.Model(&entity.EnvironmentalRecord{}).
-			Where("DATE(date) = ?", sameDay.Format("2006-01-02")).
+			Where("date >= ? AND date < ?", startOfDay, endOfDay).
 			Update("unit_id", input.UnitID)
 
 		c.JSON(http.StatusOK, gin.H{"message": "สร้างข้อมูลใหม่สำเร็จ", "data": input})
@@ -647,6 +678,128 @@ func DeleteAllTDSRecordsByDate(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ลบข้อมูล TDS สำเร็จ",
 		"date":    dateKey,
+	})
+}
+
+func GetBeforeAfterTDS(c *gin.Context) {
+	db := config.DB()
+
+	// หา parameter ของ TDS
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?", "Total Dissolved Solids").First(&parameter).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+		return
+	}
+
+	var Before entity.BeforeAfterTreatment
+	if err := db.Where("treatment_name = ?", "ก่อน").First(&Before).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
+
+	var After entity.BeforeAfterTreatment
+	if err := db.Where("treatment_name = ?", "หลัง").First(&After).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
+
+	type TDSRecord struct {
+		ID                     *uint              `json:"ID"`
+		Date                   *time.Time         `json:"Date"`
+		Data                   *float64           `json:"Data"`
+		Note                   string             `json:"Note"`
+		BeforeAfterTreatmentID *uint              `json:"BeforeAfterTreatmentID"`
+		EnvironmentID          *uint              `json:"EnvironmentID"`
+		ParameterID            *uint              `json:"ParameterID"`
+		StandardID             *uint              `json:"StandardID"`
+		UnitID                 *uint              `json:"UnitID"`
+		EmployeeID             *uint              `json:"EmployeeID"`
+		MinValue               *Float64TwoDecimal `json:"MinValue"`
+		MiddleValue            *Float64TwoDecimal `json:"MiddleValue"`
+		MaxValue               *Float64TwoDecimal `json:"MaxValue"`
+		UnitName               string             `json:"UnitName"`
+	}
+
+	// ค่าว่างเริ่มต้น
+	defaultEmpty := TDSRecord{
+		ID:                     nil,
+		Date:                   nil,
+		Data:                   nil,
+		Note:                   "",
+		BeforeAfterTreatmentID: nil,
+		EnvironmentID:          nil,
+		ParameterID:            nil,
+		StandardID:             nil,
+		UnitID:                 nil,
+		EmployeeID:             nil,
+		MinValue:               nil,
+		MiddleValue:            nil,
+		MaxValue:               nil,
+		UnitName:               "",
+	}
+
+	var latestBefore TDSRecord
+	var latestAfter TDSRecord
+
+	// Query หา Before ล่าสุด
+	errBefore := db.Model(&entity.EnvironmentalRecord{}).
+		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note,
+				environmental_records.before_after_treatment_id, environmental_records.environment_id,
+				environmental_records.parameter_id, environmental_records.standard_id, environmental_records.unit_id,
+				environmental_records.employee_id, standards.min_value, standards.middle_value, standards.max_value,
+				units.unit_name`).
+		Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
+		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
+		Where("parameter_id = ? AND before_after_treatment_id = ?", parameter.ID, Before.ID).
+		Order("environmental_records.date DESC").
+		First(&latestBefore).Error
+
+	// Query หา After ล่าสุด
+	errAfter := db.Model(&entity.EnvironmentalRecord{}).
+		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note,
+				environmental_records.before_after_treatment_id, environmental_records.environment_id,
+				environmental_records.parameter_id, environmental_records.standard_id, environmental_records.unit_id,
+				environmental_records.employee_id, standards.min_value, standards.middle_value, standards.max_value,
+				units.unit_name`).
+		Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
+		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
+		Where("parameter_id = ? AND before_after_treatment_id = ?", parameter.ID, After.ID).
+		Order("environmental_records.date DESC").
+		First(&latestAfter).Error
+
+	// ถ้าไม่มีทั้ง Before และ After
+	if errBefore != nil && errAfter != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "No TDS records found"})
+		return
+	}
+
+	// ตรวจสอบวันที่
+	beforeRes := defaultEmpty
+	afterRes := defaultEmpty
+
+	if errBefore == nil && errAfter == nil {
+		if latestBefore.Date != nil && latestAfter.Date != nil &&
+			latestBefore.Date.Format("2006-01-02") == latestAfter.Date.Format("2006-01-02") {
+			// วันที่ตรงกัน
+			beforeRes = latestBefore
+			afterRes = latestAfter
+		} else {
+			// วันไม่ตรงกัน → เอาที่ล่าสุดกว่า
+			if latestBefore.Date != nil && (latestAfter.Date == nil || latestBefore.Date.After(*latestAfter.Date)) {
+				beforeRes = latestBefore
+			} else {
+				afterRes = latestAfter
+			}
+		}
+	} else if errBefore == nil {
+		beforeRes = latestBefore
+	} else if errAfter == nil {
+		afterRes = latestAfter
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"before": beforeRes,
+		"after":  afterRes,
 	})
 }
 
