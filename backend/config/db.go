@@ -120,8 +120,10 @@ func SetupDatabase() {
 	// Unit
 	Unit := entity.Unit{UnitName: "mg/L"}
 	Unit2 := entity.Unit{UnitName: "ไม่มีหน่วย"}
+	Unit3 := entity.Unit{UnitName: "Kg"}
 	db.FirstOrCreate(&Unit, &entity.Unit{UnitName: "mg/L"})
 	db.FirstOrCreate(&Unit2, &entity.Unit{UnitName: "ไม่มีหน่วย"})
+	db.FirstOrCreate(&Unit3, &entity.Unit{UnitName: "Kg"})
 
 	//BeforeAfter
 	Before := entity.BeforeAfterTreatment{TreatmentName: "ก่อน"}
@@ -193,17 +195,17 @@ func SetupDatabase() {
 		db.FirstOrCreate(&stackedGraph, entity.HardwareGraph{Graph: "Stacked"})
 
 		// ----- สร้าง StandardHardware 5 ค่า -----
-		formaldehydeStd := entity.StandardHardware{MaxValueStandard: 5,MinValueStandard: 2}
-		temperatureStd := entity.StandardHardware{MaxValueStandard: 30,MinValueStandard: 20}
-		humidityStd := entity.StandardHardware{MaxValueStandard: 70,MinValueStandard: 30}
-		lightStd := entity.StandardHardware{MaxValueStandard: 200,MinValueStandard: 100}
-		gasStd := entity.StandardHardware{MaxValueStandard: 7,MinValueStandard: 3}
+		formaldehydeStd := entity.StandardHardware{MaxValueStandard: 5, MinValueStandard: 2}
+		temperatureStd := entity.StandardHardware{MaxValueStandard: 30, MinValueStandard: 20}
+		humidityStd := entity.StandardHardware{MaxValueStandard: 70, MinValueStandard: 30}
+		lightStd := entity.StandardHardware{MaxValueStandard: 200, MinValueStandard: 100}
+		gasStd := entity.StandardHardware{MaxValueStandard: 7, MinValueStandard: 3}
 
-		db.FirstOrCreate(&formaldehydeStd, entity.StandardHardware{MaxValueStandard: 5,MinValueStandard: 2})
-		db.FirstOrCreate(&temperatureStd, entity.StandardHardware{MaxValueStandard: 30,MinValueStandard: 20})
-		db.FirstOrCreate(&humidityStd, entity.StandardHardware{MaxValueStandard: 70,MinValueStandard: 30})
-		db.FirstOrCreate(&lightStd, entity.StandardHardware{MaxValueStandard: 200,MinValueStandard: 100})
-		db.FirstOrCreate(&gasStd, entity.StandardHardware{MaxValueStandard: 7,MinValueStandard: 3})
+		db.FirstOrCreate(&formaldehydeStd, entity.StandardHardware{MaxValueStandard: 5, MinValueStandard: 2})
+		db.FirstOrCreate(&temperatureStd, entity.StandardHardware{MaxValueStandard: 30, MinValueStandard: 20})
+		db.FirstOrCreate(&humidityStd, entity.StandardHardware{MaxValueStandard: 70, MinValueStandard: 30})
+		db.FirstOrCreate(&lightStd, entity.StandardHardware{MaxValueStandard: 200, MinValueStandard: 100})
+		db.FirstOrCreate(&gasStd, entity.StandardHardware{MaxValueStandard: 7, MinValueStandard: 3})
 
 		// ----- สร้าง UnitHardware -----
 		unitPPM := entity.UnitHardware{Unit: "ppm"}
@@ -223,7 +225,7 @@ func SetupDatabase() {
 			Parameter:                "Formaldehyde",
 			Icon:                     "GiChemicalDrop",
 			GroupDisplay:             false,
-			LayoutDisplay: 		  false,
+			LayoutDisplay:            false,
 			Alert:                    false,
 			HardwareParameterColorID: colorPurple.ID,
 			HardwareGraphID:          defaultGraph.ID,
@@ -231,11 +233,11 @@ func SetupDatabase() {
 			UnitHardwareID:           unitPPM.ID,
 		}
 		paramhardware2 := entity.HardwareParameter{
-			Parameter:    "Temperature",
-			Icon:         "GiChemicalDrop",
-			GroupDisplay: false,
-			LayoutDisplay: false,
-			Alert: false,
+			Parameter:                "Temperature",
+			Icon:                     "GiChemicalDrop",
+			GroupDisplay:             false,
+			LayoutDisplay:            false,
+			Alert:                    false,
 			HardwareParameterColorID: colorBlue.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       temperatureStd.ID,
@@ -245,7 +247,7 @@ func SetupDatabase() {
 			Parameter:                "Humidity",
 			Icon:                     "GiChemicalDrop",
 			GroupDisplay:             false,
-			LayoutDisplay: false,
+			LayoutDisplay:            false,
 			Alert:                    false,
 			HardwareParameterColorID: colorOrange.ID,
 			HardwareGraphID:          defaultGraph.ID,
@@ -256,7 +258,7 @@ func SetupDatabase() {
 			Parameter:                "Light",
 			Icon:                     "GiChemicalDrop",
 			GroupDisplay:             false,
-			LayoutDisplay: false,
+			LayoutDisplay:            false,
 			Alert:                    false,
 			HardwareParameterColorID: colorYellow.ID,
 			HardwareGraphID:          defaultGraph.ID,
@@ -267,7 +269,7 @@ func SetupDatabase() {
 			Parameter:                "Gas",
 			Icon:                     "GiChemicalDrop",
 			GroupDisplay:             false,
-			LayoutDisplay: false,
+			LayoutDisplay:            false,
 			Alert:                    false,
 			HardwareParameterColorID: colorGreen.ID,
 			HardwareGraphID:          defaultGraph.ID,
@@ -464,8 +466,8 @@ func SetupDatabase() {
 					SensorDataID:        1,
 					HardwareParameterID: 1,
 					Date:                date,
-					Note: 			 "",
-					Status: true,
+					Note:                "",
+					Status:              true,
 				}
 				db.Create(&param1)
 				formIndex++
@@ -477,8 +479,8 @@ func SetupDatabase() {
 					SensorDataID:        1,
 					HardwareParameterID: 2,
 					Date:                date,
-					Note: 			 "",
-					Status: true,
+					Note:                "",
+					Status:              true,
 				}
 				db.Create(&param2)
 				index++
@@ -489,8 +491,8 @@ func SetupDatabase() {
 					SensorDataID:        1,
 					HardwareParameterID: 3,
 					Date:                date,
-					Note: 			 "",
-					Status: true,
+					Note:                "",
+					Status:              true,
 				}
 				db.Create(&param3)
 				index++
@@ -501,8 +503,8 @@ func SetupDatabase() {
 					SensorDataID:        1,
 					HardwareParameterID: 4,
 					Date:                date,
-					Note: 			 "",
-					Status: true,
+					Note:                "",
+					Status:              true,
 				}
 				db.Create(&param4)
 				index++
@@ -513,8 +515,8 @@ func SetupDatabase() {
 					SensorDataID:        1,
 					HardwareParameterID: 5,
 					Date:                date,
-					Note: 			 "",
-					Status: true,
+					Note:                "",
+					Status:              true,
 				}
 				db.Create(&param5)
 				index++
@@ -802,5 +804,60 @@ func SetupDatabase() {
 	}
 
 	fmt.Println("Insert TDS seed data done!")
+	target1 := entity.Target{
+		MaxTarget:    0,
+		MiddleTarget: 0.7,
+		MinTarget:    0,
+	}
+	db.FirstOrCreate(&target1, entity.Target{MaxTarget: 0, MiddleTarget: 0.7, MinTarget: 0})
+
+	target2 := entity.Target{
+		MaxTarget:    0,
+		MiddleTarget: 1,
+		MinTarget:    0,
+	}
+	db.FirstOrCreate(&target2, entity.Target{MaxTarget: 0, MiddleTarget: 1, MinTarget: 0})
+
+	infectiousWastePerDay := []float64{794.26, 920.71, 7615.73, 6823.23, 6033.60}
+	infectiousWastePerMonth := []float64{24622.00, 25780.00, 228472.00, 211520.00, 181008.00}
+	infectiousWastePerAADC := []float64{0.02, 0.77, 5.67, 5.04, 3.89}
+	// infectiousWastetargetAADC := []float64{0.70, 0.70, 0.70, 0.70, 0.70}
+	infectiousWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(infectiousWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", infectiousWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะติดเชื้อ Parse date error :", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		var statusIDBeforeinfec uint
+		if infectiousWastePerAADC[i] <= 0.7 {
+			statusIDBeforeinfec = status2.ID
+		} else {
+			statusIDBeforeinfec = status1.ID
+		}
+
+		// --- ก่อนบำบัด ---
+		infectiousWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      infectiousWastePerMonth[i],
+			Quantity:            1200,
+			AverageDailyGarbage: infectiousWastePerDay[i],
+			AADC:                infectiousWastePerAADC[i],
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param22.ID,
+			TargetID:            &target1.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            &statusIDBeforeinfec,
+		}
+		db.FirstOrCreate(&infectiousWaste, entity.Garbage{
+			Date:          date,
+            EnvironmentID: Garbage.ID,
+            ParameterID:   param22.ID,
+            TargetID:      &target1.ID,
+		})
+	}
 
 }
