@@ -1,14 +1,14 @@
 import React from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { Button } from 'antd';
-import './EnvironmentGrabageTab.css'
+import '../wastewater/EnvironmentWastewaterTabs.css'
 
 const tabsRow1 = [
   { label: 'Chemica-Waste', path: '/admin/data-management/garbage/chemica' },
   { label: 'General-Waste', path: '/admin/data-management/garbage/general' },
-  { label: 'hazardous-Waste', path: '/admin/data-management/garbage/hazardous' },
-  { label: 'infectious-Waste', path: '/admin/data-management/garbage/infectious' },
-  { label: 'recycled-Waste', path: '/admin/data-management/garbage/recycled' },];
+  { label: 'Hazardous-Waste', path: '/admin/data-management/garbage/hazardous' },
+  { label: 'Infectious-Waste', path: '/admin/data-management/garbage/infectious' },
+  { label: 'Recycled-Waste', path: '/admin/data-management/garbage/recycled' },];
 
 
 const EnvironmentLayout: React.FC = () => {
@@ -36,8 +36,8 @@ const EnvironmentLayout: React.FC = () => {
             type={active ? 'primary' : 'text'}
             onClick={() => navigate(path)}
             style={{
-              backgroundColor: active ? 'black' : undefined,
-              borderColor: active ? 'black' : undefined,
+              backgroundColor: active ? '#1a4b57' : undefined,
+              borderColor: active ? '#1a4b57' : undefined,
               color: active ? 'white' : undefined,
               height: '2.5em',
               width: '150px',
@@ -56,11 +56,13 @@ const EnvironmentLayout: React.FC = () => {
 
   return (
     <div>
-      <div className="tabs-header">
-        <h1>ขยะ</h1>
-        <p>
-          โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
-        </p>
+      <div className="w-tabs-header">
+        <div>
+          <h1>ขยะ</h1>
+          <p>
+            โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
+          </p>
+        </div>
       </div>
 
       <br />

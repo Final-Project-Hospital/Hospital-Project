@@ -194,3 +194,25 @@ export const DeleteAllSULRecordsByDate = async (
     return null;
   }
 };
+
+export const GetBeforeAfterSUL = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-beforeafter-sul`,{
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating SUL record:", error.response?.data || error.message);
+    return null;
+  }
+};

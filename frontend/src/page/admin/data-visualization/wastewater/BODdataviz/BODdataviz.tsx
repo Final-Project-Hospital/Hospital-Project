@@ -1244,7 +1244,7 @@ const BODdataviz: React.FC = () => {
             <h1 className="bod-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
           </div>
           <div className="bod-task-summary">
-            <div className="bod-task-total">จำนวนทั้งหมด <span style={{ color: "#157071", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
+            <div className="bod-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="bod-task-stats">
               <div className="bod-task-item">
                 <div className="bod-task-number">{doneTasks}</div>

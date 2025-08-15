@@ -172,7 +172,7 @@ export const GetALbyID = async (id: number): Promise<any | null> => {
   }
 };
 
-export const DeleteAllALRalrdsByDate = async (
+export const DeleteAllALRecordsByDate = async (
   id: number
 ): Promise<any | null> => {
   try {
@@ -191,6 +191,28 @@ export const DeleteAllALRalrdsByDate = async (
     }
   } catch (error: any) {
     console.error("Error deleting AL records by date:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const GetBeforeAfterAL = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-beforeafter-al`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating AL record:", error.response?.data || error.message);
     return null;
   }
 };

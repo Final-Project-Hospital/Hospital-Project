@@ -6,6 +6,13 @@ import { GetfirstPH } from '../../../../services/wastewaterServices/ph';
 import { GetfirstTDS } from '../../../../services/tdsService';
 import { GetfirstBOD } from '../../../../services/bodService';
 import { GetfirstFOG } from '../../../../services/wastewaterServices/fog';
+import { GetfirstTS } from '../../../../services/wastewaterServices/ts';
+import { GetfirstTKN } from '../../../../services/wastewaterServices/tkn';
+import { GetfirstCOD } from '../../../../services/wastewaterServices/cod';
+import { GetfirstFCB } from '../../../../services/wastewaterServices/fcb';
+import { GetfirstRES } from '../../../../services/wastewaterServices/res';
+import { GetfirstSUL } from '../../../../services/wastewaterServices/sul';
+import { GetfirstTCB } from '../../../../services/wastewaterServices/tcb';
 
 import ph from '../../../../../src/assets/ph.png';
 import bod from '../../../../../src/assets/blood-analysis.png';
@@ -25,23 +32,23 @@ const { Footer } = Layout;
 const EnvironmentBlock = () => {
   const navigate = useNavigate();
   const [centers, setCenters] = useState([
-    { name: 'PH Center', standard: '-', image: ph, path: 'datavizPH' },
-    { name: 'BOD Center', standard: '-', image: bod, path: 'datavizBOD' },
-    { name: 'TS Center', standard: '30', image: ts, path: 'datavizTS' },
-    { name: 'TDS Center', standard: '-', image: tds, path: 'datavizTDS' },
-    { name: 'FOG Center', standard: '20', image: fog, path: 'datavizFOG' },
-    { name: 'TKN Center', standard: '35', image: tkn, path: 'datavizTKN' },
-    { name: 'COD Center', standard: '-', image: cod, path: 'datavizCOD' },
-    { name: 'FCB Center', standard: '30', image: fcb, path: 'datavizFCB' },
-    { name: 'Residule Center', standard: '-', image: res, path: 'datavizRES' },
-    { name: 'Sulfide Center', standard: '20', image: sul, path: 'datavizSUL' },
-    { name: 'TCB Center', standard: '35', image: tcb, path: 'datavizTCB' },
+    { name: 'pH Center', standard: '-', image: ph, path: 'datavizPH' },//
+    { name: 'BOD Center', standard: '-', image: bod, path: 'datavizBOD' },//
+    { name: 'TS Center', standard: '-', image: ts, path: 'datavizTS' },//
+    { name: 'TDS Center', standard: '-', image: tds, path: 'datavizTDS' },//
+    { name: 'FOG Center', standard: '-', image: fog, path: 'datavizFOG' },//
+    { name: 'TKN Center', standard: '-', image: tkn, path: 'datavizTKN' },//
+    { name: 'COD Center', standard: '-', image: cod, path: 'datavizCOD' },//
+    { name: 'FCB Center', standard: '-', image: fcb, path: 'datavizFCB' },//
+    { name: 'Residule Center', standard: '-', image: res, path: 'datavizRES' },//
+    { name: 'Sulfide Center', standard: '-', image: sul, path: 'datavizSUL' },
+    { name: 'TCB Center', standard: '-', image: tcb, path: 'datavizTCB' },
 
   ]);
 
   const getTooltip = (name: string) => {
     switch (name) {
-      case 'PH Center':
+      case 'pH Center':
         return (
           <>
             Potential of Hydrogen (pH)<br />
@@ -126,11 +133,18 @@ const EnvironmentBlock = () => {
   useEffect(() => {
     const fetchStandards = async () => {
       try {
-        const [phRes, tdsRes, bodRes, fogRes] = await Promise.all([
+        const [phRes, tdsRes, bodRes, fogRes, tsRes, tknRes, codRes, fcbRes, resRes, sulRes, tcbRes] = await Promise.all([
           GetfirstPH(),
           GetfirstTDS(),
           GetfirstBOD(),
           GetfirstFOG(),
+          GetfirstTS(),
+          GetfirstTKN(),
+          GetfirstCOD(),
+          GetfirstFCB(),
+          GetfirstRES(),
+          GetfirstSUL(),
+          GetfirstTCB(),
         ]);
 
         const getDisplayStandard = (data: any) => {
@@ -144,10 +158,17 @@ const EnvironmentBlock = () => {
         const bodStandard = getDisplayStandard(bodRes.data || bodRes);
         const tdsStandard = getDisplayStandard(tdsRes.data || tdsRes);
         const fogStandard = getDisplayStandard(fogRes.data || fogRes);
+        const tsStandard = getDisplayStandard(tsRes.data || tsRes);
+        const tknStandard = getDisplayStandard(tknRes.data || tknRes);
+        const codStandard = getDisplayStandard(codRes.data || codRes);
+        const fcbStandard = getDisplayStandard(fcbRes.data || fcbRes);
+        const resStandard = getDisplayStandard(resRes.data || resRes);
+        const sulStandard = getDisplayStandard(sulRes.data || sulRes);
+        const tcbStandard = getDisplayStandard(tcbRes.data || tcbRes);
 
         setCenters(prev =>
           prev.map(center => {
-            if (center.name === 'PH Center') {
+            if (center.name === 'pH Center') {
               return { ...center, standard: phStandard };
             } else if (center.name === 'TDS Center') {
               return { ...center, standard: tdsStandard };
@@ -155,7 +176,21 @@ const EnvironmentBlock = () => {
               return { ...center, standard: bodStandard };
             } else if (center.name === 'FOG Center') {
               return { ...center, standard: fogStandard };
-            }
+            } else if (center.name === 'TS Center') {
+              return { ...center, standard: tsStandard };
+            } else if (center.name === 'TKN Center') {
+              return { ...center, standard: tknStandard };
+            } else if (center.name === 'COD Center') {
+              return { ...center, standard: codStandard };
+            } else if (center.name === 'FCB Center') {
+              return { ...center, standard: fcbStandard };
+            } else if (center.name === 'Residule Center') {
+              return { ...center, standard: resStandard };
+            } else if (center.name === 'Sulfide Center') {
+              return { ...center, standard: sulStandard };
+            } else if (center.name === 'TCB Center') {
+              return { ...center, standard: tcbStandard };
+            };
             return center;
           })
         );
@@ -169,11 +204,13 @@ const EnvironmentBlock = () => {
 
   return (
     <div>
-      <div className="title-header">
-        <h1>น้ำเสีย</h1>
-        <p>
-          โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
-        </p>
+      <div className="w-title-header">
+        <div>
+          <h1>น้ำเสีย</h1>
+          <p>
+            โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
+          </p>
+        </div>
       </div>
 
       <div className="wqc-grid">
@@ -198,7 +235,7 @@ const EnvironmentBlock = () => {
 
       <Outlet />
       <Layout>
-        <Footer style={{textAlign:"center",padding:"10px"}} >Icons made by 
+        <Footer style={{ textAlign: "center", padding: "10px" }} >Icons made by
           <a href="https://www.flaticon.com/authors/iconjam" title="Iconjam"> Iconjam</a>,
           <a href="https://www.flaticon.com/authors/freepik" title="Freepik"> Freepik</a>,
           <a href="https://www.flaticon.com/authors/paul-j" title="Andinur"> Paul J.</a>,

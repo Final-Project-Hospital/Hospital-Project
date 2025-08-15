@@ -194,3 +194,25 @@ export const DeleteAllFOGRecordsByDate = async (
     return null;
   }
 };
+
+export const GetBeforeAfterFOG = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-beforeafter-fog`,{
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating FOG record:", error.response?.data || error.message);
+    return null;
+  }
+};

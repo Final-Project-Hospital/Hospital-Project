@@ -1,11 +1,16 @@
-import './EnvironmentTapwaterBlock.css';
+import '../wastewater/EnvironmentWastewaterBlock.css';
 import { Tooltip } from 'antd';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { GetfirstPH } from '../../../../services/wastewaterServices/ph';
-import { GetfirstTDS } from '../../../../services/tdsService';
-import { GetfirstBOD } from '../../../../services/bodService';
-import { GetfirstFOG } from '../../../../services/wastewaterServices/fog';
+import { GetfirstAL } from '../../../../services/tapwaterServices/al';
+import { GetfirstIRON } from '../../../../services/tapwaterServices/iron';
+import { GetfirstMN } from '../../../../services/tapwaterServices/mn';
+import { GetfirstNI } from '../../../../services/tapwaterServices/ni';
+import { GetfirstNTU } from '../../../../services/tapwaterServices/ntu';
+import { GetfirstPT } from '../../../../services/tapwaterServices/pt';
+import { GetfirstTCOD } from '../../../../services/tapwaterServices/tcod';
+import { GetfirstTH } from '../../../../services/tapwaterServices/th';
+import { GetfirstTTCB } from '../../../../services/tapwaterServices/ttcb';
 
 import al from '../../../../../src/assets/tapwater/aluminium.png';
 import ir from '../../../../../src/assets/tapwater/iron.png';
@@ -22,10 +27,10 @@ const { Footer } = Layout;
 const EnvironmentBlock = () => {
   const navigate = useNavigate();
   const [centers, setCenters] = useState([
-    { name: 'AL Center', standard: '-', image: al, path: 'datavizAL' },
-    { name: 'IR Center', standard: '-', image: ir, path: 'datavizIR' },
-    { name: 'MN Center', standard: '30', image: mn, path: 'datavizMN' },
-    { name: 'NI Center', standard: '-', image: ni, path: 'datavizNI' },
+    { name: 'Al Center', standard: '-', image: al, path: 'datavizAL' },
+    { name: 'Fe Center', standard: '-', image: ir, path: 'datavizIR' },
+    { name: 'Mn Center', standard: '30', image: mn, path: 'datavizMN' },
+    { name: 'Nitrate Center', standard: '-', image: ni, path: 'datavizNI' },
     { name: 'NTU Center', standard: '20', image: ntu, path: 'datavizNTU' },
     { name: 'PT Center', standard: '35', image: pt, path: 'datavizPT' },
     { name: 'COD Center', standard: '-', image: tcod, path: 'datavizTCOD' },
@@ -36,32 +41,32 @@ const EnvironmentBlock = () => {
 
   const getTooltip = (name: string) => {
     switch (name) {
-      case 'AL Center':
+      case 'Al Center':
         return (
           <>
             Aluminum (Al)<br />
             คือ ธาตุอะลูมิเนียม<br />ส่วนใหญ่พบจากสารส้มที่ใช้ในการตกตะกอน
           </>
         );
-      case 'IR Center':
+      case 'Fe Center':
         return (
           <>
             Iron (Fe)<br />
             คือ ธาตุเหล็ก<br />หากมีมากทำให้น้ำมีสี กลิ่น และตะกอน
           </>
         );
-      case 'MN Center':
+      case 'Mn Center':
         return (
           <>
             Manganese (Mn)<br />
             คือ ธาตุแมงกานีส<br />ถ้ามีมากจะทำให้น้ำมีสีคล้ำและตกตะกอน
           </>
         );
-      case 'NI Center':
+      case 'Nitrate Center':
         return (
           <>
-            Nickel (Ni)<br />
-            คือ ธาตุนิกเกิล<br />หากสะสมมากอาจเป็นอันตรายต่อสุขภาพ
+            Nitrate (NO₃⁻)<br />
+            คือ ธาตุไนเตรต<br />สารประกอบของไนโตรเจนในรูปออกซิไดซ์สูงสุด
           </>
         );
       case 'NTU Center':
@@ -107,11 +112,16 @@ const EnvironmentBlock = () => {
   useEffect(() => {
     const fetchStandards = async () => {
       try {
-        const [phRes, tdsRes, bodRes, fogRes] = await Promise.all([
-          GetfirstPH(),
-          GetfirstTDS(),
-          GetfirstBOD(),
-          GetfirstFOG(),
+        const [alRes, ironRes, mnRes, niRes, ntuRes, ptRes, tcodRes, thRes, ttcbRes] = await Promise.all([
+          GetfirstAL(),
+          GetfirstIRON(),
+          GetfirstMN(),
+          GetfirstNI(),
+          GetfirstNTU(),
+          GetfirstPT(),
+          GetfirstTCOD(),
+          GetfirstTH(),
+          GetfirstTTCB(),
         ]);
 
         const getDisplayStandard = (data: any) => {
@@ -121,21 +131,36 @@ const EnvironmentBlock = () => {
           return '-';
         };
 
-        const phStandard = getDisplayStandard(phRes.data || phRes);
-        const bodStandard = getDisplayStandard(bodRes.data || bodRes);
-        const tdsStandard = getDisplayStandard(tdsRes.data || tdsRes);
-        const fogStandard = getDisplayStandard(fogRes.data || fogRes);
+        const alStandard = getDisplayStandard(alRes.data || alRes);
+        const ironStandard = getDisplayStandard(ironRes.data || ironRes);
+        const mnStandard = getDisplayStandard(mnRes.data || mnRes);
+        const niStandard = getDisplayStandard(niRes.data || niRes);
+        const ntuStandard = getDisplayStandard(ntuRes.data || ntuRes);
+        const ptStandard = getDisplayStandard(ptRes.data || ptRes);
+        const tcodStandard = getDisplayStandard(tcodRes.data || tcodRes);
+        const thStandard = getDisplayStandard(thRes.data || thRes);
+        const ttcbStandard = getDisplayStandard(ttcbRes.data || ttcbRes);
 
         setCenters(prev =>
           prev.map(center => {
-            if (center.name === 'PH Center') {
-              return { ...center, standard: phStandard };
-            } else if (center.name === 'TDS Center') {
-              return { ...center, standard: tdsStandard };
-            } else if (center.name === 'BOD Center') {
-              return { ...center, standard: bodStandard };
-            } else if (center.name === 'FOG Center') {
-              return { ...center, standard: fogStandard };
+            if (center.name === 'Al Center') {
+              return { ...center, standard: alStandard };
+            } else if (center.name === 'Fe Center') {
+              return { ...center, standard: ironStandard };
+            } else if (center.name === 'Mn Center') {
+              return { ...center, standard: mnStandard };
+            } else if (center.name === 'Nitrate Center') {
+              return { ...center, standard: niStandard };
+            } else if (center.name === 'NTU Center') {
+              return { ...center, standard: ntuStandard };
+            } else if (center.name === 'PT Center') {
+              return { ...center, standard: ptStandard };
+            } else if (center.name === 'COD Center') {
+              return { ...center, standard: tcodStandard };
+            } else if (center.name === 'TH Center') {
+              return { ...center, standard: thStandard };
+            } else if (center.name === 'TCB Center') {
+              return { ...center, standard: ttcbStandard };
             }
             return center;
           })
@@ -150,11 +175,13 @@ const EnvironmentBlock = () => {
 
   return (
     <div>
-      <div className="title-header">
-        <h1>น้ำประปา</h1>
-        <p>
-          โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
-        </p>
+      <div className="w-title-header">
+        <div>
+          <h1>น้ำประปา</h1>
+          <p>
+            โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
+          </p>
+        </div>
       </div>
 
       <div className="wqc-grid">
@@ -179,8 +206,8 @@ const EnvironmentBlock = () => {
 
       <Outlet />
       <Layout>
-        <Footer style={{textAlign:"center",padding:"10px"}} >Icons made by 
-           <a href="https://www.flaticon.com/authors/iconjam" title="Iconjam"> Iconjam</a>,
+        <Footer style={{ textAlign: "center", padding: "10px" }} >Icons made by
+          <a href="https://www.flaticon.com/authors/iconjam" title="Iconjam"> Iconjam</a>,
           <a href="https://www.flaticon.com/authors/freepik" title="Freepik"> Freepik</a>,
           <a href="https://www.flaticon.com/authors/paul-j" title="Andinur"> Paul J.</a>,
           <a href="https://www.flaticon.com/authors/smashicons" title="Smashicons"> Smashicons</a>,

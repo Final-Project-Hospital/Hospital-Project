@@ -45,8 +45,8 @@ const EnvironmentLayout: React.FC = () => {
             type={active ? 'primary' : 'text'}
             onClick={() => navigate(path)}
             style={{
-              backgroundColor: active ? 'black' : undefined,
-              borderColor: active ? 'black' : undefined,
+              backgroundColor: active ? '#1a4b57' : undefined,
+              borderColor: active ? '#1a4b57' : undefined,
               color: active ? 'white' : undefined,
               height: '2.5em',
               width: '150px',
@@ -65,11 +65,13 @@ const EnvironmentLayout: React.FC = () => {
 
   return (
     <div>
-      <div className="tabs-header">
-        <h1>น้ำเสีย</h1>
-        <p>
-          โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
-        </p>
+      <div className="w-tabs-header">
+        <div>
+          <h1>น้ำเสีย</h1>
+          <p>
+            โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
+          </p>
+        </div>
       </div>
 
       <br />
