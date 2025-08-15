@@ -55,24 +55,25 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
     const fetchData = async () => {
       setLoading(true);
       const reportData = await ListReportHardware();
+      console.log(reportData);
 
       if (reportData && Array.isArray(reportData)) {
         const sortedReports = reportData.sort(
           (a, b) => new Date(b.Date).getTime() - new Date(a.Date).getTime()
         );
 
-        // ✅ กรองรายงานที่ไม่มี Standard หรือ Standard <= 0 ออกตั้งแต่ต้นทาง
+        // ✅ กรองเฉพาะที่มีมาตรฐานสูงสุดหรือมาตรฐานต่ำสุด > 0
         const validReports = sortedReports.filter((r) => {
-          const std = r?.HardwareParameter?.StandardHardware?.Standard;
-          const num = typeof std === "number" ? std : Number(std);
-          return Number.isFinite(num) && num > 0;
+          const maxStd = Number(r?.HardwareParameter?.StandardHardware?.MaxValueStandard ?? 0);
+          const minStd = Number(r?.HardwareParameter?.StandardHardware?.MinValueStandard ?? 0);
+          return (Number.isFinite(maxStd) && maxStd > 0) || (Number.isFinite(minStd) && minStd > 0);
         });
 
         setReports(validReports);
         setFilteredReports(validReports);
         onCountChange?.(validReports.length);
 
-        // ใช้ชุด validReports เพื่อสร้างตัวเลือกฟิลเตอร์
+        // ✅ ตัวเลือกฟิลเตอร์
         const buildings = [
           ...new Set(
             validReports
@@ -140,6 +141,7 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
     <div className="p-2">
       {!loading && (
         <>
+          {/* 🔹 ฟิลเตอร์ */}
           <div className="flex flex-col md:flex-row gap-2 mb-2">
             <Select
               allowClear
@@ -173,7 +175,7 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
 
             <Select
               allowClear
-              placeholder="Parameter"
+              placeholder="พารามิเตอร์"
               className="w-full text-sm"
               onChange={setParameterFilter}
               value={parameterFilter}
@@ -187,6 +189,7 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
             </Select>
           </div>
 
+          {/* 🔹 เลือกช่วงเวลา */}
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <DropDownListComponent
               id="time"
@@ -195,17 +198,16 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
               value={timeRangeType}
               change={(e) => {
                 setTimeRangeType(e.value);
-                setSelectedRange(null); // reset เมื่อเปลี่ยนช่วงเวลา
+                setSelectedRange(null);
               }}
               placeholder="Select Range"
               popupHeight="180px"
               cssClass="w-full sm:w-40 border border-teal-500 rounded-md px-2 py-1"
             />
 
-            {/* ✅ Show Selector by time type */}
             {timeRangeType === "day" && (
               <DateRangePickerComponent
-                placeholder="Select date(s)"
+                placeholder="เลือกวันที่"
                 change={(e) => setSelectedRange(e.value)}
                 max={new Date()}
                 cssClass="w-full"
@@ -219,7 +221,7 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
                   value={selectedRange?.month || ""}
                   onChange={(e) => setSelectedRange({ ...selectedRange, month: e.target.value })}
                 >
-                  <option value="">Select Month</option>
+                  <option value="">เลือกเดือน</option>
                   {months.map((m) => (
                     <option key={m.value} value={m.value}>
                       {m.label}
@@ -231,7 +233,7 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
                   value={selectedRange?.year || ""}
                   onChange={(e) => setSelectedRange({ ...selectedRange, year: e.target.value })}
                 >
-                  <option value="">Select Year</option>
+                  <option value="">เลือกปี</option>
                   {years.map((y) => (
                     <option key={y} value={y}>
                       {y}
@@ -250,7 +252,7 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
                     setSelectedRange([+e.target.value, selectedRange?.[1] || +e.target.value])
                   }
                 >
-                  <option value="">Start Year</option>
+                  <option value="">ปีเริ่มต้น</option>
                   {years.map((y) => (
                     <option key={y} value={y}>
                       {y}
@@ -264,7 +266,7 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
                     setSelectedRange([selectedRange?.[0] || +e.target.value, +e.target.value])
                   }
                 >
-                  <option value="">End Year</option>
+                  <option value="">ปีสิ้นสุด</option>
                   {years.map((y) => (
                     <option key={y} value={y}>
                       {y}
@@ -277,19 +279,20 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
         </>
       )}
 
+      {/* 🔹 แสดงรายการแจ้งเตือน */}
       <div style={{ maxHeight: "300px", overflowY: "auto" }}>
         {loading ? (
-          <div className="text-center text-gray-400 py-10">Loading...</div>
+          <div className="text-center text-gray-400 py-10">กำลังโหลดข้อมูล...</div>
         ) : filteredReports.length > 0 ? (
           filteredReports.map((item) => {
-            const parameter = item.HardwareParameter?.Parameter || "Unknown Parameter";
+            const parameter = item.HardwareParameter?.Parameter || "ไม่ทราบพารามิเตอร์";
             const value = item.Data.toFixed(2);
-            const standard =
-              item.HardwareParameter?.StandardHardware?.Standard?.toFixed(2) ?? "-";
+            const maxStd = Number(item.HardwareParameter?.StandardHardware?.MaxValueStandard ?? 0);
+            const minStd = Number(item.HardwareParameter?.StandardHardware?.MinValueStandard ?? 0);
             const unit = item.HardwareParameter?.UnitHardware?.Unit || "";
 
             const dateObj = new Date(item.Date);
-            const time = dateObj.toLocaleTimeString("en-GB", {
+            const time = dateObj.toLocaleTimeString("th-TH", {
               hour: "2-digit",
               minute: "2-digit",
             });
@@ -304,13 +307,22 @@ const NotificationHardware: React.FC<NotificationHardwareProps> = ({ onCountChan
             const floor = roomInfo?.Floor ?? "-";
             const buildingName = roomInfo?.Building?.BuildingName || "ไม่ทราบอาคาร";
 
-            const title = `${parameter} Over Limit`;
-            const description = `ตรวจพบค่า ${parameter} = ${value} ${unit} (เกิน ${standard}) ที่ห้อง ${roomName} ชั้น ${floor} อาคาร ${buildingName} วันที่ ${date} เวลา ${time}`;
+            let statusText = "";
+            if (maxStd > 0 && item.Data > maxStd) {
+              statusText = `(เกินค่ามาตรฐาน ${maxStd.toFixed(2)})`;
+            } else if (minStd > 0 && item.Data < minStd) {
+              statusText = `(ต่ำกว่าค่ามาตรฐาน ${minStd.toFixed(2)})`;
+            } else {
+              return null; // ถ้าไม่เกินและไม่ต่ำกว่า ให้ไม่แสดง
+            }
+
+            const title = `${parameter} ${statusText.includes("เกิน") ? "เกิน" : "ต่ำกว่า"}มาตรฐาน`;
+            const description = `ตรวจพบค่า ${parameter} = ${value} ${unit} ${statusText} ที่ห้อง ${roomName} ชั้น ${floor} อาคาร ${buildingName} วันที่ ${date} เวลา ${time}`;
 
             return <NotificationItem key={item.ID} title={title} description={description} />;
           })
         ) : (
-          <div className="text-center text-gray-400 py-10">ไม่พบข้อมูลการเเจ้งเตือน</div>
+          <div className="text-center text-gray-400 py-10">ไม่พบข้อมูลการแจ้งเตือน</div>
         )}
       </div>
     </div>
