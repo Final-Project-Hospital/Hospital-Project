@@ -48,7 +48,7 @@ const UpdateSULCentralForm: React.FC<UpdateSULCentralFormProps> = ({
 
     const renderCustomTreatmentLabel = (text: string) => (
         <>
-            ค่า SUL บริเวณบ่อพักน้ำทิ้ง
+            ค่า Sulfide บริเวณบ่อพักน้ำทิ้ง
             <span style={{ color: '#f45415ff', fontWeight: 'bold' }}>{text}</span>
             เข้าระบบบำบัด
         </>

@@ -1,7 +1,7 @@
-import React from 'react'; 
+import React from 'react';
 import { Button } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import './EnvironmentDrinkwaterTabs.css';
+import '../wastewater/EnvironmentWastewaterTabs.css';
 
 const tabs = [
   { label: 'E coli-Central', path: '/admin/data-management/drinkwater/ecoli' },
@@ -15,11 +15,13 @@ const EnvironmentLayout: React.FC = () => {
 
   return (
     <div>
-      <div className="tabs-header">
-        <h1>น้ำดื่ม</h1>
-        <p>
-          โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
-        </p>
+      <div className="w-tabs-header">
+        <div>
+          <h1>น้ำดื่ม</h1>
+          <p>
+            โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
+          </p>
+        </div>
       </div>
       <br />
       <div className="tabs">
@@ -30,7 +32,7 @@ const EnvironmentLayout: React.FC = () => {
               key={path}
               type={active ? 'primary' : 'text'}
               onClick={() => navigate(path)}
-              style={active ? { backgroundColor: 'black', borderColor: 'black', color: 'white' } : {}}
+              style={active ? { backgroundColor: '#1a4b57', borderColor: '#1a4b57', color: 'white' } : {}}
             >
               {label}
             </Button>

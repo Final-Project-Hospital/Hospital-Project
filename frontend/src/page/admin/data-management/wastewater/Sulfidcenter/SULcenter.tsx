@@ -40,7 +40,7 @@ const SULCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
         return (
             <>
-                ค่า SUL บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
+                ค่า Sulfide บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
             </>
         );
     };
@@ -236,7 +236,7 @@ const SULCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             if (response.status === 201) {
                 messageApi.open({
                     type: 'success',
-                    content: 'การบันทึกข้อมูล SUL สำเร็จ',
+                    content: 'การบันทึกข้อมูล Sulfide สำเร็จ',
                 });
                 form.resetFields();
                 setIsOtherunitSelected(false);

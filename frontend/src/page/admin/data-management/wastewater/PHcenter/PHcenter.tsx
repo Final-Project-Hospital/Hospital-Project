@@ -41,7 +41,7 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
         return (
             <>
-                ค่า PH บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
+                ค่า pH บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
             </>
         );
     };
@@ -206,7 +206,7 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             const res2 = await createPH(payloadAfter);
 
             if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
-                messageApi.success('บันทึกข้อมูล PH ก่อนและหลังบำบัดสำเร็จ');
+                messageApi.success('บันทึกข้อมูล pH ก่อนและหลังบำบัดสำเร็จ');
                 form.resetFields();
                 setIsOtherunitSelected(false);
                 setUseCustomStandard(false);
@@ -237,7 +237,7 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             if (response.status === 201) {
                 messageApi.open({
                     type: 'success',
-                    content: 'การบันทึกข้อมูล PH สำเร็จ',
+                    content: 'การบันทึกข้อมูล pH สำเร็จ',
                 });
                 form.resetFields();
                 setIsOtherunitSelected(false);

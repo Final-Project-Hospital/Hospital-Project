@@ -48,7 +48,7 @@ const UpdateRESCentralForm: React.FC<UpdateRESCentralFormProps> = ({
 
     const renderCustomTreatmentLabel = (text: string) => (
         <>
-            ค่า RES บริเวณบ่อพักน้ำทิ้ง
+            ค่า Residule บริเวณบ่อพักน้ำทิ้ง
             <span style={{ color: '#f45415ff', fontWeight: 'bold' }}>{text}</span>
             เข้าระบบบำบัด
         </>

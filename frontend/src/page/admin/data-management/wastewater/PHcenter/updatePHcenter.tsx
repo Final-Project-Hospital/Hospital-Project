@@ -48,7 +48,7 @@ const UpdatePHCentralForm: React.FC<UpdatePHCentralFormProps> = ({
 
     const renderCustomTreatmentLabel = (text: string) => (
         <>
-            ค่า PH บริเวณบ่อพักน้ำทิ้ง
+            ค่า pH บริเวณบ่อพักน้ำทิ้ง
             <span style={{ color: '#f45415ff', fontWeight: 'bold' }}>{text}</span>
             เข้าระบบบำบัด
         </>

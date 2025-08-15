@@ -36,7 +36,7 @@ const DatavizTCB = Loadable(lazy(() => import("../page/admin/data-visualization/
 //tapwater
 const EnvironmentTapwaterBlock = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/EnvironmentTapwaterBlock")));
 const DatavizAL = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/ALdataviz/ALdataviz")));
-const DatavizIR = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/IRdataviz/IRdataviz")));
+const DatavizIR = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/IRONdataviz/IRONdataviz")));
 const DatavizMN = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/MNdataviz/MNdataviz")));
 const DatavizNI = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/NIdataviz/NIdataviz")));
 const DatavizNTU = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/NTUdataviz/NTUdataviz")));

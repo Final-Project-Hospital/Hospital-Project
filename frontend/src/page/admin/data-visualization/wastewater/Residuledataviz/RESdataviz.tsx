@@ -716,7 +716,7 @@ const RESdataviz: React.FC = () => {
     <div>
       <div className="res-title-header">
         <div>
-          <h1>RES Central</h1>
+          <h1>Residule Central</h1>
           <p>ค่าปริมาณคลอรีนอิสระที่เหลืออยู่ในน้ำหลังการฆ่าเชื้อ</p>
         </div>
         <div className="res-card">
@@ -730,7 +730,10 @@ const RESdataviz: React.FC = () => {
               <p>
                 มาตรฐาน{" "}
                 <span>
-                  {BeforeAfter.before.MiddleValue !== null || BeforeAfter.before.MinValue !== null || BeforeAfter.before.MaxValue !== null || (BeforeAfter.before.UnitName && BeforeAfter.before.UnitName.trim() !== "") ? (BeforeAfter.before.MiddleValue !== null ? BeforeAfter.before.MiddleValue : `${BeforeAfter.before.MinValue} - ${BeforeAfter.before.MaxValue}`) : "-"}
+                  {(BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== 0) || (BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0) || (BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0) || (BeforeAfter.before.UnitName && BeforeAfter.before.UnitName.trim() !== "")
+                    ? (BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== 0
+                      ? BeforeAfter.before.MiddleValue : `${(BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0 ? BeforeAfter.before.MinValue : "-")} - ${(BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0 ? BeforeAfter.before.MaxValue : "-")}`) : "-"
+                  }
                 </span>{" "}
                 {BeforeAfter.before.UnitName || ""}
               </p>
@@ -757,7 +760,12 @@ const RESdataviz: React.FC = () => {
               <p>
                 มาตรฐาน{" "}
                 <span>
-                  {BeforeAfter.after.MiddleValue !== null || BeforeAfter.after.MinValue !== null || BeforeAfter.after.MaxValue !== null || (BeforeAfter.after.UnitName && BeforeAfter.after.UnitName.trim() !== "") ? (BeforeAfter.after.MiddleValue !== null ? BeforeAfter.after.MiddleValue : `${BeforeAfter.after.MinValue} - ${BeforeAfter.after.MaxValue}`) : "-"}
+                  {
+                    (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== 0) || (BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0) || (BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0) || (BeforeAfter.after.UnitName && BeforeAfter.after.UnitName.trim() !== "")
+                      ? (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== 0
+                        ? BeforeAfter.after.MiddleValue : `${(BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0 ? BeforeAfter.after.MinValue : "-")} - ${(BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0 ? BeforeAfter.after.MaxValue : "-")}`)
+                      : "-"
+                  }
                 </span>{" "}
                 {BeforeAfter.after.UnitName || ""}
               </p>
@@ -1215,7 +1223,7 @@ const RESdataviz: React.FC = () => {
             <h1 className="res-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
           </div>
           <div className="res-task-summary">
-            <div className="res-task-total">จำนวนทั้งหมด <span style={{ color: "#157071", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
+            <div className="res-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="res-task-stats">
               <div className="res-task-item">
                 <div className="res-task-number">{doneTasks}</div>
@@ -1271,7 +1279,7 @@ const RESdataviz: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล RES ใหม่"}
+          title={"เพิ่มข้อมูล Residule ใหม่"}
           open={isModalVisible}
           footer={null}
           width={1100}
@@ -1287,7 +1295,7 @@ const RESdataviz: React.FC = () => {
           />
         </Modal>
         <Modal
-          title="แก้ไขข้อมูล RES"
+          title="แก้ไขข้อมูล Residule"
           open={isEditModalVisible}
           footer={null}
           width={1100}

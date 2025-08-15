@@ -194,3 +194,25 @@ export const DeleteAllMNRecordsByDate = async (
     return null;
   }
 };
+
+export const GetBeforeAfterMN = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-beforeafter-mn`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating MN record:", error.response?.data || error.message);
+    return null;
+  }
+};

@@ -40,7 +40,7 @@ const RESCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
         return (
             <>
-                ค่า RES บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
+                ค่า Residule บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
             </>
         );
     };
@@ -236,7 +236,7 @@ const RESCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             if (response.status === 201) {
                 messageApi.open({
                     type: 'success',
-                    content: 'การบันทึกข้อมูล RES สำเร็จ',
+                    content: 'การบันทึกข้อมูล Residule สำเร็จ',
                 });
                 form.resetFields();
                 setIsOtherunitSelected(false);

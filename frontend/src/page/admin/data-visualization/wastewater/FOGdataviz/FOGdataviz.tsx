@@ -730,7 +730,10 @@ const FOGdataviz: React.FC = () => {
               <p>
                 มาตรฐาน{" "}
                 <span>
-                  {BeforeAfter.before.MiddleValue !== null || BeforeAfter.before.MinValue !== null || BeforeAfter.before.MaxValue !== null || (BeforeAfter.before.UnitName && BeforeAfter.before.UnitName.trim() !== "") ? (BeforeAfter.before.MiddleValue !== null ? BeforeAfter.before.MiddleValue : `${BeforeAfter.before.MinValue} - ${BeforeAfter.before.MaxValue}`) : "-"}
+                  {(BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== 0) || (BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0) || (BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0) || (BeforeAfter.before.UnitName && BeforeAfter.before.UnitName.trim() !== "")
+                    ? (BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== 0
+                      ? BeforeAfter.before.MiddleValue : `${(BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0 ? BeforeAfter.before.MinValue : "-")} - ${(BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0 ? BeforeAfter.before.MaxValue : "-")}`) : "-"
+                  }
                 </span>{" "}
                 {BeforeAfter.before.UnitName || ""}
               </p>
@@ -757,7 +760,12 @@ const FOGdataviz: React.FC = () => {
               <p>
                 มาตรฐาน{" "}
                 <span>
-                  {BeforeAfter.after.MiddleValue !== null || BeforeAfter.after.MinValue !== null || BeforeAfter.after.MaxValue !== null || (BeforeAfter.after.UnitName && BeforeAfter.after.UnitName.trim() !== "") ? (BeforeAfter.after.MiddleValue !== null ? BeforeAfter.after.MiddleValue : `${BeforeAfter.after.MinValue} - ${BeforeAfter.after.MaxValue}`) : "-"}
+                  {
+                    (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== 0) || (BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0) || (BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0) || (BeforeAfter.after.UnitName && BeforeAfter.after.UnitName.trim() !== "")
+                      ? (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== 0
+                        ? BeforeAfter.after.MiddleValue : `${(BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0 ? BeforeAfter.after.MinValue : "-")} - ${(BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0 ? BeforeAfter.after.MaxValue : "-")}`)
+                      : "-"
+                  }
                 </span>{" "}
                 {BeforeAfter.after.UnitName || ""}
               </p>
@@ -1215,7 +1223,7 @@ const FOGdataviz: React.FC = () => {
             <h1 className="fog-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
           </div>
           <div className="fog-task-summary">
-            <div className="fog-task-total">จำนวนทั้งหมด <span style={{ color: "#157071", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
+            <div className="fog-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="fog-task-stats">
               <div className="fog-task-item">
                 <div className="fog-task-number">{doneTasks}</div>

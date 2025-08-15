@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
-import '../TDScenter/updateTDScenter.css';
+import './updateTDScenter.css';
 import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input, message } from 'antd';
 import {
     ListBeforeAfterTreatment,
