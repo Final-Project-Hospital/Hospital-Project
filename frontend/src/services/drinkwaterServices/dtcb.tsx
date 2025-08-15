@@ -194,3 +194,25 @@ export const DeleteAllDTCBRecordsByDate = async (
     return null;
   }
 };
+
+export const GetBeforeAfterDTCB = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-beforeafter-dtcb`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating DTCB record:", error.response?.data || error.message);
+    return null;
+  }
+};

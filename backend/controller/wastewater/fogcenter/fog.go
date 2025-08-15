@@ -1,177 +1,9 @@
-// package fogcenter
-
-// import (
-// 	"errors"
-// 	"fmt"
-// 	"net/http"
-// 	"time"
-
-// 	"github.com/Tawunchai/hospital-project/config"
-// 	"github.com/Tawunchai/hospital-project/entity"
-// 	"github.com/gin-gonic/gin"
-// 	"gorm.io/gorm"
-// )
-
-// func CreateFog(c *gin.Context) {
-// 	fmt.Println("Creating Environment Record")
-
-// 	var input struct {
-// 		Data                   float64
-// 		Date                   time.Time
-// 		Note                   string
-// 		BeforeAfterTreatmentID uint
-// 		EnvironmentID          uint
-// 		ParameterID            uint
-// 		StandardID             uint
-// 		UnitID                 uint
-// 		EmployeeID             uint
-// 		CustomUnit             string
-// 	}
-
-// 	if err := c.ShouldBindJSON(&input); err != nil {
-// 		fmt.Println("Error binding JSON:", err)
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	db := config.DB()
-
-// 		if input.CustomUnit != "" {
-// 		var existingUnit entity.Unit
-// 		if err := db.Where("unit_name = ?", input.CustomUnit).First(&existingUnit).Error; err == nil {
-// 			// เจอ unit ที่มีอยู่แล้ว
-// 			input.UnitID = existingUnit.ID
-// 		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			// ไม่เจอ unit -> สร้างใหม่
-// 			newUnit := entity.Unit{
-// 				UnitName: input.CustomUnit,
-// 			}
-// 			if err := db.Create(&newUnit).Error; err != nil {
-// 				fmt.Println(" ไม่สามารถสร้างหน่วยใหม่ได้:", err) // แค่ขึ้น log
-// 				// ไม่คืน error ไปยัง frontend
-// 			} else {
-// 				input.UnitID = newUnit.ID
-// 			}
-// 		} else {
-// 			// เกิด error อื่นขณะเช็กหน่วย
-// 			fmt.Println(" เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err) // แค่ขึ้น log
-// 			// ไม่คืน error ไปยัง frontend
-// 		}
-// 	}
-	
-// 	var parameter entity.Parameter
-// 	if err := db.Where("parameter_name = ?","Fat Oil and Grease").First(&parameter).Error; err != nil {
-// 		fmt.Println("Error fetching parameter:", err)
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
-// 		return
-// 	}
-
-// 	var environment entity.Environment
-// 	if err := db.Where("environment_name = ?","น้ำเสีย").First(&environment).Error; err != nil {
-// 		fmt.Println("Error fetching environment:", err)
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
-// 		return
-// 	}
-
-// 	var standard entity.Standard
-// 	if err := db.First(&standard, input.StandardID).Error; err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูลเกณฑ์มาตรฐาน"})
-// 		return
-// 	}
-// 	getStatusID := func(value float64) uint {
-// 		var status entity.Status
-// 		if standard.MiddleValue != 0 {
-// 			if value <= float64(standard.MiddleValue) {
-// 				db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
-// 			} else {
-// 				db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
-// 			}
-// 		} else {
-// 			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
-// 				db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
-// 			} else if value > float64(standard.MaxValue) {
-// 				db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
-// 			} else {
-// 				db.Where("status_name = ?", "ตํ่ากว่าเกณฑ์มาตรฐาน").First(&status)
-// 			}
-// 		}
-// 		return status.ID
-// 	}
-// 	environmentRecord := entity.EnvironmentalRecord{
-// 		Date:                   input.Date,
-// 		Data:                   input.Data,
-// 		Note:                   input.Note,
-// 		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
-// 		EnvironmentID:          environment.ID,
-// 		ParameterID:            parameter.ID, // แก้ตรงนี้
-// 		StandardID:             input.StandardID,
-// 		UnitID:                 input.UnitID,
-// 		EmployeeID:             input.EmployeeID,
-// 		StatusID:               getStatusID(input.Data),
-// 	}
-
-// 	if err := db.Create(&environmentRecord).Error; err != nil {
-// 		fmt.Println("Error saving Fat Oil and Grease:", err)
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save Fat Oil and Grease"})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusCreated, gin.H{
-// 		"message": "Fat Oil and Grease created successfully", // แก้ข้อความตรงนี้
-// 		"data":    environmentRecord,
-// 	})
-// }
-
-// func GetfirstFOG(c *gin.Context) {
-// 	db := config.DB()
-
-// 	var parameter entity.Parameter
-// 	if err := db.Where("parameter_name = ?", "Fat Oil and Grease").First(&parameter).Error; err != nil {
-// 		fmt.Println("Error fetching parameter:", err)
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
-// 		return
-// 	}
-
-// 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
-// 	var last_fog struct {
-// 		ID                     uint      `json:"ID"`
-// 		Date                   time.Time `json:"Date"`
-// 		Data                   float64   `json:"Data"`
-// 		Note                   string    `json:"Note"`
-// 		BeforeAfterTreatmentID uint      `json:"BeforeAfterTreatmentID"`
-// 		EnvironmentID          uint      `json:"EnvironmentID"`
-// 		ParameterID            uint      `json:"ParameterID"`
-// 		StandardID             uint      `json:"StandardID"`
-// 		UnitID                 uint      `json:"UnitID"`
-// 		EmployeeID             uint      `json:"EmployeeID"`
-// 		MinValue               uint      `json:"MinValue"`
-// 		MiddleValue            uint      `json:"MiddleValue"`
-// 		MaxValue               uint      `json:"MaxValue"`
-// 	}
-
-// 	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
-// 	result := db.Model(&entity.EnvironmentalRecord{}).
-// 		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note,environmental_records.before_after_treatment_id,environmental_records.environment_id ,environmental_records.parameter_id ,environmental_records.standard_id ,environmental_records.unit_id ,environmental_records.employee_id,standards.min_value,standards.middle_value,standards.max_value`).
-// 		Joins("inner join standards on environmental_records.standard_id = standards.id").
-// 		Where("parameter_id = ?", parameter.ID).
-// 		Order("environmental_records.created_at desc").
-// 		Scan(&last_fog)
-
-// 	// จัดการกรณีที่เกิดข้อผิดพลาด
-// 	if result.Error != nil {
-// 		c.JSON(http.StatusNotFound, gin.H{"error": result.Error.Error()})
-// 		return
-// 	}
-
-// 	// ส่งข้อมูลกลับในรูปแบบ JSON
-// 	c.JSON(http.StatusOK, last_fog)
-// }
-
 package fogcenter
 
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -181,6 +13,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+type Float64TwoDecimal float64
+
+func (f Float64TwoDecimal) MarshalJSON() ([]byte, error) {
+	rounded := math.Round(float64(f)*100) / 100
+	s := fmt.Sprintf("%.2f", rounded)
+	return []byte(s), nil
+}
 
 func CreateFOG(c *gin.Context) {
 	fmt.Println("Creating Environment Record")
@@ -304,20 +144,20 @@ func GetfirstFOG(c *gin.Context) {
 
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
 	var firstfog struct {
-		ID                     uint      `json:"ID"`
-		Date                   time.Time `json:"Date"`
-		Data                   float64   `json:"Data"`
-		Note                   string    `json:"Note"`
-		BeforeAfterTreatmentID uint      `json:"BeforeAfterTreatmentID"`
-		EnvironmentID          uint      `json:"EnvironmentID"`
-		ParameterID            uint      `json:"ParameterID"`
-		StandardID             uint      `json:"StandardID"`
-		UnitID                 uint      `json:"UnitID"`
-		EmployeeID             uint      `json:"EmployeeID"`
-		MinValue               float64   `json:"MinValue"`
-		MiddleValue            float64   `json:"MiddleValue"`
-		MaxValue               float64   `json:"MaxValue"`
-		UnitName               string    `json:"UnitName"`
+		ID                     uint              `json:"ID"`
+		Date                   time.Time         `json:"Date"`
+		Data                   float64           `json:"Data"`
+		Note                   string            `json:"Note"`
+		BeforeAfterTreatmentID uint              `json:"BeforeAfterTreatmentID"`
+		EnvironmentID          uint              `json:"EnvironmentID"`
+		ParameterID            uint              `json:"ParameterID"`
+		StandardID             uint              `json:"StandardID"`
+		UnitID                 uint              `json:"UnitID"`
+		EmployeeID             uint              `json:"EmployeeID"`
+		MinValue               Float64TwoDecimal `json:"MinValue"`
+		MiddleValue            Float64TwoDecimal `json:"MiddleValue"`
+		MaxValue               Float64TwoDecimal `json:"MaxValue"`
+		UnitName               string            `json:"UnitName"`
 	}
 
 	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
@@ -356,19 +196,12 @@ func ListFOG(c *gin.Context) {
 
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?", "Fats, Oils, and Grease").First(&parameter).Error; err != nil {
-		fmt.Println("Error fetching parameter:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
-		return
-	}
-	var before entity.BeforeAfterTreatment
-	if err := db.Where("treatment_name = ?", "ก่อน").First(&before).Error; err != nil {
-		fmt.Println("Error fetching parameter:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
 	}
 
-	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
-	var firstfog []struct {
+	// โครงสร้างผลลัพธ์
+	var resulfog []struct {
 		ID                     uint      `json:"ID"`
 		Date                   time.Time `json:"Date"`
 		Data                   float64   `json:"Data"`
@@ -387,25 +220,32 @@ func ListFOG(c *gin.Context) {
 		StatusName             string
 	}
 
-	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
-	result := db.Model(&entity.EnvironmentalRecord{}).
-		Select(`environmental_records.id, environmental_records.date,environmental_records.data,environmental_records.note,environmental_records.before_after_treatment_id,environmental_records.environment_id ,environmental_records.parameter_id 
-		,environmental_records.standard_id ,environmental_records.unit_id ,environmental_records.employee_id,units.unit_name,before_after_treatments.treatment_name,standards.min_value,standards.middle_value,standards.max_value,statuses.status_name`).
+	// Query หลัก โดยใช้ subquery เพื่อหา record ล่าสุดของแต่ละวัน และแต่ละ treatment (before_after_treatment_id)
+	subQuery := db.Model(&entity.EnvironmentalRecord{}).
+		Select("MAX(id)").
+		Where("parameter_id = ?", parameter.ID).
+		Group("DATE(date), before_after_treatment_id")
+
+	// ดึงข้อมูลหลักโดย join กับ subQuery ข้างบน
+	err := db.Model(&entity.EnvironmentalRecord{}).
+		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note, 
+			environmental_records.before_after_treatment_id, environmental_records.environment_id, environmental_records.parameter_id,
+			environmental_records.standard_id, environmental_records.unit_id, environmental_records.employee_id, 
+			units.unit_name, before_after_treatments.treatment_name, standards.min_value, standards.middle_value, standards.max_value, statuses.status_name`).
 		Joins("inner join standards on environmental_records.standard_id = standards.id").
 		Joins("inner join units on environmental_records.unit_id = units.id").
 		Joins("inner join before_after_treatments on environmental_records.before_after_treatment_id = before_after_treatments.id").
 		Joins("inner join statuses on environmental_records.status_id = statuses.id").
-		Where("environmental_records.parameter_id = ? ", parameter.ID).
-		Find(&firstfog)
+		Where("environmental_records.id IN (?)", subQuery).
+		Order("environmental_records.date DESC").
+		Find(&resulfog).Error
 
-	// จัดการกรณีที่เกิดข้อผิดพลาด
-	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": result.Error.Error()})
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
-	// ส่งข้อมูลกลับในรูปแบบ JSON
-	c.JSON(http.StatusOK, firstfog)
+	c.JSON(http.StatusOK, resulfog)
 }
 
 func DeleterFOG(c *gin.Context) {
@@ -437,6 +277,7 @@ func GetFOGTABLE(c *gin.Context) {
 		Preload("Unit").
 		Preload("Employee").
 		Where("parameter_id = ?", param.ID).
+		Order("date ASC").
 		Find(&fog)
 
 	if result.Error != nil {
@@ -478,6 +319,7 @@ func GetFOGTABLE(c *gin.Context) {
 			Joins("JOIN parameters p ON p.id = environmental_records.parameter_id").
 			Where("p.parameter_name = ?", "Fats, Oils, and Grease").
 			Where("DATE(environmental_records.date) = ?", dateStr).
+			Where("environmental_records.environment_id = ?", rec.EnvironmentID).
 			Order("environmental_records.date DESC").
 			First(&latestRec).Error
 
@@ -492,7 +334,8 @@ func GetFOGTABLE(c *gin.Context) {
 				}
 			}
 		}
-		if _, exists := fogMap[k]; !exists {
+
+		if _, exisfog := fogMap[k]; !exisfog {
 			unitName := rec.Unit.UnitName // default
 
 			// ลองใช้ unit ของ latestRec ถ้ามี
@@ -531,7 +374,7 @@ func GetFOGTABLE(c *gin.Context) {
 			fogMap[k].Efficiency = &eff
 		}
 
-		// Status
+		// คำนวณ Status
 		if fogMap[k].AfterValue != nil && latestRec.StandardID != 0 {
 			var std entity.Standard
 			if db.First(&std, latestRec.StandardID).Error == nil {
@@ -548,6 +391,13 @@ func GetFOGTABLE(c *gin.Context) {
 					} else {
 						fogMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
 					}
+				}
+
+				// ✅ อัปเดตลง DB ทันที (อัปเดต record หลังการบำบัด)
+				if fogMap[k].AfterID != nil {
+					db.Model(&entity.EnvironmentalRecord{}).
+						Where("id = ?", *fogMap[k].AfterID).
+						Update("status_id", getStatusIDFromName(fogMap[k].Status)) // แปลงชื่อเป็น ID
 				}
 			}
 		}
@@ -580,6 +430,14 @@ func GetFOGTABLE(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, mergedRecords)
+}
+
+func getStatusIDFromName(name string) uint {
+	var status entity.Status
+	if err := config.DB().Where("status_name = ?", name).First(&status).Error; err == nil {
+		return status.ID
+	}
+	return 0 // หรือค่าดีฟอลต์ถ้าไม่เจอ
 }
 
 func UpdateOrCreateFOG(c *gin.Context) {
@@ -705,11 +563,13 @@ func UpdateOrCreateFOG(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปเดตข้อมูลล้มเหลว"})
 			return
 		}
-
 		// ✅ อัปเดต Unit ให้ record ทั้งวันเดียวกัน
-		sameDay := input.Date.Truncate(24 * time.Hour)
+		sameDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
+		startOfDay := sameDay
+		endOfDay := sameDay.Add(24 * time.Hour)
+
 		db.Model(&entity.EnvironmentalRecord{}).
-			Where("DATE(date) = ?", sameDay.Format("2006-01-02")).
+			Where("date >= ? AND date < ?", startOfDay, endOfDay).
 			Update("unit_id", input.UnitID)
 
 		c.JSON(http.StatusOK, gin.H{"message": "อัปเดตข้อมูลสำเร็จ", "data": existing})
@@ -721,11 +581,13 @@ func UpdateOrCreateFOG(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "สร้างข้อมูลล้มเหลว"})
 			return
 		}
-
 		// ✅ อัปเดต Unit ให้ record ทั้งวันเดียวกัน
-		sameDay := input.Date.Truncate(24 * time.Hour)
+		sameDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
+		startOfDay := sameDay
+		endOfDay := sameDay.Add(24 * time.Hour)
+
 		db.Model(&entity.EnvironmentalRecord{}).
-			Where("DATE(date) = ?", sameDay.Format("2006-01-02")).
+			Where("date >= ? AND date < ?", startOfDay, endOfDay).
 			Update("unit_id", input.UnitID)
 
 		c.JSON(http.StatusOK, gin.H{"message": "สร้างข้อมูลใหม่สำเร็จ", "data": input})
@@ -816,5 +678,127 @@ func DeleteAllFOGRecordsByDate(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ลบข้อมูล FOG สำเร็จ",
 		"date":    dateKey,
+	})
+}
+
+func GetBeforeAfterFOG(c *gin.Context) {
+	db := config.DB()
+
+	// หา parameter ของ FOG
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?", "Fats, Oils, and Grease").First(&parameter).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+		return
+	}
+
+	var Before entity.BeforeAfterTreatment
+	if err := db.Where("treatment_name = ?", "ก่อน").First(&Before).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
+
+	var After entity.BeforeAfterTreatment
+	if err := db.Where("treatment_name = ?", "หลัง").First(&After).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
+
+	type FOGRecord struct {
+		ID                     *uint              `json:"ID"`
+		Date                   *time.Time         `json:"Date"`
+		Data                   *float64           `json:"Data"`
+		Note                   string             `json:"Note"`
+		BeforeAfterTreatmentID *uint              `json:"BeforeAfterTreatmentID"`
+		EnvironmentID          *uint              `json:"EnvironmentID"`
+		ParameterID            *uint              `json:"ParameterID"`
+		StandardID             *uint              `json:"StandardID"`
+		UnitID                 *uint              `json:"UnitID"`
+		EmployeeID             *uint              `json:"EmployeeID"`
+		MinValue               *Float64TwoDecimal `json:"MinValue"`
+		MiddleValue            *Float64TwoDecimal `json:"MiddleValue"`
+		MaxValue               *Float64TwoDecimal `json:"MaxValue"`
+		UnitName               string             `json:"UnitName"`
+	}
+
+	// ค่าว่างเริ่มต้น
+	defaultEmpty := FOGRecord{
+		ID:                     nil,
+		Date:                   nil,
+		Data:                   nil,
+		Note:                   "",
+		BeforeAfterTreatmentID: nil,
+		EnvironmentID:          nil,
+		ParameterID:            nil,
+		StandardID:             nil,
+		UnitID:                 nil,
+		EmployeeID:             nil,
+		MinValue:               nil,
+		MiddleValue:            nil,
+		MaxValue:               nil,
+		UnitName:               "",
+	}
+
+	var latestBefore FOGRecord
+	var latestAfter FOGRecord
+
+	// Query หา Before ล่าสุด
+	errBefore := db.Model(&entity.EnvironmentalRecord{}).
+		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note,
+				environmental_records.before_after_treatment_id, environmental_records.environment_id,
+				environmental_records.parameter_id, environmental_records.standard_id, environmental_records.unit_id,
+				environmental_records.employee_id, standards.min_value, standards.middle_value, standards.max_value,
+				units.unit_name`).
+		Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
+		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
+		Where("parameter_id = ? AND before_after_treatment_id = ?", parameter.ID, Before.ID).
+		Order("environmental_records.date DESC").
+		First(&latestBefore).Error
+
+	// Query หา After ล่าสุด
+	errAfter := db.Model(&entity.EnvironmentalRecord{}).
+		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note,
+				environmental_records.before_after_treatment_id, environmental_records.environment_id,
+				environmental_records.parameter_id, environmental_records.standard_id, environmental_records.unit_id,
+				environmental_records.employee_id, standards.min_value, standards.middle_value, standards.max_value,
+				units.unit_name`).
+		Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
+		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
+		Where("parameter_id = ? AND before_after_treatment_id = ?", parameter.ID, After.ID).
+		Order("environmental_records.date DESC").
+		First(&latestAfter).Error
+
+	// ถ้าไม่มีทั้ง Before และ After
+	if errBefore != nil && errAfter != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "No FOG records found"})
+		return
+	}
+
+	// ตรวจสอบวันที่
+	beforeRes := defaultEmpty
+	afterRes := defaultEmpty
+
+	if errBefore == nil && errAfter == nil {
+		if latestBefore.Date != nil && latestAfter.Date != nil &&
+			latestBefore.Date.Format("2006-01-02") == latestAfter.Date.Format("2006-01-02") {
+			// วันที่ตรงกัน
+			beforeRes = latestBefore
+			afterRes = latestAfter
+		} else {
+			// วันไม่ตรงกัน → เอาที่ล่าสุดกว่า
+			if latestBefore.Date != nil && (latestAfter.Date == nil || latestBefore.Date.After(*latestAfter.Date)) {
+				beforeRes = latestBefore
+			} else {
+				afterRes = latestAfter
+			}
+		}
+	} else if errBefore == nil {
+		beforeRes = latestBefore
+	} else if errAfter == nil {
+		afterRes = latestAfter
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"before": beforeRes,
+		"after":  afterRes,
 	})
 }

@@ -113,28 +113,30 @@ const EnvironmentBlock = () => {
 
   return (
     <div>
-      <div className="title-header">
-        <h1>ขยะ</h1>
-        <p>
-          โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
-        </p>
+      <div className="g-title-header">
+        <div>
+          <h1>ขยะ</h1>
+          <p>
+            โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
+          </p>
+        </div>
       </div>
       <div className='buttom-footer'>
-        <div className="wqc-grid">
+        <div className="g-wqc-grid">
           {centers.map((center, index) => (
             <Tooltip title={getTooltip(center.name)} overlayClassName="custom-tooltip" key={index}>
               <div
-                className="wqc-card clickable"
+                className="g-wqc-card clickable"
                 onClick={() => navigate(`/admin/data-visualization/garbage/${center.path}`)}
               >
-                <div className="wqc-info">
+                <div className="g-wqc-info">
                   <h3>{center.name}</h3>
                   <p>
                     มาตรฐาน <span>{center.standard}</span>
                   </p>
                 </div>
-                <div className="wqc-divider" />
-                <img src={center.image} alt={center.name} className="wqc-icon" />
+                <div className="g-wqc-divider" />
+                <img src={center.image} alt={center.name} className="g-wqc-icon" />
               </div>
             </Tooltip>
           ))}

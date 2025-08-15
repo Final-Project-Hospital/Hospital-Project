@@ -1,43 +1,87 @@
-.title-header {
-  background: linear-gradient(90deg, #356768, #5AEEF0);
-  padding: 30px;
-  border-radius: 0 0 25px 25px;
-  color: white;
+.tkn-title-header {
+  /* background: linear-gradient(90deg, #356768, #5AEEF0); */
+  background-color: #13b7b9;
+  padding: 20px;
+  border-radius: 0 0 20px 20px;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
 }
 
-.title-header h1 {
+.tkn-title-header h1 {
   font-size: 2rem;
-  /* ปรับให้ responsive โดยไม่ใช้ xx-large */
-  text-shadow: 0 4px 5px #000000ba;
-  font-weight: 500;
+  text-shadow: 0 4px 20px #d9d9d9a4;
+  font-weight: bold;
   margin: 0;
 }
 
-/* Responsive Behavior */
-@media (max-width: 768px) {
-  .title-header {
-    margin-top: 50px;
-  }
-
-  .title-header h1 {
-    font-size: 2.5rem;
-    text-align: center;
-  }
-
-  .title-header p {
-    font-size: 1rem;
-    text-align: center;
-  }
+.tkn-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
-@media (max-width: 480px) {
-  .title-header {
-    padding: 20px;
-  }
+.tkn-card h4 {
+  color: rgba(255, 255, 255, 0.799);
+}
 
-  .title-header h1 {
-    font-size: 1.5rem;
-  }
+.tkn-photo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.tkn-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tkn-value {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.tkn-change {
+  background: rgba(255, 255, 255, 0.952);
+  color: black;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.tkn-title-header,
+.tkn-card p {
+  font-size: 12px;
+  opacity: 0.9;
+  margin: 4px 0 0 0;
+}
+
+.tkn-card p span {
+  font-weight: bold;
+}
+
+.tkn-title {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 25px;
+  gap: 16px;
+}
+
+.tkn-title-text {
+  margin: 0;
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: #1b4242;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  /* จัดกลางแนวตั้ง */
 }
 
 .tkn-back-icon {
@@ -46,57 +90,636 @@
   cursor: pointer;
   margin-right: 4px;
 }
-.tkn-title {
-  justify-content: space-between;
-  flex-wrap: wrap;
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-  font-size: 25px;
-}
 
-.tkn-title {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.tkn-title-text {
-  margin: 0;
-  font-weight: bold;
-  font-size: 1.5rem;
-  color: #6e6e76;
-}
-
-.select-group {
+.tkn-select-group {
   padding: 16px;
   display: flex;
-  gap: 12px; 
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.select-group .ant-picker {
-  border-radius: 20px;
-  padding: 0 10px;
-  height: 32px;
-  font-size: 14px;
-}
-
-.graph-container {
+.tkn-graph-container {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
   justify-content: space-between;
 }
 
-.graph-card {
-  flex: 1 1 48%;
-  background-color: #fff;
-  padding: 10px;
+.tkn-graph-card {
+  flex: 0 1 calc(50% - 10px);
+  max-width: calc(50% - 10px);
+  background-color: white;
   border-radius: 10px;
   min-height: 450px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  padding: 15px;
 }
 
+.tkn-width25 {
+  width: 25%;
+}
+
+.tkn-width40 {
+  width: 40%;
+}
+
+.tkn-head-graph-card {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tkn-head-graph-card-text {
+  color: #1b4242;
+  border-radius: 50px 0px 0px 50px;
+  background-image: linear-gradient(to right, #5DDFE2, #ffffff);
+  padding: 8.5px;
+  margin: 0;
+}
+
+.tkn-right-select-graph {
+  margin-top: 10px;
+  text-align: right;
+}
+
+.tkn-right-select-graph .ant-select-selector {
+  border: none !important;
+  box-shadow: none !important;
+  background-color: #efefef !important;
+  border-radius: 50px !important;
+}
+
+.apexcharts-tooltip {
+  box-shadow: none !important;
+  /* border: none !important; */
+  background-color: #ffffff !important;
+  color: rgb(0, 0, 0) !important;
+}
+
+.tkn-right-select-graph .ant-select-arrow {
+  color: #000000;
+  /* ใส่สีที่ต้องการ */
+}
+
+.tkn-select-filter {
+  width: fit-content;
+  min-width: 120px;
+}
+
+.tkn-select-date {
+  display: flex;
+  justify-content: space-between;
+  /* ซ้าย-ขวา */
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ลบกรอบของ Select */
+.tkn-select-date .ant-select-selector {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 50px !important;
+  background-color: white !important;
+}
+
+/* ลบกรอบของ DatePicker และ RangePicker */
+.tkn-select-date .ant-picker {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 50px !important;
+  background-color: rgb(255, 255, 255) !important;
+}
+
+.tkn-select-date .ant-picker-input input::placeholder {
+  color: #333 !important;
+}
+
+.tkn-filter-date {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  /* align-items: center; */
+  flex-wrap: wrap;
+}
+
+.tkn-filter-status-and-efficiency {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  /* align-items: center; */
+  flex-wrap: wrap;
+}
+
+.tkn-filter-status-and-efficiency p {
+  margin: 0;
+  white-space: nowrap;
+  color: #6e6e76;
+  align-self: center;
+}
+
+.tkn-filter-date p {
+  margin: 0;
+  color: #6e6e76;
+}
+
+.tkn-select-date .ant-select-selection-placeholder {
+  color: #333 !important;
+  /* สี placeholder */
+}
+
+.tkn-header-vis {
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.tkn-title-search-vis {
+  align-items: center;
+  width: 25%;
+}
+
+.tkn-title-text-vis {
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: #1b4242;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  /* จัดกลางแนวตั้ง */
+}
+
+.tkn-search-box {
+  margin: 10px 0px;
+}
+
+.tkn-btn-container {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tkn-add-btn {
+  height: 100%;
+  background-color: #1a4b57;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 18px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.tkn-add-btn:hover {
+  background-color: #49d4d7;
+}
+
+.tkn-task-summary {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.tkn-task-total {
+  font-size: 14px;
+  color: #666;
+}
+
+.tkn-task-stats {
+  margin-left: auto;
+  display: flex;
+  align-items: stretch;
+  /* ✅ ทำให้ divider สูงเท่ากับ item */
+  gap: 20px;
+}
+
+.tkn-task-item {
+  text-align: center;
+}
+
+.tkn-task-number {
+  font-size: 28px;
+  font-weight: bold;
+  color: #1a4b57;
+}
+
+.tkn-task-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.tkn-task-divider {
+  width: 1.5px;
+  background-color: #ddd;
+  margin: 0 12px;
+}
+
+
+.tkn-table-data {
+  background: white;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0px 2px 15px rgba(162, 162, 162, 0.5);
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 5;
+}
+
+.tkn-table-data .ant-table-thead>tr>th {
+  background-color: #e7ffff;
+  color: #777777;
+  font-weight: normal;
+  text-align: center;
+}
+
+.tkn-table-data .ant-table {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.tkn-table-data .ant-table-ttsy>tr>td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* โค้งขอบหัวตาราง (thead) */
+.tkn-table-data .ant-table-thead>tr>th:first-child {
+  border-top-left-radius: 20px;
+}
+
+.tkn-table-data .ant-table-thead>tr>th:last-child {
+  border-top-right-radius: 20px;
+}
+
+/* ลบสีพื้นหลังและสีตัวอักษรที่หัวคอลัมน์เวลามีการ sort */
+.ant-table-thead .ant-table-column-sort {
+  background-color: #e7ffff !important;
+  color: #5D5D5D !important;
+  font-weight: bold !important;
+}
+
+.ant-table-thead>tr>th.ant-table-column-has-sorters:hover {
+  background-color: #e7ffff !important;
+  /* หรือสีพื้นเดิมที่ต้องการ */
+  color: inherit !important;
+}
+
+/* ลบสีไอคอน sort ที่ active */
+.ant-table-column-sort .ant-table-column-sorter-up.active,
+.ant-table-column-sort .ant-table-column-sorter-down.active {
+  color: #ff6f61 !important;
+}
+
+
+.tkn-title-text-table {
+  margin: 0;
+  font-weight: normal;
+  font-size: 1.25rem;
+  color: #494949;
+}
+
+.tkn-title-text-statistics {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 100px 0px;
+  color: #333;
+}
+
+/*สถานะ*/
+.tkn-status-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.status-low {
+  color: #faad14;
+}
+
+.status-high {
+  color: #EE404C;
+}
+
+.status-good {
+  color: #14C18B;
+}
+
+.status-none {
+  color: #999;
+}
+
+.tkn-action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.tkn-circle-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  /* border: 2px solid #d9d9d9; */
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.tkn-circle-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.tkn-edit-btn .anticon {
+  font-size: 20px;
+  color: #666;
+}
+
+.tkn-delete-btn .anticon {
+  font-size: 20px;
+  color: #ff6b6b;
+}
+
+.tkn-expand-chat {
+  color: #8d8a8a !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.tkn-expand-chat:hover {
+  transform: scale(1.1);
+  color: #666 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.tkn-custom-modal {
+  width: 90% !important;
+  /* important ใช้ในกรณีที่ Ant Design อาจ override ค่า */
+  max-width: 1200px !important;
+}
+
+.tkn-custom-modal .ant-modal-tsy {
+  height: 80vh;
+}
+
+.tkn-chart-containner {
+  flex: 1;
+  min-height: 400px;
+}
+
+.tkn-chart-containner .apexcharts-canvas {
+  height: 100%;
+}
+
+/* Responsive for tablets (max-width: 1024px) */
+@media (max-width: 1025px) {
+  .tkn-graph-card {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  .tkn-select-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tkn-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .tkn-right-select-graph {
+    width: 100%;
+    text-align: left;
+  }
+
+  .tkn-select-date {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+  }
+}
+
+/* Responsive for medium screens (max-width: 768px) */
+@media (max-width: 768px) {
+  .tkn-title-header {
+    margin-top: 50px;
+    text-align: center;
+  }
+
+  .tkn-title-header h1 {
+    font-size: 2rem;
+  }
+
+  .tkn-title-text {
+    font-size: 1.25rem;
+    text-align: center;
+  }
+
+  .tkn-select-group {
+    flex-direction: column;
+  }
+
+  .tkn-table-data {
+    overflow-x: auto;
+    padding: 10px;
+  }
+
+  .tkn-table-data .ant-table {
+    min-width: 600px !important;
+    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
+  }
+
+  .tkn-table-data .ant-table-thead>tr>th,
+  .tkn-table-data .ant-table-ttsy>tr>td {
+    white-space: nowrap !important;
+    /* บรรทัดไม่ตัด */
+    padding: 8px !important;
+    font-size: 12px !important;
+  }
+
+  .tkn-title-text-table {
+    text-align: center;
+    font-size: 1rem;
+  }
+
+  .tkn-add-btn {
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+
+  .tkn-search-input {
+    font-size: 12px;
+    height: 28px;
+  }
+}
+
+/* Responsive for small screens (max-width: 480px) */
+@media (max-width: 480px) {
+  .tkn-title-header {
+    padding: 15px;
+  }
+
+  .tkn-title-header h1 {
+    font-size: 1.5rem;
+    margin-top: 10px;
+  }
+
+  .tkn-graph-card {
+    min-height: 350px;
+  }
+
+  .tkn-select-group {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .tkn-head-graph-card {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  .tkn-right-select-graph {
+    text-align: left;
+    width: 100%;
+  }
+
+  .tkn-width25 {
+    width: 40%;
+  }
+
+  .tkn-width40 {
+    width: 60%;
+  }
+
+  /* .tkn-table-data {
+    overflow-x: auto;
+    padding: 10px;
+  }
+  .tkn-table-data .ant-table {
+    min-width: 600px !important;
+  }
+  .tkn-table-data .ant-table-thead>tr>th,
+  .tkn-table-data .ant-table-ttsy>tr>td {
+    white-space: nowrap !important;
+    padding: 8px !important;
+    font-size: 5px !important;
+  } */
+  .tkn-select-date {
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+  }
+
+  /* ปรับ Select filter ให้เต็มจอเล็ก */
+  .tkn-select-date .tkn-select-filter {
+    width: 50% !important;
+  }
+
+  /* ปรับ DatePicker และ RangePicker ให้เต็มจอ */
+  .tkn-select-date .ant-picker {
+    width: 100% !important;
+  }
+
+}
+
+/* Responsive for small screens (max-width: 480px) */
+@media (max-width: 376px) {
+  .tkn-title-header {
+    padding: 15px;
+    max-width: 100%;
+  }
+
+  .tkn-width25 {
+    width: 40%;
+  }
+
+  .tkn-width40 {
+    width: 60%;
+  }
+
+  .tkn-title-header h1 {
+    font-size: 1rem;
+  }
+
+  .tkn-graph-card {
+    min-height: 350px;
+    max-width: 375px;
+  }
+
+  .tkn-select-group {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .tkn-head-graph-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tkn-right-select-graph {
+    text-align: left;
+    width: 100%;
+  }
+
+  .tkn-table-data {
+    overflow-x: auto;
+    padding: 10px;
+  }
+
+  .tkn-table-data .ant-table {
+    min-width: 600px !important;
+    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
+  }
+
+  .tkn-table-data .ant-table-thead>tr>th,
+  .tkn-table-data .ant-table-ttsy>tr>td {
+    white-space: nowrap !important;
+    /* บรรทัดไม่ตัด */
+    padding: 5px !important;
+    font-size: 7px !important;
+  }
+
+  .tkn-circle-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #d9d9d9;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+  }
+
+  .tkn-circle-btn:hover {
+    background-color: #f5f5f5;
+  }
+
+  .tkn-custom-modal {
+    width: 90% !important;
+    /* important ใช้ในกรณีที่ Ant Design อาจ override ค่า */
+    max-width: 1200px !important;
+    margin-top: 60px !important;
+  }
+}

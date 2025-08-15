@@ -81,25 +81,25 @@
 
 .al-reset {
   background-color: #ffffff;
-  color: #326667;
+  color: #1a4b57;
   margin-right: 10px;
   transition: all 0.2s ease-in-out;
 }
 
 .al-submit {
-  background-color: #326667;
+  background-color: #1a4b57;
   color: white;
   transition: all 0.2s ease-in-out;
 }
 
 .al-submit:hover {
   color: rgb(255, 255, 255) !important;
-  background-color: #358788 !important;
+  background-color: #49d4d7 !important;
   transform: scale(1.05) !important;
 }
 
 .al-reset:hover {
-  color: #326667 !important;
+  color: #1a4b57 !important;
   background-color: #ffffff !important;
   transform: scale(1.05) !important;
 }

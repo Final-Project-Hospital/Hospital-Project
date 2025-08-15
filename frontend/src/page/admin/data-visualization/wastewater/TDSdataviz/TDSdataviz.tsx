@@ -1,13 +1,16 @@
 //ใช้ทั้งกราฟและตาราง
 import React, { useEffect, useState } from "react";
-import { Input, Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
+import { Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { LeftOutlined, SearchOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled, CloseCircleFilled, CheckCircleFilled, QuestionCircleFilled } from "@ant-design/icons";
+import { LeftOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled, CloseCircleFilled, CheckCircleFilled, QuestionCircleFilled } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import './TDSdataviz.css';
 import dayjs, { Dayjs } from "dayjs";
-import { GetlistTDS, GetfirstTDS } from "../../../../../services/tdsService";
+import { GetlistTDS, GetfirstTDS, GetBeforeAfterTDS } from "../../../../../services/wastewaterServices/tds";
+import BeforeWater from "../../../../../assets/mineral.png"
+import AftereWater from "../../../../../assets/rain.png"
+import Efficiency from "../../../../../assets/productivity.png"
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -18,13 +21,12 @@ import { BarChart3, LineChart, Maximize2 } from "lucide-react";
 
 //ใช้กับตาราง
 import Table, { ColumnsType } from "antd/es/table";
-import { GetTDSbyID } from "../../../../../services/tdsService";
+import { GetTDSbyID, GetTDSTABLE, DeleteAllTDSRecordsByDate } from "../../../../../services/wastewaterServices/tds";
 import UpdateTDSCentralForm from "../../../data-management/wastewater/TDScenter/updateTDScenter";
 import TDSCentralForm from "../../../data-management/wastewater/TDScenter/TDScenter"
-import { DeleteAllTDSRecordsByDate } from "../../../../../services/tdsService";
-import { GetTDSTABLE } from "../../../../../services/tdsService";
 import { ListStatus } from '../../../../../services/index';
 import { ListStatusInterface } from '../../../../../interface/IStatus';
+
 const normalizeString = (str: any) =>
   String(str).normalize("NFC").trim().toLowerCase();
 
@@ -46,6 +48,7 @@ const TDSdataviz: React.FC = () => {
   const [, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [filterMode, setFilterMode] = useState<"dateRange" | "month" | "year">("year");
+  const [BeforeAfter, setBeforeAfter] = useState<{ before: any; after: any } | null>(null);
 
   //ใช้กับกราฟ
   const [chartTypeBefore, setChartTypeBefore] = useState<'bar' | 'line'>('line');
@@ -53,28 +56,37 @@ const TDSdataviz: React.FC = () => {
   const [chartTypeCompare, setChartTypeCompare] = useState<'bar' | 'line'>('line');
   const [chartpercentChange, setpercentChange] = useState<'bar' | 'line'>('line');
   const [compareData, setCompareData] = useState<{ date: string; before: number; after: number }[]>([]);
-  const [beforeData, setBeforeData] = useState<{ date: string; data: number }[]>([]);
-  const [afterData, setAfterData] = useState<{ date: string; data: number }[]>([]);
-  const [colorBefore, setColorBefore] = useState<string>("#7B61FF");
-  const [colorAfter, setColorAfter] = useState<string>("#33E944");
-  const [colorCompareBefore, setColorCompareBefore] = useState<string>("#FF4560");
-  const [colorCompareAfter, setColorCompareAfter] = useState<string>("#775DD0");
+  const [beforeData, setBeforeData] = useState<{ unit: string; date: string; data: number }[]>([]);
+  const [afterData, setAfterData] = useState<{ unit: string; date: string; data: number }[]>([]);
+  const [colorBefore, setColorBefore] = useState<string>("#2abdbf");
+  const [colorAfter, setColorAfter] = useState<string>("#1a4b57");
+  const [colorCompareBefore, setColorCompareBefore] = useState<string>("#2abdbf");
+  const [colorCompareAfter, setColorCompareAfter] = useState<string>("#1a4b57");
   const [unit, setUnit] = useState<string>("-");
   const [middlestandard, setMiddleStandard] = useState<number | undefined>(undefined);
   const [minstandard, setMinStandard] = useState<number | undefined>(undefined);
   const [maxstandard, setMaxStandard] = useState<number | undefined>(undefined);
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalGratdsType, setModalGratdsType] = useState<"before" | "after" | "compare" | "percentChange" | null>(null);
+  const [modalGraphType, setModalGraphType] = useState<"before" | "after" | "compare" | "percentChange" | null>(null);
   const [percentChangeData, setPercentChangeData] = useState<{ date: string; percent: number }[]>([]);
-  const [colorPercentChange, setcolorPercentChange] = useState<string>("#FF4560");
+  const [colorPercentChange, setcolorPercentChange] = useState<string>("#FF6F61");
 
   //ใช้กับตาราง
-  const [search, setSearch] = useState("");
+  const [search] = useState(""); //setSearch
   const [isModalVisible, setIsModalVisible] = useState(false);  // --- Modal สำหรับเพิ่ม/แก้ไข TDS (ถ้าต้องการใช้) ---
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingRecord, setEditRecord] = useState<any>(null);
   const { confirm } = Modal;
   const [statusOptions, setStatusOptions] = useState<ListStatusInterface[]>([]);
+  const [tableFilterMode, setTableFilterMode] = useState<"dateRange" | "month" | "year">("year");
+  const [tableDateRange, setTableDateRange] = useState<[Dayjs, Dayjs] | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [efficiencyFilter, setEfficiencyFilter] = useState<string | null>(null);
+  const totalTasks = data.length;
+  const doneTasks = data.filter((d: any) => {
+    const status = (d.status ?? "").trim(); return status.includes("ผ่าน") && !status.includes("ไม่ผ่าน");
+  }).length;
+  const inProgressTasks = data.filter((d: any) => normalizeString(d.status ?? "").includes(normalizeString("ไม่ผ่าน"))).length;
 
   //ใช้กับกราฟ ---โหลดสีจาก localStorage----
   useEffect(() => {
@@ -95,21 +107,28 @@ const TDSdataviz: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [lasttds, response] = await Promise.all([
+      const [lasttds, response, tdsRes] = await Promise.all([
         GetfirstTDS(),
         GetlistTDS(),
+        GetBeforeAfterTDS(),
       ]);
 
       if (response) {
-        const grouped: Record<string, { before: number[]; after: number[] }> = {};
+        const grouped: Record<string, { before: number[]; after: number[]; beforeUnit?: string; afterUnit?: string }> = {};
         response.data.forEach((item: any) => {
           const key = filterMode === "year"
             ? dayjs(item.Date).format("YYYY-MM")
             : dayjs(item.Date).format("YYYY-MM-DD");
 
-          if (!grouped[key]) grouped[key] = { before: [], after: [] };
-          if (item.BeforeAfterTreatmentID === 1) grouped[key].before.push(item.Data);
-          else if (item.BeforeAfterTreatmentID === 2) grouped[key].after.push(item.Data);
+          if (!grouped[key]) grouped[key] = { before: [], after: [], beforeUnit: "", afterUnit: "" };
+
+          if (item.BeforeAfterTreatmentID === 1) {
+            grouped[key].before.push(item.Data);
+            grouped[key].beforeUnit = item.UnitName;
+          } else if (item.BeforeAfterTreatmentID === 2) {
+            grouped[key].after.push(item.Data);
+            grouped[key].afterUnit = item.UnitName;
+          }
         });
 
         const createDateRange = (start: Dayjs, end: Dayjs): string[] => {
@@ -124,31 +143,64 @@ const TDSdataviz: React.FC = () => {
           return arr;
         };
 
+        //ออกเฉพาะวันที่มีข้อมูล
         let allDates: string[] = [];
+
         if (dateRange) {
-          allDates = createDateRange(dateRange[0], dateRange[1]);
+          if (filterMode === "year") {
+            // กรองเดือนที่มีข้อมูลและอยู่ในช่วงปีที่เลือก
+            const startYear = dateRange[0].year();
+            const endYear = dateRange[1].year();
+
+            allDates = Object.keys(grouped)
+              .filter(monthStr => {
+                const year = dayjs(monthStr).year();
+                return year >= startYear && year <= endYear;
+              })
+              .sort();
+          } else if (filterMode === "month") {
+            // สร้างช่วงเดือนเต็มตามช่วง dateRange ที่เลือก (จะใช้ createDateRange)
+            allDates = createDateRange(dateRange[0], dateRange[1]);
+          } else {
+            // กรองช่วงวัน (dateRange) ใช้ createDateRange
+            allDates = createDateRange(dateRange[0], dateRange[1]);
+          }
         } else {
-          const allDatesInData = Object.keys(grouped).sort();
-          if (allDatesInData.length > 0) {
-            const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
-            let start;
-            let end = latestDate;
+          // กรณีไม่ได้เลือก dateRange เอง
+          if (filterMode === "year") {
+            const monthsWithData = Object.keys(grouped).sort();
+            if (monthsWithData.length > 0) {
+              const latestMonth = dayjs(monthsWithData[monthsWithData.length - 1]);
+              const startLimit = latestMonth.subtract(3, "year").startOf("month");
 
-            if (filterMode === "year") {
-              start = latestDate.subtract(3, "year").startOf("month");
-            } else if (filterMode === "month") {
-              start = latestDate.startOf("month");
-              end = latestDate.endOf("month");
+              allDates = monthsWithData.filter(monthStr => {
+                const monthDate = dayjs(monthStr);
+                return monthDate.isSame(startLimit) || monthDate.isAfter(startLimit);
+              });
             } else {
-              start = latestDate.subtract(6, "day").startOf("day");
+              allDates = [];
             }
-
-            allDates = createDateRange(start, end);
+          } else if (filterMode === "month") {
+            const allDatesInData = Object.keys(grouped).sort();
+            if (allDatesInData.length > 0) {
+              const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
+              const start = latestDate.startOf("month");
+              const end = latestDate.endOf("month");
+              allDates = createDateRange(start, end);
+            }
+          } else {
+            const allDatesInData = Object.keys(grouped).sort();
+            if (allDatesInData.length > 0) {
+              const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
+              const start = latestDate.subtract(6, "day").startOf("day");
+              const end = latestDate.endOf("day");
+              allDates = createDateRange(start, end);
+            }
           }
         }
 
-        const before: { date: string; data: number }[] = [];
-        const after: { date: string; data: number }[] = [];
+        const before: { date: string; data: number; unit: string; }[] = [];
+        const after: { date: string; data: number; unit: string; }[] = [];
         const compare: { date: string; before: number; after: number }[] = [];
 
         allDates.forEach(date => {
@@ -159,17 +211,17 @@ const TDSdataviz: React.FC = () => {
           const avgAfter = values?.after.length
             ? values.after.reduce((a, b) => a + b, 0) / values.after.length
             : 0;
-          before.push({ date, data: avgBefore });
-          after.push({ date, data: avgAfter });
+          before.push({ date, data: avgBefore, unit: values?.beforeUnit || "" });
+          after.push({ date, data: avgAfter, unit: values?.afterUnit || "" });
           compare.push({ date, before: avgBefore, after: avgAfter });
         });
-
+        // console.log(lasttds.data)
         if (lasttds.data.MiddleValue !== 0) {
           setMiddleStandard(lasttds.data.MiddleValue);
-          setMaxStandard(0);
-          setMinStandard(0);
+          setMaxStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
+          setMinStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
         } else {
-          setMiddleStandard(0);
+          setMiddleStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
           setMaxStandard(lasttds.data.MaxValue);
           setMinStandard(lasttds.data.MinValue);
         }
@@ -181,12 +233,16 @@ const TDSdataviz: React.FC = () => {
           const percent = rawPercent < 0 ? 0 : rawPercent;
           return { date: item.date, percent };
         });
-
+        console.log(response.data);
         setUnit(lasttds.data.UnitName);
         setBeforeData(before);
         setAfterData(after);
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
+        // เซ็ตข้อมูลจาก GetBeforeAfterTDS
+        if (tdsRes) {
+          setBeforeAfter(tdsRes.data);
+        }
       } else {
         setError("ไม่พบข้อมูล TDS");
       }
@@ -209,6 +265,7 @@ const TDSdataviz: React.FC = () => {
       const response2 = await GetTDSTABLE();
       if (!response2 || response2.length === 0) {
         setError("ไม่พบข้อมูล TDS ของตาราง");
+        setData([])//แก้ลบข้อมูลสุดท้ายแล้วตารางไม่รีเฟรช
         return;
       }
 
@@ -227,7 +284,7 @@ const TDSdataviz: React.FC = () => {
         dayjs(b.date).diff(dayjs(a.date))
       );
 
-      setData(processedData);
+      setData(processedData); // ✅ ใช้ชื่อเดิมเหมือนคุณเลย
     } catch (err) {
       console.error("Error fetching TDSTABLE data:", err);
       setError("เกิดข้อผิดพลาดในการดึงข้อมูล TDS");
@@ -294,18 +351,18 @@ const TDSdataviz: React.FC = () => {
                 y: maxstandard ?? 0,
                 borderWidth: 1.5,
                 strokeDashArray: 6,
-                borderColor: "rgba(255, 163, 24, 0.77)",
-                label: { text: `มาตรฐานสูงสุด ${maxstandard ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
+                borderColor: "#035303ff",
+                label: { text: `มาตรฐานสูงสุด ${maxstandard ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
               },
             ]
             : middlestandard !== undefined && middlestandard !== 0
               ? [
                 {
                   y: middlestandard,
-                  borderColor: "rgba(255, 163, 24, 0.77)",
+                  borderColor: "#FF6F61",
                   borderWidth: 1.5,
                   strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middlestandard}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
+                  label: { text: `มาตรฐาน ${middlestandard}`, style: { background: "#FF6F61", color: "#fff" } },
                 },
               ]
               : []
@@ -325,8 +382,10 @@ const TDSdataviz: React.FC = () => {
             return dayjs(value).format("D MMM");
           },
         },
+        tooltip: {
+          enabled: false, // << ปิด tooltip ที่แกน X
+        },
       },
-
       yaxis: {
         min: 0,
         max: isPercentChart ? 100 : adjustedMax,
@@ -339,7 +398,35 @@ const TDSdataviz: React.FC = () => {
       },
       tooltip: {
         y: {
-          formatter: (val: number) => isPercentChart ? `${val.toFixed(2)}%` : `${val.toFixed(2)} ${unit}`,
+          formatter: (val: number, opts) => {
+            const seriesName = opts.w.config.series[opts.seriesIndex]?.name || '';
+            const seriesIndex = opts.seriesIndex;
+            const dataPointIndex = opts.dataPointIndex;
+
+            console.log('seriesIndex:', seriesIndex, 'seriesName:', seriesName, 'val:', val);
+
+            if (isPercentChart) {
+              return `${val.toFixed(2)}%`;
+            }
+
+            // กรณี beforeSeries หรือ compareSeries "ก่อนบำบัด"
+            if ((seriesName === "ก่อนบำบัด" || seriesName === "TDS") && beforeData && beforeData.length > dataPointIndex) {
+              const unit = beforeData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดก่อนบำบัด';
+              if (unit === 'ไม่มีการตรวจวัดก่อนบำบัด') return unit;
+              return `${val.toFixed(2)} ${unit}`;
+            }
+
+            // กรณี afterSeries หรือ compareSeries "หลังบำบัด"
+            if ((seriesName === "หลังบำบัด" || seriesName === "TDS") && afterData && afterData.length > dataPointIndex) {
+              const unit = afterData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดหลังบำบัด';
+              if (unit === 'ไม่มีการตรวจวัดหลังบำบัด') return unit;
+              return `${val.toFixed(2)} ${unit}`;
+            }
+
+            // กรณีอื่น ๆ
+            return `${val.toFixed(2)}`;
+          }
+
         },
       },
       dataLabels: {
@@ -357,10 +444,10 @@ const TDSdataviz: React.FC = () => {
     };
   };
   const beforeSeries = [
-    { name: "TDS", data: beforeData.map(item => item.data), color: colorBefore }
+    { name: "ก่อนบำบัด", data: beforeData.map(item => item.data), color: colorBefore }
   ];
   const afterSeries = [
-    { name: "TDS", data: afterData.map(item => item.data), color: colorAfter }
+    { name: "หลังบำบัด", data: afterData.map(item => item.data), color: colorAfter }
   ];
   const compareSeries = [
     { name: "ก่อนบำบัด", data: compareData.map(item => item.before), color: colorCompareBefore },
@@ -379,13 +466,13 @@ const TDSdataviz: React.FC = () => {
   ];
   //ใช้กับกราฟ
   const openModal = (type: "before" | "after" | "compare" | "percentChange") => {
-    setModalGratdsType(type);
+    setModalGraphType(type);
     setModalVisible(true);
   };
   //ใช้กับกราฟ
   const closeModal = () => {
     setModalVisible(false);
-    setModalGratdsType(null);
+    setModalGraphType(null);
   };
 
   //ใช้กับกราฟ --- ฟังก์ชันช่วยแปลงชื่อเดือนไทย ---
@@ -404,6 +491,21 @@ const TDSdataviz: React.FC = () => {
       dataIndex: 'date',
       key: 'date',
       width: 140,
+      sorter: (a, b) => {
+        const da = dayjs(a.date);
+        const db = dayjs(b.date);
+        if (!da.isValid() && !db.isValid()) return 0;
+        if (!da.isValid()) return -1;
+        if (!db.isValid()) return 1;
+        return da.valueOf() - db.valueOf(); // เรียงจากเก่าไปใหม่
+      },
+      // defaultSortOrder: 'descend', // ตั้งค่าให้เริ่มต้นเรียงจากใหม่ไปเก่า
+      render: (date: string) => {
+        if (!date) return '-';
+        const d = dayjs(date);
+        if (!d.isValid()) return '-';
+        return d.format('DD MMM ') + (d.year() + 543);
+      }
     },
     {
       title: 'หน่วยที่วัด',
@@ -440,34 +542,6 @@ const TDSdataviz: React.FC = () => {
       title: <>ประสิทธิภาพ<br />(%)</>,
       key: "efficiency",
       width: 80,
-      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
-        <div style={{ padding: 8 }}>
-          <Select
-            allowClear
-            placeholder="เลือกเงื่อนไข"
-            value={selectedKeys[0]}
-            onChange={(v) => { setSelectedKeys(v ? [v] : []); confirm({ closeDropdown: false }); }}
-            style={{ width: 180 }}
-            options={[
-              { label: "มากกว่า 50%", value: "gt" },
-              { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
-            ]}
-          />
-        </div>
-      ),
-      filterIcon: (f) => (
-        <SearchOutlined style={{
-          color: f ? "#007b8a" : "#6e6e76",
-          fontSize: 20, fontWeight: f ? "bold" : undefined,
-          borderRadius: "50%", padding: 5,
-          background: f ? "#fff" : undefined,
-          boxShadow: f ? "0 0 8px 4px rgba(255,255,255,1)" : undefined,
-        }} />
-      ),
-      onFilter: (v, r) => {
-        const eff = Number(r.efficiency ?? -1);
-        return v === "gt" ? eff > 50 : v === "lte" ? eff <= 50 : true;
-      },
       render: (_, r) => {
         const eff = Number(r.efficiency);
         return isNaN(eff) ? "-" : Math.max(eff, 0).toFixed(2);
@@ -484,69 +558,27 @@ const TDSdataviz: React.FC = () => {
       title: "สถานะ",
       key: "status",
       width: 200,
-      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
-        <div style={{ padding: 8, width: 190 }}>
-          <Select
-            allowClear
-            placeholder="เลือกสถานะ"
-            value={selectedKeys[0]}
-            onChange={(value) => {
-              setSelectedKeys(value ? [value] : []);
-              confirm({ closeDropdown: false });
-            }}
-            style={{ width: "100%" }}
-            options={statusOptions.map((item) => ({
-              label: item.StatusName,
-              value: item.StatusName,
-            }))}
-            autoFocus
-            size="middle"
-          />
-        </div>
-      ),
-      filterIcon: (filtered: boolean) => (
-        <SearchOutlined
-          style={{
-            color: filtered ? "#007b8a" : "#6e6e76",
-            backgroundColor: filtered ? "#ffffffff" : undefined,
-            fontSize: 20,
-            fontWeight: filtered ? "bold" : undefined,
-            borderRadius: 50,
-            padding: 5,
-            boxShadow: filtered
-              ? "0 0 8px 4px rgba(255, 255, 255, 1)"
-              : undefined,
-          }}
-        />
-      ),
-      onFilter: (value: any, record: any) => {
-        if (!value) return true;
-        return normalizeString(record.status ?? "") === normalizeString(value);
-      },
       render: (_, record) => {
         const statusName = record.status;
-
         if (!statusName) {
           return (
-            <span className="status-badge status-none">
+            <span className="tds-status-badge status-none">
               <QuestionCircleFilled style={{ fontSize: 20 }} />
               ไม่มีข้อมูล
             </span>
           );
         }
-
         if (statusName.includes("ไม่ผ่าน")) {
           return (
-            <span className="status-badge status-high">
+            <span className="tds-status-badge status-high">
               <CloseCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
               {statusName}
             </span>
           );
         }
-
         if (statusName.includes("ผ่าน")) {
           return (
-            <span className="status-badge status-good">
+            <span className="tds-status-badge status-good">
               <CheckCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
               {statusName}
             </span>
@@ -574,15 +606,14 @@ const TDSdataviz: React.FC = () => {
     {
       title: 'จัดการข้อมูล',
       key: 'action',
-      className: 'darker-column',
       width: 120,
       render: (_: any, record: any) => {
         // console.log('record:', record);
         return (
-          <div className="action-buttons">
+          <div className="tds-action-buttons">
             <Tooltip title="แก้ไข">
               <button
-                className="circle-btn edit-btn"
+                className="tds-circle-btn tds-edit-btn"
                 onClick={() => handleEdit([record.before_id, record.after_id])}
               >
                 <EditOutlined />
@@ -590,8 +621,8 @@ const TDSdataviz: React.FC = () => {
             </Tooltip>
             <Tooltip title="ลบ">
               <button
-                className="circle-btn delete-btn"
-                onClick={() => handleDelete([record.before_id, record.after_id])}
+                className="tds-circle-btn tds-delete-btn"
+                onClick={() => handleDelete([record.before_id, record.after_id])}  // ✅ ส่ง ID เดียว
               >
                 <DeleteOutlined />
               </button>
@@ -684,10 +715,93 @@ const TDSdataviz: React.FC = () => {
   return (
     <div>
       <div className="tds-title-header">
-        <h1>TDS-Central</h1>
-        <p>โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดค่า TDS น้ำเสีย</p>
+        <div>
+          <h1>TDS Central</h1>
+          <p>ค่าของแข็งที่ละลายได้ในน้ำ เช่น เกลือ แร่ธาตุ</p>
+        </div>
+        <div className="tds-card">
+          <img src={BeforeWater} alt="Before Water" className="tds-photo" />
+          <div>
+            <h4>น้ำก่อนบำบัดล่าสุด</h4>
+            <div className="tds-main">
+              <span>{BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined ? (<><span className="tds-value">{BeforeAfter.before.Data}</span>{" "}{BeforeAfter.before.UnitName || ""}</>) : "-"}</span>
+            </div>
+            {BeforeAfter ? (
+              <p>
+                มาตรฐาน{" "}
+                <span>
+                  {(BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== 0) || (BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0) || (BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0) || (BeforeAfter.before.UnitName && BeforeAfter.before.UnitName.trim() !== "")
+                    ? (BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== 0
+                      ? BeforeAfter.before.MiddleValue : `${(BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0 ? BeforeAfter.before.MinValue : "-")} - ${(BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0 ? BeforeAfter.before.MaxValue : "-")}`) : "-"
+                  }
+                </span>{" "}
+                {BeforeAfter.before.UnitName || ""}
+              </p>
+            ) : (
+              <p>Loading...</p>
+            )}
+          </div>
+          <img src={AftereWater} alt="After Water" className="tds-photo" />
+          <div>
+            <h4>น้ำหลังบำบัดล่าสุด</h4>
+            <div className="tds-main">
+              <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="tds-value">{BeforeAfter.after.Data}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
+              <span className="tds-change">
+                {(() => {
+                  if (BeforeAfter?.after.Data != null && BeforeAfter?.before.Data != null) {
+                    const diff = BeforeAfter.after.Data - BeforeAfter.before.Data;
+                    const arrowStyle = { fontWeight: 'bold', fontSize: '17px', marginLeft: 4 };
+                    return (<> {diff >= 0 ? '+' : ''}{diff.toFixed(2)}{diff > 0 && <span style={{ ...arrowStyle, color: '#14C18B' }}>↑</span>}{diff < 0 && <span style={{ ...arrowStyle, color: '#EE404C' }}>↓</span>}{diff === 0 && null}</>);
+                  } return '-';
+                })()}
+              </span>
+            </div>
+            {BeforeAfter ? (
+              <p>
+                มาตรฐาน{" "}
+                <span>
+                  {
+                    (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== 0) || (BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0) || (BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0) || (BeforeAfter.after.UnitName && BeforeAfter.after.UnitName.trim() !== "")
+                      ? (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== 0
+                        ? BeforeAfter.after.MiddleValue : `${(BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0 ? BeforeAfter.after.MinValue : "-")} - ${(BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0 ? BeforeAfter.after.MaxValue : "-")}`)
+                      : "-"
+                  }
+                </span>{" "}
+                {BeforeAfter.after.UnitName || ""}
+              </p>
+            ) : (
+              <p>Loading...</p>
+            )}
+          </div>
+          <img src={Efficiency} alt="Before Water" className="tds-photo" />
+          <div>
+            <h4>ประสิทธิภาพล่าสุด</h4>
+            <div className="tds-main">
+              <span>
+                {BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined &&
+                  BeforeAfter.before.Data !== 0 &&
+                  BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined
+                  ? (
+                    <>
+                      <span className="tds-value">
+                        {Math.max(
+                          0,
+                          ((BeforeAfter.before.Data - BeforeAfter.after.Data) / BeforeAfter.before.Data) * 100
+                        ).toFixed(2)}
+                      </span>{" "}
+                      %
+                    </>
+                  )
+                  : "-"
+                }
+              </span>
+
+            </div>
+            <br />
+          </div>
+        </div>
       </div>
-      <div style={{ padding: "30px" }}>
+      <div style={{ padding: "20px", backgroundColor: "#F8F9FA" }}>
         <div className="tds-title">
           <div>
             <h1
@@ -696,7 +810,7 @@ const TDSdataviz: React.FC = () => {
               style={{ cursor: 'pointer' }}
             >
               <LeftOutlined className="tds-back-icon" />
-              TDS-GRATDS
+              กราฟ Total Dissolved Solids
             </h1>
           </div>
           <div className="tds-select-date">
@@ -729,7 +843,7 @@ const TDSdataviz: React.FC = () => {
                     }
                   }}
                   locale={th_TH}
-                  allowClear={false}
+                  allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
                   placeholder={["วันเริ่มต้น", "วันสิ้นสุด"]}
@@ -751,7 +865,7 @@ const TDSdataviz: React.FC = () => {
                   locale={th_TH}
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
-                  allowClear={false}
+                  allowClear={true}
                   value={dateRange ? dayjs(dateRange[0]) : null}
                   format={(value) => value ? `${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                 />
@@ -771,7 +885,7 @@ const TDSdataviz: React.FC = () => {
                   locale={th_TH}
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
-                  allowClear={false}
+                  allowClear={true}
                   value={dateRange}
                   format={(value) => value ? `${value.year() + 543}` : ''}
                 />
@@ -779,12 +893,12 @@ const TDSdataviz: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="tds-gratds-container">
+        <div className="tds-graph-container">
           {/* ตารางน้ำก่อนบำบัดนะจ๊ะ */}
-          <div className="tds-gratds-card">
-            <div className="tds-head-gratds-card">
-              <div className="width25">
-                <h2 className="tds-head-gratds-card-text">น้ำก่อนบำบัด</h2>
+          <div className="tds-graph-card">
+            <div className="tds-head-graph-card">
+              <div className="tds-width25">
+                <h2 className="tds-head-graph-card-text">น้ำก่อนบำบัด</h2>
               </div>
               <div>
                 <ColorPicker
@@ -795,10 +909,10 @@ const TDSdataviz: React.FC = () => {
                     localStorage.setItem('colorBefore', hex);
                   }}
                 />
-                <Button className="expand-chat" onClick={() => openModal("before")}><Maximize2 /></Button>
+                <Button className="tds-expand-chat" onClick={() => openModal("before")}><Maximize2 /></Button>
               </div>
             </div>
-            <div className="tds-right-select-gratds">
+            <div className="tds-right-select-graph">
               <Select
                 value={chartTypeBefore}
                 onChange={val => setChartTypeBefore(val)}
@@ -824,7 +938,7 @@ const TDSdataviz: React.FC = () => {
                 beforeData.map(item => item.date),
                 chartTypeBefore,
                 filterMode === "year",
-                beforeSeries[0]?.data || []
+                beforeSeries[0]?.data || [] //  ส่ง data เพื่อใช้หาค่าสูงสุด
               )}
               series={beforeSeries}
               type={chartTypeBefore}
@@ -832,10 +946,10 @@ const TDSdataviz: React.FC = () => {
             />
           </div>
 
-          <div className="tds-gratds-card">
-            <div className="tds-head-gratds-card">
-              <div className="width25">
-                <h2 className="tds-head-gratds-card-text">น้ำหลังบำบัด</h2>
+          <div className="tds-graph-card">
+            <div className="tds-head-graph-card">
+              <div className="tds-width25">
+                <h2 className="tds-head-graph-card-text">น้ำหลังบำบัด</h2>
               </div>
               <div>
                 <ColorPicker
@@ -846,10 +960,10 @@ const TDSdataviz: React.FC = () => {
                     localStorage.setItem('colorAfter', hex);
                   }}
                 />
-                <Button className="expand-chat" onClick={() => openModal("after")}><Maximize2 /></Button>
+                <Button className="tds-expand-chat" onClick={() => openModal("after")}><Maximize2 /></Button>
               </div>
             </div>
-            <div className="tds-right-select-gratds">
+            <div className="tds-right-select-graph">
               <Select
                 value={chartTypeAfter}
                 onChange={val => setChartTypeAfter(val)}
@@ -882,10 +996,10 @@ const TDSdataviz: React.FC = () => {
               height={350}
             />
           </div>
-          <div className="tds-gratds-card">
-            <div className="tds-head-gratds-card">
-              <div className="width40">
-                <h2 className="tds-head-gratds-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
+          <div className="tds-graph-card">
+            <div className="tds-head-graph-card">
+              <div className="tds-width40">
+                <h2 className="tds-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
               </div>
               <div>
                 <ColorPicker
@@ -904,10 +1018,10 @@ const TDSdataviz: React.FC = () => {
                     localStorage.setItem('colorCompareAfter', hex);
                   }}
                 />
-                <Button className="expand-chat" onClick={() => openModal("compare")}><Maximize2 /></Button>
+                <Button className="tds-expand-chat" onClick={() => openModal("compare")}><Maximize2 /></Button>
               </div>
             </div>
-            <div className="tds-right-select-gratds">
+            <div className="tds-right-select-graph">
               <Select
                 value={chartTypeCompare}
                 onChange={val => setChartTypeCompare(val)}
@@ -940,10 +1054,10 @@ const TDSdataviz: React.FC = () => {
               height={350}
             />
           </div>
-          <div className="tds-gratds-card">
-            <div className="tds-head-gratds-card">
-              <div className="width25">
-                <h2 className="tds-head-gratds-card-text" >ประสิทธิภาพ</h2>
+          <div className="tds-graph-card">
+            <div className="tds-head-graph-card">
+              <div className="tds-width25">
+                <h2 className="tds-head-graph-card-text" >ประสิทธิภาพ</h2>
               </div>
               <div>
                 <ColorPicker
@@ -956,7 +1070,7 @@ const TDSdataviz: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="tds-right-select-gratds">
+            <div className="tds-right-select-graph">
               <Select
                 value={chartpercentChange}
                 onChange={val => setpercentChange(val)}
@@ -992,33 +1106,167 @@ const TDSdataviz: React.FC = () => {
           </div>
         </div>
         <div className="tds-header-vis">
-          <div className="tds-title-search-vis">
-            <h1 className="tds-title-text-vis">TDS DATA</h1>
-            <div>
-              <div className="tds-search-box">
-                <Input
-                  placeholder="ค้นหา"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  prefix={<SearchOutlined />}
-                  className="tds-search-input"
-                />
-              </div>
-            </div>
-          </div>
+          <h1 className="tds-title-text-vis">ข้อมูล Total Dissolved Solids</h1>
           <div className="tds-btn-container">
             <button className="tds-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
           </div>
         </div>
+        <div className="tds-select-date">
+          <div className="tds-filter-status-and-efficiency">
+            <p>ประสิทธิภาพ</p>
+            <Select
+              allowClear
+              placeholder="เลือกประสิทธิภาพ"
+              value={efficiencyFilter}
+              onChange={(v) => setEfficiencyFilter(v || null)}
+              style={{ width: 200 }}
+              options={[
+                { label: "มากกว่า 50%", value: "gt" },
+                { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
+              ]}
+            />
+            <p>สถานะ</p>
+            <Select
+              allowClear
+              placeholder="เลือกสถานะ"
+              value={statusFilter}
+              onChange={(v) => setStatusFilter(v || null)}
+              style={{ width: 200 }}
+              options={statusOptions.map((item) => ({
+                label: item.StatusName,
+                value: item.StatusName,
+              }))}
+            />
+          </div>
+          <div className="tds-filter-date">
+            <div >
+              <Select
+                value={tableFilterMode}
+                onChange={(val) => {
+                  setTableFilterMode(val);
+                  setTableDateRange(null);
+                }}
+                className="tds-select-filter"
+                options={[
+                  { label: "เลือกช่วงวัน", value: "dateRange" },
+                  { label: "เลือกเดือน", value: "month" },
+                  { label: "เลือกปี", value: "year" },
+                ]}
+              />
+            </div>
+            <div>
+              {tableFilterMode === "dateRange" && (
+                <RangePicker
+                  value={tableDateRange}
+                  onChange={(dates) => {
+                    if (dates && dates[0] && dates[1]) {
+                      setTableDateRange([dates[0], dates[1]]);
+                    } else {
+                      setTableDateRange(null);
+                    }
+                  }}
+                  locale={th_TH}
+                  allowClear={true}
+                  format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
+                  style={{ width: 300 }}
+                  placeholder={["วันเริ่มต้น", "วันสิ้นสุด"]}
+                />
+              )}
 
+              {tableFilterMode === "month" && (
+                <DatePicker
+                  picker="month"
+                  onChange={(date) => {
+                    if (date) {
+                      const start = date.startOf('month');
+                      const end = date.endOf('month');
+                      setTableDateRange([start, end]);
+                    } else {
+                      setTableDateRange(null);
+                    }
+                  }}
+                  locale={th_TH}
+                  placeholder="เลือกเดือน"
+                  style={{ width: 150 }}
+                  allowClear={true}
+                  value={tableDateRange ? tableDateRange[0] : null}
+                  format={(value) => value ? `${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
+                />
+              )}
+
+              {tableFilterMode === "year" && (
+                <DatePicker.RangePicker
+                  picker="year"
+                  onChange={(dates) => {
+                    if (dates && dates[0] && dates[1]) {
+                      const start = dates[0].startOf('year');
+                      const end = dates[1].endOf('year');
+                      setTableDateRange([start, end]);
+                    } else {
+                      setTableDateRange(null);
+                    }
+                  }}
+                  locale={th_TH}
+                  placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
+                  style={{ width: 300 }}
+                  allowClear={true}
+                  value={tableDateRange}
+                  format={(value) => value ? `${value.year() + 543}` : ''}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+        <br />
         <div className="tds-table-data">
-          <h1 className="tds-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
+          <div className="tds-width40">
+            <h1 className="tds-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
+          </div>
+          <div className="tds-task-summary">
+            <div className="tds-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
+            <div className="tds-task-stats">
+              <div className="tds-task-item">
+                <div className="tds-task-number">{doneTasks}</div>
+                <div className="tds-task-label">ผ่านเกณฑ์มาตรฐาน</div>
+              </div>
+              <div className="tds-task-divider" />
+              <div className="tds-task-item">
+                <div className="tds-task-number">{inProgressTasks}</div>
+                <div className="tds-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
+              </div>
+            </div>
+          </div>
           <Table
-            className="tds-table-data"
+            locale={{
+              triggerAsc: "คลิกเพื่อเรียงจากเก่าไปใหม่",
+              triggerDesc: "คลิกเพื่อเรียงจากใหม่ไปเก่า",
+              cancelSort: "คลิกเพื่อยกเลิกการเรียงลำดับ",
+              emptyText: "ไม่มีข้อมูล",
+            }}
             columns={columns.map((col) => ({ ...col, align: 'center' }))}
-            dataSource={data.filter((d: any) =>
-              dayjs(d.date).format('YYYY-MM-DD').includes(search)
-            )}
+            dataSource={data
+              .filter((d: any) =>
+                dayjs(d.date).format('YYYY-MM-DD').includes(search)
+              )
+              .filter((d: any) => {
+                if (!tableDateRange) return true;
+                const recordDate = dayjs(d.date);
+                return recordDate.isBetween(tableDateRange[0], tableDateRange[1], null, '[]');
+              })
+              .filter((d: any) => {
+                // กรองประสิทธิภาพ
+                if (!efficiencyFilter) return true;
+                const eff = Number(d.efficiency ?? -1);
+                if (efficiencyFilter === "gt") return eff > 50;
+                if (efficiencyFilter === "lte") return eff <= 50;
+                return true;
+              })
+              .filter((d: any) => {
+                // กรองสถานะ
+                if (!statusFilter) return true;
+                return normalizeString(d.status ?? "") === normalizeString(statusFilter);
+              })
+            }
             rowKey="ID"
             loading={loading}
             pagination={{
@@ -1026,7 +1274,7 @@ const TDSdataviz: React.FC = () => {
               showSizeChanger: true,
               pageSizeOptions: ['7', '10', '15', '30', '100'],
             }}
-            bordered
+
           />
         </div>
 
@@ -1041,11 +1289,11 @@ const TDSdataviz: React.FC = () => {
         >
           <TDSCentralForm onCancel={handleAddModalCancel}
             onSuccess={async () => {
-              await fetchData();
-              await loadTDSTable();
-            }} />
+              await fetchData();      // ✅ โหลดข้อมูลกราฟใหม่
+              await loadTDSTable();   // ✅ โหลดข้อมูลตารางใหม่
+            }}
+          />
         </Modal>
-
         <Modal
           title="แก้ไขข้อมูล TDS"
           open={isEditModalVisible}
@@ -1063,7 +1311,7 @@ const TDSdataviz: React.FC = () => {
                 setTimeout(async () => {
                   setIsEditModalVisible(false);
                   setEditRecord(null);
-                  loadTDSTable();
+                  await loadTDSTable();
                   await fetchData();
                 }, 500);
               }}
@@ -1081,14 +1329,14 @@ const TDSdataviz: React.FC = () => {
           destroyOnClose
           maskClosable={true}
         >
-          {modalGratdsType === "before" && (
+          {modalGraphType === "before" && (
             <div className="tds-chat-modal" >
-              <div className="tds-head-gratds-card">
+              <div className="tds-head-graph-card">
                 <div className="tds-width25">
-                  <h2 className="tds-head-gratds-card-text">น้ำก่อนบำบัด</h2>
+                  <h2 className="tds-head-graph-card-text">น้ำก่อนบำบัด</h2>
                 </div>
               </div>
-              <div className="tds-right-select-gratds">
+              <div className="tds-right-select-graph">
                 <Select
                   value={chartTypeBefore}
                   onChange={val => setChartTypeBefore(val)}
@@ -1108,14 +1356,14 @@ const TDSdataviz: React.FC = () => {
                   </Select.Option>
                 </Select>
               </div>
-              <div className="tds-chart-container">
+              <div className="tds-chart-containner">
                 <ApexChart
                   key={chartTypeBefore}
                   options={getChartOptions(
                     beforeData.map(item => item.date),
                     chartTypeBefore,
                     filterMode === "year",
-                    beforeSeries[0]?.data || [],
+                    beforeSeries[0]?.data || [], //  ส่ง data เพื่อใช้หาค่าสูงสุด
                     true
                   )}
                   series={beforeSeries}
@@ -1125,14 +1373,14 @@ const TDSdataviz: React.FC = () => {
               </div>
             </div>
           )}
-          {modalGratdsType === "after" && (
+          {modalGraphType === "after" && (
             <div className="tds-chat-modal">
-              <div className="tds-head-gratds-card">
+              <div className="tds-head-graph-card">
                 <div className="tds-width25">
-                  <h2 className="tds-head-gratds-card-text">น้ำหลังบำบัด</h2>
+                  <h2 className="tds-head-graph-card-text">น้ำหลังบำบัด</h2>
                 </div>
               </div>
-              <div className="tds-right-select-gratds">
+              <div className="tds-right-select-graph">
                 <Select
                   value={chartTypeAfter}
                   onChange={val => setChartTypeAfter(val)}
@@ -1152,7 +1400,7 @@ const TDSdataviz: React.FC = () => {
                   </Select.Option>
                 </Select>
               </div>
-              <div className="tds-chart-container">
+              <div className="tds-chart-containner">
                 <ApexChart
                   key={chartTypeAfter}
                   options={getChartOptions(
@@ -1169,14 +1417,14 @@ const TDSdataviz: React.FC = () => {
               </div>
             </div>
           )}
-          {modalGratdsType === "compare" && (
+          {modalGraphType === "compare" && (
             <div className="tds-chat-modal">
-              <div className="tds-head-gratds-card" >
+              <div className="tds-head-graph-card" >
                 <div className="tds-width40">
-                  <h2 className="tds-head-gratds-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
+                  <h2 className="tds-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
                 </div>
               </div>
-              <div className="tds-right-select-gratds">
+              <div className="tds-right-select-graph">
                 <Select
                   value={chartTypeCompare}
                   onChange={val => setChartTypeCompare(val)}
@@ -1196,7 +1444,7 @@ const TDSdataviz: React.FC = () => {
                   </Select.Option>
                 </Select>
               </div>
-              <div className="tds-chart-container">
+              <div className="tds-chart-containner">
                 <ApexChart
                   key={chartTypeCompare}
                   options={getChartOptions(
