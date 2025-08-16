@@ -6,7 +6,6 @@ import { SensorDataParameterInterface } from "../interface/ISensorDataParameter"
 import { HardwareGraphInterface } from "../interface/IHardwareGraph"
 import { HardwareParameterColorInterface } from "../interface/IHardwareColor"
 import { HardwareParameterInterface } from "../interface/IHardwareParameter"
-import { StandardHardwareInterface } from "../interface/IStandardHardware";
 import { UnitHardwareInterface } from "../interface/IUnitHardware";
 import {apiUrl} from "./index"
 
@@ -586,6 +585,41 @@ export const UpdateGroupDisplay = async (
     }
   } catch (error: any) {
     console.error("Error updating group_display:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export interface UpdateLayoutDisplayInput {
+  layout_display: boolean;
+}
+
+export const UpdateLayoutDisplay = async (
+  id: number,
+  data: UpdateLayoutDisplayInput
+): Promise<{ message: string; hardware_param: any } | null> => {
+  try {
+    const response = await axios.patch(
+      `${apiUrl}/hardware-parameters/${id}/layout-display`,
+      data,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error(
+      "Error updating layout_display:",
+      error?.response?.data || error.message
+    );
     return null;
   }
 };

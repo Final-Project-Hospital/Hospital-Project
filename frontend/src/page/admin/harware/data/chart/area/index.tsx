@@ -5,6 +5,7 @@ import TimeRangeSelector from './TimeRangeSelector';
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
 
 const dropdownData = [
+  { Id: 'hour', Time: 'Hour(s)' },
   { Id: 'day', Time: 'Day(s)' },
   { Id: 'month', Time: 'Month' },
   { Id: 'year', Time: 'Year(s)' },
@@ -29,7 +30,7 @@ const AreaChartIndex: React.FC<ChartdataProps> = ({
   reloadKey,
 }) => {
   const { currentMode } = useStateContext();
-  const [timeRangeType, setTimeRangeType] = useState<'day' | 'month' | 'year'>('day');
+  const [timeRangeType, setTimeRangeType] = useState<'hour' | 'day' | 'month' | 'year'>('day');
   const [selectedRange, setSelectedRange] = useState<any>(null);
   const [areaChartParameters, setAreaChartParameters] = useState<AreaParamWithColor[]>([]);
 
@@ -64,6 +65,10 @@ const AreaChartIndex: React.FC<ChartdataProps> = ({
     } else if (timeRangeType === 'year') {
       const y = new Date().getFullYear();
       setSelectedRange([y, y]);
+    } else if (timeRangeType === 'hour') {
+      const end = new Date();
+      const start = new Date(end.getTime() - 6 * 60 * 60 * 1000);
+      setSelectedRange([start, end]);
     }
   }, [timeRangeType]);
 
@@ -116,7 +121,6 @@ const AreaChartIndex: React.FC<ChartdataProps> = ({
             </div>
           </div>
 
-          {/* ✅ Area Chart */}
           <div className="flex flex-col gap-8">
             <Area
               hardwareID={hardwareID}

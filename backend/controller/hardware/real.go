@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type ParameterWithData struct {
@@ -20,7 +22,7 @@ type ParameterWithData struct {
 
 type HardwareInput struct {
 	Name       string              `json:"name" binding:"required"`
-	MacAddress  string              `json:"mac_address" binding:"required"`
+	MacAddress string              `json:"mac_address" binding:"required"`
 	Parameters []ParameterWithData `json:"parameters" binding:"required"`
 }
 
@@ -35,7 +37,6 @@ func SendWarningToLINE(message string) error {
 			{"type": "text", "text": message},
 		},
 	}
-
 	jsonBody, _ := json.Marshal(body)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
@@ -60,15 +61,26 @@ func ReadDataForHardware(c *gin.Context) {
 
 	db := config.DB()
 
+	// ✅ เช็กจาก MAC อย่างเดียว — ถ้ามีแล้วไม่ต้องสร้าง (ไม่เช็คชื่อ)
 	var hardware entity.Hardware
-	if err := db.Where("name = ? AND mac_address = ?", input.Name, input.MacAddress).First(&hardware).Error; err != nil {
-		hardware = entity.Hardware{Name: input.Name, MacAddress: input.MacAddress}
+	if err := db.Where("mac_address = ?", input.MacAddress).First(&hardware).Error; err != nil {
+		// ไม่พบ → สร้างใหม่
+		hardware = entity.Hardware{
+			Name:       input.Name,
+			MacAddress: input.MacAddress,
+		}
 		if err := db.Create(&hardware).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create hardware"})
 			return
 		}
+	} else {
+		// พบแล้ว → ไม่สร้างใหม่ (อัปเดตชื่อถ้าเดิมว่าง)
+		if strings.TrimSpace(hardware.Name) == "" && strings.TrimSpace(input.Name) != "" {
+			db.Model(&hardware).Update("name", input.Name)
+		}
 	}
 
+	// เตรียม SensorData ของ hardware นี้ (จะสร้างถ้ายังไม่มี)
 	var sensorData entity.SensorData
 	if err := db.Where("hardware_id = ?", hardware.ID).First(&sensorData).Error; err != nil {
 		sensorData = entity.SensorData{Date: time.Now(), HardwareID: hardware.ID}
@@ -78,6 +90,7 @@ func ReadDataForHardware(c *gin.Context) {
 		}
 	}
 
+	// โหลด HardwareParameter ทั้งหมด (พร้อม StandardHardware)
 	var allParams []entity.HardwareParameter
 	if err := db.Preload("StandardHardware").Find(&allParams).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch hardware parameters"})
@@ -86,12 +99,16 @@ func ReadDataForHardware(c *gin.Context) {
 
 	var createdSDPs []entity.SensorDataParameter
 	var createdParamIDs []uint
-	var messageParts []string
+
+	// กลุ่มข้อความแจ้งเตือน (เหลือเฉพาะฝั่ง Min)
+	var nearUnderParts []string // ใกล้ต่ำ (Min < data ≤ Min*1.10)
+	var underParts []string     // ต่ำกว่า (data < Min)
 
 	for _, p := range input.Parameters {
 		var hp entity.HardwareParameter
 		needNew := true
 
+		// หา parameter เดิมที่ยังไม่ถูกใช้กับ hardware อื่น
 		for _, ap := range allParams {
 			if ap.Parameter == p.Parameter {
 				var count int64
@@ -108,7 +125,11 @@ func ReadDataForHardware(c *gin.Context) {
 		}
 
 		if needNew {
-			std := entity.StandardHardware{MaxValueStandard: 0.0}
+			// สร้าง Standard/Unit เปล่า
+			std := entity.StandardHardware{
+				MaxValueStandard: 0.0, // ไม่ได้ใช้ใน logic นี้ แต่เก็บไว้ใน schema
+				MinValueStandard: 0.0,
+			}
 			unit := entity.UnitHardware{Unit: ""}
 			if err := db.Create(&std).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create standard"})
@@ -119,7 +140,7 @@ func ReadDataForHardware(c *gin.Context) {
 				return
 			}
 
-			// 🔍 ตรวจสอบชื่อเพื่อกำหนด HardwareParameterColorID
+			// กำหนดสีจากชื่อพารามิเตอร์
 			lowerParam := strings.ToLower(p.Parameter)
 			colorID := uint(1) // default
 			switch {
@@ -146,6 +167,7 @@ func ReadDataForHardware(c *gin.Context) {
 			allParams = append(allParams, hp)
 		}
 
+		// บันทึกค่า SensorDataParameter
 		sdp := entity.SensorDataParameter{
 			Date:                time.Now(),
 			Data:                p.Data,
@@ -159,21 +181,85 @@ func ReadDataForHardware(c *gin.Context) {
 		createdParamIDs = append(createdParamIDs, hp.ID)
 		createdSDPs = append(createdSDPs, sdp)
 
+		// ตรวจค่ามาตรฐานฝั่ง Min (เฉพาะที่ตั้งค่า > 0)
 		var std entity.StandardHardware
 		if err := db.First(&std, hp.StandardHardwareID).Error; err == nil {
-			if std.MaxValueStandard > 0 && p.Data > std.MaxValueStandard {
-				part := fmt.Sprintf("- %s: %.2f (เกณฑ์ %.2f)", hp.Parameter, p.Data, std.MaxValueStandard)
-				messageParts = append(messageParts, part)
+			if std.MinValueStandard > 0 {
+				min := std.MinValueStandard
+				nearUpper := min * 1.10 // Min * 110%
+
+				if p.Data < min {
+					// ต่ำกว่ามาตรฐาน
+					underParts = append(underParts, fmt.Sprintf("- %s: %.2f (เกณฑ์ %.2f)", hp.Parameter, p.Data, min))
+				} else if p.Data > min && p.Data <= nearUpper {
+					// ใกล้ต่ำกว่ามาตรฐาน (เหนือ Min แต่ไม่เกิน Min*1.10)
+					nearUnderParts = append(nearUnderParts, fmt.Sprintf("- %s: %.2f (เกณฑ์ %.2f)", hp.Parameter, p.Data, min))
+				}
+				// กรณีอื่นๆ (มากกว่า Min*1.10) → ไม่แจ้ง
 			}
+			// ถ้า Min == 0 → ไม่แจ้ง
 		}
 	}
 
-	if len(messageParts) > 0 {
-		fullMessage := fmt.Sprintf("☣️ แจ้งเตือนสารเคมีเกินมาตรฐาน!\n📡 ฮาร์ดแวร์: %s\n🌐 IP: %s\n\nพบค่าที่เกิน:\n%s",
-			hardware.Name, hardware.MacAddress, joinLines(messageParts))
-		go SendWarningToLINE(fullMessage)
+	// ─────────────────────────────────────────────────────────
+	// หา Room ล่าสุดของ Hardware นี้ พร้อม preload Building
+	var room entity.Room
+	var buildingName string
+	var floorStr string
+	var roomName string
+
+	if err := db.Preload("Building").
+		Where("hardware_id = ?", hardware.ID).
+		Order("created_at DESC").
+		First(&room).Error; err == nil {
+		roomName = safeStr(room.RoomName)
+		floorStr = safeInt(room.Floor)
+		if room.Building != nil {
+			// สมมติ schema ใช้ Building.BuildingName
+			buildingName = safeStr(room.Building.BuildingName)
+		} else {
+			buildingName = "-"
+		}
+	} else if err != nil && err != gorm.ErrRecordNotFound {
+		buildingName, floorStr, roomName = "-", "-", "-"
+	} else {
+		buildingName, floorStr, roomName = "-", "-", "-"
+	}
+	// ─────────────────────────────────────────────────────────
+
+	// สร้างข้อความและส่ง LINE ถ้ามีอย่างน้อยหนึ่งกลุ่ม
+	if len(nearUnderParts) > 0 || len(underParts) > 0 {
+		loc, _ := time.LoadLocation("Asia/Bangkok")
+		now := time.Now().In(loc).Format("2006-01-02 15:04:05")
+
+		var sb strings.Builder
+		sb.WriteString("☣️ แจ้งเตือนสารเคมีเกินมาตรฐาน!\n")
+		sb.WriteString(fmt.Sprintf("🗓️ เวลา: %s\n", now))
+		sb.WriteString(fmt.Sprintf("🏢 อาคาร: %s\n", safeStr(buildingName)))
+		sb.WriteString(fmt.Sprintf("🏬 ชั้น: %s\n", safeStr(floorStr)))
+		sb.WriteString(fmt.Sprintf("🚪 ห้อง: %s\n", safeStr(roomName)))
+		sb.WriteString(fmt.Sprintf("📡 ฮาร์ดแวร์: %s\n", safeStr(hardware.Name)))
+		sb.WriteString(fmt.Sprintf("🆔 MAC: %s\n\n", safeStr(hardware.MacAddress)))
+
+		if len(nearUnderParts) > 0 {
+			sb.WriteString("พบค่าที่ใกล้ต่ำกว่ามาตรฐาน:\n")
+			sb.WriteString(strings.Join(nearUnderParts, "\n"))
+			sb.WriteString("\n\n")
+		}
+		if len(underParts) > 0 {
+			sb.WriteString("พบค่าที่ต่ำกว่ามาตรฐาน:\n")
+			sb.WriteString(strings.Join(underParts, "\n"))
+		} else {
+			// ตัด \n ท้าย ถ้ากลุ่มสุดท้ายว่าง
+			msg := strings.TrimRight(sb.String(), "\n")
+			go SendWarningToLINE(msg)
+			goto RESP
+		}
+
+		go SendWarningToLINE(sb.String())
 	}
 
+RESP:
 	c.JSON(http.StatusOK, gin.H{
 		"hardware":               hardware,
 		"sensor_data_id":         sensorData.ID,
@@ -182,16 +268,16 @@ func ReadDataForHardware(c *gin.Context) {
 	})
 }
 
-func joinLines(lines []string) string {
-	return fmt.Sprintf("%s", string(bytes.Join(mapToBytes(lines), []byte("\n"))))
+// ────────────────────── helpers ──────────────────────
+func safeStr(s string) string {
+	if strings.TrimSpace(s) == "" {
+		return "-"
+	}
+	return s
 }
 
-func mapToBytes(lines []string) [][]byte {
-	out := make([][]byte, len(lines))
-	for i, l := range lines {
-		out[i] = []byte(l)
-	}
-	return out
+func safeInt(i int) string {
+	return strconv.Itoa(i)
 }
 
 

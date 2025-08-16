@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Form, Input, Button, Upload, message } from "antd";
 import ImgCrop from "antd-img-crop";
-import { PlusOutlined, UserOutlined, PhoneOutlined } from "@ant-design/icons";
+import { PlusOutlined, UserOutlined } from "@ant-design/icons";
 import { UsersInterface } from "../../../../interface/IUser";
 import { UpdateEmployeeByID } from "../../../../services/httpLogin";
 import { EditOutlined } from "@ant-design/icons";
