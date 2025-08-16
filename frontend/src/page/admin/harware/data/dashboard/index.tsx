@@ -251,63 +251,63 @@ const Index = () => {
 
       {/* Charts */}
       {/* Charts */}
-<section className="w-full px-2 md:px-8 bg-white p-6 rounded-lg shadow space-y-4">
-  <h2 className="text-lg font-semibold mb-4 text-gray-700">กราฟเเสดงค่าของเเต่ละตัวเเปร</h2>
+      <section className="w-full px-2 md:px-8 bg-white p-6 rounded-lg shadow space-y-4">
+        <h2 className="text-lg font-semibold mb-4 text-gray-700">กราฟเเสดงค่าของเเต่ละตัวเเปร</h2>
 
-  {uniqueGraphs.length === 0 ? (
-    <div className="text-center text-gray-500 font-semibold">ไม่พบข้อมูล</div>
-  ) : (
-    <div
-      className={
-        uniqueGraphs.length === 1
-          ? "grid grid-cols-1 gap-6"
-          : // ✅ เพิ่ม auto-packing เฉพาะจอ md ขึ้นไป
-            "grid grid-cols-1 md:grid-cols-2 gap-6 md:[grid-auto-flow:dense]"
-      }
-      // ถ้าใช้ Tailwind ที่ยังไม่รองรับ arbitrary properties:
-      // style={{ gridAutoFlow: 'dense' }}
-    >
-      {uniqueGraphs.map((g, index) => {
-        if (!g.ParametersWithColor?.length) return null;
-
-        const parameters = g.ParametersWithColor.map((p) => p.parameter);
-        const colors = g.ParametersWithColor.map((p) => p.color);
-
-        const commonProps = {
-          hardwareID,
-          parameters,
-          colors,
-          timeRangeType: "day" as const,
-          selectedRange: [defaultStart, defaultEnd] as [Date, Date],
-          reloadKey: reloadCharts,
-        };
-
-        const ChartComponent = (() => {
-          switch (g.Graph) {
-            case "Line": return <LineChart {...commonProps} />;
-            case "Area": return <Area {...commonProps} />;
-            case "Mapping": return <ColorMapping {...commonProps} />;
-            case "Stacked": return <Stacked {...commonProps} />;
-            default: return null;
-          }
-        })();
-
-        // ✅ ขยายเต็มแถวเฉพาะกราฟที่ fullSpan เท่านั้น
-        const spanClass = g.fullSpan ? "md:col-span-2" : "";
-
-        return (
+        {uniqueGraphs.length === 0 ? (
+          <div className="text-center text-gray-500 font-semibold">ไม่พบข้อมูล</div>
+        ) : (
           <div
-            key={`${g.ID}-${index}-${reloadCharts}`}
-            className={`p-3 bg-gray-50 rounded shadow ${spanClass}`}
+            className={
+              uniqueGraphs.length === 1
+                ? "grid grid-cols-1 gap-6"
+                : // ✅ เพิ่ม auto-packing เฉพาะจอ md ขึ้นไป
+                "grid grid-cols-1 md:grid-cols-2 gap-6 md:[grid-auto-flow:dense]"
+            }
+          // ถ้าใช้ Tailwind ที่ยังไม่รองรับ arbitrary properties:
+          // style={{ gridAutoFlow: 'dense' }}
           >
-            {ChartComponent}
+            {uniqueGraphs.map((g, index) => {
+              if (!g.ParametersWithColor?.length) return null;
+
+              const parameters = g.ParametersWithColor.map((p) => p.parameter);
+              const colors = g.ParametersWithColor.map((p) => p.color);
+
+              const commonProps = {
+                hardwareID,
+                parameters,
+                colors,
+                timeRangeType: "day" as const,
+                selectedRange: [defaultStart, defaultEnd] as [Date, Date],
+                reloadKey: reloadCharts,
+              };
+
+              const ChartComponent = (() => {
+                switch (g.Graph) {
+                  case "Line": return <LineChart {...commonProps} />;
+                  case "Area": return <Area {...commonProps} />;
+                  case "Mapping": return <ColorMapping {...commonProps} />;
+                  case "Stacked": return <Stacked {...commonProps} />;
+                  default: return null;
+                }
+              })();
+
+              // ✅ ขยายเต็มแถวเฉพาะกราฟที่ fullSpan เท่านั้น
+              const spanClass = g.fullSpan ? "md:col-span-2" : "";
+
+              return (
+                <div
+                  key={`${g.ID}-${index}-${reloadCharts}`}
+                  className={`p-3 bg-gray-50 rounded shadow ${spanClass}`}
+                >
+                  {ChartComponent}
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
-    </div>
-  )}
-</section>
- 
+        )}
+      </section>
+
 
       {/* Average */}
       <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
