@@ -5,9 +5,10 @@ import TimeRangeSelector from './TimeRangeSelector';
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
 
 const dropdownData = [
-  { Id: 'day', Time: 'Day(s)' },
-  { Id: 'month', Time: 'Month' },
-  { Id: 'year', Time: 'Year(s)' },
+  { Id: 'hour',  Time: 'Hour(s)' },
+  { Id: 'day',   Time: 'Day(s)'  },
+  { Id: 'month', Time: 'Month'   },
+  { Id: 'year',  Time: 'Year(s)' },
 ];
 
 interface ParamWithColor {
@@ -29,7 +30,7 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({
   reloadKey,
 }) => {
   const { currentMode } = useStateContext();
-  const [timeRangeType, setTimeRangeType] = useState<'day' | 'month' | 'year'>('day');
+  const [timeRangeType, setTimeRangeType] = useState<'hour' | 'day' | 'month' | 'year'>('day');
   const [selectedRange, setSelectedRange] = useState<any>(null);
   const [stackedParameters, setStackedParameters] = useState<ParamWithColor[]>([]);
 
@@ -37,14 +38,15 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({
 
   const isRangeReady = useMemo(() => {
     if (!selectedRange) return false;
-    if (timeRangeType === 'day') return Array.isArray(selectedRange) && selectedRange.length === 2;
+    if (timeRangeType === 'hour')  return Array.isArray(selectedRange) && selectedRange.length === 2;
+    if (timeRangeType === 'day')   return Array.isArray(selectedRange) && selectedRange.length === 2;
     if (timeRangeType === 'month') return selectedRange?.month && selectedRange?.year;
-    if (timeRangeType === 'year') return Array.isArray(selectedRange) && selectedRange.length === 2;
+    if (timeRangeType === 'year')  return Array.isArray(selectedRange) && selectedRange.length === 2;
     return false;
   }, [selectedRange, timeRangeType]);
 
   useEffect(() => {
-    if (parameters && parameters.length > 0) {
+    if (parameters?.length) {
       const mapped = parameters.map((param, index) => ({
         parameter: param,
         color: colors[index] || '#999999',
@@ -57,7 +59,11 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({
 
   useEffect(() => {
     const now = new Date();
-    if (timeRangeType === 'day') {
+    if (timeRangeType === 'hour') {
+      const end = new Date();
+      const start = new Date(end.getTime() - 6 * 60 * 60 * 1000);
+      setSelectedRange([start, end]);
+    } else if (timeRangeType === 'day') {
       const end = new Date();
       end.setHours(23, 59, 59, 999);
       const start = new Date();

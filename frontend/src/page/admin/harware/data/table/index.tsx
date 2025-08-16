@@ -456,7 +456,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
       dataIndex: "ลำดับ",
       key: "ลำดับ",
       render: (_: any, __: any, idx: number) => idx + 1,
-      width: 70,
+      width: 50,
       fixed: isMobile ? undefined : "left",
       onHeaderCell: () => headerNowrap,
       onCell: () => cellNowrap,
@@ -519,7 +519,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
         </span>
       ),
       key: "action",
-      width: isMobile ? 130 : 170,
+      width: isMobile ? 130 : 140,
       fixed: isMobile ? undefined : "right",
       onHeaderCell: () => headerNowrap,
       onCell: () => cellNowrap,

@@ -20,7 +20,7 @@ interface ChartdataProps {
   hardwareID: number;
   parameters: string[];
   colors?: string[];
-  timeRangeType: 'day' | 'month' | 'year';
+  timeRangeType: 'hour' | 'day' | 'month' | 'year';
   selectedRange: any;
   chartHeight?: string;
   reloadKey?: number;
@@ -32,44 +32,75 @@ function getMonthStartDate(year: number, month: number) {
 function getYearStartDate(year: number) {
   return new Date(year, 0, 1);
 }
+function groupByHourAvg(data: { x: Date; y: number }[]) {
+  const groups: Record<string, number[]> = {};
+  data.forEach(d => {
+    const dt = new Date(d.x);
+    const key = `${dt.getFullYear()}-${(dt.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}-${dt.getDate().toString().padStart(2, '0')} ${dt
+      .getHours()
+      .toString()
+      .padStart(2, '0')}:00`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(d.y);
+  });
+  return Object.entries(groups)
+    .map(([k, values]) => {
+      const [datePart, timePart] = k.split(' ');
+      const [y, m, d] = datePart.split('-').map(Number);
+      const hour = Number(timePart.split(':')[0]);
+      return {
+        x: new Date(y, m - 1, d, hour, 0, 0, 0),
+        y: values.reduce((s, v) => s + v, 0) / values.length,
+      };
+    })
+    .sort((a, b) => a.x.getTime() - b.x.getTime());
+}
 function groupByDayAvg(data: { x: Date; y: number }[]) {
-  const groups: { [day: string]: number[] } = {};
+  const groups: Record<string, number[]> = {};
   data.forEach(d => {
     const key = d.x.toISOString().split('T')[0];
     if (!groups[key]) groups[key] = [];
     groups[key].push(d.y);
   });
-  return Object.entries(groups).map(([day, values]) => ({
-    x: new Date(day),
-    y: values.reduce((sum, val) => sum + val, 0) / values.length,
-  })).sort((a, b) => a.x.getTime() - b.x.getTime());
+  return Object.entries(groups)
+    .map(([day, values]) => ({
+      x: new Date(day),
+      y: values.reduce((sum, val) => sum + val, 0) / values.length,
+    }))
+    .sort((a, b) => a.x.getTime() - b.x.getTime());
 }
 function groupByMonthAvg(data: { x: Date; y: number }[]) {
-  const groups: { [month: string]: number[] } = {};
+  const groups: Record<string, number[]> = {};
   data.forEach(d => {
     const key = `${d.x.getFullYear()}-${d.x.getMonth() + 1}`;
     if (!groups[key]) groups[key] = [];
     groups[key].push(d.y);
   });
-  return Object.entries(groups).map(([key, values]) => {
-    const [year, month] = key.split('-').map(Number);
-    return {
-      x: getMonthStartDate(year, month - 1),
-      y: values.reduce((sum, val) => sum + val, 0) / values.length,
-    };
-  }).sort((a, b) => a.x.getTime() - b.x.getTime());
+  return Object.entries(groups)
+    .map(([key, values]) => {
+      const [year, month] = key.split('-').map(Number);
+      return {
+        x: getMonthStartDate(year, month - 1),
+        y: values.reduce((sum, val) => sum + val, 0) / values.length,
+      };
+    })
+    .sort((a, b) => a.x.getTime() - b.x.getTime());
 }
 function groupByYearAvg(data: { x: Date; y: number }[]) {
-  const groups: { [year: string]: number[] } = {};
+  const groups: Record<string, number[]> = {};
   data.forEach(d => {
     const key = `${d.x.getFullYear()}`;
     if (!groups[key]) groups[key] = [];
     groups[key].push(d.y);
   });
-  return Object.entries(groups).map(([year, values]) => ({
-    x: getYearStartDate(Number(year)),
-    y: values.reduce((sum, val) => sum + val, 0) / values.length,
-  })).sort((a, b) => a.x.getTime() - b.x.getTime());
+  return Object.entries(groups)
+    .map(([year, values]) => ({
+      x: getYearStartDate(Number(year)),
+      y: values.reduce((sum, val) => sum + val, 0) / values.length,
+    }))
+    .sort((a, b) => a.x.getTime() - b.x.getTime());
 }
 
 const RETRY_INTERVAL = 1500;
@@ -78,7 +109,7 @@ const MAX_RETRIES = 10;
 const Area: React.FC<ChartdataProps> = ({
   hardwareID,
   parameters,
-  colors,
+  colors = [],
   timeRangeType,
   selectedRange,
   chartHeight = "420px",
@@ -89,6 +120,11 @@ const Area: React.FC<ChartdataProps> = ({
   const [loading, setLoading] = useState(true);
   const [noData, setNoData] = useState(false);
   const [unitMap, setUnitMap] = useState<Record<string, string>>({});
+
+  const parameterColor: Record<string, string> = parameters.reduce((acc, p, i) => {
+    acc[p] = colors[i] || '#999999';
+    return acc;
+  }, {} as Record<string, string>);
 
   const mounted = useRef(true);
   useEffect(() => {
@@ -125,46 +161,60 @@ const Area: React.FC<ChartdataProps> = ({
 
         for (const sensor of raw) {
           const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
-          for (const param of params!) {
+          if (!Array.isArray(params)) continue;
+
+          for (const param of params) {
             const name = param.HardwareParameter?.Parameter;
-            const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
+            const val = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
             const date = new Date(param.Date);
-            const maxStandard = param.HardwareParameter?.StandardHardware?.MaxValueStandard;
-            const minStandard = param.HardwareParameter?.StandardHardware?.MinValueStandard;
+            const maxStd = param.HardwareParameter?.StandardHardware?.MaxValueStandard;
+            const minStd = param.HardwareParameter?.StandardHardware?.MinValueStandard;
             const unit = param.HardwareParameter?.UnitHardware?.Unit;
 
-            if (!name || !parameters.includes(name) || isNaN(value) || isNaN(date.getTime())) continue;
+            if (!name || !parameters.includes(name) || isNaN(val) || isNaN(date.getTime())) continue;
 
             let inRange = false;
-            if (timeRangeType === 'day') {
+            if (timeRangeType === 'hour') {
               const [start, end] = selectedRange || [];
               if (!start || !end) continue;
-              const startDate = new Date(start);
-              const endDate = new Date(end);
-              endDate.setHours(23, 59, 59, 999);
-              inRange = date >= startDate && date <= endDate;
-            } else if (timeRangeType === 'month') {
-              inRange = date.getMonth() + 1 === +selectedRange?.month &&
-                date.getFullYear() === +selectedRange?.year;
-            } else if (timeRangeType === 'year') {
+              const s = new Date(start);
+              const e = new Date(end);
+              inRange = date >= s && date <= e;
+            } else if (timeRangeType === 'day') {
               const [start, end] = selectedRange || [];
-              inRange = date.getFullYear() >= +start && date.getFullYear() <= +end;
+              if (!start || !end) continue;
+              const s = new Date(start);
+              const e = new Date(end);
+              e.setHours(23, 59, 59, 999);
+              inRange = date >= s && date <= e;
+            } else if (timeRangeType === 'month') {
+              inRange = date.getMonth() + 1 === Number(selectedRange?.month) &&
+                        date.getFullYear() === Number(selectedRange?.year);
+            } else if (timeRangeType === 'year') {
+              const [ys, ye] = selectedRange || [];
+              if (ys == null || ye == null) continue;
+              inRange = date.getFullYear() >= +ys && date.getFullYear() <= +ye;
             }
 
             if (!inRange) continue;
 
             parameterMap[name] ??= [];
-            parameterMap[name].push({ x: date, y: value });
+            parameterMap[name].push({ x: date, y: val });
 
-            if (maxStandard && !maxStandardMap[name]) maxStandardMap[name] = maxStandard;
-            if (minStandard && !minStandardMap[name]) minStandardMap[name] = minStandard;
-            if (unit && !unitMapping[unit]) unitMapping[unit] = name;
+            if (typeof maxStd === 'number' && maxStd > 0 && !maxStandardMap[name]) {
+              maxStandardMap[name] = maxStd;
+            }
+            if (typeof minStd === 'number' && minStd > 0 && !minStandardMap[name]) {
+              minStandardMap[name] = minStd;
+            }
+            if (unit && name && !unitMapping[unit]) {
+              unitMapping[unit] = name;
+            }
           }
         }
 
-        const series: any[] = [];
         const createStandardLine = (standard: number, data: { x: Date }[]) => {
-          const sorted = data.sort((a, b) => a.x.getTime() - b.x.getTime());
+          const sorted = data.slice().sort((a, b) => a.x.getTime() - b.x.getTime());
           if (sorted.length === 1) {
             const d = sorted[0];
             const prev = new Date(d.x.getTime() - 1000 * 60 * 60);
@@ -177,20 +227,23 @@ const Area: React.FC<ChartdataProps> = ({
           return sorted.map(d => ({ x: d.x, y: standard }));
         };
 
+        const series: any[] = [];
+
         for (const [name, data] of Object.entries(parameterMap)) {
-          const sorted = data.sort((a, b) => a.x.getTime() - b.x.getTime());
-          const fillColor = colors?.[parameters.indexOf(name)] || '#999999';
+          const sorted = data.slice().sort((a, b) => a.x.getTime() - b.x.getTime());
+          const fillColor = parameterColor[name] || '#999999';
 
           const dataSource =
-            timeRangeType === 'year'
+            timeRangeType === 'hour' ? groupByHourAvg(sorted)
+            : timeRangeType === 'year'
               ? (selectedRange?.[0] === selectedRange?.[1]
-                ? groupByMonthAvg(groupByDayAvg(sorted.filter(d => d.x.getFullYear() === +selectedRange[0])))
-                : groupByYearAvg(sorted))
+                  ? groupByMonthAvg(groupByDayAvg(sorted.filter(d => d.x.getFullYear() === +selectedRange[0])))
+                  : groupByYearAvg(sorted))
               : timeRangeType === 'month'
                 ? groupByDayAvg(sorted)
                 : groupByDayAvg(sorted);
 
-          // ค่าจริง
+          // ค่าแท้จริง (SplineArea)
           series.push({
             dataSource,
             xName: 'x',
@@ -203,7 +256,7 @@ const Area: React.FC<ChartdataProps> = ({
             fill: fillColor,
           });
 
-          // Max Standard (สีแดง)
+          // เส้น Max
           if (maxStandardMap[name]) {
             const stdData = createStandardLine(maxStandardMap[name], dataSource);
             series.push({
@@ -219,11 +272,11 @@ const Area: React.FC<ChartdataProps> = ({
             });
           }
 
-          // Min Standard (สีทอง)
+          // เส้น Min
           if (minStandardMap[name]) {
-            const stdDataMin = createStandardLine(minStandardMap[name], dataSource);
+            const stdMin = createStandardLine(minStandardMap[name], dataSource);
             series.push({
-              dataSource: stdDataMin,
+              dataSource: stdMin,
               xName: 'x',
               yName: 'y',
               name: `${name} (Min)`,
@@ -231,22 +284,31 @@ const Area: React.FC<ChartdataProps> = ({
               dashArray: '5,5',
               marker: { visible: false },
               type: 'Line',
-              fill: 'red',
+              fill: '#f59e0b',
             });
           }
         }
 
-        setSeriesData(series);
-        setUnitMap(unitMapping);
-        setLoading(false);
-        setNoData(series.length === 0);
+        if (mounted.current && !stop) {
+          const filteredUnitMap = Object.fromEntries(
+            Object.entries(unitMapping).filter(([unit, param]) => parameters.includes(param))
+          );
+          setSeriesData(series);
+          setUnitMap(filteredUnitMap);
+          setLoading(false);
+          setNoData(series.length === 0);
+        }
       } catch (err) {
         retryCount++;
         if (retryCount >= MAX_RETRIES) {
-          setLoading(false);
-          setNoData(true);
+          if (mounted.current && !stop) {
+            setLoading(false);
+            setNoData(true);
+          }
         } else {
-          timeoutId = setTimeout(fetchLoop, RETRY_INTERVAL);
+          if (mounted.current && !stop) {
+            timeoutId = setTimeout(fetchLoop, RETRY_INTERVAL);
+          }
         }
       }
     }
@@ -259,18 +321,42 @@ const Area: React.FC<ChartdataProps> = ({
   }, [hardwareID, parameters, colors, timeRangeType, selectedRange, reloadKey]);
 
   if (loading) {
-    return <div className="flex justify-center items-center h-80">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-80 text-lg text-gray-500">
+        <span className="animate-spin border-4 border-teal-300 rounded-full border-t-transparent w-10 h-10 mr-4" />
+        Loading...
+      </div>
+    );
   }
+
   if (noData) {
-    return <div className="flex items-center justify-center h-80 text-lg text-red-500 font-bold">ไม่มีข้อมูลในช่วงเวลาที่เลือก</div>;
+    return (
+      <div className="flex items-center justify-center h-80 text-lg text-red-500 font-bold">
+        ไม่มีข้อมูลในช่วงเวลาที่เลือก
+      </div>
+    );
   }
+
+  const xLabelFormat =
+    timeRangeType === 'hour' ? 'HH:mm'
+      : timeRangeType === 'year'
+        ? (selectedRange?.[0] !== selectedRange?.[1] ? 'yyyy' : 'MMM')
+        : 'dd/MM';
+
+  const xIntervalType =
+    timeRangeType === 'hour' ? 'Hours'
+      : timeRangeType === 'year'
+        ? (selectedRange?.[0] !== selectedRange?.[1] ? 'Years' : 'Months')
+        : 'Days';
+
+  const xInterval = timeRangeType === 'day' ? 1 : timeRangeType === 'hour' ? 1 : undefined;
 
   return (
     <div style={{ position: 'relative', width: '100%', paddingTop: '40px' }}>
       <div style={{ position: 'absolute', top: '4px', zIndex: 10 }}>
+        <span className='text-black font-bold'>หน่วย : </span>
         {Object.entries(unitMap).map(([unit, param]) => {
-          const colorIndex = parameters.indexOf(param);
-          const color = colors?.[colorIndex] || (currentMode === 'Dark' ? '#fff' : '#000');
+          const color = parameterColor[param] || (currentMode === 'Dark' ? '#fff' : '#000');
           return (
             <span
               key={unit}
@@ -290,38 +376,48 @@ const Area: React.FC<ChartdataProps> = ({
       </div>
 
       <ChartComponent
-        id={`chart-${parameters.join('-')}`}
+        id={`area-${parameters.join('-')}`}
         height={chartHeight}
         width="100%"
         primaryXAxis={{
           valueType: 'DateTime',
-          labelFormat: timeRangeType === 'year'
-            ? (selectedRange?.[0] !== selectedRange?.[1] ? 'yyyy' : 'MMM')
-            : 'dd/MM',
-          intervalType: timeRangeType === 'year'
-            ? (selectedRange?.[0] !== selectedRange?.[1] ? 'Years' : 'Months')
-            : 'Days',
+          title: "วันที่บันทึก",
+          labelFormat: xLabelFormat,
+          intervalType: xIntervalType as any,
+          interval: xInterval as any,
           edgeLabelPlacement: 'Shift',
           majorGridLines: { width: 0 },
+          labelIntersectAction: 'Rotate45',
+          enableTrim: false,
         }}
         primaryYAxis={{
+          title: 'ค่าที่ได้จากการตรวจวัด',
           labelFormat: '{value}',
-          rangePadding: 'None',
           minimum: 0,
+          rangePadding: 'None',
           lineStyle: { width: 0 },
           majorTickLines: { width: 0 },
           minorTickLines: { width: 0 },
         }}
-        tooltip={{
-          enable: true,
-          format: '${series.name} : ${point.y}',
-        }}
+        chartArea={{ border: { width: 0 } }}
+        tooltip={{ enable: true }}
         tooltipRender={(args) => {
           if (args.point && typeof args.point.y === 'number') {
-            args.text = `${args.series.name} : ${args.point.y.toFixed(2)}`;
+            const y = args.point.y.toFixed(2);
+            const d: Date = args.point.x as any;
+            let when = '';
+            if (timeRangeType === 'hour') {
+              when = d.toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } else if (timeRangeType === 'day') {
+              when = d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            } else if (timeRangeType === 'month') {
+              when = d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            } else {
+              when = d.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' });
+            }
+            args.text = `${args.series.name} — ${when} : ${y}`;
           }
         }}
-        chartArea={{ border: { width: 0 } }}
         background={currentMode === 'Dark' ? '#33373E' : '#fff'}
         legendSettings={{ background: 'white' }}
       >

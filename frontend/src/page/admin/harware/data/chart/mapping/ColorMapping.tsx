@@ -20,13 +20,13 @@ interface ColorMappingBarChartProps {
   hardwareID: number;
   parameters: string[];
   colors?: string[];
-  timeRangeType: 'day' | 'month' | 'year';
+  timeRangeType: 'hour' | 'day' | 'month' | 'year';
   selectedRange: any;
   chartHeight?: string;
   reloadKey?: number;
 }
 
-const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
+const ColorMapping: React.FC<ColorMappingBarChartProps> = ({
   hardwareID,
   parameters,
   colors = [],
@@ -42,10 +42,12 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
   const [noData, setNoData] = useState(false);
   const mounted = useRef(true);
 
-  const parameterInfo = parameters.reduce((acc, param, idx) => {
-    acc[param] = colors[idx] || '#999999';
-    return acc;
-  }, {} as Record<string, string>);
+  const parameterInfo = useMemo(() => {
+    return parameters.reduce((acc, param, idx) => {
+      acc[param] = colors[idx] || '#999999';
+      return acc;
+    }, {} as Record<string, string>);
+  }, [parameters, colors]);
 
   useEffect(() => {
     mounted.current = true;
@@ -56,6 +58,7 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
 
   const isRangeReady = useMemo(() => {
     if (!selectedRange) return false;
+    if (timeRangeType === 'hour') return Array.isArray(selectedRange) && selectedRange.length === 2;
     if (timeRangeType === 'day') return Array.isArray(selectedRange) && selectedRange.length === 2;
     if (timeRangeType === 'month') return selectedRange?.month && selectedRange?.year;
     if (timeRangeType === 'year') return Array.isArray(selectedRange) && selectedRange.length === 2;
@@ -63,7 +66,9 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
   }, [selectedRange, timeRangeType]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    if (!isRangeReady) return;
+
+    (async function fetchData() {
       setLoading(true);
       setNoData(false);
       setSeriesData([]);
@@ -71,22 +76,24 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
 
       if (!hardwareID || parameters.length === 0) {
         setLoading(false);
+        setNoData(true);
         return;
       }
 
-      let forcedXLabels: string[] = [];
-      if (timeRangeType === 'day' && selectedRange?.length === 2) {
+      // สำหรับกรณีเลือก “วันเดียว” (โหมด day) → เพิ่ม label วันก่อน/ถัดไปให้กราฟไม่ว่าง
+      const forcedXLabels: string[] = [];
+      if (timeRangeType === 'day' && Array.isArray(selectedRange) && selectedRange.length === 2) {
         const [start, end] = selectedRange;
-        const startDate = new Date(start);
-        const endDate = new Date(end);
-        if (startDate.toDateString() === endDate.toDateString()) {
-          const oneDayBefore = new Date(startDate.getTime() - 86400000);
-          const oneDayAfter = new Date(startDate.getTime() + 86400000);
-          forcedXLabels = [
-            oneDayBefore.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
-            startDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
-            oneDayAfter.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
-          ];
+        const s = new Date(start);
+        const e = new Date(end);
+        if (s.toDateString() === e.toDateString()) {
+          const prev = new Date(s.getTime() - 86400000);
+          const next = new Date(s.getTime() + 86400000);
+          forcedXLabels.push(
+            prev.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
+            s.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
+            next.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
+          );
         }
       }
 
@@ -107,33 +114,52 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
         if (!Array.isArray(params)) continue;
 
         for (const param of params) {
-          const name = param.HardwareParameter?.Parameter;
-          const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
-          const maxStandard = param.HardwareParameter?.StandardHardware?.MaxValueStandard;
-          const minStandard = param.HardwareParameter?.StandardHardware?.MinValueStandard;
-          const unit = param.HardwareParameter?.UnitHardware?.Unit;
+          const name: string | undefined = param.HardwareParameter?.Parameter;
+          const valueRaw = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
+          const value: number = Number(valueRaw);
+          const maxStandard: number | undefined = param.HardwareParameter?.StandardHardware?.MaxValueStandard;
+          const minStandard: number | undefined = param.HardwareParameter?.StandardHardware?.MinValueStandard;
+          const unit: string | undefined = param.HardwareParameter?.UnitHardware?.Unit;
           const date = new Date(param.Date);
+
           if (!name || !parameters.includes(name) || isNaN(value) || isNaN(date.getTime())) continue;
 
           let inRange = false;
           let label = '';
 
-          if (timeRangeType === 'day') {
+          if (timeRangeType === 'hour') {
             const [start, end] = selectedRange || [];
             if (!start || !end) continue;
-            const startDate = new Date(start);
-            const endDate = new Date(end);
-            endDate.setHours(23, 59, 59, 999);
-            inRange = date >= startDate && date <= endDate;
+            const s = new Date(start);
+            const e = new Date(end);
+            inRange = date >= s && date <= e;
+            if (inRange) {
+              const d = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+              const t = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+              label = `${d} ${t}`;
+            }
+          } else if (timeRangeType === 'day') {
+            const [start, end] = selectedRange || [];
+            if (!start || !end) continue;
+            const s = new Date(start);
+            const e = new Date(end);
+            e.setHours(23, 59, 59, 999);
+            inRange = date >= s && date <= e;
             if (inRange) label = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
           } else if (timeRangeType === 'month') {
-            inRange = date.getMonth() + 1 === Number(selectedRange?.month) &&
+            inRange =
+              date.getMonth() + 1 === Number(selectedRange?.month) &&
               date.getFullYear() === Number(selectedRange?.year);
             if (inRange) label = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
           } else if (timeRangeType === 'year') {
-            const [start, end] = selectedRange || [];
-            inRange = date.getFullYear() >= +start && date.getFullYear() <= +end;
-            if (inRange) label = date.getFullYear().toString();
+            const [ys, ye] = selectedRange || [];
+            inRange = date.getFullYear() >= +ys && date.getFullYear() <= +ye;
+            if (inRange) {
+              label =
+                ys === ye
+                  ? date.toLocaleDateString('en-GB', { month: 'short' })
+                  : date.getFullYear().toString();
+            }
           }
 
           if (!inRange || !label) continue;
@@ -141,10 +167,10 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
           dataMap[name] ??= [];
           dataMap[name].push({ x: label, y: value });
 
-          if (maxStandard && !maxStandardMap[name]) {
+          if (typeof maxStandard === 'number' && maxStandard > 0 && !maxStandardMap[name]) {
             maxStandardMap[name] = maxStandard;
           }
-          if (minStandard && !minStandardMap[name]) {
+          if (typeof minStandard === 'number' && minStandard > 0 && !minStandardMap[name]) {
             minStandardMap[name] = minStandard;
           }
           if (unit && !unitMapping[unit]) {
@@ -159,8 +185,44 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
         return;
       }
 
-      const series: any[] = [];
+      // รวม label แกน X ทั้งหมด + บังคับ label ที่ต้องมี
+      const allXSet = new Set<string>();
+      Object.values(dataMap).forEach(arr => arr.forEach(p => allXSet.add(p.x)));
+      forcedXLabels.forEach(x => allXSet.add(x));
 
+      const toDateForSort = (label: string): Date | string => {
+        // รองรับ "dd/MM", "dd/MM HH:mm", "Mon", "YYYY"
+        const generic = new Date(label);
+        if (!isNaN(generic.getTime())) return generic;
+
+        const m1 = /^(\d{2})\/(\d{2})$/.exec(label); // dd/MM
+        if (m1) {
+          const [, dd, MM] = m1;
+          const y = new Date().getFullYear();
+          return new Date(+y, +MM - 1, +dd);
+        }
+
+        const m2 = /^(\d{2})\/(\d{2}) (\d{2}):(\d{2})$/.exec(label); // dd/MM HH:mm
+        if (m2) {
+          const [, dd, MM, hh, mm] = m2;
+          const y = new Date().getFullYear();
+          return new Date(+y, +MM - 1, +dd, +hh, +mm);
+        }
+
+        return label; // ถ้า parse ไม่ได้ ให้เทียบเป็น string
+        };
+
+      const allX = Array.from(allXSet).sort((a, b) => {
+        const da = toDateForSort(a);
+        const db = toDateForSort(b);
+        if (da instanceof Date && db instanceof Date) {
+          return da.getTime() - db.getTime();
+        }
+        return String(a).localeCompare(String(b));
+      });
+
+      // ทำค่าเฉลี่ยต่อ bucket (label)
+      const series: any[] = [];
       for (const [name, values] of Object.entries(dataMap)) {
         const grouped: Record<string, number[]> = {};
         values.forEach(({ x, y }) => {
@@ -168,13 +230,7 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
           grouped[x].push(y);
         });
 
-        const allX = Object.keys(grouped).sort((a, b) => {
-          const da = new Date(a).getTime();
-          const db = new Date(b).getTime();
-          return da - db;
-        });
-
-        const averaged = allX.map(x => ({
+        const averaged = allX.map((x: string) => ({
           x,
           y: grouped[x] ? grouped[x].reduce((sum, val) => sum + val, 0) / grouped[x].length : null,
         }));
@@ -194,7 +250,7 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
 
         // Max Standard (เส้นแดง)
         if (maxStandardMap[name]) {
-          const stdDataMax = allX.map(x => ({ x, y: maxStandardMap[name] }));
+          const stdDataMax = allX.map((x: string) => ({ x, y: maxStandardMap[name] }));
           series.push({
             dataSource: stdDataMax,
             xName: 'x',
@@ -208,8 +264,9 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
           });
         }
 
+        // Min Standard (สีทอง)
         if (minStandardMap[name]) {
-          const stdDataMin = allX.map(x => ({ x, y: minStandardMap[name] }));
+          const stdDataMin = allX.map((x: string) => ({ x, y: minStandardMap[name] }));
           series.push({
             dataSource: stdDataMin,
             xName: 'x',
@@ -219,28 +276,37 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
             dashArray: '5,5',
             marker: { visible: false },
             type: 'Line',
-            fill: 'red',
+            fill: '#f59e0b',
           });
         }
       }
 
+      if (!mounted.current) return;
       setSeriesData(series);
       setUnitMap(unitMapping);
       setLoading(false);
-    };
+    })();
+  }, [hardwareID, timeRangeType, selectedRange, parameters, colors, reloadKey, isRangeReady, parameterInfo]);
 
-    if (!isRangeReady) return;
-    fetchData();
-  }, [hardwareID, timeRangeType, selectedRange, parameters, colors, reloadKey, isRangeReady]);
-
-  if (loading)
-    return <div className="flex justify-center items-center h-80 text-gray-500 text-lg">Loading...</div>;
-  if (noData)
-    return <div className="flex justify-center items-center h-80 text-red-500 font-bold">ไม่มีข้อมูลในช่วงเวลาที่เลือก</div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-80 text-gray-500 text-lg">
+        Loading...
+      </div>
+    );
+  }
+  if (noData) {
+    return (
+      <div className="flex justify-center items-center h-80 text-red-500 font-bold">
+        ไม่มีข้อมูลในช่วงเวลาที่เลือก
+      </div>
+    );
+  }
 
   return (
     <div style={{ position: 'relative', width: '100%', paddingTop: '40px' }}>
       <div style={{ position: 'absolute', top: '4px', zIndex: 10 }}>
+        <span className="text-black font-bold">หน่วย : </span>
         {Object.entries(unitMap).map(([unit, param]) => {
           const color = parameterInfo[param] || (currentMode === 'Dark' ? '#fff' : '#000');
           return (
@@ -260,17 +326,20 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
           );
         })}
       </div>
+
       <ChartComponent
         id={`chart-${parameters.join('-')}`}
         height={chartHeight}
         width="100%"
         primaryXAxis={{
           valueType: 'Category',
+          title: "วันที่บันทึก",
           labelIntersectAction: 'Rotate45',
           interval: 1,
         }}
         primaryYAxis={{
           labelFormat: '{value}',
+          title: 'ค่าที่ได้จากการตรวจวัด',
           minimum: 0,
           rangePadding: 'None',
           lineStyle: { width: 0 },
@@ -280,9 +349,9 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
         chartArea={{ border: { width: 0 } }}
         tooltip={{ enable: true }}
         tooltipRender={(args) => {
-          if (args.point && typeof args.point.y === 'number') {
-            const formattedValue = args.point.y.toFixed(2);
-            args.text = `${args.point.x} : ${formattedValue}`;
+          if (args.point && typeof (args.point as any).y === 'number') {
+            const formattedValue = (args.point as any).y.toFixed(2);
+            args.text = `${args.series.name} — ${(args.point as any).x} : ${formattedValue}`;
           }
         }}
         background={currentMode === 'Dark' ? '#33373E' : '#fff'}
@@ -299,4 +368,4 @@ const ColorMappingBarChart: React.FC<ColorMappingBarChartProps> = ({
   );
 };
 
-export default ColorMappingBarChart;
+export default ColorMapping;

@@ -17,7 +17,7 @@ import {
 
 interface LineChartProps {
   hardwareID: number;
-  timeRangeType: 'day' | 'month' | 'year';
+  timeRangeType: 'hour' | 'day' | 'month' | 'year';
   selectedRange: any;
   parameters: string[];
   colors?: string[];
@@ -30,6 +30,31 @@ function getMonthStartDate(year: number, month: number) {
 }
 function getYearStartDate(year: number) {
   return new Date(year, 0, 1);
+}
+function groupByHourAvg(data: { x: Date; y: number }[]) {
+  const groups: { [hourKey: string]: number[] } = {};
+  data.forEach(d => {
+    const dt = new Date(d.x);
+    const key = `${dt.getFullYear()}-${(dt.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}-${dt.getDate().toString().padStart(2, '0')} ${dt
+      .getHours()
+      .toString()
+      .padStart(2, '0')}:00`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(d.y);
+  });
+  return Object.entries(groups)
+    .map(([k, values]) => {
+      const [datePart, timePart] = k.split(' ');
+      const [y, m, d] = datePart.split('-').map(Number);
+      const hour = Number(timePart.split(':')[0]);
+      return {
+        x: new Date(y, m - 1, d, hour, 0, 0, 0),
+        y: values.reduce((s, v) => s + v, 0) / values.length,
+      };
+    })
+    .sort((a, b) => a.x.getTime() - b.x.getTime());
 }
 function groupByDayAvg(data: { x: Date; y: number }[]) {
   const groups: { [day: string]: number[] } = {};
@@ -139,15 +164,20 @@ const LineChart: React.FC<LineChartProps> = ({
             if (!include) continue;
 
             let inRange = false;
-            if (timeRangeType === 'day') {
+            if (timeRangeType === 'hour') {
+              const [start, end] = selectedRange || [];
+              if (!start || !end) continue;
+              const startDate = new Date(start);
+              const endDate = new Date(end);
+              inRange = date >= startDate && date <= endDate; // ใช้ช่วงเวลาแบบ datetime ตรง ๆ
+            } else if (timeRangeType === 'day') {
               const [start, end] = selectedRange || [];
               if (!start || !end) continue;
               const startDate = new Date(start);
               const endDate = new Date(end);
               endDate.setHours(23, 59, 59, 999);
               inRange = date >= startDate && date <= endDate;
-            }
-            else if (timeRangeType === 'month') {
+            } else if (timeRangeType === 'month') {
               inRange = date.getMonth() + 1 === Number(selectedRange?.month) &&
                 date.getFullYear() === Number(selectedRange?.year);
             } else if (timeRangeType === 'year') {
@@ -161,10 +191,10 @@ const LineChart: React.FC<LineChartProps> = ({
             parameterMap[name] ??= [];
             parameterMap[name].push({ x: date, y: value });
 
-            if (maxStandard && !maxStandardMap[name]) {
+            if (typeof maxStandard === 'number' && maxStandard > 0 && !maxStandardMap[name]) {
               maxStandardMap[name] = maxStandard;
             }
-            if (minStandard && !minStandardMap[name]) {
+            if (typeof minStandard === 'number' && minStandard > 0 && !minStandardMap[name]) {
               minStandardMap[name] = minStandard;
             }
 
@@ -198,13 +228,15 @@ const LineChart: React.FC<LineChartProps> = ({
           const fillColor = parameterInfo[name] || '#999999';
 
           const dataSource =
-            timeRangeType === 'year'
-              ? (selectedRange?.[0] === selectedRange?.[1]
-                ? groupByMonthAvg(groupByDayAvg(sortedData.filter(d => d.x.getFullYear() === +selectedRange[0])))
-                : groupByYearAvg(sortedData))
-              : timeRangeType === 'month'
-                ? groupByDayAvg(sortedData)
-                : groupByDayAvg(sortedData);
+            timeRangeType === 'hour'
+              ? groupByHourAvg(sortedData)
+              : timeRangeType === 'year'
+                ? (selectedRange?.[0] === selectedRange?.[1]
+                  ? groupByMonthAvg(groupByDayAvg(sortedData.filter(d => d.x.getFullYear() === +selectedRange[0])))
+                  : groupByYearAvg(sortedData))
+                : timeRangeType === 'month'
+                  ? groupByDayAvg(sortedData)
+                  : groupByDayAvg(sortedData);
 
           // ค่าจริง
           series.push({
@@ -246,7 +278,7 @@ const LineChart: React.FC<LineChartProps> = ({
               dashArray: '5,5',
               marker: { visible: false },
               type: 'Line',
-              fill: 'red',
+              fill: '#f59e0b',
             });
           }
         }
@@ -300,9 +332,25 @@ const LineChart: React.FC<LineChartProps> = ({
     );
   }
 
+  // กำหนดฟอร์แมตรายแกน X ตามชนิดช่วงเวลา
+  const xLabelFormat =
+    timeRangeType === 'hour' ? 'HH:mm'
+      : timeRangeType === 'year'
+        ? (selectedRange?.[0] !== selectedRange?.[1] ? 'yyyy' : 'MMM')
+        : 'dd/MM';
+
+  const xIntervalType =
+    timeRangeType === 'hour' ? 'Hours'
+      : timeRangeType === 'year'
+        ? (selectedRange?.[0] !== selectedRange?.[1] ? 'Years' : 'Months')
+        : 'Days';
+
+  const xInterval = timeRangeType === 'day' ? 1 : timeRangeType === 'hour' ? 1 : undefined;
+
   return (
     <div style={{ position: 'relative', width: '100%', paddingTop: '40px' }}>
       <div style={{ position: 'absolute', top: '4px', zIndex: 10 }}>
+        <span className='text-black font-bold'>หน่วย : </span>
         {Object.entries(unitMap).map(([unit, param]) => {
           const color = parameterInfo[param] || (currentMode === 'Dark' ? '#fff' : '#000');
           return (
@@ -317,7 +365,7 @@ const LineChart: React.FC<LineChartProps> = ({
                 fontWeight: 'bold'
               }}
             >
-              {unit}
+             {unit}
             </span>
           );
         })}
@@ -328,20 +376,18 @@ const LineChart: React.FC<LineChartProps> = ({
         height={chartHeight}
         width="100%"
         primaryXAxis={{
+          title: "วันที่บันทึก",
           valueType: 'DateTime',
-          labelFormat: timeRangeType === 'year'
-            ? (selectedRange?.[0] !== selectedRange?.[1] ? 'yyyy' : 'MMM')
-            : 'dd/MM',
-          intervalType: timeRangeType === 'year'
-            ? (selectedRange?.[0] !== selectedRange?.[1] ? 'Years' : 'Months')
-            : 'Days',
-          interval: timeRangeType === 'day' ? 1 : undefined,
+          labelFormat: xLabelFormat,
+          intervalType: xIntervalType as any,
+          interval: xInterval as any,
           edgeLabelPlacement: 'Shift',
           majorGridLines: { width: 0 },
           labelIntersectAction: 'Rotate45',
           enableTrim: false,
         }}
         primaryYAxis={{
+          title: 'ค่าที่ได้จากการตรวจวัด',
           labelFormat: '{value}',
           minimum: 0,
           rangePadding: 'None',
@@ -353,8 +399,19 @@ const LineChart: React.FC<LineChartProps> = ({
         tooltip={{ enable: true }}
         tooltipRender={(args) => {
           if (args.point && typeof args.point.y === 'number') {
-            const formattedValue = args.point.y.toFixed(2); 
-            args.text = `${args.point.x.toLocaleDateString()} : ${formattedValue}`;
+            const y = args.point.y.toFixed(2);
+            const d: Date = args.point.x as any;
+            let when = '';
+            if (timeRangeType === 'hour') {
+              when = d.toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } else if (timeRangeType === 'day') {
+              when = d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            } else if (timeRangeType === 'month') {
+              when = d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            } else {
+              when = d.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' });
+            }
+            args.text = `${when} : ${y}`;
           }
         }}
         background={currentMode === 'Dark' ? '#33373E' : '#fff'}

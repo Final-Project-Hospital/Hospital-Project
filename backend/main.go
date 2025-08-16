@@ -423,6 +423,7 @@ func main() {
 		public.PATCH("/hardware-parameters/:id/icon", hardware.UpdateIconByHardwareParameterID)
 		public.PUT("/hardware-parameter/:id/group-display", hardware.UpdateGroupDisplayByID)
 		public.PATCH("/sensor-data-parameter/:id/note", hardware.CreateNoteBySensorDataParameterID)
+		public.PATCH("/hardware-parameters/:id/layout-display", hardware.UpdateLayoutDisplayByID)
 
 		// Line + Webhook
 		public.POST("/webhook/notification", hardware.WebhookNotification)
@@ -492,8 +493,8 @@ func main() {
 		c.String(http.StatusOK, "API RUNNING... PORT: %s", PORT)
 	})
 
-	r.Run("localhost:" + PORT)
-	// r.Run("0.0.0.0:" + PORT)
+	//r.Run("localhost:" + PORT)
+	r.Run("0.0.0.0:" + PORT)
 
 }
 

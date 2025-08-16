@@ -30,7 +30,7 @@ interface HardwareParameterResponse {
   graph: string;
   color: string;
   group_display: boolean;     // เดิม
-  layout_display: boolean;    // เพิ่มใหม่ (มาจาก API เป็น snake_case)
+  layout_display: boolean;    // เพิ่มใหม่
 }
 
 type UniqueGraphItem = {
@@ -109,8 +109,10 @@ const Index = () => {
         layout_display,
       } = paramObj;
 
+      // ต้องมีข้อมูลจริงจาก sensor
       if (!allParamIDsFromSensorData.includes(id)) continue;
 
+      // layout_display = false -> เต็มแถว
       if (layout_display === false) {
         filteredGraphMap[`isolate-full-${id}`] = {
           ID: id,
@@ -121,6 +123,7 @@ const Index = () => {
         continue;
       }
 
+      // ไม่ group -> แสดงเดี่ยวครึ่งแถว
       if (group_display === false) {
         filteredGraphMap[`single-${id}`] = {
           ID: id,
@@ -130,6 +133,7 @@ const Index = () => {
         continue;
       }
 
+      // รวมกลุ่มตาม graph_id (ครึ่งแถว)
       const key = `group-${graph_id}`;
       if (!filteredGraphMap[key]) {
         filteredGraphMap[key] = {
@@ -146,13 +150,12 @@ const Index = () => {
   }, [hardwareID]);
 
   useEffect(() => {
-    // โหลดครั้งแรก
     setLoadingAll(true);
     setBoxLoaded(false);
     setTableLoaded(false);
     setAverageLoaded(false);
     fetchSensorDataAndParameters().finally(() => {
-      // ปล่อยให้ลูกยิง onLoaded เอง
+      // ลูกจะ call onLoaded เอง
     });
   }, [hardwareID, fetchSensorDataAndParameters]);
 
@@ -163,27 +166,22 @@ const Index = () => {
   }, [boxLoaded, tableLoaded, averageLoaded]);
 
   const handleEditSuccess = async () => {
-    // เริ่มรอบโหลดใหม่
     setLoadingAll(true);
     setBoxLoaded(false);
     setTableLoaded(false);
     setAverageLoaded(false);
 
-    // ดึง layout/graphs ให้ทันก่อน
     await fetchSensorDataAndParameters();
 
-    // กระตุ้นให้ลูกรีโหลด/รีมาวน์
     setReloadBoxes((prev) => prev + 1);
     setReloadTable((prev) => prev + 1);
     setReloadAverage((prev) => prev + 1);
-    // หมายเหตุ: charts ใช้ setReloadCharts ไปแล้วใน fetchSensorDataAndParameters()
+    // charts ถูก setReloadCharts ใน fetch แล้ว
   };
 
   const onBoxLoaded = () => setBoxLoaded(true);
   const onTableLoaded = () => setTableLoaded(true);
   const onAverageLoaded = () => setAverageLoaded(true);
-
-  const nonFullTotal = uniqueGraphs.filter((g) => !g.fullSpan).length;
 
   return (
     <div className="space-y-8 relative">
@@ -193,7 +191,7 @@ const Index = () => {
         </div>
       )}
 
-      {/* ส่วนแสดงคำอธิบาย */}
+      {/* Header */}
       <section className="w-full px-2 md:px-8 p-5 bg-white border border-gray-200 rounded-lg shadow-md mb-8 mt-16 md:mt-0 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center">
         <div className="text-center md:text-left">
           <h1 className="text-2xl md:text-4xl font-extrabold leading-tight mb-4">
@@ -245,8 +243,6 @@ const Index = () => {
         <TableData
           key={`table-${reloadTable}`}
           hardwareID={hardwareID}
-          // ถ้า TableData รองรับ reloadKey ให้ส่งให้ด้วย
-          // ถ้าไม่รองรับ key จะทำให้รีมาวน์และดึงข้อมูลใหม่
           // @ts-ignore
           reloadKey={reloadTable}
           onLoaded={onTableLoaded}
@@ -254,8 +250,10 @@ const Index = () => {
       </section>
 
       {/* Charts */}
+      {/* Charts */}
       <section className="w-full px-2 md:px-8 bg-white p-6 rounded-lg shadow space-y-4">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">กราฟเเสดงค่าของเเต่ละตัวเเปร</h2>
+
         {uniqueGraphs.length === 0 ? (
           <div className="text-center text-gray-500 font-semibold">ไม่พบข้อมูล</div>
         ) : (
@@ -263,67 +261,53 @@ const Index = () => {
             className={
               uniqueGraphs.length === 1
                 ? "grid grid-cols-1 gap-6"
-                : "grid grid-cols-1 md:grid-cols-2 gap-6"
+                : // ✅ เพิ่ม auto-packing เฉพาะจอ md ขึ้นไป
+                "grid grid-cols-1 md:grid-cols-2 gap-6 md:[grid-auto-flow:dense]"
             }
+          // ถ้าใช้ Tailwind ที่ยังไม่รองรับ arbitrary properties:
+          // style={{ gridAutoFlow: 'dense' }}
           >
-            {(() => {
-              let nonFullSeen = 0;
+            {uniqueGraphs.map((g, index) => {
+              if (!g.ParametersWithColor?.length) return null;
 
-              return uniqueGraphs.map((g, index) => {
-                if (!g.ParametersWithColor?.length) return null;
+              const parameters = g.ParametersWithColor.map((p) => p.parameter);
+              const colors = g.ParametersWithColor.map((p) => p.color);
 
-                const parameters = g.ParametersWithColor.map((p) => p.parameter);
-                const colors = g.ParametersWithColor.map((p) => p.color);
+              const commonProps = {
+                hardwareID,
+                parameters,
+                colors,
+                timeRangeType: "day" as const,
+                selectedRange: [defaultStart, defaultEnd] as [Date, Date],
+                reloadKey: reloadCharts,
+              };
 
-                const commonProps = {
-                  hardwareID,
-                  parameters,
-                  colors,
-                  timeRangeType: "day" as const,
-                  selectedRange: [defaultStart, defaultEnd] as [Date, Date],
-                  reloadKey: reloadCharts,
-                };
-
-                const ChartComponent = (() => {
-                  switch (g.Graph) {
-                    case "Line":
-                      return <LineChart {...commonProps} />;
-                    case "Area":
-                      return <Area {...commonProps} />;
-                    case "Mapping":
-                      return <ColorMapping {...commonProps} />;
-                    case "Stacked":
-                      return <Stacked {...commonProps} />;
-                    default:
-                      return null;
-                  }
-                })();
-
-                let spanClass = "";
-                if (g.fullSpan) {
-                  spanClass = "md:col-span-2";
-                } else {
-                  const isLastNonFullAndOdd =
-                    nonFullSeen === nonFullTotal - 1 && nonFullTotal % 2 === 1;
-                  if (isLastNonFullAndOdd) {
-                    spanClass = "md:col-span-2";
-                  }
-                  nonFullSeen += 1;
+              const ChartComponent = (() => {
+                switch (g.Graph) {
+                  case "Line": return <LineChart {...commonProps} />;
+                  case "Area": return <Area {...commonProps} />;
+                  case "Mapping": return <ColorMapping {...commonProps} />;
+                  case "Stacked": return <Stacked {...commonProps} />;
+                  default: return null;
                 }
+              })();
 
-                return (
-                  <div
-                    key={`${g.ID}-${index}-${reloadCharts}`}
-                    className={`p-3 bg-gray-50 rounded shadow ${spanClass}`}
-                  >
-                    {ChartComponent}
-                  </div>
-                );
-              });
-            })()}
+              // ✅ ขยายเต็มแถวเฉพาะกราฟที่ fullSpan เท่านั้น
+              const spanClass = g.fullSpan ? "md:col-span-2" : "";
+
+              return (
+                <div
+                  key={`${g.ID}-${index}-${reloadCharts}`}
+                  className={`p-3 bg-gray-50 rounded shadow ${spanClass}`}
+                >
+                  {ChartComponent}
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
+
 
       {/* Average */}
       <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
