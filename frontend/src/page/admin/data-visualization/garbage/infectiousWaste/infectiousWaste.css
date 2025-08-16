@@ -20,8 +20,8 @@
   grid-template-columns: 1.3fr 1.8fr; /* ซ้ายเล็ก ขวาใหญ่ */
   grid-template-rows: 1fr; /* แถวเดียว ฝั่งซ้ายใช้ nested flex */
   gap: 16px;
-  height: 600px; /* ความสูงรวม container */
-  padding: 30px;
+  height: 800px; /* ความสูงรวม container */
+  padding: 50px;
 }
 
 /* ฝั่งซ้ายเป็น grid 2 แถวเท่ากัน */
@@ -33,7 +33,7 @@
 
 /* ซ้ายบน */
 .Infectious-graph-left .Infectious-graph-card:nth-child(1) {
-  background-color: #13b7b9;
+  background-color: #ffffff;
 }
 
 /* ซ้ายล่าง */
