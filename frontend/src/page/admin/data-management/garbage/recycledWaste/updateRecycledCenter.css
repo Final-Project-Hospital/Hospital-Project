@@ -1,0 +1,166 @@
+.up-recy-container {
+  background: white;
+  padding: 20px 30px;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px #7b61ff3b;
+  max-width: 80%;
+  margin: 0 auto;
+  margin-bottom: 40px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+.up-recy-container .ant-input,
+.up-recy-container .ant-input-number,
+.up-recy-container .ant-picker,
+.up-recy-container .ant-select-selector {
+  border-radius: 50px !important;
+}
+
+.up-recy-container .ant-input-number-handler-wrap {
+  border-radius: 0 50px 50px 0 !important;
+  overflow: hidden;
+}
+
+.up-form-group-recy {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.up-form-group-recy .ant-form-item {
+  flex: 1 1 300px;
+}
+
+.up-form-group-mini-recy {
+  width: 48%;
+}
+
+.full-width-recy {
+  width: 100%;
+}
+
+.red-text-recy {
+  color: red;
+  font-weight: bold;
+}
+
+.up-form-actions-recy {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 9px;
+  margin-bottom: 9px;
+}
+
+.cancel-up-recy,
+.reset-up-recy,
+.submit-up-recy {
+  padding: 10px 10px;
+  min-width: 80px;
+  height: inherit;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 50px;
+  border: none;
+  margin-top: -15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* ปุ่มแต่ละแบบ */
+.cancel-up-recy {
+  background-color: #949494;
+  color: white;
+  margin-right: 10px;
+  transition: all 0.2s ease-in-out;
+}
+
+.reset-up-recy {
+  background-color: #ffffff;
+  color: #1a4b57;
+  margin-right: 10px;
+  transition: all 0.2s ease-in-out;
+}
+
+.submit-up-recy {
+  background-color: #1a4b57;
+  color: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.submit-up-recy:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #49d4d7 !important;
+  transform: scale(1.05) !important;
+}
+
+.reset-up-recy:hover {
+  color: #1a4b57 !important;
+  background-color: #ffffff !important;
+  transform: scale(1.05) !important;
+}
+
+.cancel-up-recy:hover {
+  color: rgb(255, 255, 255) !important;
+  background-color: #646464 !important;
+  transform: scale(1.05) !important;
+}
+
+.up-recy-fornt-small {
+  display: flex;
+  gap: 16px;
+}
+
+.gener-fornt-small {
+  display: flex;
+  gap: 16px;
+}
+
+.up-form-group-mini-gen {
+  width: 48%;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+  .up-form-group-recy {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .up-form-group-recy .ant-form-item {
+    flex: 1 1 100%;
+  }
+
+  .up-form-actions-recy {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cancel-up-recy,
+  .reset-up-recy,
+  .submit-up-recy {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .up-from-mini-recy {
+    width: 100%;
+  }
+
+  .up-fornt-small-recy .ant-form-item-label>label {
+    font-size: small !important;
+  }
+
+  .gener-fornt-small .ant-form-item-label>label {
+    font-size: small !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .up-from-mini-recy {
+    width: 100%;
+  }
+}

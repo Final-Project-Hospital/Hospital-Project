@@ -130,27 +130,6 @@ export const UpdateOrCreateHazardous = async (payload: any) => {
   }
 };
 
-export const DeleteHazardous = async (id: number): Promise<DeleteHazardousInterface[] | null> => {
-  try {
-    const response = await axios.delete(`${apiUrl}/delete-hazardous/${id}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-    });
-
-    if (response.status === 200) {
-      return response.data;
-    } else {
-      console.error("Unexpected status:", response.status);
-      return null;
-    }
-  } catch (error: any) {
-    console.error("Error deleting Hazardous :", error.response?.data || error.message);
-    return null;
-  }
-};
-
 export const GetHazardousbyID = async (id: number): Promise<any | null> => {
   try {
     const response = await axios.get(`${apiUrl}/get-hazardous/${id}`, {
@@ -191,6 +170,28 @@ export const DeleteAllHazardousRecordsByDate = async (
     }
   } catch (error: any) {
     console.error("Error deleting Hazardous records by date:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const GetBeforeAfterHazardous = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-beforeafter-hazardous`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating Hazardous record:", error.response?.data || error.message);
     return null;
   }
 };

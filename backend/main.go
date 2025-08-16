@@ -362,7 +362,6 @@ func main() {
 		public.GET("/get-hazardous/:id", hazardousWaste.GetHazardousbyID)
 		public.GET("/get-hazardous-table", hazardousWaste.GetHazardousTABLE)
 		public.PATCH("/update-or-create-hazardous/:d", hazardousWaste.UpdateOrCreateHazardous)
-		public.DELETE("/delete-hazardous/:id", hazardousWaste.DeleteHazardous)
 		public.DELETE("/delete-hazardous-day/:id", hazardousWaste.DeleteAllHazardousRecordsByDate)
 		//ใช้ร่วมกัน
 		public.GET("/check-target", hazardousWaste.CheckTarget)
@@ -374,7 +373,6 @@ func main() {
 		public.GET("/get-general/:id", generalWaste.GetGeneralbyID)
 		public.GET("/get-general-table", generalWaste.GetGeneralTABLE)
 		public.PATCH("/update-or-create-general/:d", generalWaste.UpdateOrCreateGeneral)
-		public.DELETE("/delete-general/:id", generalWaste.DeleteGeneral)
 		public.DELETE("/delete-general-day/:id", generalWaste.DeleteAllGeneralRecordsByDate)
 
 		//ChemicalWaste
@@ -384,7 +382,6 @@ func main() {
 		public.GET("/get-chemical/:id", chemicalWaste.GetChemicalbyID)
 		public.GET("/get-chemical-table", chemicalWaste.GetChemicalTABLE)
 		public.PATCH("/update-or-create-chemical/:d", chemicalWaste.UpdateOrCreateChemical)
-		public.DELETE("/delete-chemical/:id", chemicalWaste.DeleteChemical)
 		public.DELETE("/delete-chemical-day/:id", chemicalWaste.DeleteAllChemicalRecordsByDate)
 
 		//infectiousWaste
@@ -404,7 +401,6 @@ func main() {
 		public.GET("/get-recycled/:id", recycledWaste.GetRecycledbyID)
 		public.GET("/get-recycled-table", recycledWaste.GetRecycledTABLE)
 		public.PATCH("/update-or-create-recycled/:d", recycledWaste.UpdateOrCreateRecycled)
-		public.DELETE("/delete-recycled/:id", recycledWaste.DeleteRecycled)
 		public.DELETE("/delete-recycled-day/:id", recycledWaste.DeleteAllRecycledRecordsByDate)
 
 		//Room

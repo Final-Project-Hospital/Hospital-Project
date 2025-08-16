@@ -130,27 +130,6 @@ export const UpdateOrCreateChemical = async (payload: any) => {
   }
 };
 
-export const DeleteChemical = async (id: number): Promise<DeleteChemicalInterface[] | null> => {
-  try {
-    const response = await axios.delete(`${apiUrl}/delete-chemical/${id}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-    });
-
-    if (response.status === 200) {
-      return response.data;
-    } else {
-      console.error("Unexpected status:", response.status);
-      return null;
-    }
-  } catch (error: any) {
-    console.error("Error deleting Chemical :", error.response?.data || error.message);
-    return null;
-  }
-};
-
 export const GetChemicalbyID = async (id: number): Promise<any | null> => {
   try {
     const response = await axios.get(`${apiUrl}/get-chemical/${id}`, {
@@ -191,6 +170,28 @@ export const DeleteAllChemicalRecordsByDate = async (
     }
   } catch (error: any) {
     console.error("Error deleting Chemical records by date:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const GetBeforeAfterChemical = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-beforeafter-chemical`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating Chemical record:", error.response?.data || error.message);
     return null;
   }
 };
