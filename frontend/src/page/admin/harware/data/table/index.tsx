@@ -9,19 +9,20 @@ import {
   EditOutlined,
   DeleteOutlined,
   ClearOutlined,
+  CheckCircleFilled,
+  CloseCircleFilled,
 } from "@ant-design/icons";
 import { CSVLink } from "react-csv";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
-
 import DateRangePickerWrapper from "./DateRangePickerWrapper";
 import {
   GetSensorDataByHardwareID,
   GetSensorDataParametersBySensorDataID,
   CreateNoteBySensorDataParameterID,
-  DeleteSensorDataParametersByIds, // bulk delete
-  DeleteAllSensorDataParametersBySensorDataID, // ลบทั้งหมดของแต่ละ SensorDataID
+  DeleteSensorDataParametersByIds,
+  DeleteAllSensorDataParametersBySensorDataID,
 } from "../../../../../services/hardware";
 import type { ColumnsType } from "antd/es/table";
 
@@ -33,17 +34,30 @@ interface TableDataProps {
   onLoaded?: () => void;
 }
 
-/** ✅ Hook ตรวจว่าจอเล็ก (มือถือ) หรือไม่ */
+/** ✅ จอมือถือ */
 const useIsMobile = (breakpoint = 768) => {
   const [isMobile, setIsMobile] = useState<boolean>(
-    typeof window !== "undefined" ? window.innerWidth < breakpoint : false
+    typeof window !== "undefined" ? window.innerWidth <= breakpoint : false
   );
   useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < breakpoint);
+    const onResize = () => setIsMobile(window.innerWidth <= breakpoint);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [breakpoint]);
   return isMobile;
+};
+
+/** ✅ จอแท็บเล็ต (iPad) 768–1300px ตามที่ระบุ */
+const useIsTabletView = (min = 768, max = 1300) => {
+  const [isTablet, setIsTablet] = useState<boolean>(
+    typeof window !== "undefined" ? window.innerWidth >= min && window.innerWidth <= max : false
+  );
+  useEffect(() => {
+    const onResize = () => setIsTablet(window.innerWidth >= min && window.innerWidth <= max);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [min, max]);
+  return isTablet;
 };
 
 /** ✅ ปลอดภัยกับเบราว์เซอร์ที่ไม่มี crypto.randomUUID() */
@@ -56,14 +70,15 @@ const generateId = () =>
 const ALL_PARAM = "__ALL__";
 
 type RangeFilter = {
-  id: string;           // สำหรับ key ของ UI
-  param?: string;       // ชื่อคอลัมน์พารามิเตอร์
-  min?: number | null;  // ค่าน้อยสุด (เว้นว่างได้)
-  max?: number | null;  // ค่ามากสุด (เว้นว่างได้)
+  id: string;
+  param?: string;
+  min?: number | null;
+  max?: number | null;
 };
 
 const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
   const isMobile = useIsMobile();
+  const isTablet = useIsTabletView(768, 1300);
 
   const [tableData, setTableData] = useState<any[]>([]);
   const [filteredData, setFilteredData] = useState<any[]>([]);
@@ -85,7 +100,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
   const [noteInput, setNoteInput] = useState("");
   const [savingNote, setSavingNote] = useState(false);
 
-  // ✅ Modal สำหรับ Clear Data ทั้ง “ตารางนี้” (ทุก SensorDataID ของ Hardware นี้)
+  // ✅ Modal สำหรับ Clear Data ทั้ง “ตารางนี้”
   const [showClearAllModal, setShowClearAllModal] = useState(false);
 
   // ✅ เก็บ SensorDataID ทั้งหมดของ Hardware นี้ (ไม่ซ้ำ)
@@ -112,7 +127,6 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
         return;
       }
 
-      // เก็บ SensorDataIDs ทั้งหมดของ hardware นี้
       const ids = Array.from(new Set((res || []).map((s: any) => Number(s.ID)).filter(Boolean)));
       setAllSensorDataIDs(ids);
 
@@ -123,13 +137,11 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
           params.forEach((param: any) => {
             const name = param.HardwareParameter?.Parameter;
             const value = param.Data;
-            const standard =
-              param.HardwareParameter?.StandardHardware?.MaxValueStandard ?? null;
-            const minStandard =
-              param.HardwareParameter?.StandardHardware?.MinValueStandard ?? null;
+            const standard = param.HardwareParameter?.StandardHardware?.MaxValueStandard ?? null;
+            const minStandard = param.HardwareParameter?.StandardHardware?.MinValueStandard ?? null;
             const unit = param.HardwareParameter?.UnitHardware?.Unit ?? "";
             const note: string = param?.Note ?? "";
-            const sdpId: number | undefined = param?.ID; // SensorDataParameterID
+            const sdpId: number | undefined = param?.ID;
 
             let sensorDate = "ไม่ทราบวันที่";
             let rawDate = "";
@@ -181,7 +193,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
         const key = `${p.วันที่}-${p.เวลา}`;
         if (!groupedRows[key]) {
           groupedRows[key] = {
-            __key: key, // base key
+            __key: key,
             วันที่: p.วันที่,
             เวลา: p.เวลา,
             rawDate: p.rawDate,
@@ -190,14 +202,12 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
           };
         }
 
-        // เก็บค่า column ต่างๆ
         Object.entries(p).forEach(([k, v]) => {
           if (!["ParameterName", "rawDate", "วันที่", "เวลา", "Note", "__id"].includes(k)) {
             groupedRows[key][k] = v;
           }
         });
 
-        // รวม Note
         const noteText = typeof p.Note === "string" && p.Note.trim().length > 0 ? p.Note.trim() : "";
         if (noteText) {
           if (groupedRows[key]["หมายเหตุ"]) {
@@ -209,13 +219,11 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
           }
         }
 
-        // สะสม SensorDataParameterID ในแถวนั้น
         if (typeof p.__id === "number") {
           groupedRows[key].__ids.add(p.__id);
         }
       });
 
-      // แปลง Set เป็น Array และสร้าง __key ไม่ซ้ำแน่นอน (rawDate + index กันชน)
       const finalTableData = Object.values(groupedRows)
         .map((row: any, idx: number) => ({
           ...row,
@@ -243,7 +251,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     setSearchText("");
     setDateRange([defaultStart, defaultEnd]);
     setSelectedColumns(uniqueColumns);
-    setRangeFilters([]); // ล้างช่วงค่าด้วย
+    setRangeFilters([]);
   };
 
   /** ✅ รายการคีย์ที่เป็นพารามิเตอร์จริง (ไม่รวม วันที่/เวลา/หมายเหตุ) */
@@ -256,19 +264,20 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
   const isValueInRange = (raw: any, min?: number | null, max?: number | null) => {
     const num = typeof raw === "number" ? raw : parseFloat(raw);
     if (isNaN(num)) return false;
-    if (min != null && num < min) return false;
-    if (max != null && num > max) return false;
-    return true;
+
+    const hasMin = min !== null && min !== undefined && min !== 0;
+    const hasMax = max !== null && max !== undefined && max !== 0;
+
+    if (hasMin && num < (min as number)) return false;
+    if (hasMax && num > (max as number)) return false;
+    return hasMin || hasMax ? true : false; // ถ้าไม่มีเกณฑ์เลย ถือว่าไม่ผ่านการเช็ค (จะไปเป็น "-" ในคอลัมน์สถานะ)
   };
 
-  /** ✅ ตรวจสอบ row ให้ผ่านเงื่อนไข range ทั้งหมด (AND)
-   *  - ถ้า rf.param === ALL_PARAM ➜ ผ่านเมื่อ "มีอย่างน้อย 1 พารามิเตอร์" ที่ค่าอยู่ในช่วง (ANY)
-   */
+  /** ✅ ตรวจสอบ row ให้ผ่านเงื่อนไข range ทั้งหมด (AND) */
   const rowPassRangeFilters = (row: any) => {
     if (!rangeFilters.length) return true;
     for (const rf of rangeFilters) {
       if (!rf.param || (rf.min == null && rf.max == null)) continue;
-
       if (rf.param === ALL_PARAM) {
         const anyMatch = numericParamKeys.some((k) => isValueInRange(row[k], rf.min, rf.max));
         if (!anyMatch) return false;
@@ -286,7 +295,11 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     if (dateRange[0] && dateRange[1]) {
       data = data.filter((item) => {
         const d = dayjs(item.rawDate);
-        return d.isValid() && d.isSameOrAfter(dayjs(dateRange[0]), "day") && d.isSameOrBefore(dayjs(dateRange[1]), "day");
+        return (
+          d.isValid() &&
+          d.isSameOrAfter(dayjs(dateRange[0]), "day") &&
+          d.isSameOrBefore(dayjs(dateRange[1]), "day")
+        );
       });
     }
 
@@ -313,39 +326,52 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     setShowNoteModal(true);
   };
 
+  /** ✅ บันทึกหมายเหตุ “ทุก ID” ของแถวนั้น */
   const saveNote = async () => {
     if (noteRowIndex === null) return;
 
     try {
       setSavingNote(true);
 
-      // 1) อัปเดต UI ทันที (optimistic)
-      const updated = [...filteredData];
-      updated[noteRowIndex].หมายเหตุ = noteInput;
-      setFilteredData(updated);
+      // 1) อัปเดต UI ทันที (optimistic) ทั้ง filteredData และ tableData
+      const updatedFiltered = [...filteredData];
+      const rowKey = updatedFiltered[noteRowIndex].__key;
+      const rowDate = updatedFiltered[noteRowIndex].วันที่;
+      const rowTime = updatedFiltered[noteRowIndex].เวลา;
+      updatedFiltered[noteRowIndex].หมายเหตุ = noteInput;
+      setFilteredData(updatedFiltered);
 
-      const updatedTable = [...tableData];
-      const globalIndex = tableData.findIndex(
-        (item) => item.วันที่ === updated[noteRowIndex].วันที่ && item.เวลา === updated[noteRowIndex].เวลา
+      const updatedTable = tableData.map((r) =>
+        r.วันที่ === rowDate && r.เวลา === rowTime ? { ...r, หมายเหตุ: noteInput } : r
       );
-      if (globalIndex !== -1) {
-        updatedTable[globalIndex].หมายเหตุ = noteInput;
-        setTableData(updatedTable);
-      }
+      setTableData(updatedTable);
 
-      // 2) เรียก API อัปเดต "เฉพาะ ID แรก" ของแถวนั้น
-      const ids: number[] = Array.isArray(updated[noteRowIndex].__ids) ? updated[noteRowIndex].__ids : [];
-      const firstId = ids[0];
-      if (!firstId) {
+      // 2) เรียก API กับ "ทุก ID" ของแถวนั้น
+      const ids: number[] = Array.isArray(updatedFiltered[noteRowIndex].__ids)
+        ? updatedFiltered[noteRowIndex].__ids
+        : [];
+
+      if (!ids.length) {
         message.warning("ไม่พบ SensorDataParameterID ในแถวนี้");
       } else {
-        const ok = await CreateNoteBySensorDataParameterID(firstId, noteInput);
-        if (ok) {
-          message.success(`บันทึกหมายเหตุสำเร็จ`);
+        const results = await Promise.allSettled(
+          ids.map((id) => CreateNoteBySensorDataParameterID(id, noteInput))
+        );
+
+        const success = results.filter((r) => r.status === "fulfilled" && (r as any).value).length;
+        const fail = results.length - success;
+
+        if (success > 0 && fail === 0) {
+          message.success(`บันทึกหมายเหตุสำเร็จ (${success}/${results.length})`);
+        } else if (success > 0 && fail > 0) {
+          message.warning(`บันทึกหมายเหตุสำเร็จบางส่วน: สำเร็จ ${success}, ล้มเหลว ${fail}`);
         } else {
           message.error("บันทึกหมายเหตุไม่สำเร็จ");
         }
       }
+
+      // 3) รีเฟรชข้อมูลให้ตรงกับ backend
+      await fetchData();
     } catch (e) {
       message.error("เกิดข้อผิดพลาดระหว่างบันทึกหมายเหตุ");
     } finally {
@@ -363,9 +389,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     const ids: number[] = [];
     filteredData.forEach((row) => {
       if (keySet.has(row.__key)) {
-        if (Array.isArray(row.__ids)) {
-          row.__ids.forEach((id: number) => ids.push(id));
-        }
+        if (Array.isArray(row.__ids)) row.__ids.forEach((id: number) => ids.push(id));
       }
     });
     return Array.from(new Set(ids));
@@ -402,7 +426,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     }
   };
 
-  // ✅ เปิด modal Clear Data ทั้งหมด (ไม่สนตัวกรอง)
+  // ✅ เปิด modal Clear Data ทั้งหมด
   const openClearAllModal = () => {
     if (allSensorDataIDs.length === 0) {
       message.info("ไม่มีข้อมูลให้ลบ");
@@ -411,7 +435,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     setShowClearAllModal(true);
   };
 
-  // ✅ ยืนยันลบทั้งหมดของตารางนี้ (ทุก SensorDataID ของ Hardware นี้)
+  // ✅ ยืนยันลบทั้งหมดของตารางนี้
   const confirmClearAll = async () => {
     try {
       setLoading(true);
@@ -439,55 +463,105 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     }
   };
 
-  /** ✅ สไตล์ header/เซลล์ให้ไม่หักบรรทัดบนมือถือ */
-  const headerNowrap = { style: { whiteSpace: "nowrap" as const } };
-  const cellNowrap = { style: { whiteSpace: "nowrap" as const } };
+  /** ✅ ฟังก์ชันช่วยฟอร์แมตรูปแบบช่วงมาตรฐาน */
+  const formatStdRange = (min: number | null | undefined, max: number | null | undefined) => {
+    const hasMin = min !== null && min !== undefined && min !== 0;
+    const hasMax = max !== null && max !== undefined && max !== 0;
+    if (!hasMin && !hasMax) return "-";
+    if (hasMin && hasMax) return `${min}-${max}`;
+    if (hasMin) return `${min}-`;
+    return `-${max}`;
+  };
 
-  /** ✅ กำหนดความกว้างขั้นต่ำต่อคอลัมน์ (มือถือเล็กลงหน่อย) */
-  const minColWidth = isMobile ? 120 : 160;
+  /** ✅ สถานะผ่าน/ไม่ผ่าน (ตาม min/max, นับ 0 = ไม่ได้ตั้ง) */
+  type PassFail = "PASS" | "FAIL" | "-";
+  const judgeStatus = (rawVal: any, min?: number | null, max?: number | null): PassFail => {
+    const num = typeof rawVal === "number" ? rawVal : parseFloat(rawVal);
+    if (isNaN(num)) return "-";
+
+    const hasMin = min !== null && min !== undefined && min !== 0;
+    const hasMax = max !== null && max !== undefined && max !== 0;
+
+    if (!hasMin && !hasMax) return "-";
+    if (hasMin && num < (min as number)) return "FAIL";
+    if (hasMax && num > (max as number)) return "FAIL";
+    return "PASS";
+  };
+
+  const renderStatusTag = (status: PassFail) => {
+    if (status === "PASS") {
+      return (
+        <div className="flex items-center gap-2 text-green-500 font-medium">
+          <CheckCircleFilled />
+          <span>ผ่านเกณฑ์มาตรฐาน</span>
+        </div>
+      );
+    }
+    if (status === "FAIL") {
+      return (
+        <div className="flex items-center gap-2 text-red-500 font-medium">
+          <CloseCircleFilled />
+          <span>ไม่ผ่านเกณฑ์มาตรฐาน</span>
+        </div>
+      );
+    }
+    return <span>-</span>;
+  };
+
+  /** ✅ Columns: ใส่ “มาตรฐาน” และ “สถานะ” ถัดจากทุกคอลัมน์พารามิเตอร์ */
+  // ตั้งความกว้างให้เหมาะกับอุปกรณ์
+  const minColWidth = isMobile ? 110 : isTablet ? 130 : 160;
+  const stdColWidth = isMobile ? 100 : isTablet ? 120 : 140;
+  const statusColWidth = isMobile ? 160 : isTablet ? 180 : 220;
 
   const columns: ColumnsType<any> = [
     {
       title: (
-        <span className="bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent font-bold">
+        <span className="col-title bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent font-bold">
           ลำดับ
         </span>
       ),
       dataIndex: "ลำดับ",
       key: "ลำดับ",
       render: (_: any, __: any, idx: number) => idx + 1,
-      width: 50,
-      fixed: isMobile ? undefined : "left",
-      onHeaderCell: () => headerNowrap,
-      onCell: () => cellNowrap,
+      width: 70,
+      fixed: !isMobile && !isTablet ? "left" : undefined,
       ellipsis: true,
     },
     ...uniqueColumns
       .filter((col) => selectedColumns.includes(col))
-      .map((col) => {
-        const displayTitle =
-          col === "วันที่" || col === "เวลา" || col === "หมายเหตุ"
-            ? col
-            : paramUnits[col]
-              ? `${col} (${paramUnits[col]})`
-              : col;
+      .flatMap((col) => {
+        // คอลัมน์ฐาน (วันที่/เวลา/หมายเหตุ)
+        if (["วันที่", "เวลา", "หมายเหตุ"].includes(col)) {
+          const baseCol: any = {
+            title: (
+              <span className="col-title bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent font-bold">
+                {col}
+              </span>
+            ),
+            dataIndex: col,
+            key: col,
+            width: minColWidth,
+            ellipsis: true,
+            render: (val: any) => (col === "หมายเหตุ" ? val || "-" : val),
+          };
+          return [baseCol];
+        }
 
-        return {
+        // พารามิเตอร์จริง
+        const displayTitle = paramUnits[col] ? `${col} (${paramUnits[col]})` : col;
+
+        const valueCol: any = {
           title: (
-            <span className="bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent font-bold">
+            <span className="col-title bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent font-bold">
               {displayTitle}
             </span>
           ),
           dataIndex: col,
           key: col,
           width: minColWidth,
-          onHeaderCell: () => headerNowrap,
-          onCell: () => cellNowrap,
           ellipsis: true,
           render: (val: any, row: any) => {
-            if (col === "วันที่" || col === "เวลา" || col === "หมายเหตุ" || col === "rawDate")
-              return val || (col === "หมายเหตุ" ? "-" : val);
-
             const standardMax = row[`${col}_standard`];
             const standardMin = row[`${col}_min`];
             const num = typeof val === "number" ? val : parseFloat(val);
@@ -498,31 +572,66 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
               } else if (standardMax !== null && standardMax !== 0 && num >= standardMax * 0.9) {
                 return <span style={{ color: "orange", fontWeight: "bold" }}>{num.toFixed(2)}</span>;
               } else if (standardMin !== null && standardMin !== 0 && num < standardMin) {
-                return <span style={{ color: "gold", fontWeight: "bold" }}>{num.toFixed(2)}</span>;
+                return <span style={{ color: "goldenrod", fontWeight: "bold" }}>{num.toFixed(2)}</span>;
               } else {
                 return !isNaN(num) ? num.toFixed(2) : val ?? "-";
               }
             }
-
-            if (!isNaN(num)) {
-              return num.toFixed(2);
-            }
-
+            if (!isNaN(num)) return num.toFixed(2);
             return val ?? "-";
           },
-        } as any;
+        };
+
+        const stdColKey = `${col}_STD_COL`;
+        const stdCol: any = {
+          title: (
+            <span className="col-title bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent font-bold">
+              มาตรฐาน
+            </span>
+          ),
+          key: stdColKey,
+          dataIndex: stdColKey,
+          width: stdColWidth,
+          ellipsis: true,
+          render: (_: any, row: any) => {
+            const min = row[`${col}_min`];
+            const max = row[`${col}_standard`];
+            return formatStdRange(min, max);
+          },
+        };
+
+        const statusColKey = `${col}_STATUS_COL`;
+        const statusCol: any = {
+          title: (
+            <span className="col-title bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent font-bold">
+              สถานะ
+            </span>
+          ),
+          key: statusColKey,
+          dataIndex: statusColKey,
+          width: statusColWidth,
+          ellipsis: true,
+          render: (_: any, row: any) => {
+            const val = row[col];
+            const min = row[`${col}_min`];
+            const max = row[`${col}_standard`];
+            const status = judgeStatus(val, min, max);
+            return renderStatusTag(status);
+          },
+        };
+
+        // เรียงเป็น: ค่า → มาตรฐาน → สถานะ
+        return [valueCol, stdCol, statusCol];
       }),
     {
       title: (
-        <span className="bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent font-bold">
+        <span className="col-title bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent font-bold">
           Action
         </span>
       ),
       key: "action",
-      width: isMobile ? 130 : 140,
-      fixed: isMobile ? undefined : "right",
-      onHeaderCell: () => headerNowrap,
-      onCell: () => cellNowrap,
+      width: isMobile ? 120 : isTablet ? 150 : 170,
+      fixed: !isMobile && !isTablet ? "right" : undefined,
       ellipsis: true,
       render: (_: any, row: any, idx: number) => {
         const isEdit = hasNote(row);
@@ -537,10 +646,10 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
                 ? "linear-gradient(90deg, #20c997, #0d9488)"
                 : "linear-gradient(90deg, #14b8a6, #0f766e)",
               color: "#fff",
-              fontSize: isMobile ? 12 : 14,
+              fontSize: isMobile || isTablet ? 12 : 14,
               fontWeight: 700,
-              padding: isMobile ? "4px 10px" : "6px 16px",
-              width: isMobile ? "100%" : "auto",
+              padding: isMobile || isTablet ? "4px 10px" : "1px 8px",
+              width: isMobile ? "100%" : "100%",
             }}
           >
             {isEdit ? "แก้ไขหมายเหตุ" : "เพิ่มหมายเหตุ"}
@@ -550,6 +659,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     },
   ];
 
+  /** ✅ CSV: ใส่คอลัมน์ Standard และ สถานะ ต่อท้ายพารามิเตอร์ด้วย */
   const getDataForCSV = (data: any[], columnsToInclude: string[]) => {
     return data.map((row: any, idx: number) => {
       const result: any = { ลำดับ: `${idx + 1}\t` };
@@ -569,6 +679,17 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
           const valFormatted =
             !isNaN(num) && rawVal !== null && rawVal !== undefined ? `${num.toFixed(2)}\t` : "-";
           result[displayKey] = valFormatted;
+
+          const min = row[`${col}_min`];
+          const max = row[`${col}_standard`];
+          const stdKey = `มาตรฐาน ${displayKey}`;
+          result[stdKey] = `${formatStdRange(min, max)}\t`;
+
+          const statusKey = `สถานะ ${displayKey}`;
+          const pf = judgeStatus(rawVal, min, max);
+          const pfText =
+            pf === "PASS" ? "ผ่านเกณฑ์มาตรฐาน" : pf === "FAIL" ? "ไม่ผ่านเกณฑ์มาตรฐาน" : "-";
+          result[statusKey] = `${pfText}\t`;
         }
       });
 
@@ -583,48 +704,41 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     return getDataForCSV(sorted, selectedColumns);
   }, [filteredData, selectedColumns]);
 
-  /** ✅ รายการคอลัมน์ที่เป็นพารามิเตอร์จริง (ตัดวันที่/เวลา/หมายเหตุ) — แสดงครบทุกตัว + “ทั้งหมด” */
-  const parameterOptions = useMemo(
-    () => {
-      const items = uniqueColumns
-        .filter((c) => !["วันที่", "เวลา", "หมายเหตุ"].includes(c))
-        .map((c) => ({
-          label: paramUnits[c] ? `${c} (${paramUnits[c]})` : c,
-          value: c,
-        }))
-        .sort((a, b) => a.label.localeCompare(b.label, "th"));
-
-      return [{ label: "ทั้งหมด", value: ALL_PARAM }, ...items];
-    },
-    [uniqueColumns, paramUnits]
-  );
+  /** ✅ รายการคอลัมน์พารามิเตอร์ (ตัดวันที่/เวลา/หมายเหตุ) — แสดงครบทุกตัว + “ทั้งหมด” */
+  const parameterOptions = useMemo(() => {
+    const items = uniqueColumns
+      .filter((c) => !["วันที่", "เวลา", "หมายเหตุ"].includes(c))
+      .map((c) => ({
+        label: paramUnits[c] ? `${c} (${paramUnits[c]})` : c,
+        value: c,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, "th"));
+    return [{ label: "ทั้งหมด", value: ALL_PARAM }, ...items];
+  }, [uniqueColumns, paramUnits]);
 
   // แปลงค่าเป็น number|null แบบปลอดภัย
   const toNumOrNull = (v: string | number | null) =>
-    v === null || v === '' ? null : (typeof v === 'number' ? v : isNaN(parseFloat(v)) ? null : parseFloat(v));
+    v === null || v === "" ? null : typeof v === "number" ? v : isNaN(parseFloat(v)) ? null : parseFloat(v);
 
   // อนุญาตเฉพาะตัวเลข, จุดทศนิยม, และเครื่องหมายลบข้างหน้า
   const sanitizeNumeric = (s: string) =>
-    s
-      .replace(/[^\d.\-]/g, '')   // ตัดอักขระที่ไม่ใช่ตัวเลข/จุด/ลบ
-      .replace(/(?!^)-/g, '')     // อนุญาต '-' ได้เฉพาะตัวแรก
-      .replace(/(\..*)\./g, '$1'); // อนุญาต '.' ได้จุดเดียว
+    s.replace(/[^\d.\-]/g, "").replace(/(?!^)-/g, "").replace(/(\..*)\./g, "$1");
 
-  /** ✅ UI เลือกช่วงค่า (หลายเงื่อนไข) — ใช้ Input ธรรมดา + commit ตอน blur/enter เพื่อให้พิมพ์ได้ต่อเนื่อง */
+  /** ✅ UI เลือกช่วงค่า (หลายเงื่อนไข) */
   const RangeFilterRow: React.FC<{ rf: RangeFilter }> = ({ rf }) => {
-    const [minText, setMinText] = useState(rf.min != null ? String(rf.min) : '');
-    const [maxText, setMaxText] = useState(rf.max != null ? String(rf.max) : '');
+    const [minText, setMinText] = useState(rf.min != null ? String(rf.min) : "");
+    const [maxText, setMaxText] = useState(rf.max != null ? String(rf.max) : "");
 
     useEffect(() => {
-      setMinText(rf.min != null ? String(rf.min) : '');
-      setMaxText(rf.max != null ? String(rf.max) : '');
+      setMinText(rf.min != null ? String(rf.min) : "");
+      setMaxText(rf.max != null ? String(rf.max) : "");
     }, [rf.id]);
 
     const onChange = (patch: Partial<RangeFilter>) => {
-      setRangeFilters(prev => prev.map(x => (x.id === rf.id ? { ...x, ...patch } : x)));
+      setRangeFilters((prev) => prev.map((x) => (x.id === rf.id ? { ...x, ...patch } : x)));
     };
 
-    const remove = () => setRangeFilters(prev => prev.filter(x => x.id !== rf.id));
+    const remove = () => setRangeFilters((prev) => prev.filter((x) => x.id !== rf.id));
 
     return (
       <div className="w-full grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
@@ -639,44 +753,38 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
             showSearch
             optionFilterProp="label"
             getPopupContainer={() => document.body}
-            virtual={!isMobile}
+            virtual={!isMobile && !isTablet}
             dropdownMatchSelectWidth={false}
-            listHeight={isMobile ? 260 : 256}
+            listHeight={260}
           />
         </div>
 
-        {/* Min as Input (numeric-only) */}
         <div className="sm:col-span-3">
           <Input
             placeholder="Min"
             value={minText}
             inputMode="decimal"
-            onChange={(e) => {
-              const s = sanitizeNumeric(e.target.value);
-              setMinText(s); // ยังไม่คอมมิตทันที
-            }}
+            onChange={(e) => setMinText(sanitizeNumeric(e.target.value))}
             onBlur={() => onChange({ min: toNumOrNull(minText) })}
             onPressEnter={() => onChange({ min: toNumOrNull(minText) })}
           />
         </div>
 
-        {/* Max as Input (numeric-only) */}
         <div className="sm:col-span-3">
           <Input
             placeholder="Max"
             value={maxText}
             inputMode="decimal"
-            onChange={(e) => {
-              const s = sanitizeNumeric(e.target.value);
-              setMaxText(s); // ยังไม่คอมมิตทันที
-            }}
+            onChange={(e) => setMaxText(sanitizeNumeric(e.target.value))}
             onBlur={() => onChange({ max: toNumOrNull(maxText) })}
             onPressEnter={() => onChange({ max: toNumOrNull(maxText) })}
           />
         </div>
 
         <div className="sm:col-span-1 flex justify-end">
-          <Button danger onClick={remove}>ลบ</Button>
+          <Button danger onClick={remove}>
+            ลบ
+          </Button>
         </div>
       </div>
     );
@@ -687,7 +795,6 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
       ...prev,
       {
         id: generateId(),
-        // ✅ ค่าเริ่มต้นเป็น “ทั้งหมด” เพื่อใช้งานไวบนมือถือ
         param: ALL_PARAM,
         min: null,
         max: null,
@@ -708,7 +815,13 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
         <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
           {uniqueColumns.map((col) => (
             <Checkbox value={col} key={col} className="hover:bg-teal-50 px-2 py-1 rounded">
-              <span className="text-gray-700">{col}</span>
+              <span className="text-gray-700">
+                {["วันที่", "เวลา", "หมายเหตุ"].includes(col)
+                  ? col
+                  : paramUnits[col]
+                  ? `${col} (${paramUnits[col]})`
+                  : col}
+              </span>
             </Checkbox>
           ))}
         </div>
@@ -720,7 +833,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     noteRowIndex !== null && hasNote(filteredData[noteRowIndex]) ? "แก้ไขหมายเหตุ" : "เพิ่มหมายเหตุ";
 
   return (
-    <div className="w-full mt-6">
+    <div className="w-full mt-6 table-wrap">
       <div className="bg-white rounded-2xl shadow-xl p-3 sm:p-4 md:p-6">
         {/* Top controls */}
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 justify-start mb-4 w-full">
@@ -770,7 +883,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
             Export CSV
           </Button>
 
-          {/* Delete selected (show only when checked) */}
+          {/* Delete selected */}
           {selectedRowKeys.length > 0 && (
             <Button
               danger
@@ -783,10 +896,9 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
             </Button>
           )}
 
-          {/* --- Spacer pushes Clear Data to the far right --- */}
           <div className="flex-1" />
 
-          {/* Clear Data: rightmost */}
+          {/* Clear Data */}
           <Button
             icon={<ClearOutlined />}
             onClick={openClearAllModal}
@@ -807,9 +919,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
               <Button type="dashed" onClick={addRangeFilter}>
                 + เพิ่มช่วงค่า
               </Button>
-              {rangeFilters.length > 0 && (
-                <Button onClick={clearRangeFilters}>ล้างช่วงค่า</Button>
-              )}
+              {rangeFilters.length > 0 && <Button onClick={clearRangeFilters}>ล้างช่วงค่า</Button>}
             </div>
           </div>
 
@@ -829,6 +939,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
             dataSource={filteredData}
             rowKey="__key"
             loading={loading}
+            tableLayout="fixed"
             pagination={{
               pageSize,
               showSizeChanger: true,
@@ -837,7 +948,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
               onShowSizeChange: (_, size) => setPageSize(size),
               responsive: true,
             }}
-            scroll={{ x: "max-content" }}
+            scroll={{ x: true }}
             className="rounded-2xl [&_.ant-table-cell]:!align-middle"
             rowSelection={{
               selectedRowKeys,

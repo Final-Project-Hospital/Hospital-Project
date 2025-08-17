@@ -281,19 +281,61 @@ func safeInt(i int) string {
 }
 
 
-func WebhookNotification(c *gin.Context) {
-	var payload entity.Notification
+type WebhookPayload struct {
+	Events []struct {
+		Message struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"message"`
+		Source struct {
+			UserID string `json:"userId"`
+		} `json:"source"`
+	} `json:"events"`
+}
 
+func WebhookNotification(c *gin.Context) {
+	var payload WebhookPayload
+
+	// Parse JSON จาก webhook
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	// ตรวจว่ามี event มาจริงไหม
+	if len(payload.Events) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no events found"})
+		return
+	}
+
+	// ดึง name (text message) และ userId ออกมา
+	name := payload.Events[0].Message.Text
+	userID := payload.Events[0].Source.UserID
+
 	db := config.DB()
-	if err := db.Create(&payload).Error; err != nil {
+	var existing entity.Notification
+
+	// เช็คว่ามี UserID อยู่แล้วไหม
+	if err := db.Where("user_id = ?", userID).First(&existing).Error; err == nil {
+		// ถ้ามีอยู่แล้ว → update name
+		existing.Name = name
+		if err := db.Save(&existing).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, existing)
+		return
+	}
+
+	// ถ้ายังไม่มี → create ใหม่
+	notification := entity.Notification{
+		Name:   name,
+		UserID: userID,
+	}
+	if err := db.Create(&notification).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, payload)
+	c.JSON(http.StatusOK, notification)
 }

@@ -17,6 +17,7 @@ import ColorMapping from "../chart/mapping/index";
 import Stacked from "../chart/stack/index";
 import EditParameterModal from "./edit";
 import EditStandardUnitModal from "../standard/index";
+import { useStateContext } from "../../../../../contexts/ContextProvider"; // 👈 เพิ่มบรรทัดนี้
 
 interface ParameterWithColor {
   parameter: string;
@@ -29,20 +30,22 @@ interface HardwareParameterResponse {
   graph_id: number;
   graph: string;
   color: string;
-  group_display: boolean;     // เดิม
-  layout_display: boolean;    // เพิ่มใหม่
+  group_display: boolean; // group
+  layout_display: boolean; // layout
 }
 
 type UniqueGraphItem = {
-  ID: number;
+  ID: number; // ใช้ graph_id หรือ id ตามเคส
   Graph: string;
   ParametersWithColor: ParameterWithColor[];
-  fullSpan?: boolean;
+  fullSpan?: boolean; // true = เต็มแถว, false/undefined = ครึ่งแถว
 };
 
 const Index = () => {
   const location = useLocation();
   const { hardwareID } = location.state || {};
+
+  const { activeMenu } = useStateContext();
 
   const [uniqueGraphs, setUniqueGraphs] = useState<UniqueGraphItem[]>([]);
   const [showEdit, setShowEdit] = useState(false);
@@ -60,6 +63,7 @@ const Index = () => {
   const [tableLoaded, setTableLoaded] = useState(false);
   const [averageLoaded, setAverageLoaded] = useState(false);
 
+  // default range for charts: 7 days (today - 6 → today)
   const defaultStart = new Date();
   defaultStart.setDate(defaultStart.getDate() - 6);
   const defaultEnd = new Date();
@@ -70,6 +74,7 @@ const Index = () => {
       return;
     }
 
+    // 1) รวบรวม param IDs ที่ "มีข้อมูลจริง" จาก SensorData
     const allParamIDsFromSensorData: number[] = [];
     const sensorDataList = await GetSensorDataByHardwareID(hardwareID);
     if (!sensorDataList || sensorDataList.length === 0) {
@@ -81,71 +86,85 @@ const Index = () => {
       const parameters = await GetSensorDataParametersBySensorDataID(sensorData.ID);
       if (parameters) {
         const paramIDs = parameters
-          .map((p) => p.HardwareParameter?.ID)
-          .filter((id): id is number => typeof id === "number");
+          .map((p: any) => p.HardwareParameter?.ID)
+          .filter((id: any): id is number => typeof id === "number");
         allParamIDsFromSensorData.push(...paramIDs);
       }
     }
 
+    // 2) ดึงรายการ HardwareParameter ทั้งหมดของ hardware นี้
     const response = await ListHardwareParameterIDsByHardwareID(hardwareID);
     if (!response?.parameters || !Array.isArray(response.parameters)) {
       setUniqueGraphs([]);
       return;
     }
 
-    const filteredGraphMap: Record<
-      string,
-      { ID: number; Graph: string; ParametersWithColor: ParameterWithColor[]; fullSpan?: boolean }
-    > = {};
+    // 3) คัดเฉพาะพารามิเตอร์ที่ "มีข้อมูลจริง"
+    const validParams: HardwareParameterResponse[] = (response.parameters as HardwareParameterResponse[]).filter(
+      (p) => allParamIDsFromSensorData.includes(p.id)
+    );
 
-    for (const paramObj of response.parameters as HardwareParameterResponse[]) {
-      const {
-        id,
-        parameter,
-        graph_id,
-        graph,
-        color,
-        group_display,
-        layout_display,
-      } = paramObj;
-
-      // ต้องมีข้อมูลจริงจาก sensor
-      if (!allParamIDsFromSensorData.includes(id)) continue;
-
-      // layout_display = false -> เต็มแถว
-      if (layout_display === false) {
-        filteredGraphMap[`isolate-full-${id}`] = {
-          ID: id,
-          Graph: graph || "Unknown",
-          ParametersWithColor: [{ parameter, color }],
-          fullSpan: true,
-        };
-        continue;
-      }
-
-      // ไม่ group -> แสดงเดี่ยวครึ่งแถว
-      if (group_display === false) {
-        filteredGraphMap[`single-${id}`] = {
-          ID: id,
-          Graph: graph || "Unknown",
-          ParametersWithColor: [{ parameter, color }],
-        };
-        continue;
-      }
-
-      // รวมกลุ่มตาม graph_id (ครึ่งแถว)
-      const key = `group-${graph_id}`;
-      if (!filteredGraphMap[key]) {
-        filteredGraphMap[key] = {
-          ID: graph_id,
-          Graph: graph || "Unknown",
-          ParametersWithColor: [],
-        };
-      }
-      filteredGraphMap[key].ParametersWithColor.push({ parameter, color });
+    // 4) จัดกลุ่มตาม graph_id เพื่อพิจารณา "รวมกราฟ" หรือ "เดี่ยว"
+    //    - รวมกราฟ: มีพารามิเตอร์ที่ group_display=true >= 2 ตัว ใน graph_id เดียวกัน
+    //    - เดี่ยว: นอกเหนือจากนั้น
+    const byGraphId = new Map<number, HardwareParameterResponse[]>();
+    for (const p of validParams) {
+      if (!byGraphId.has(p.graph_id)) byGraphId.set(p.graph_id, []);
+      byGraphId.get(p.graph_id)!.push(p);
     }
 
-    setUniqueGraphs(Object.values(filteredGraphMap));
+    const results: UniqueGraphItem[] = [];
+
+    for (const [graphId, paramsOfGraph] of byGraphId.entries()) {
+      // แยกตาม group_display
+      const groupTrue = paramsOfGraph.filter((p) => p.group_display === true);
+      const groupFalse = paramsOfGraph.filter((p) => p.group_display === false);
+
+      const graphName = paramsOfGraph[0]?.graph || "Unknown";
+
+      // ====== เคส "รวมกราฟ" (มากกว่า 1 parameter และ group = true) ======
+      if (groupTrue.length >= 2) {
+        // ตัดสิน layout สำหรับกราฟรวม:
+        // ถ้ามีสักตัว layout=false ⇒ เต็มแถว, มิฉะนั้น ⇒ ครึ่งแถว
+        const anyLayoutFalse = groupTrue.some((p) => p.layout_display === false);
+        const groupedItem: UniqueGraphItem = {
+          ID: graphId,
+          Graph: graphName,
+          ParametersWithColor: groupTrue.map((p) => ({ parameter: p.parameter, color: p.color })),
+          fullSpan: anyLayoutFalse ? true : false,
+        };
+        results.push(groupedItem);
+
+        // หมายเหตุ: groupFalse ใน graph เดียวกันยังคงพิจารณาเป็น "เดี่ยว" ต่อไปด้านล่าง
+      }
+
+      // ====== เคส "เดี่ยว" ======
+      // 1) เดี่ยวจาก group=false
+      for (const p of groupFalse) {
+        const isFull = p.layout_display === false; // layout=false ⇒ เต็มแถว / layout=true ⇒ ครึ่งแถว
+        results.push({
+          ID: p.id,
+          Graph: p.graph || "Unknown",
+          ParametersWithColor: [{ parameter: p.parameter, color: p.color }],
+          fullSpan: isFull,
+        });
+      }
+
+      // 2) เดี่ยวจาก group=true แต่มีแค่ตัวเดียว (ไม่ได้เข้าเงื่อนไขรวม)
+      if (groupTrue.length === 1) {
+        const p = groupTrue[0];
+        const isFull = p.layout_display === false;
+        results.push({
+          ID: p.id,
+          Graph: p.graph || "Unknown",
+          ParametersWithColor: [{ parameter: p.parameter, color: p.color }],
+          fullSpan: isFull,
+        });
+      }
+      // ถ้า groupTrue.length === 0 ⇒ ไม่มีตัว group=true ในกราฟนี้ ก็จบ (เคสถูกครอบคลุมโดย groupFalse แล้ว)
+    }
+
+    setUniqueGraphs(results);
     setReloadCharts((prev) => prev + 1);
   }, [hardwareID]);
 
@@ -155,7 +174,7 @@ const Index = () => {
     setTableLoaded(false);
     setAverageLoaded(false);
     fetchSensorDataAndParameters().finally(() => {
-      // ลูกจะ call onLoaded เอง
+      // ลูกจะ call onLoaded เองเมื่อโหลดเสร็จ
     });
   }, [hardwareID, fetchSensorDataAndParameters]);
 
@@ -209,7 +228,7 @@ const Index = () => {
               className="bg-teal-600 hover:bg-teal-800 text-white font-bold py-2 px-5 rounded-xl shadow transition"
               onClick={() => setShowEdit(true)}
             >
-              แก้ไขข้อมูลพารามิเตอร์
+              แก้ไขข้อมูลการแสดงผลของกราฟ
             </button>
             <button
               className="bg-teal-600 hover:bg-teal-800 text-white font-bold py-2 px-5 rounded-xl shadow transition"
@@ -237,8 +256,12 @@ const Index = () => {
         />
       </section>
 
-      {/* Table */}
-      <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
+      {/* Table: ใช้ activeMenu เลือกความกว้าง */}
+      <section
+        className={`px-2 md:px-8 bg-white p-4 rounded-lg shadow ${
+          activeMenu ? "w-full w-mid-800 w-mid-1400 w-mid-1600 w-mid-max" : "w-full"
+        }`}
+      >
         <h2 className="text-lg font-semibold mb-4 text-gray-700">ตารางข้อมูล</h2>
         <TableData
           key={`table-${reloadTable}`}
@@ -250,7 +273,6 @@ const Index = () => {
       </section>
 
       {/* Charts */}
-      {/* Charts */}
       <section className="w-full px-2 md:px-8 bg-white p-6 rounded-lg shadow space-y-4">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">กราฟเเสดงค่าของเเต่ละตัวเเปร</h2>
 
@@ -261,11 +283,8 @@ const Index = () => {
             className={
               uniqueGraphs.length === 1
                 ? "grid grid-cols-1 gap-6"
-                : // ✅ เพิ่ม auto-packing เฉพาะจอ md ขึ้นไป
-                "grid grid-cols-1 md:grid-cols-2 gap-6 md:[grid-auto-flow:dense]"
+                : "grid grid-cols-1 md:grid-cols-2 gap-6 md:[grid-auto-flow:dense]"
             }
-          // ถ้าใช้ Tailwind ที่ยังไม่รองรับ arbitrary properties:
-          // style={{ gridAutoFlow: 'dense' }}
           >
             {uniqueGraphs.map((g, index) => {
               if (!g.ParametersWithColor?.length) return null;
@@ -284,15 +303,19 @@ const Index = () => {
 
               const ChartComponent = (() => {
                 switch (g.Graph) {
-                  case "Line": return <LineChart {...commonProps} />;
-                  case "Area": return <Area {...commonProps} />;
-                  case "Mapping": return <ColorMapping {...commonProps} />;
-                  case "Stacked": return <Stacked {...commonProps} />;
-                  default: return null;
+                  case "Line":
+                    return <LineChart {...commonProps} />;
+                  case "Area":
+                    return <Area {...commonProps} />;
+                  case "Mapping":
+                    return <ColorMapping {...commonProps} />;
+                  case "Stacked":
+                    return <Stacked {...commonProps} />;
+                  default:
+                    return null;
                 }
               })();
 
-              // ✅ ขยายเต็มแถวเฉพาะกราฟที่ fullSpan เท่านั้น
               const spanClass = g.fullSpan ? "md:col-span-2" : "";
 
               return (
@@ -307,7 +330,6 @@ const Index = () => {
           </div>
         )}
       </section>
-
 
       {/* Average */}
       <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
@@ -333,6 +355,25 @@ const Index = () => {
         onSuccess={handleEditSuccess}
         hardwareID={hardwareID}
       />
+
+      {/* ✅ Media query เฉพาะไฟล์นี้ */}
+      <style>{`
+        @media (min-width: 768px) and (max-width: 1280px) {
+          .w-mid-800 { width: 66vw; margin: 0 auto; }
+        }
+
+        @media (min-width: 1336px) and (max-width: 1920px) {
+          .w-mid-1400 { width: 73vw; margin: 0 auto; }
+        }
+
+        @media (min-width: 1921px) and (max-width: 2400px) {
+          .w-mid-1600 { width: 80vw; margin: 0 auto; }
+        }
+
+        @media (min-width: 2401px) {
+          .w-mid-max { width: 84vw; margin: 0 auto; }
+        }
+      `}</style>
     </div>
   );
 };

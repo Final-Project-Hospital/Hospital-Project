@@ -7,6 +7,7 @@ import { HardwareGraphInterface } from "../interface/IHardwareGraph"
 import { HardwareParameterColorInterface } from "../interface/IHardwareColor"
 import { HardwareParameterInterface } from "../interface/IHardwareParameter"
 import { UnitHardwareInterface } from "../interface/IUnitHardware";
+import { NotificationInterface } from "../interface/INotification";
 import {apiUrl} from "./index"
 
 const getAuthHeader = () => {
@@ -370,12 +371,13 @@ export const ListHardwareColors = async (): Promise<HardwareParameterColorInterf
 
 export const UpdateIconByHardwareParameterID = async (
   id: number,
-  icon: string
+  icon: string,
+  alert: boolean
 ): Promise<boolean> => {
   try {
     const response = await axios.patch(
       `${apiUrl}/hardware-parameters/${id}/icon`,
-      { icon },
+      { icon, alert }, // ✅ ส่ง icon + alert พร้อมกัน
       {
         headers: {
           "Content-Type": "application/json",
@@ -391,10 +393,11 @@ export const UpdateIconByHardwareParameterID = async (
       return false;
     }
   } catch (error) {
-    console.error("Error updating icon:", error);
+    console.error("Error updating hardware parameter:", error);
     return false;
   }
 };
+
 
 // ฟังก์ชันสำหรับอัปเดต HardwareParameter
 export const UpdateHardwareParameterByID = async (
@@ -620,6 +623,57 @@ export const UpdateLayoutDisplay = async (
       "Error updating layout_display:",
       error?.response?.data || error.message
     );
+    return null;
+  }
+};
+
+// 📌 ดึงรายการ Notification ทั้งหมด
+export const ListNotification = async (): Promise<NotificationInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/notifications`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    return null;
+  }
+};
+
+// 📌 อัปเดต Alert ของ Notification ตาม ID
+export const UpdateAlertByNotificationID = async (
+  id: number,
+  alert: boolean
+): Promise<NotificationInterface | null> => {
+  try {
+    const response = await axios.patch(
+      `${apiUrl}/notifications/${id}/alert`,
+      { alert },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error(`Error updating alert for notification ${id}:`, error);
     return null;
   }
 };
