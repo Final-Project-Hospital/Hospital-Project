@@ -1,0 +1,467 @@
+import { useEffect, useState } from 'react';
+import { Outlet } from 'react-router-dom';
+import { useStateContext } from '../../contexts/ContextProvider';
+import { Navbar, Sidebar } from '../../component/admin';
+import { RefreshProvider } from "./RefreshContext";
+import "./main.css";
+
+/**
+ * MainLayout: ฟัง 'sidebar:width' เพื่ออัปเดต margin-left ของ content
+ */
+const MainLayout = () => {
+  const { currentMode, activeMenu } = useStateContext();
+
+  // ความกว้าง sidebar ที่ใช้งานจริง (0 | 80 | 288)
+  const [sidebarWidth, setSidebarWidth] = useState<number>(activeMenu ? 288 : 0);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ce = e as CustomEvent<{ width: number }>;
+      if (ce?.detail?.width !== undefined) {
+        setSidebarWidth(ce.detail.width);
+      }
+    };
+    window.addEventListener('sidebar:width', handler);
+    return () => window.removeEventListener('sidebar:width', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!activeMenu) {
+      setSidebarWidth(0);
+    } else {
+      setSidebarWidth((prev) => (prev === 0 ? 288 : prev));
+    }
+  }, [activeMenu]);
+
+  return (
+    <RefreshProvider>
+      <div className={currentMode === 'Dark' ? 'dark' : ''}>
+        <div className="flex relative dark:bg-main-dark-bg">
+          {/* Sidebar (fixed) */}
+          {activeMenu ? (
+            <div
+              className="fixed sidebar dark:bg-secondary-dark-bg bg-white"
+              style={{
+                width: sidebarWidth,
+                transition: 'width 200ms ease',
+                height: '100vh',
+                zIndex: 40,
+              }}
+            >
+              <Sidebar />
+            </div>
+          ) : (
+            <div className="w-0 dark:bg-secondary-dark-bg">
+              <Sidebar />
+            </div>
+          )}
+
+          {/* Content */}
+          <div
+            className="dark:bg-main-dark-bg bg-main-bg min-h-screen w-full"
+            style={{
+              // ขยับตาม sidebar เฉพาะจอ md ขึ้นไป
+              marginLeft: `clamp(0px, (100vw - 768px) * 9999, ${sidebarWidth}px)`,
+              transition: 'margin-left 200ms ease',
+            }}
+          >
+            <div className="fixed md:static bg-main-bg dark:bg-main-dark-bg navbar w-full z-50">
+              <Navbar />
+            </div>
+            <div className="pt-16 md:pt-0">
+              <Outlet />
+            </div>
+          </div>
+        </div>
+      </div>
+    </RefreshProvider>
+  );
+};
+
+export default MainLayout;
+ 
+
+
+
+
+
+
+import { useState, useEffect } from 'react';
+import { AiOutlineMenu } from 'react-icons/ai';
+import { MdKeyboardArrowDown } from 'react-icons/md';
+import { TooltipComponent } from '@syncfusion/ej2-react-popups';
+import avatar from '../../assets/admin/avatar3.png';
+import { RiNotification3Line } from 'react-icons/ri';
+import { UserProfile } from '.';
+import Notification from './report/Notification';
+import { useStateContext } from '../../contexts/ContextProvider';
+import { GetUserDataByUserID } from '../../services/httpLogin';
+import { useRefresh } from './RefreshContext';
+
+const NavButton = ({ title, customFunc, icon, color, dotColor }: any) => (
+  <TooltipComponent content={title} position="BottomCenter">
+    <button
+      type="button"
+      onClick={() => customFunc()}
+      style={{ color }}
+      className="relative text-xl rounded-full p-3 hover:bg-light-gray"
+      aria-label={title}
+    >
+      {dotColor && (
+        <span
+          style={{ background: dotColor }}
+          className="absolute inline-flex rounded-full h-2 w-2 right-2 top-2"
+        />
+      )}
+      {icon}
+    </button>
+  </TooltipComponent>
+);
+
+const Navbar = () => {
+  const {
+    currentColor,
+    activeMenu,
+    setActiveMenu,
+    handleClick,
+    isClicked,
+    setScreenSize,
+    screenSize,
+  } = useStateContext();
+
+  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [profileImg, setProfileImg] = useState<string>(avatar);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  const { refreshKey } = useRefresh();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const id = Number(localStorage.getItem('employeeid'));
+      if (!id || isNaN(id)) {
+        setLoading(false);
+        setProfileImg(avatar);
+        setFullName('');
+        setFirstName('');
+        return;
+      }
+
+      const res = await GetUserDataByUserID(id);
+      if (res !== false && res) {
+        const fname = res.FirstName || '';
+        const lname = res.LastName || '';
+        setFullName(`${fname} ${lname}`);
+        setFirstName(fname);
+        if (res.Profile && typeof res.Profile === 'string' && res.Profile.length > 10) {
+          setProfileImg(res.Profile);
+        } else {
+          setProfileImg(avatar);
+        }
+      } else {
+        setProfileImg(avatar);
+        setFullName('');
+        setFirstName('');
+      }
+      setLoading(false);
+    };
+
+    fetchUser();
+  }, [refreshKey]);
+
+  useEffect(() => {
+    const handleResize = () => setScreenSize(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (screenSize !== undefined && screenSize <= 900) {
+      setActiveMenu(false);
+    } else {
+      setActiveMenu(true);
+    }
+  }, [screenSize, setActiveMenu]);
+
+  /**
+   * ปุ่ม Menu:
+   * - จอใหญ่ (>900): toggle "หุบ/ขยาย" ผ่าน event 'sidebar:toggleCollapsed'
+   * - จอเล็ก (<=900): toggle แสดง/ซ่อนทั้งแท่ง (activeMenu)
+   */
+  const onMenuButtonClick = () => {
+    if (screenSize !== undefined && screenSize > 900) {
+      // เดสก์ท็อป: หุบ/ขยาย
+      window.dispatchEvent(new CustomEvent('sidebar:toggleCollapsed'));
+    } else {
+      // มือถือ: แสดง/ซ่อนทั้งแท่ง
+      setActiveMenu(!activeMenu);
+    }
+  };
+
+  return (
+    <div className="flex justify-between p-2 md:ml-6 md:mr-6 relative">
+      <NavButton
+        title="Menu"
+        customFunc={onMenuButtonClick}
+        color={currentColor}
+        icon={<AiOutlineMenu />}
+      />
+
+      <div className="flex">
+        <NavButton
+          title="Notification"
+          dotColor="rgb(254, 201, 15)"
+          customFunc={() => handleClick('notification')}
+          color={currentColor}
+          icon={<RiNotification3Line />}
+        />
+
+        <TooltipComponent content="Profile" position="BottomCenter">
+          <div
+            className="flex items-center gap-2 cursor-pointer p-1 hover:bg-light-gray rounded-lg"
+            onClick={() => handleClick('userProfile')}
+          >
+            <img
+              className="rounded-full w-10 h-10"
+              src={profileImg}
+              alt="user-profile"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = avatar;
+              }}
+            />
+            <span className="text-gray-400 font-bold ml-1 text-14">
+              {screenSize! <= 768 ? firstName || 'ผู้ใช้' : fullName || 'ผู้ใช้'}
+            </span>
+            <MdKeyboardArrowDown className="text-gray-400 text-14" />
+          </div>
+        </TooltipComponent>
+
+        {isClicked.notification && <Notification />}
+        {isClicked.userProfile && <UserProfile />}
+      </div>
+    </div>
+  );
+};
+
+export default Navbar;
+  
+
+
+
+import React, { useEffect, useState } from "react";
+import { Menu, Tooltip as AntdTooltip } from "antd";
+import { FiChevronDown } from "react-icons/fi";
+import { Link, useLocation } from "react-router-dom";
+import { MdOutlineCancel } from "react-icons/md";
+import { TooltipComponent } from "@syncfusion/ej2-react-popups";
+import Logo from "../../assets/SUTH Logo.png";
+import { links } from "../../data/dummy";
+import { useStateContext } from "../../contexts/ContextProvider";
+import "./Sidebar.css";
+
+const { SubMenu, Item } = Menu;
+
+interface MenuItem {
+  name: string;
+  label?: string;
+  icon?: React.ReactNode;
+  path?: string;
+  subMenu?: MenuItem[];
+  children?: MenuItem[];
+}
+
+const SIDEBAR_WIDTH = 288;     // 18rem
+const SIDEBAR_COLLAPSED = 80;  // ไอคอน + padding
+
+const Sidebar: React.FC = () => {
+  const { currentColor, activeMenu, setActiveMenu, screenSize } = useStateContext();
+  const location = useLocation();
+
+  const [openKeys, setOpenKeys] = useState<string[]>([]);
+  const [collapsed, setCollapsed] = useState<boolean>(false);
+
+  // ส่งความกว้างออกไปให้ MainLayout
+  const dispatchWidth = (width: number) => {
+    window.dispatchEvent(new CustomEvent("sidebar:width", { detail: { width } }));
+  };
+
+  // ฟัง event จาก Navbar เพื่อ toggle collapsed (เฉพาะเดสก์ท็อป)
+  useEffect(() => {
+    const onToggleCollapsed = () => {
+      setCollapsed((prev) => !prev);
+    };
+    window.addEventListener('sidebar:toggleCollapsed', onToggleCollapsed);
+    return () => window.removeEventListener('sidebar:toggleCollapsed', onToggleCollapsed);
+  }, []);
+
+  // ยิงความกว้างทุกครั้งที่ state เปลี่ยน
+  useEffect(() => {
+    if (!activeMenu) {
+      dispatchWidth(0);
+    } else {
+      dispatchWidth(collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_WIDTH);
+    }
+  }, [activeMenu, collapsed]);
+
+  const handleCloseSideBar = () => {
+    if (activeMenu !== undefined && screenSize !== undefined && screenSize <= 900) {
+      setActiveMenu(false);
+      dispatchWidth(0);
+    }
+  };
+
+  const findOpenKeys = (menus: MenuItem[], path: string): string[] => {
+    for (const item of menus) {
+      if (item.subMenu) {
+        if (item.subMenu.some((sub) => path.startsWith(sub.path || `/admin/${sub.name}`))) {
+          return [item.name];
+        }
+        const deeper = findOpenKeys(item.subMenu, path);
+        if (deeper.length) return [item.name, ...deeper];
+      }
+      if (item.children) {
+        if (item.children.some((sub) => path.startsWith(sub.path || `/admin/${sub.name}`))) {
+          return [item.name];
+        }
+        const deeper = findOpenKeys(item.children, path);
+        if (deeper.length) return [item.name, ...deeper];
+      }
+    }
+    return [];
+  };
+
+  useEffect(() => {
+    const keys = findOpenKeys(links.flatMap((section) => section.links), location.pathname);
+    setOpenKeys(keys);
+  }, [location.pathname]);
+
+  const onOpenChange = (keys: string[]) => {
+    setOpenKeys(keys);
+  };
+
+  const renderMenu = (menu: MenuItem[]) =>
+    menu.map((item) => {
+      const hasSubMenu = !!(item.subMenu && item.subMenu.length > 0);
+      const hasChildren = !!(item.children && item.children.length > 0);
+      const isSelected = location.pathname === (item.path || `/admin/${item.name}`);
+
+      if (hasSubMenu || hasChildren) {
+        // SubMenu: เมื่อ collapsed จะโชว์เป็น popup อัตโนมัติโดย antd
+        return (
+          <SubMenu
+            key={item.name}
+            title={
+              <div className="custom-submenu-title" style={{ color: isSelected ? currentColor : undefined }}>
+                <div className="custom-submenu-icon-text">
+                  {item.icon}
+                  {!collapsed && <span>{item.label}</span>}
+                </div>
+                {!collapsed && <FiChevronDown className="custom-submenu-arrow" />}
+              </div>
+            }
+          >
+            {item.subMenu && renderMenu(item.subMenu)}
+            {item.children && renderMenu(item.children)}
+          </SubMenu>
+        );
+      }
+
+      // Item เดี่ยว: แสดง Tooltip ชื่อเมนูเมื่อ collapsed
+      const itemNode = (
+        <Item
+          key={item.path || `/admin/${item.name}`}
+          icon={item.icon}
+          onClick={handleCloseSideBar}
+          className={isSelected ? "custom-selected" : ""}
+          style={{ color: isSelected ? currentColor : undefined }}
+        >
+          <Link to={item.path || `/admin/${item.name}`}>
+            {!collapsed && <span className="capitalize">{item.label || item.name}</span>}
+          </Link>
+        </Item>
+      );
+
+      return collapsed ? (
+        <AntdTooltip placement="right" title={item.label || item.name} key={item.path || `/admin/${item.name}`}>
+          {itemNode}
+        </AntdTooltip>
+      ) : (
+        itemNode
+      );
+    });
+
+  return (
+    <div
+      className="h-screen md:overflow-hidden overflow-auto md:hover:overflow-auto pb-10"
+      style={{
+        width: activeMenu ? (collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_WIDTH) : 0,
+        transition: 'width 200ms ease',
+      }}
+    >
+      {activeMenu && (
+        <>
+          {/* Header: Logo และปุ่มปิดเฉพาะจอเล็ก */}
+          <div className="flex items-center justify-between px-4 pt-4">
+            {!collapsed ? (
+              <Link
+                to="/admin"
+                onClick={handleCloseSideBar}
+                className="items-center gap-3 flex text-xl font-extrabold tracking-tight dark:text-white text-slate-900"
+              >
+                <span>
+                  <img src={Logo} alt="logo" width={155} />
+                </span>
+              </Link>
+            ) : (
+              <div style={{ width: 40, height: 40 }} />
+            )}
+
+            {/* ปุ่มปิดสำหรับมือถือ */}
+            <div className="md:hidden block">
+              <TooltipComponent content="Close" position="BottomCenter">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveMenu(false);
+                    dispatchWidth(0);
+                  }}
+                  style={{ color: currentColor }}
+                  className="text-xl rounded-full p-3 hover:bg-light-gray"
+                >
+                  <MdOutlineCancel />
+                </button>
+              </TooltipComponent>
+            </div>
+          </div>
+
+          {/* เมนู */}
+          <div className="mt-6">
+            {links.map((section) => (
+              <div key={section.title || "section"} className="mb-2">
+                {!collapsed && section.title && (
+                  <p className="sidebar-section-title px-4">{section.title}</p>
+                )}
+                <Menu
+                  mode="inline"
+                  theme="light"
+                  selectedKeys={[location.pathname]}
+                  openKeys={collapsed ? [] : openKeys}
+                  onOpenChange={onOpenChange}
+                  inlineCollapsed={collapsed}
+                  style={{ border: "none" }}
+                >
+                  {renderMenu(section.links)}
+                </Menu>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default Sidebar;
+ 
+

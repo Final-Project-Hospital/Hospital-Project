@@ -6,6 +6,7 @@ import (
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/controller/building"
 	"github.com/Tawunchai/hospital-project/controller/calendar"
+	"github.com/Tawunchai/hospital-project/controller/line"
 	"github.com/Tawunchai/hospital-project/controller/report"
 	"github.com/Tawunchai/hospital-project/controller/wastewater/bodcenter"
 	"github.com/Tawunchai/hospital-project/controller/wastewater/fogcenter"
@@ -47,9 +48,9 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/position"
 
 	//Garbage
-	"github.com/Tawunchai/hospital-project/controller/garbage/hazardousWaste"
-	"github.com/Tawunchai/hospital-project/controller/garbage/generalWaste"
 	"github.com/Tawunchai/hospital-project/controller/garbage/chemicalWaste"
+	"github.com/Tawunchai/hospital-project/controller/garbage/generalWaste"
+	"github.com/Tawunchai/hospital-project/controller/garbage/hazardousWaste"
 	"github.com/Tawunchai/hospital-project/controller/garbage/infectiousWaste"
 	"github.com/Tawunchai/hospital-project/controller/garbage/recycledWaste"
 
@@ -427,6 +428,8 @@ func main() {
 
 		// Line + Webhook
 		public.POST("/webhook/notification", hardware.WebhookNotification)
+		public.PATCH("/notifications/:id/alert", line.UpdateAlertByNotificationID)
+		public.GET("/notifications", line.ListNotification)
 
 		//report hardware
 		public.GET("/report-hardware", report.ListReportHardware)
