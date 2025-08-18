@@ -5,6 +5,7 @@ import { useStateContext } from '../../../../../../contexts/ContextProvider';
 import TimeRangeSelector from './TimeRangeSelector';
 
 const dropdownData = [
+  { Id: 'hour', Time: 'Hour(s)' },
   { Id: 'day', Time: 'Day(s)' },
   { Id: 'month', Time: 'Month' },
   { Id: 'year', Time: 'Year(s)' },
@@ -29,7 +30,7 @@ const LineChartIndex: React.FC<ChartdataProps> = ({
   reloadKey,
 }) => {
   const { currentMode } = useStateContext();
-  const [timeRangeType, setTimeRangeType] = useState<'day' | 'month' | 'year'>('day');
+  const [timeRangeType, setTimeRangeType] = useState<'hour' | 'day' | 'month' | 'year'>('day');
   const [selectedRange, setSelectedRange] = useState<any>(null);
   const [lineChartParameters, setLineChartParameters] = useState<LineParamWithColor[]>([]);
 
@@ -64,6 +65,11 @@ const LineChartIndex: React.FC<ChartdataProps> = ({
     } else if (timeRangeType === 'year') {
       const y = new Date().getFullYear();
       setSelectedRange([y, y]);
+    } else if (timeRangeType === 'hour') {
+      // ค่าเริ่มต้นย้อนหลัง 6 ชั่วโมง
+      const end = new Date();
+      const start = new Date(end.getTime() - 6 * 60 * 60 * 1000);
+      setSelectedRange([start, end]);
     }
   }, [timeRangeType]);
 

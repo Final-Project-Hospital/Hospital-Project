@@ -158,7 +158,7 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
               <th className="text-left p-2">ลำดับ</th>
               <th className="text-left p-2">พารามิเตอร์ (หน่วย)</th>
               <th className="text-left p-2">ค่ามาตรฐานต่ำสุด</th>
-              <th className="text-left p-2">ค่ามาตรฐานสูงสุด</th>
+              <th className="text-left p-2 w-[140px]">ค่ามาตรฐานสูงสุด</th>
               <th className="hidden md:table-cell text-left p-2">แถบแสดงค่าเฉลี่ย</th>
               <th className="text-left p-2">ค่าเฉลี่ย</th>
             </tr>
