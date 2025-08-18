@@ -31,14 +31,15 @@ const Index: React.FC<MainLineProps> = ({ reloadKey }) => {
             <Room reloadKey={reloadKey} />
           </div>
 
-          {/* ✅ Notification + Status + BuildingMain แถวเดียวกัน */}
-          <div className="col-span-full lg:col-span-6 xl:col-span-5">
+          {/* ✅ Notification + Status */}
+          <div className="col-span-full md:col-span-6 xl:col-span-5">
             <Notification />
           </div>
-          <div className="col-span-full sm:col-span-6 lg:col-span-3 xl:col-span-3">
+          <div className="col-span-full sm:col-span-6 md:col-span-6 xl:col-span-3">
             <Status />
           </div>
-          <div className="col-span-full sm:col-span-6 lg:col-span-3 xl:col-span-4">
+
+          <div className="col-span-full xl:col-span-4">
             <BuildingMain />
           </div>
         </div>
