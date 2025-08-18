@@ -60,6 +60,7 @@ func SetupDatabase() {
 		&entity.Garbage{},
 		&entity.Garbage{},
 		&entity.Notification{},
+		&entity.RoomNotification{},
 	)
 	// Enviroment
 	Wastewater := entity.Environment{EnvironmentName: "น้ำเสีย"}
@@ -465,6 +466,45 @@ func SetupDatabase() {
 	} else {
 		fmt.Println("⚠️  ข้ามการเพิ่มข้อมูล SensorDataParameter เพราะมีข้อมูลอยู่แล้ว")
 	}
+
+	Notification1 := entity.Notification{
+		Name: "Tawunchai",
+		UserID: "U3af93a2f92b1048757172584d47571c8",
+		Alert: false,
+	}
+	Notification2 := entity.Notification{
+		Name: "Google",
+		UserID: "U3af93a2f92b1048757172584d4757123",
+		Alert: false,
+	}
+	Notification3 := entity.Notification{
+		Name: "Facebook",
+		UserID: "U3af93a2f92b1048757172584d4757124",
+		Alert: false,
+	}
+
+	db.FirstOrCreate(&Notification1, entity.Notification{UserID: "U3af93a2f92b1048757172584d47571c8"})
+	db.FirstOrCreate(&Notification2, entity.Notification{UserID: "U3af93a2f92b1048757172584d4757123"})
+	db.FirstOrCreate(&Notification3, entity.Notification{UserID: "U3af93a2f92b1048757172584d4757124"})
+
+	RoomNotification1 := entity.RoomNotification{
+		RoomID: 1,
+		NotificationID: 1,
+	}
+
+	RoomNotification2 := entity.RoomNotification{
+		RoomID: 1,
+		NotificationID: 2,
+	}
+
+	RoomNotification3 := entity.RoomNotification{
+		RoomID: 1,
+		NotificationID: 3,
+	}
+
+	db.FirstOrCreate(&RoomNotification1, entity.RoomNotification{RoomID: 1 , NotificationID: 1})
+	db.FirstOrCreate(&RoomNotification2, entity.RoomNotification{RoomID: 1 , NotificationID: 2})
+	db.FirstOrCreate(&RoomNotification3, entity.RoomNotification{RoomID: 1 , NotificationID: 3})
 
 	BodParameter := entity.Parameter{ParameterName: "Biochemical Oxygen Demand"}
 	db.FirstOrCreate(&BodParameter, &entity.Parameter{ParameterName: "Biochemical Oxygen Demand"})

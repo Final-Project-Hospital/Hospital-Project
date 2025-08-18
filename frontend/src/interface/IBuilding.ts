@@ -1,4 +1,5 @@
 export interface BuildingInterface {
-    ID?: number;
-    BuildingName?: string;
+  ID?: number;
+  BuildingName?: string;
+  CreatedAt?: string; 
 }

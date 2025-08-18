@@ -25,8 +25,11 @@ const Scheduler = () => {
   const [scheduleObj, setScheduleObj] = useState<ScheduleType | null>(null);
   const [events, setEvents] = useState<any[]>([]);
   const views: View[] = ['Day', 'Week', 'WorkWeek', 'Month', 'Agenda'];
+    const [employeeid, setEmployeeid] = useState<number>(
+    Number(localStorage.getItem("employeeid")) || 0
+  );
 
-  const loggedInEmployeeID = 1;
+  const loggedInEmployeeID = employeeid;
 
   const refreshEvents = async () => {
     const updated = await ListCalendars();
@@ -45,6 +48,7 @@ const Scheduler = () => {
   };
 
   useEffect(() => {
+    setEmployeeid(Number(localStorage.getItem("employeeid")));
     refreshEvents();
   }, []);
 
