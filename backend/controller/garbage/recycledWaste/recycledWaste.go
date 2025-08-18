@@ -74,10 +74,11 @@ func CreateRecycled(c *gin.Context) {
 		return
 	}
 
-	// ลบ record ของวันเดียวกันก่อนบันทึก
+	// ลบ record ของวันเดียวกันและ ParameterID ตรงกัน
 	startOfDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
 	endOfDay := startOfDay.AddDate(0, 0, 1).Add(-time.Nanosecond)
-	if err := db.Where("date >= ? AND date <= ?", startOfDay, endOfDay).Delete(&entity.Garbage{}).Error; err != nil {
+	if err := db.Where("date >= ? AND date <= ? AND parameter_id = ?", startOfDay, endOfDay, param.ID).
+		Delete(&entity.Garbage{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบข้อมูลเก่าของวันเดียวกันไม่สำเร็จ"})
 		return
 	}
@@ -422,6 +423,13 @@ func DeleteAllRecycledRecordsByDate(c *gin.Context) {
 
 	db := config.DB()
 
+	// หา ParameterID ของ "ขยะรีไซเคิล"
+	var param entity.Parameter
+	if err := db.Where("parameter_name = ?", "ขยะรีไซเคิล").First(&param).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่พบ Parameter ขยะรีไซเคิล"})
+		return
+	}
+
 	// หา record ขยะรีไซเคิลที่เลือก
 	var targetRecord entity.Garbage
 	if err := db.First(&targetRecord, uint(uintID)).Error; err != nil {
@@ -429,12 +437,11 @@ func DeleteAllRecycledRecordsByDate(c *gin.Context) {
 		return
 	}
 
-	// วันเดียวกัน
+	// ลบทั้งหมดที่มีวันที่เดียวกัน (ใช้เฉพาะ Date ไม่เอา Time)
 	dateKey := targetRecord.Date.Format("2006-01-02")
-
-	// ลบ record ทั้งหมดของวันนั้น
-	if err := db.Where("DATE(date) = ?", dateKey).Delete(&entity.Garbage{}).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบข้อมูลไม่สำเร็จ"})
+	if err := db.Where("DATE(date) = ? AND parameter_id = ?", dateKey, param.ID).
+		Delete(&entity.Garbage{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบไม่สำเร็จ"})
 		return
 	}
 
@@ -442,36 +449,4 @@ func DeleteAllRecycledRecordsByDate(c *gin.Context) {
 		"message": "ลบข้อมูลขยะรีไซเคิลทั้งหมดของวันสำเร็จ",
 		"date":    dateKey,
 	})
-}
-
-// ใช้ส่วนรวม
-func CheckTarget(c *gin.Context) {
-	targetType := c.Query("type")
-
-	if targetType == "middle" {
-		middleTarget := c.Query("value")
-		var tar entity.Target
-		if err := config.DB().Where("middle_target = ?", middleTarget).First(&tar).Error; err == nil {
-			c.JSON(200, gin.H{"exists": true})
-			return
-		}
-		c.JSON(200, gin.H{"exists": false})
-		return
-	}
-
-	if targetType == "range" {
-		min := c.Query("min")
-		max := c.Query("max")
-		var tar entity.Target
-		if err := config.DB().
-			Where("min_target = ? AND max_target = ?", min, max).
-			First(&tar).Error; err == nil {
-			c.JSON(200, gin.H{"exists": true})
-			return
-		}
-		c.JSON(200, gin.H{"exists": false})
-		return
-	}
-
-	c.JSON(400, gin.H{"error": "invalid type"})
 }

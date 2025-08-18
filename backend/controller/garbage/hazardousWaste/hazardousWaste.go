@@ -74,10 +74,11 @@ func CreateHazardous(c *gin.Context) {
 		return
 	}
 
-	// ลบ record ของวันเดียวกันก่อนบันทึก
+	// ลบ record ของวันเดียวกันและ ParameterID ตรงกัน
 	startOfDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
 	endOfDay := startOfDay.AddDate(0, 0, 1).Add(-time.Nanosecond)
-	if err := db.Where("date >= ? AND date <= ?", startOfDay, endOfDay).Delete(&entity.Garbage{}).Error; err != nil {
+	if err := db.Where("date >= ? AND date <= ? AND parameter_id = ?", startOfDay, endOfDay, param.ID).
+		Delete(&entity.Garbage{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบข้อมูลเก่าของวันเดียวกันไม่สำเร็จ"})
 		return
 	}
@@ -227,19 +228,6 @@ func ListHazardous(c *gin.Context) {
 	// ส่งข้อมูลกลับในรูปแบบ JSON
 	c.JSON(http.StatusOK, firstHaz)
 }
-
-// func DeleterHazardous(c *gin.Context) {
-// 	id := c.Param("id")
-// 	db := config.DB()
-
-// 	// Update `deleted_at` field to mark as deleted (using current timestamp)
-// 	if tx := db.Exec("UPDATE environmental_records SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL", id); tx.RowsAffected == 0 {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "id not found or already deleted"})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{"message": "Soft Deleted Environmental Records Successfully"})
-// }
 
 func GetHazardousTABLE(c *gin.Context) {
 	db := config.DB()
@@ -435,6 +423,13 @@ func DeleteAllHazardousRecordsByDate(c *gin.Context) {
 
 	db := config.DB()
 
+	// หา ParameterID ของ "ขยะอันตราย"
+	var param entity.Parameter
+	if err := db.Where("parameter_name = ?", "ขยะอันตราย").First(&param).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่พบ Parameter ขยะอันตราย"})
+		return
+	}
+
 	// หา record ขยะอันตรายที่เลือก
 	var targetRecord entity.Garbage
 	if err := db.First(&targetRecord, uint(uintID)).Error; err != nil {
@@ -442,12 +437,11 @@ func DeleteAllHazardousRecordsByDate(c *gin.Context) {
 		return
 	}
 
-	// วันเดียวกัน
+	// ลบทั้งหมดที่มีวันที่เดียวกัน (ใช้เฉพาะ Date ไม่เอา Time)
 	dateKey := targetRecord.Date.Format("2006-01-02")
-
-	// ลบ record ทั้งหมดของวันนั้น
-	if err := db.Where("DATE(date) = ?", dateKey).Delete(&entity.Garbage{}).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบข้อมูลไม่สำเร็จ"})
+	if err := db.Where("DATE(date) = ? AND parameter_id = ?", dateKey, param.ID).
+		Delete(&entity.Garbage{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบไม่สำเร็จ"})
 		return
 	}
 
