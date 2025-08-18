@@ -123,6 +123,10 @@
   width: 48%;
 }
 
+.up-recy-full-width {
+  width: 100%;
+}
+
 /* Responsive behavior */
 @media (max-width: 768px) {
   .up-form-group-recy {

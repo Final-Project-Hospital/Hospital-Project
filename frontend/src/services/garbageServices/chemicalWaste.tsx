@@ -1,5 +1,5 @@
 import axios from "axios";
-import { ChemicalcenterInterface, DeleteChemicalInterface } from "../../interface/Igarbage/IchemicalWaste";
+import { ChemicalcenterInterface } from "../../interface/Igarbage/IchemicalWaste";
 import { apiUrl } from "../index"
 
 const getAuthHeader = () => {

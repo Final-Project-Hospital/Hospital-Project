@@ -55,7 +55,7 @@ const EnvironmentGarbageBox = Loadable(lazy(() => import("../page/admin/data-vis
 const DatavizCHE = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/chemicalWaste/chemicalWasteDataviz")));
 const DatavizGEN = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/generalWaste/generalWasteDataviz")));
 const DatavizHAZ = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/hazardousWaste/hazardousWasteDataviz")));
-const DatavizINF = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/infectiousWaste/infectiousWaste")));
+const DatavizINF = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/infectiousWaste/infectiousWasteDataviz")));
 const DatavizREC = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/recycledWaste/recycledWasteDataviz")));
 
 // data-management

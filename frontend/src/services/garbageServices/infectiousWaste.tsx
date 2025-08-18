@@ -1,5 +1,5 @@
 import axios from "axios";
-import { InfectiouscenterInterface, DeleteInfectiousInterface } from "../../interface/Igarbage/IinfectiousWaste";
+import { InfectiouscenterInterface } from "../../interface/Igarbage/IinfectiousWaste";
 import { apiUrl } from "../index"
 
 const getAuthHeader = () => {
@@ -130,27 +130,6 @@ export const UpdateOrCreateInfectious = async (payload: any) => {
   }
 };
 
-export const DeleteInfectious = async (id: number): Promise<DeleteInfectiousInterface[] | null> => {
-  try {
-    const response = await axios.delete(`${apiUrl}/delete-infectious/${id}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-    });
-
-    if (response.status === 200) {
-      return response.data;
-    } else {
-      console.error("Unexpected status:", response.status);
-      return null;
-    }
-  } catch (error: any) {
-    console.error("Error deleting Infectious :", error.response?.data || error.message);
-    return null;
-  }
-};
-
 export const GetInfectiousbyID = async (id: number): Promise<any | null> => {
   try {
     const response = await axios.get(`${apiUrl}/get-infectious/${id}`, {
@@ -191,6 +170,28 @@ export const DeleteAllInfectiousRecordsByDate = async (
     }
   } catch (error: any) {
     console.error("Error deleting Infectious records by date:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const GetBeforeAfterInfectious = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-beforeafter-infectious`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating Infectious record:", error.response?.data || error.message);
     return null;
   }
 };

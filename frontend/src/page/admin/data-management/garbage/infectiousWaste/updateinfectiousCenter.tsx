@@ -1,3 +1,4 @@
+//CustomTarget: {type: 'range', min: 7, max: 8}
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import '../recycledWaste/updateRecycledCenter.css';
@@ -8,19 +9,19 @@ import {
     ListUnit
 } from '../../../../../services/index';
 import { CheckUnit, CheckTarget } from '../../../../../services/index';
-import { UpdateOrCreateGeneral } from '../../../../../services/garbageServices/generalWaste';
+import { UpdateOrCreateInfectious } from '../../../../../services/garbageServices/infectiousWaste';
 import { ListMiddleTargetInterface, ListRangeTargetInterface } from '../../../../../interface/ITarget';
 import { ListUnitInterface } from '../../../../../interface/IUnit';
 
 const { Option } = Select;
 
-interface UpdateGeneralCentralFormProps {
+interface UpdateInfectiousCentralFormProps {
     initialValues: any;
     onSuccess?: () => void;
     onCancel: () => void;
 }
 
-const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
+const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = ({
     initialValues,
     onSuccess,
     onCancel
@@ -144,7 +145,7 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
                 CustomUnit: isOther ? values.customUnit : "",
             };
 
-            await UpdateOrCreateGeneral(payload);
+            await UpdateOrCreateInfectious(payload);
 
             messageApi.success("แก้ไขข้อมูลสำเร็จ");
             onSuccess?.();
@@ -470,4 +471,4 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
     );
 };
 
-export default UpdateGeneralCentralForm;
+export default UpdateInfectiousCentralForm;

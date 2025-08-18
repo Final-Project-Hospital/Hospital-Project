@@ -15,17 +15,23 @@ import (
 
 func CreateGeneral(c *gin.Context) {
 	var input struct {
-		Date                time.Time
-		Quantity            uint
-		AADC                float64
-		MonthlyGarbage      float64
-		AverageDailyGarbage float64
-		TotalSale           float64
-		Note                string
-		TargetID            uint
-		UnitID              uint
-		CustomUnit          string
-		EmployeeID          uint
+		Date                time.Time `json:"Date"`
+		Quantity            uint      `json:"Quantity"`
+		AADC                float64   `json:"AADC"`
+		MonthlyGarbage      float64   `json:"MonthlyGarbage"`
+		AverageDailyGarbage float64   `json:"AverageDailyGarbage"`
+		TotalSale           float64   `json:"TotalSale"`
+		Note                string    `json:"Note"`
+		TargetID            uint      `json:"TargetID"`
+		UnitID              uint      `json:"UnitID"`
+		CustomUnit          string    `json:"CustomUnit"`
+		EmployeeID          uint      `json:"EmployeeID"`
+		CustomTarget        *struct {
+			Type  string   `json:"type"`
+			Value *float64 `json:"value,omitempty"`
+			Min   *float64 `json:"min,omitempty"`
+			Max   *float64 `json:"max,omitempty"`
+		} `json:"CustomTarget,omitempty"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -35,51 +41,81 @@ func CreateGeneral(c *gin.Context) {
 
 	db := config.DB()
 
+	// จัดการ Unit
 	if input.CustomUnit != "" {
 		var existingUnit entity.Unit
 		if err := db.Where("unit_name = ?", input.CustomUnit).First(&existingUnit).Error; err == nil {
 			input.UnitID = existingUnit.ID
 		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			newUnit := entity.Unit{
-				UnitName: input.CustomUnit,
-			}
+			newUnit := entity.Unit{UnitName: input.CustomUnit}
 			if err := db.Create(&newUnit).Error; err != nil {
-				fmt.Println("ไม่สามารถสร้างหน่วยใหม่ได้:", err)
-			} else {
-				input.UnitID = newUnit.ID
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถสร้าง Unit ใหม่ได้"})
+				return
 			}
+			input.UnitID = newUnit.ID
 		} else {
-			fmt.Println("เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "เกิดข้อผิดพลาดในการตรวจสอบ Unit"})
+			return
 		}
 	}
 
+	// หา Parameter "ขยะทั่วไป"
 	var param entity.Parameter
 	if err := db.Where("parameter_name = ?", "ขยะทั่วไป").First(&param).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบ Parameter ขยะทั่วไป"})
 		return
 	}
 
+	// หา Environment "ขยะ"
 	var env entity.Environment
 	if err := db.Where("environment_name = ?", "ขยะ").First(&env).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบ Environment ขยะ"})
 		return
 	}
 
+	// จัดการ Target
+	var targetID uint
 	var target entity.Target
-	if input.TargetID == 0 || db.First(&target, input.TargetID).Error != nil {
+	if input.CustomTarget != nil {
+		newTarget := entity.Target{}
+		if input.CustomTarget.Type == "middle" && input.CustomTarget.Value != nil {
+			newTarget.MiddleTarget = *input.CustomTarget.Value
+		} else if input.CustomTarget.Type == "range" && input.CustomTarget.Min != nil && input.CustomTarget.Max != nil {
+			newTarget.MinTarget = *input.CustomTarget.Min
+			newTarget.MaxTarget = *input.CustomTarget.Max
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ข้อมูล CustomTarget ไม่ถูกต้อง"})
+			return
+		}
+
+		if err := db.Create(&newTarget).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถสร้าง Target ใหม่ได้"})
+			return
+		}
+		targetID = newTarget.ID
+		target = newTarget
+	} else if input.TargetID != 0 {
+		if err := db.First(&target, input.TargetID).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบ Target ที่เลือก"})
+			return
+		}
+		targetID = target.ID
+	} else {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูลเกณฑ์มาตรฐาน หรือไม่ได้เลือก"})
 		return
 	}
+	targetIDPtr := &targetID
 
+	// ฟังก์ชันตรวจสอบ Status
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-		if target.MiddleTarget != 0 { // ค่าเดี่ยว
-			if value > float64(target.MiddleTarget) {
+		if target.MiddleTarget != 0 {
+			if value <= float64(target.MiddleTarget) {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
-		} else { // ค่าเป็นช่วง
+		} else {
 			if value >= float64(target.MinTarget) && value <= float64(target.MaxTarget) {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
@@ -89,25 +125,17 @@ func CreateGeneral(c *gin.Context) {
 		return status.ID
 	}
 
+	// คำนวณ AverageDailyGarbage ถ้าเป็น 0
 	if input.AverageDailyGarbage == 0 && input.MonthlyGarbage > 0 {
 		daysInMonth := time.Date(input.Date.Year(), input.Date.Month()+1, 0, 0, 0, 0, 0, input.Date.Location()).Day()
 		input.AverageDailyGarbage = input.MonthlyGarbage / float64(daysInMonth)
 	}
 
-	// แปลง uint เป็น *uint สำหรับ TargetID และ StatusID
-	var targetIDPtr *uint
-	if input.TargetID != 0 {
-		targetIDPtr = &input.TargetID
-	} else {
-		targetIDPtr = nil
-	}
-
+	// แปลง StatusID เป็น *uint
 	statusID := getStatusID(input.AADC)
 	var statusIDPtr *uint
 	if statusID != 0 {
 		statusIDPtr = &statusID
-	} else {
-		statusIDPtr = nil
 	}
 
 	// ลบ record ของวันเดียวกันก่อนบันทึก
@@ -118,6 +146,7 @@ func CreateGeneral(c *gin.Context) {
 		return
 	}
 
+	// สร้าง Garbage ใหม่
 	garbage := entity.Garbage{
 		Date:                input.Date,
 		Quantity:            input.Quantity,
@@ -325,15 +354,27 @@ func GetGeneralTABLE(c *gin.Context) {
 }
 
 func UpdateOrCreateGeneral(c *gin.Context) {
+	db := config.DB()
+
 	var input struct {
-		entity.EnvironmentalRecord
-		CustomStandard *struct {
+		ID                  uint      `json:"ID"`
+		Date                time.Time `json:"Date"`
+		Quantity            uint      `json:"Quantity"`
+		AADC                float64   `json:"AADC"`
+		MonthlyGarbage      float64   `json:"MonthlyGarbage"`
+		AverageDailyGarbage float64   `json:"AverageDailyGarbage"`
+		TotalSale           float64   `json:"TotalSale"`
+		Note                string    `json:"Note"`
+		TargetID            *uint     `json:"TargetID"`
+		UnitID              uint      `json:"UnitID"`
+		CustomUnit          string    `json:"CustomUnit"`
+		EmployeeID          uint      `json:"EmployeeID"`
+		CustomTarget        *struct {
 			Type  string   `json:"type"`
 			Value *float64 `json:"value,omitempty"`
 			Min   *float64 `json:"min,omitempty"`
 			Max   *float64 `json:"max,omitempty"`
-		} `json:"CustomStandard,omitempty"`
-		CustomUnit *string `json:"CustomUnit,omitempty"`
+		} `json:"CustomTarget"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -341,137 +382,95 @@ func UpdateOrCreateGeneral(c *gin.Context) {
 		return
 	}
 
-	db := config.DB()
-
-	// ถ้า StandardID = 0 → สร้างใหม่จาก CustomStandard (ถ้าไม่มีซ้ำ)
-	if input.StandardID == 0 && input.CustomStandard != nil {
-		var existing entity.Standard
-		query := db.Model(&entity.Standard{})
-
-		switch input.CustomStandard.Type {
-		case "middle":
-			if input.CustomStandard.Value != nil {
-				query = query.Where("middle_value = ?", *input.CustomStandard.Value)
-			}
-		case "range":
-			if input.CustomStandard.Min != nil && input.CustomStandard.Max != nil {
-				query = query.Where("min_value = ? AND max_value = ?", *input.CustomStandard.Min, *input.CustomStandard.Max)
-			}
-		}
-
-		if err := query.First(&existing).Error; errors.Is(err, gorm.ErrRecordNotFound) {
-			newStandard := entity.Standard{}
-			if input.CustomStandard.Type == "middle" && input.CustomStandard.Value != nil {
-				newStandard.MiddleValue = float32(*input.CustomStandard.Value)
-			} else if input.CustomStandard.Type == "range" {
-				if input.CustomStandard.Min != nil {
-					newStandard.MinValue = float32(*input.CustomStandard.Min)
-				}
-				if input.CustomStandard.Max != nil {
-					newStandard.MaxValue = float32(*input.CustomStandard.Max)
-				}
-			}
-			if err := db.Create(&newStandard).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถสร้าง Standard ได้"})
+	// จัดการ CustomUnit
+	if input.CustomUnit != "" {
+		var existingUnit entity.Unit
+		if err := db.Where("unit_name = ?", input.CustomUnit).First(&existingUnit).Error; err == nil {
+			input.UnitID = existingUnit.ID
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			newUnit := entity.Unit{UnitName: input.CustomUnit}
+			if err := db.Create(&newUnit).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถสร้าง Unit ใหม่ได้"})
 				return
 			}
-			input.StandardID = newStandard.ID
+			input.UnitID = newUnit.ID
 		} else {
-			input.StandardID = existing.ID
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "เกิดข้อผิดพลาดในการตรวจสอบ Unit"})
+			return
 		}
 	}
 
-	// โหลด Standard ที่จะใช้
-	var standard entity.Standard
-	if err := db.First(&standard, input.StandardID).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูลเกณฑ์มาตรฐาน"})
+	// จัดการ CustomTarget
+	var targetID *uint = input.TargetID
+	if input.CustomTarget != nil {
+		newTarget := entity.Target{}
+		if input.CustomTarget.Type == "middle" && input.CustomTarget.Value != nil {
+			newTarget.MiddleTarget = *input.CustomTarget.Value
+		} else if input.CustomTarget.Type == "range" && input.CustomTarget.Min != nil && input.CustomTarget.Max != nil {
+			newTarget.MinTarget = *input.CustomTarget.Min
+			newTarget.MaxTarget = *input.CustomTarget.Max
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ข้อมูล CustomTarget ไม่ถูกต้อง"})
+			return
+		}
+
+		if err := db.Create(&newTarget).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถสร้าง Target ใหม่ได้"})
+			return
+		}
+
+		targetID = &newTarget.ID
+	}
+
+	if targetID == nil || *targetID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูลเกณฑ์มาตรฐาน หรือไม่ได้เลือก"})
 		return
 	}
 
-	// ฟังก์ชันคำนวณสถานะ
-	getStatusID := func(value float64) uint {
-		var status entity.Status
-
-		if standard.MiddleValue != 0 {
-			if value <= float64(standard.MiddleValue) {
-				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
-			} else {
-				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
-			}
-		} else {
-			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
-				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
-			} else {
-				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
-			}
-		}
-
-		return status.ID
-	}
-
-	// เช็ก CustomUnit → บันทึกถ้ายังไม่มี
-	if input.CustomUnit != nil && *input.CustomUnit != "" {
-		var unit entity.Unit
-		if err := db.Where("unit_name = ?", *input.CustomUnit).First(&unit).Error; err == nil {
-			input.UnitID = unit.ID
-		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			newUnit := entity.Unit{UnitName: *input.CustomUnit}
-			if err := db.Create(&newUnit).Error; err == nil {
-				input.UnitID = newUnit.ID
-			}
-		}
-	}
-
-	// Update หรือ Create
+	var garbage entity.Garbage
 	if input.ID != 0 {
 		// Update
-		var existing entity.EnvironmentalRecord
-		if err := db.First(&existing, input.ID).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูล"})
+		if err := db.First(&garbage, input.ID).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูล Garbage"})
 			return
 		}
+		garbage.Date = input.Date
+		garbage.Quantity = input.Quantity
+		garbage.AADC = input.AADC
+		garbage.MonthlyGarbage = input.MonthlyGarbage
+		garbage.AverageDailyGarbage = input.AverageDailyGarbage
+		garbage.TotalSale = input.TotalSale
+		garbage.Note = input.Note
+		garbage.TargetID = targetID
+		garbage.UnitID = input.UnitID
+		garbage.EmployeeID = input.EmployeeID
 
-		updatedData := map[string]interface{}{
-			"Date":                   input.Date,
-			"Data":                   input.Data,
-			"BeforeAfterTreatmentID": input.BeforeAfterTreatmentID,
-			"StandardID":             input.StandardID,
-			"UnitID":                 input.UnitID,
-			"EmployeeID":             input.EmployeeID,
-			"ParameterID":            input.ParameterID,
-			"StatusID":               getStatusID(input.Data),
-			"Note":                   input.Note,
-		}
-
-		if err := db.Model(&existing).Updates(updatedData).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปเดตข้อมูลล้มเหลว"})
+		if err := db.Save(&garbage).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถอัปเดต Garbage"})
 			return
 		}
-
-		// อัปเดต Unit ให้ record ทั้งวันเดียวกัน
-		sameDay := input.Date.Truncate(24 * time.Hour)
-		db.Model(&entity.EnvironmentalRecord{}).
-			Where("DATE(date) = ?", sameDay.Format("2006-01-02")).
-			Update("unit_id", input.UnitID)
-
-		c.JSON(http.StatusOK, gin.H{"message": "อัปเดตข้อมูลสำเร็จ", "data": existing})
-
 	} else {
 		// Create
-		input.StatusID = getStatusID(input.Data)
-		if err := db.Create(&input.EnvironmentalRecord).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "สร้างข้อมูลล้มเหลว"})
-			return
+		garbage = entity.Garbage{
+			Date:                input.Date,
+			Quantity:            input.Quantity,
+			AADC:                input.AADC,
+			MonthlyGarbage:      input.MonthlyGarbage,
+			AverageDailyGarbage: input.AverageDailyGarbage,
+			TotalSale:           input.TotalSale,
+			Note:                input.Note,
+			TargetID:            targetID,
+			UnitID:              input.UnitID,
+			EmployeeID:          input.EmployeeID,
 		}
 
-		// อัปเดต Unit ให้ record ทั้งวันเดียวกัน
-		sameDay := input.Date.Truncate(24 * time.Hour)
-		db.Model(&entity.EnvironmentalRecord{}).
-			Where("DATE(date) = ?", sameDay.Format("2006-01-02")).
-			Update("unit_id", input.UnitID)
-
-		c.JSON(http.StatusOK, gin.H{"message": "สร้างข้อมูลใหม่สำเร็จ", "data": input})
+		if err := db.Create(&garbage).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถสร้าง Garbage"})
+			return
+		}
 	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "สำเร็จ", "garbage": garbage})
 }
 
 func GetGeneralbyID(c *gin.Context) {

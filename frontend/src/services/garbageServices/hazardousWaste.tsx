@@ -1,5 +1,5 @@
 import axios from "axios";
-import { HazardouscenterInterface, DeleteHazardousInterface } from "../../interface/Igarbage/IhazardousWaste";
+import { HazardouscenterInterface } from "../../interface/Igarbage/IhazardousWaste";
 import { apiUrl } from "../index"
 
 const getAuthHeader = () => {

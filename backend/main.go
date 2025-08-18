@@ -391,7 +391,6 @@ func main() {
 		public.GET("/get-infectious/:id", infectiousWaste.GetInfectiousbyID)
 		public.GET("/get-infectious-table", infectiousWaste.GetInfectiousTABLE)
 		public.PATCH("/update-or-create-infectious/:d", infectiousWaste.UpdateOrCreateInfectious)
-		public.DELETE("/delete-infectious/:id", infectiousWaste.DeleteInfectious)
 		public.DELETE("/delete-infectious-day/:id", infectiousWaste.DeleteAllInfectiousRecordsByDate)
 
 		//RecycledWaste
