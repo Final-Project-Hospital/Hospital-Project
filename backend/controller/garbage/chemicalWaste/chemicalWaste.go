@@ -3,7 +3,9 @@ package chemicalWaste
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -12,6 +14,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+type Float64TwoDecimal float64
+
+func (f Float64TwoDecimal) MarshalJSON() ([]byte, error) {
+	rounded := math.Round(float64(f)*100) / 100
+	s := fmt.Sprintf("%.2f", rounded)
+	return []byte(s), nil
+}
 
 func CreateChemical(c *gin.Context) {
 	var input struct {
@@ -33,26 +43,20 @@ func CreateChemical(c *gin.Context) {
 
 	db := config.DB()
 
+	// จัดการ CustomUnit
 	if input.CustomUnit != "" {
 		var existingUnit entity.Unit
 		if err := db.Where("unit_name = ?", input.CustomUnit).First(&existingUnit).Error; err == nil {
-			// เจอ unit ที่มีอยู่แล้ว
 			input.UnitID = existingUnit.ID
 		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			// ไม่เจอ unit -> สร้างใหม่
-			newUnit := entity.Unit{
-				UnitName: input.CustomUnit,
-			}
-			if err := db.Create(&newUnit).Error; err != nil {
-				fmt.Println(" ไม่สามารถสร้างหน่วยใหม่ได้:", err) // แค่ขึ้น log
-				// ไม่คืน error ไปยัง frontend
-			} else {
+			newUnit := entity.Unit{UnitName: input.CustomUnit}
+			if err := db.Create(&newUnit).Error; err == nil {
 				input.UnitID = newUnit.ID
+			} else {
+				fmt.Println("ไม่สามารถสร้างหน่วยใหม่ได้:", err)
 			}
 		} else {
-			// เกิด error อื่นขณะเช็กหน่วย
-			fmt.Println(" เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err)
-			// ไม่คืน error ไปยัง frontend
+			fmt.Println("เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err)
 		}
 	}
 
@@ -70,13 +74,22 @@ func CreateChemical(c *gin.Context) {
 		return
 	}
 
+	// ลบ record ของวันเดียวกันและ ParameterID ตรงกัน
+	startOfDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
+	endOfDay := startOfDay.AddDate(0, 0, 1).Add(-time.Nanosecond)
+	if err := db.Where("date >= ? AND date <= ? AND parameter_id = ?", startOfDay, endOfDay, param.ID).
+		Delete(&entity.Garbage{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบข้อมูลเก่าของวันเดียวกันไม่สำเร็จ"})
+		return
+	}
+
 	// คำนวณปริมาณขยะต่อวันถ้าไม่ส่งมา
 	if input.AverageDailyGarbage == 0 && input.MonthlyGarbage > 0 {
-		// หาจำนวนวันจริงในเดือน
 		daysInMonth := time.Date(input.Date.Year(), input.Date.Month()+1, 0, 0, 0, 0, 0, input.Date.Location()).Day()
 		input.AverageDailyGarbage = input.MonthlyGarbage / float64(daysInMonth)
 	}
 
+	// สร้าง record ใหม่
 	garbage := entity.Garbage{
 		Date:                input.Date,
 		Quantity:            input.Quantity,
@@ -115,7 +128,7 @@ func GetfirstChemical(c *gin.Context) {
 	}
 
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
-	var firstchem struct {
+	var firstHaz struct {
 		ID                  uint      `json:"ID"`
 		Date                time.Time `json:"Date"`
 		Quantity            uint      `json:"Quantity"`
@@ -137,7 +150,7 @@ func GetfirstChemical(c *gin.Context) {
 		Joins("inner join units on garbages.unit_id = units.id").
 		Where("parameter_id = ?", parameter.ID).
 		Order("garbages.created_at desc").
-		Scan(&firstchem)
+		Scan(&firstHaz)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
 	if result.Error != nil {
@@ -146,7 +159,7 @@ func GetfirstChemical(c *gin.Context) {
 	}
 
 	// ส่งข้อมูลกลับในรูปแบบ JSON
-	c.JSON(http.StatusOK, firstchem)
+	c.JSON(http.StatusOK, firstHaz)
 }
 
 var thaiMonths = [...]string{
@@ -170,43 +183,41 @@ func ListChemical(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
 	}
-	var before entity.BeforeAfterTreatment
-	if err := db.Where("treatment_name = ?", "ก่อน").First(&before).Error; err != nil {
-		fmt.Println("Error fetching parameter:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
-		return
+
+	type FirstRecy struct {
+		ID                  uint
+		Date                time.Time
+		Quantity            uint
+		AADC                float64
+		MonthlyGarbage      float64
+		AverageDailyGarbage float64
+		TotalSale           float64
+		Note                string
+		EnvironmentID       uint
+		ParameterID         uint
+		UnitID              uint
+		EmployeeID          uint
+		UnitName            string
+		StatusName          string
 	}
 
-	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
-	var firstchem []struct {
-		ID                     uint      `json:"ID"`
-		Date                   time.Time `json:"Date"`
-		Data                   float64   `json:"Data"`
-		Note                   string    `json:"Note"`
-		BeforeAfterTreatmentID uint      `json:"BeforeAfterTreatmentID"`
-		EnvironmentID          uint      `json:"EnvironmentID"`
-		ParameterID            uint      `json:"ParameterID"`
-		StandardID             uint      `json:"StandardID"`
-		UnitID                 uint      `json:"UnitID"`
-		EmployeeID             uint      `json:"EmployeeID"`
-		MinValue               float64   `json:"MinValue"`
-		MiddleValue            float64   `json:"MiddleValue"`
-		MaxValue               float64   `json:"MaxValue"`
-		UnitName               string
-		TreatmentName          string
-		StatusName             string
-	}
+	var firstHaz []FirstRecy
 
-	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
-	result := db.Model(&entity.EnvironmentalRecord{}).
-		Select(`environmental_records.id, environmental_records.date,environmental_records.data,environmental_records.note,environmental_records.before_after_treatment_id,environmental_records.environment_id ,environmental_records.parameter_id 
-		,environmental_records.target_id ,environmental_records.unit_id ,environmental_records.employee_id,units.unit_name,before_after_treatments.treatment_name,targets.min_target,targets.middle_target,targets.max_target,statuses.status_name`).
-		Joins("inner join targets on environmental_records.target_id = targets.id").
-		Joins("inner join units on environmental_records.unit_id = units.id").
-		Joins("inner join before_after_treatments on environmental_records.before_after_treatment_id = before_after_treatments.id").
-		Joins("inner join statuses on environmental_records.status_id = statuses.id").
-		Where("environmental_records.parameter_id = ? ", parameter.ID).
-		Find(&firstchem)
+	result := db.Model(&entity.Garbage{}).
+		Select(`garbages.id, garbages.date, garbages.quantity, garbages.aadc, garbages.note, 
+		garbages.monthly_garbage, garbages.average_daily_garbage, garbages.total_sale,
+		garbages.parameter_id, garbages.unit_id, garbages.employee_id, 
+		units.unit_name, statuses.status_name`).
+		Joins("LEFT JOIN units ON garbages.unit_id = units.id").
+		Joins("LEFT JOIN statuses ON garbages.status_id = statuses.id").
+		Where("garbages.parameter_id = ?", parameter.ID).
+		Find(&firstHaz)
+
+	if result.Error != nil {
+		fmt.Println("Error:", result.Error)
+	} else {
+		fmt.Println("Rows:", result.RowsAffected)
+	}
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
 	if result.Error != nil {
@@ -215,20 +226,7 @@ func ListChemical(c *gin.Context) {
 	}
 
 	// ส่งข้อมูลกลับในรูปแบบ JSON
-	c.JSON(http.StatusOK, firstchem)
-}
-
-func DeleterChemical(c *gin.Context) {
-	id := c.Param("id")
-	db := config.DB()
-
-	// Update `deleted_at` field to mark as deleted (using current timestamp)
-	if tx := db.Exec("UPDATE environmental_records SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL", id); tx.RowsAffected == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "id not found or already deleted"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Soft Deleted Environmental Records Successfully"})
+	c.JSON(http.StatusOK, firstHaz)
 }
 
 func GetChemicalTABLE(c *gin.Context) {
@@ -241,13 +239,14 @@ func GetChemicalTABLE(c *gin.Context) {
 		return
 	}
 
-	var chem []entity.EnvironmentalRecord
-	result := db.Preload("BeforeAfterTreatment").
-		Preload("Environment").
+	// ดึงข้อมูลจากตาราง garbages พร้อม preload
+	var Haz []entity.Garbage
+	result := db.Preload("Environment").
 		Preload("Unit").
 		Preload("Employee").
 		Where("parameter_id = ?", param.ID).
-		Find(&chem)
+		Order("date DESC"). // ✅ ดึงเรียงจากล่าสุดไปเก่า
+		Find(&Haz)
 
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
@@ -260,147 +259,61 @@ func GetChemicalTABLE(c *gin.Context) {
 	}
 
 	type ChemicalRecord struct {
-		Date          string   `json:"date"`
-		Unit          string   `json:"unit"`
-		StandardValue string   `json:"standard_value"`
-		BeforeValue   *float64 `json:"before_value,omitempty"`
-		AfterValue    *float64 `json:"after_value,omitempty"`
-		BeforeID      *uint    `json:"before_id,omitempty"`
-		AfterID       *uint    `json:"after_id,omitempty"`
-		BeforeNote    string   `json:"before_note,omitempty"`
-		AfterNote     string   `json:"after_note,omitempty"`
-		Efficiency    *float64 `json:"efficiency,omitempty"`
-		Status        string   `json:"status"`
+		ID                  uint      `json:"ID"`
+		Date                time.Time `json:"date"`
+		Quantity            uint      `json:"quantity"`
+		MonthlyGarbage      float64   `json:"monthly_garbage"`
+		AverageDailyGarbage float64   `json:"average_daily_garbage"`
+		TotalSale           float64   `json:"total_sale"`
+		Note                string    `json:"note"`
+		UnitID              uint      `json:"unit_id"`
+		Unit                string    `json:"unit"`
+		EmployeeID          uint      `json:"employee_id"`
 	}
 
-	chemMap := make(map[keyType]*ChemicalRecord)
+	HazMap := make(map[keyType]*ChemicalRecord)
 
-	for _, rec := range chem {
+	for _, rec := range Haz {
 		dateStr := rec.Date.Format("2006-01-02")
 		k := keyType{
 			Date:          dateStr,
 			EnvironmentID: rec.EnvironmentID,
 		}
 
-		// หา EnvironmentalRecord ล่าสุดของวันนั้น (เพื่อดึง standard)
-		var latestRec entity.EnvironmentalRecord
-		err := db.
-			Joins("JOIN parameters p ON p.id = environmental_records.parameter_id").
-			Where("p.parameter_name = ?", "ขยะเคมีบำบัด").
-			Where("DATE(environmental_records.date) = ?", dateStr).
-			Order("environmental_records.date DESC").
-			First(&latestRec).Error
-
-		stdVal := "-"
-		if err == nil && latestRec.StandardID != 0 {
-			var std entity.Standard
-			if db.First(&std, latestRec.StandardID).Error == nil {
-				if (std.MinValue != 0 || std.MaxValue != 0) && (std.MinValue < std.MaxValue) {
-					stdVal = fmt.Sprintf("%.2f - %.2f", std.MinValue, std.MaxValue)
-				} else if std.MiddleValue > 0 {
-					stdVal = fmt.Sprintf("%.2f", std.MiddleValue)
-				}
-			}
-		}
-		if _, exists := chemMap[k]; !exists {
-			unitName := rec.Unit.UnitName // default
-
-			// ลองใช้ unit ของ latestRec ถ้ามี
-			if latestRec.UnitID != 0 {
-				var latestUnit entity.Unit
-				if db.First(&latestUnit, latestRec.UnitID).Error == nil {
-					unitName = latestUnit.UnitName
-				}
-			}
-
-			chemMap[k] = &ChemicalRecord{
-				Date:          dateStr,
-				Unit:          unitName,
-				StandardValue: stdVal,
-			}
-		}
-
-		// Before / After
-		val := rec.Data
-		if rec.BeforeAfterTreatmentID == 1 {
-			chemMap[k].BeforeValue = &val
-			chemMap[k].BeforeID = &rec.ID
-		} else if rec.BeforeAfterTreatmentID == 2 {
-			chemMap[k].AfterValue = &val
-			chemMap[k].AfterID = &rec.ID
-		}
-
-		// Efficiency
-		if chemMap[k].BeforeValue != nil && chemMap[k].AfterValue != nil && *chemMap[k].BeforeValue != 0 {
-			eff := ((*chemMap[k].BeforeValue - *chemMap[k].AfterValue) / (*chemMap[k].BeforeValue)) * 100
-			// ✅ ถ้าค่าติดลบให้กลายเป็น 0.00
-			//fmt.Printf("Efficiency2: %.2f\n", eff)
-			if eff < 0 {
-				eff = 0.00
-			}
-			chemMap[k].Efficiency = &eff
-		}
-
-		// Status
-		if chemMap[k].AfterValue != nil && latestRec.StandardID != 0 {
-			var std entity.Standard
-			if db.First(&std, latestRec.StandardID).Error == nil {
-				after := *chemMap[k].AfterValue
-				if std.MinValue != 0 || std.MaxValue != 0 {
-					if after < float64(std.MinValue) || after > float64(std.MaxValue) {
-						chemMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
-					} else {
-						chemMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
-					}
-				} else {
-					if after > float64(std.MiddleValue) {
-						chemMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
-					} else {
-						chemMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
-					}
-				}
+		// ถ้า key นี้ยังไม่เคยถูกบันทึก แสดงว่าเป็น record ล่าสุดของวันนั้น
+		if _, exists := HazMap[k]; !exists {
+			HazMap[k] = &ChemicalRecord{
+				ID:                  rec.ID,
+				Date:                rec.Date,
+				Quantity:            rec.Quantity,
+				MonthlyGarbage:      rec.MonthlyGarbage,
+				AverageDailyGarbage: rec.AverageDailyGarbage,
+				TotalSale:           rec.TotalSale,
+				Note:                rec.Note,
+				UnitID:              rec.UnitID,
+				Unit:                rec.Unit.UnitName,
+				EmployeeID:          rec.EmployeeID,
 			}
 		}
 	}
 
-	// สร้าง map รวบรวม id -> note เพื่อดึง note ของ before และ after จากข้อมูลดิบ
-	noteMap := make(map[uint]string)
-	for _, rec := range chem {
-		noteMap[rec.ID] = rec.Note
-	}
-
-	// เติม BeforeNote และ AfterNote ใน chemMap
-	for _, val := range chemMap {
-		if val.BeforeID != nil {
-			if note, ok := noteMap[*val.BeforeID]; ok {
-				val.BeforeNote = note
-			}
-		}
-		if val.AfterID != nil {
-			if note, ok := noteMap[*val.AfterID]; ok {
-				val.AfterNote = note
-			}
-		}
-	}
-
-	// รวมข้อมูลส่งกลับ
+	// แปลง map เป็น slice
 	var mergedRecords []ChemicalRecord
-	for _, val := range chemMap {
+	for _, val := range HazMap {
 		mergedRecords = append(mergedRecords, *val)
 	}
+
+	// เรียงจากวันล่าสุดไปเก่าสุด
+	sort.Slice(mergedRecords, func(i, j int) bool {
+		return mergedRecords[i].Date.After(mergedRecords[j].Date)
+	})
 
 	c.JSON(http.StatusOK, mergedRecords)
 }
 
 func UpdateOrCreateChemical(c *gin.Context) {
 	var input struct {
-		entity.EnvironmentalRecord
-		CustomStandard *struct {
-			Type  string   `json:"type"`
-			Value *float64 `json:"value,omitempty"`
-			Min   *float64 `json:"min,omitempty"`
-			Max   *float64 `json:"max,omitempty"`
-		} `json:"CustomStandard,omitempty"`
+		entity.Garbage
 		CustomUnit *string `json:"CustomUnit,omitempty"`
 	}
 
@@ -411,73 +324,7 @@ func UpdateOrCreateChemical(c *gin.Context) {
 
 	db := config.DB()
 
-	// ✅ ถ้า StandardID = 0 → สร้างใหม่จาก CustomStandard (ถ้าไม่มีซ้ำ)
-	if input.StandardID == 0 && input.CustomStandard != nil {
-		var existing entity.Standard
-		query := db.Model(&entity.Standard{})
-
-		switch input.CustomStandard.Type {
-		case "middle":
-			if input.CustomStandard.Value != nil {
-				query = query.Where("middle_value = ?", *input.CustomStandard.Value)
-			}
-		case "range":
-			if input.CustomStandard.Min != nil && input.CustomStandard.Max != nil {
-				query = query.Where("min_value = ? AND max_value = ?", *input.CustomStandard.Min, *input.CustomStandard.Max)
-			}
-		}
-
-		if err := query.First(&existing).Error; errors.Is(err, gorm.ErrRecordNotFound) {
-			newStandard := entity.Standard{}
-			if input.CustomStandard.Type == "middle" && input.CustomStandard.Value != nil {
-				newStandard.MiddleValue = float32(*input.CustomStandard.Value)
-			} else if input.CustomStandard.Type == "range" {
-				if input.CustomStandard.Min != nil {
-					newStandard.MinValue = float32(*input.CustomStandard.Min)
-				}
-				if input.CustomStandard.Max != nil {
-					newStandard.MaxValue = float32(*input.CustomStandard.Max)
-				}
-			}
-			if err := db.Create(&newStandard).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถสร้าง Standard ได้"})
-				return
-			}
-			input.StandardID = newStandard.ID
-		} else {
-			input.StandardID = existing.ID
-		}
-	}
-
-	// ✅ โหลด Standard ที่จะใช้
-	var standard entity.Standard
-	if err := db.First(&standard, input.StandardID).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูลเกณฑ์มาตรฐาน"})
-		return
-	}
-
-	// ✅ ฟังก์ชันคำนวณสถานะ
-	getStatusID := func(value float64) uint {
-		var status entity.Status
-
-		if standard.MiddleValue != 0 {
-			if value <= float64(standard.MiddleValue) {
-				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
-			} else {
-				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
-			}
-		} else {
-			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
-				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
-			} else {
-				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
-			}
-		}
-
-		return status.ID
-	}
-
-	// ✅ เช็ก CustomUnit → บันทึกถ้ายังไม่มี
+	// ✅ จัดการ CustomUnit
 	if input.CustomUnit != nil && *input.CustomUnit != "" {
 		var unit entity.Unit
 		if err := db.Where("unit_name = ?", *input.CustomUnit).First(&unit).Error; err == nil {
@@ -493,22 +340,21 @@ func UpdateOrCreateChemical(c *gin.Context) {
 	// ✅ Update หรือ Create
 	if input.ID != 0 {
 		// Update
-		var existing entity.EnvironmentalRecord
+		var existing entity.Garbage
 		if err := db.First(&existing, input.ID).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูล"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูลขยะเคมีบำบัด"})
 			return
 		}
 
 		updatedData := map[string]interface{}{
-			"Date":                   input.Date,
-			"Data":                   input.Data,
-			"BeforeAfterTreatmentID": input.BeforeAfterTreatmentID,
-			"StandardID":             input.StandardID,
-			"UnitID":                 input.UnitID,
-			"EmployeeID":             input.EmployeeID,
-			"ParameterID":            input.ParameterID,
-			"StatusID":               getStatusID(input.Data),
-			"Note":                   input.Note,
+			"Date":                input.Date,
+			"Quantity":            input.Quantity,
+			"MonthlyGarbage":      input.MonthlyGarbage,
+			"AverageDailyGarbage": input.AverageDailyGarbage,
+			"TotalSale":           input.TotalSale,
+			"Note":                input.Note,
+			"UnitID":              input.UnitID,
+			"EmployeeID":          input.EmployeeID,
 		}
 
 		if err := db.Model(&existing).Updates(updatedData).Error; err != nil {
@@ -516,86 +362,55 @@ func UpdateOrCreateChemical(c *gin.Context) {
 			return
 		}
 
-		// ✅ อัปเดต Unit ให้ record ทั้งวันเดียวกัน
-		sameDay := input.Date.Truncate(24 * time.Hour)
-		db.Model(&entity.EnvironmentalRecord{}).
-			Where("DATE(date) = ?", sameDay.Format("2006-01-02")).
+		// อัปเดต Unit ให้ record ของวันเดียวกัน
+		db.Model(&entity.Garbage{}).
+			Where("DATE(date) = ?", input.Date.Format("2006-01-02")).
 			Update("unit_id", input.UnitID)
 
-		c.JSON(http.StatusOK, gin.H{"message": "อัปเดตข้อมูลสำเร็จ", "data": existing})
-
+		c.JSON(http.StatusOK, gin.H{"message": "อัปเดตข้อมูลขยะเคมีบำบัดสำเร็จ", "data": existing})
 	} else {
 		// Create
-		input.StatusID = getStatusID(input.Data)
-		if err := db.Create(&input.EnvironmentalRecord).Error; err != nil {
+		if err := db.Create(&input.Garbage).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "สร้างข้อมูลล้มเหลว"})
 			return
 		}
 
-		// ✅ อัปเดต Unit ให้ record ทั้งวันเดียวกัน
-		sameDay := input.Date.Truncate(24 * time.Hour)
-		db.Model(&entity.EnvironmentalRecord{}).
-			Where("DATE(date) = ?", sameDay.Format("2006-01-02")).
+		// อัปเดต Unit ให้ record ของวันเดียวกัน
+		db.Model(&entity.Garbage{}).
+			Where("DATE(date) = ?", input.Date.Format("2006-01-02")).
 			Update("unit_id", input.UnitID)
 
-		c.JSON(http.StatusOK, gin.H{"message": "สร้างข้อมูลใหม่สำเร็จ", "data": input})
+		c.JSON(http.StatusOK, gin.H{"message": "สร้างข้อมูลขยะเคมีบำบัดสำเร็จ", "data": input})
 	}
-}
-
-func DeleteChemical(c *gin.Context) {
-	id := c.Param("id")
-	uintID, err := strconv.ParseUint(id, 10, 32)
-
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID ไม่ถูกต้อง"})
-		return
-	}
-
-	db := config.DB()
-
-	if err := db.Delete(&entity.EnvironmentalRecord{}, uint(uintID)).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบไม่สำเร็จ"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "ลบข้อมูล Chemical สำเร็จ"})
 }
 
 func GetChemicalbyID(c *gin.Context) {
 	id := c.Param("id")
 	db := config.DB()
 
-	var chem struct {
-		ID                     uint      `json:"ID"`
-		Date                   time.Time `json:"Date"`
-		Data                   float64   `json:"Data"`
-		Note                   string    `json:"Note"`
-		BeforeAfterTreatmentID uint      `json:"BeforeAfterTreatmentID"`
-		EnvironmentID          uint      `json:"EnvironmentID"`
-		ParameterID            uint      `json:"ParameterID"`
-		StandardID             uint      `json:"StandardID"`
-		UnitID                 uint      `json:"UnitID"`
-		EmployeeID             uint      `json:"EmployeeID"`
-		MinValue               float64   `json:"MinValue"`
-		MiddleValue            float64   `json:"MiddleValue"`
-		MaxValue               float64   `json:"MaxValue"`
+	var Haz struct {
+		ID                  uint      `json:"ID"`
+		Date                time.Time `json:"Date"`
+		Note                string    `json:"Note"`
+		UnitID              uint      `json:"UnitID"`
+		EmployeeID          uint      `json:"EmployeeID"`
+		Quantity            uint      `json:"Quantity"`
+		MonthlyGarbage      float64   `json:"MonthlyGarbage"`
+		AverageDailyGarbage float64   `json:"AverageDailyGarbage"`
+		TotalSale           float64   `json:"TotalSale"`
 	}
 
-	result := db.Model(&entity.EnvironmentalRecord{}).
-		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note,
-			environmental_records.before_after_treatment_id, environmental_records.environment_id, environmental_records.parameter_id,
-			environmental_records.standard_id, environmental_records.unit_id, environmental_records.employee_id,
-			standards.min_value, standards.middle_value, standards.max_value`).
-		Joins("inner join standards on environmental_records.standard_id = standards.id").
-		Where("environmental_records.id = ?", id).
-		Scan(&chem)
+	result := db.Model(&entity.Garbage{}).
+		Select(`id, date, note, unit_id, employee_id, quantity, monthly_garbage, average_daily_garbage, total_sale`).
+		Where("id = ?", id).
+		Scan(&Haz)
 
 	if result.Error != nil || result.RowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Record not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, chem)
+	c.JSON(http.StatusOK, Haz)
 }
 
 func DeleteAllChemicalRecordsByDate(c *gin.Context) {
@@ -608,55 +423,30 @@ func DeleteAllChemicalRecordsByDate(c *gin.Context) {
 
 	db := config.DB()
 
-	// หา record ก่อน
-	var targetRecord entity.EnvironmentalRecord
+	// หา ParameterID ของ "ขยะเคมีบำบัด"
+	var param entity.Parameter
+	if err := db.Where("parameter_name = ?", "ขยะเคมีบำบัด").First(&param).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่พบ Parameter ขยะเคมีบำบัด"})
+		return
+	}
+
+	// หา record ขยะเคมีบำบัดที่เลือก
+	var targetRecord entity.Garbage
 	if err := db.First(&targetRecord, uint(uintID)).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูลที่ต้องการลบ"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูลขยะเคมีบำบัด"})
 		return
 	}
 
 	// ลบทั้งหมดที่มีวันที่เดียวกัน (ใช้เฉพาะ Date ไม่เอา Time)
-	dateKey := targetRecord.Date.Format("2006-01-02") // แปลงเป็น YYYY-MM-DD
-
-	if err := db.Where("DATE(date) = ?", dateKey).Delete(&entity.EnvironmentalRecord{}).Error; err != nil {
+	dateKey := targetRecord.Date.Format("2006-01-02")
+	if err := db.Where("DATE(date) = ? AND parameter_id = ?", dateKey, param.ID).
+		Delete(&entity.Garbage{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบไม่สำเร็จ"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "ลบข้อมูล Chemical สำเร็จ",
+		"message": "ลบข้อมูลขยะเคมีบำบัดทั้งหมดของวันสำเร็จ",
 		"date":    dateKey,
 	})
-}
-
-// ใช้ส่วนรวม
-func CheckTarget(c *gin.Context) {
-	targetType := c.Query("type")
-
-	if targetType == "middle" {
-		middleTarget := c.Query("value")
-		var tar entity.Target
-		if err := config.DB().Where("middle_target = ?", middleTarget).First(&tar).Error; err == nil {
-			c.JSON(200, gin.H{"exists": true})
-			return
-		}
-		c.JSON(200, gin.H{"exists": false})
-		return
-	}
-
-	if targetType == "range" {
-		min := c.Query("min")
-		max := c.Query("max")
-		var tar entity.Target
-		if err := config.DB().
-			Where("min_target = ? AND max_target = ?", min, max).
-			First(&tar).Error; err == nil {
-			c.JSON(200, gin.H{"exists": true})
-			return
-		}
-		c.JSON(200, gin.H{"exists": false})
-		return
-	}
-
-	c.JSON(400, gin.H{"error": "invalid type"})
 }

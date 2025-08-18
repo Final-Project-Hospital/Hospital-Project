@@ -1,5 +1,5 @@
 import axios from "axios";
-import { GeneralcenterInterface, DeleteGeneralInterface } from "../../interface/Igarbage/IgeneralWaste";
+import { GeneralcenterInterface } from "../../interface/Igarbage/IgeneralWaste";
 import { apiUrl } from "../index"
 
 const getAuthHeader = () => {
@@ -130,27 +130,6 @@ export const UpdateOrCreateGeneral = async (payload: any) => {
   }
 };
 
-export const DeleteGeneral = async (id: number): Promise<DeleteGeneralInterface[] | null> => {
-  try {
-    const response = await axios.delete(`${apiUrl}/delete-general/${id}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-    });
-
-    if (response.status === 200) {
-      return response.data;
-    } else {
-      console.error("Unexpected status:", response.status);
-      return null;
-    }
-  } catch (error: any) {
-    console.error("Error deleting General :", error.response?.data || error.message);
-    return null;
-  }
-};
-
 export const GetGeneralbyID = async (id: number): Promise<any | null> => {
   try {
     const response = await axios.get(`${apiUrl}/get-general/${id}`, {
@@ -191,6 +170,28 @@ export const DeleteAllGeneralRecordsByDate = async (
     }
   } catch (error: any) {
     console.error("Error deleting General records by date:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const GetBeforeAfterGeneral = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-beforeafter-general`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating General record:", error.response?.data || error.message);
     return null;
   }
 };

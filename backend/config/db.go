@@ -809,9 +809,9 @@ func SetupDatabase() {
 		}
 		db.FirstOrCreate(&infectiousWaste, entity.Garbage{
 			Date:          date,
-            EnvironmentID: Garbage.ID,
-            ParameterID:   param22.ID,
-            TargetID:      &target1.ID,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param22.ID,
+			TargetID:      &target1.ID,
 		})
 	}
 
@@ -1085,4 +1085,153 @@ func SetupDatabase() {
 		})
 	}
 	fmt.Println("Insert TKN seed data done!")
+
+	// Garbages
+	// recycledWaste
+	recycledWastePerDay := []float64{66.53, 144.99, 221.05, 205.57, 198.98}
+	recycledWastePerMonth := []float64{2062.50, 4059.65, 6852.50, 6167.00, 6168.50}
+	recycledWastePerTotalSale := []float64{3139.50, 4782.00, 6852.50, 6167.00, 6168.50}
+	recycledWastePerQuantity := []uint{1200, 1200, 1300, 1400, 1500}
+
+	recycledWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(recycledWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", recycledWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะอันตราย Parse date error :", err)
+			continue
+		}
+
+		chemicalWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      recycledWastePerMonth[i],
+			Quantity:            recycledWastePerQuantity[i],
+			AverageDailyGarbage: recycledWastePerDay[i],
+			TotalSale:           recycledWastePerTotalSale[i],
+			AADC:                0,
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param24.ID,
+			TargetID:            &target2.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            nil,
+		}
+		db.FirstOrCreate(&chemicalWaste, entity.Garbage{
+			Date:          date,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param24.ID,
+			TargetID:      &target2.ID,
+		})
+	}
+
+	// generalWaste
+	generalWastePerDay := []float64{1163.87, 1080.36, 1123.23, 1089.33, 1114.9}
+	generalWastePerMonth := []float64{36080.00, 30250.00, 34820.00, 32680.00, 34562.00}
+	generalWastePerAADC := []float64{0.06, 0.13, 0.20, 0.19, 0.18}
+	generalWastePerQuantity := []uint{1200, 1200, 1300, 1400, 1500}
+
+	generalWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(generalWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", generalWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะทั่วไป Parse date error :", err)
+			continue
+		}
+
+		var statusIDBeforegen uint
+		if generalWastePerAADC[i] > 1.00 {
+			statusIDBeforegen = status2.ID
+		} else {
+			statusIDBeforegen = status1.ID
+		}
+
+		generalWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      generalWastePerMonth[i],
+			Quantity:            generalWastePerQuantity[i],
+			AverageDailyGarbage: generalWastePerDay[i],
+			AADC:                generalWastePerAADC[i],
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param23.ID,
+			TargetID:            &target2.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            &statusIDBeforegen,
+		}
+		db.FirstOrCreate(&generalWaste, entity.Garbage{
+			Date:          date,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param23.ID,
+			TargetID:      &target2.ID,
+		})
+	}
+
+	// hazardousWaste //ฟิกไว้ก่อนยังไม่มีค่าจริง
+	hazardousWastePerDay := []float64{1163.87, 1080.36, 1123.23, 1089.33, 1114.9}
+	hazardousWastePerMonth := []float64{36080.00, 30250.00, 34820.00, 32680.00, 34562.00}
+	hazardousWastePerAADC := []float64{0.06, 0.13, 0.20, 0.19, 0.18}
+	hazardousWastePerQuantity := []uint{1200, 1200, 1300, 1400, 1500}
+
+	hazardousWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(hazardousWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", hazardousWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะอันตราย Parse date error :", err)
+			continue
+		}
+
+		chemicalWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      hazardousWastePerMonth[i],
+			Quantity:            hazardousWastePerQuantity[i],
+			AverageDailyGarbage: hazardousWastePerDay[i],
+			AADC:                hazardousWastePerAADC[i],
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param25.ID,
+			TargetID:            &target2.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            nil,
+		}
+		db.FirstOrCreate(&chemicalWaste, entity.Garbage{
+			Date:          date,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param25.ID,
+			TargetID:      &target2.ID,
+		})
+	}
+
+	// chemicalWaste //ฟิกไว้ก่อนยังไม่มีค่าจริง
+	chemicalWastePerDay := []float64{1163.87, 1080.36, 1123.23, 1089.33, 1114.9}
+	chemicalWastePerMonth := []float64{36080.00, 30250.00, 34820.00, 32680.00, 34562.00}
+	chemicalWastePerAADC := []float64{0.06, 0.13, 0.20, 0.19, 0.18}
+	chemicalWastePerQuantity := []uint{1200, 1200, 1300, 1400, 1500}
+
+	chemicalWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(chemicalWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", chemicalWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะเคมี Parse date error :", err)
+			continue
+		}
+
+		chemicalWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      chemicalWastePerMonth[i],
+			Quantity:            chemicalWastePerQuantity[i],
+			AverageDailyGarbage: chemicalWastePerDay[i],
+			AADC:                chemicalWastePerAADC[i],
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param26.ID,
+			TargetID:            &target2.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            nil,
+		}
+		db.FirstOrCreate(&chemicalWaste, entity.Garbage{
+			Date:          date,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param26.ID,
+			TargetID:      &target2.ID,
+		})
+	}
 }

@@ -90,7 +90,7 @@ const ChemicalWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
         EmployeeID: employeeID,
       };
 
-      console.log('Payload to createHazardous:', payload);
+      console.log('Payload to createChemical:', payload);
 
       // เรียก API บันทึกข้อมูล
       const response = await createChemical(payload);
