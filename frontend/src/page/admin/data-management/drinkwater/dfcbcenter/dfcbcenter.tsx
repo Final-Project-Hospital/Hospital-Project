@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input, message } from 'antd';
 import dayjs from 'dayjs';
-import './DFCBcenter.css';
+import './dfcbcenter.css';
 import { DFCBcenterInterface } from '../../../../../interface/Idrinkwater/Idfcb';
-import { createDFCB, GetfirstDFCB } from '../../../../../services/drinkwaterServices/dfcb';
 import { ListBeforeAfterTreatment, ListUnit } from '../../../../../services/index';
 import { ListBeforeAfterTreatmentInterface } from '../../../../../interface/IBeforeAfterTreatment';
 import { ListUnitInterface } from '../../../../../interface/IUnit';
+import { GetfirstDFCB, createDFCB } from '../../../../../services/drinkwaterServices/dfcb';
 import { ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, } from '../../../../../services/index';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';
 import { CheckUnit, CheckStandard } from '../../../../../services/tdsService';
@@ -40,7 +40,7 @@ const DFCBCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
         return (
             <>
-                ค่า DFCB บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
+                ค่า FCB บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
             </>
         );
     };
@@ -170,7 +170,8 @@ const DFCBCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
         const combinedDateTime = dayjs(values.date)
             .hour(dayjs(values.time).hour())
             .minute(dayjs(values.time).minute())
-            .second(0);
+            .second(dayjs(values.time).second())
+            .millisecond(0);
         // ตรวจสอบค่ามาตรฐาน
         const isOther = values.unit === 'other';
         const unitID = isOther ? null : values.unit;
@@ -235,7 +236,7 @@ const DFCBCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             if (response.status === 201) {
                 messageApi.open({
                     type: 'success',
-                    content: 'การบันทึกข้อมูล FCB สำเร็จ',
+                    content: 'การบันทึกข้อมูล DFCB สำเร็จ',
                 });
                 form.resetFields();
                 setIsOtherunitSelected(false);
@@ -262,6 +263,10 @@ const DFCBCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     form={form}
                     layout="vertical"
                     onFinish={handleFinish}
+                    initialValues={{
+                        date: dayjs(),
+                        time: dayjs(),
+                    }}
                 >
                     <div className="dfcb-form-group">
                         <Form.Item label="วันที่บันทึกข้อมูล" name="date">
@@ -541,7 +546,7 @@ const DFCBCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
                                     ]}
                                 >
-                                    <InputNumber style={{ width: '100%' }} placeholder="กรุณากรอกค่าที่วัดได้" step={0.01} />
+                                    <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าที่วัดได้" step={0.01} />
                                 </Form.Item>
                             )}
                         </div>

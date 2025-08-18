@@ -5,8 +5,9 @@ import TimeRangeSelector from './TimeRangeSelector';
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
 
 const dropdownData = [
-  { Id: 'day', Time: 'Day(s)' },
-  { Id: 'month', Time: 'Month' },
+  { Id: 'hour', Time: 'Hour(s)' },
+  { Id: 'day',  Time: 'Day(s)'  },
+  { Id: 'month', Time: 'Month'  },
   { Id: 'year', Time: 'Year(s)' },
 ];
 
@@ -29,7 +30,7 @@ const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
   reloadKey,
 }) => {
   const { currentMode } = useStateContext();
-  const [timeRangeType, setTimeRangeType] = useState<'day' | 'month' | 'year'>('day');
+  const [timeRangeType, setTimeRangeType] = useState<'hour' | 'day' | 'month' | 'year'>('day');
   const [selectedRange, setSelectedRange] = useState<any>(null);
   const [colorMappingParameters, setColorMappingParameters] = useState<ColorParamWithColor[]>([]);
 
@@ -37,9 +38,10 @@ const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
 
   const isRangeReady = useMemo(() => {
     if (!selectedRange) return false;
-    if (timeRangeType === 'day') return Array.isArray(selectedRange) && selectedRange.length === 2;
+    if (timeRangeType === 'hour')  return Array.isArray(selectedRange) && selectedRange.length === 2;
+    if (timeRangeType === 'day')   return Array.isArray(selectedRange) && selectedRange.length === 2;
     if (timeRangeType === 'month') return selectedRange?.month && selectedRange?.year;
-    if (timeRangeType === 'year') return Array.isArray(selectedRange) && selectedRange.length === 2;
+    if (timeRangeType === 'year')  return Array.isArray(selectedRange) && selectedRange.length === 2;
     return false;
   }, [selectedRange, timeRangeType]);
 
@@ -57,7 +59,12 @@ const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
 
   useEffect(() => {
     const now = new Date();
-    if (timeRangeType === 'day') {
+    if (timeRangeType === 'hour') {
+      // default ย้อนหลัง 6 ชั่วโมง
+      const end = new Date();
+      const start = new Date(end.getTime() - 6 * 60 * 60 * 1000);
+      setSelectedRange([start, end]);
+    } else if (timeRangeType === 'day') {
       const end = new Date();
       end.setHours(23, 59, 59, 999);
       const start = new Date();

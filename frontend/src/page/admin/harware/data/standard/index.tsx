@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, message, Spin, Select, Tooltip } from "antd";
+import { Modal, Form, Input, message, Spin, Select, Tooltip, Checkbox } from "antd";
 import {
   ListHardwareParameterByHardwareID,
   UpdateStandardHardwareByID,
@@ -26,7 +26,7 @@ interface EditStandardUnitModalProps {
 
 type IconOption = { name: string; label: string; component: IconType };
 
-// ✅ รายการไอคอน (component mapping)
+// ✅ รายการไอคอน
 const iconOptions: IconOption[] = [
   { name: "FaMicroscope", label: "กล้องจุลทรรศน์", component: FaIcons.FaMicroscope },
   { name: "FaTemperatureHigh", label: "อุณหภูมิสูง", component: FaIcons.FaTemperatureHigh },
@@ -45,7 +45,7 @@ const iconOptions: IconOption[] = [
   { name: "MdAir", label: "อากาศ", component: MdIcons.MdAir },
 ];
 
-// แปลงเป็น map เพื่อ lookup จากชื่อ → component
+// แปลงเป็น map
 const iconMap: Record<string, IconType> = iconOptions.reduce((acc, cur) => {
   acc[cur.name] = cur.component;
   return acc;
@@ -88,13 +88,15 @@ const NumberItem: React.FC<{
   </Form.Item>
 );
 
-// ✅ แยกเป็นคอมโพเนนต์ย่อยเพื่อให้ใช้ Hooks ได้อย่างถูกต้อง
+// ✅ คอมโพเนนต์ย่อย ParamRow
 const ParamRow: React.FC<{
   form: any;
   param: any;
 }> = ({ form, param }) => {
   const fieldIcon = `icon_${param.ID}`;
+  const fieldAlert = `alert_${param.ID}`;
   const iconName = Form.useWatch(fieldIcon, form) as string | undefined;
+  const alertValue = Form.useWatch(fieldAlert, form) as boolean | undefined;
   const IconPreview = iconMap[iconName || "FaMicroscope"];
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -105,7 +107,6 @@ const ParamRow: React.FC<{
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // ฟิลเตอร์ใน Select
   const filterOption = (input: string, option?: any) =>
     (option?.label as string)?.toLowerCase().includes(input.toLowerCase());
 
@@ -173,7 +174,7 @@ const ParamRow: React.FC<{
             </div>
 
             {/* Icon Select */}
-            <div className="md:col-span-3">
+            <div className="md:col-span-2">
               <div className="flex items-center gap-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   * Icon
@@ -207,9 +208,13 @@ const ParamRow: React.FC<{
                   ))}
                 </Select>
               </Form.Item>
-              <div className="text-[11px] text-gray-400 mt-1">
-                ระบบจะแสดงตัวอย่างไอคอนด้านซ้าย
-              </div>
+            </div>
+
+            {/* Alert Checkbox */}
+            <div className="md:col-span-2 flex flex-col justify-end">
+              <Form.Item name={fieldAlert} valuePropName="checked" noStyle>
+                <Checkbox>เปิดการแจ้งเตือน</Checkbox>
+              </Form.Item>
             </div>
           </div>
         </div>
@@ -248,6 +253,7 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
             typeof minStd === "number" ? minStd : "";
           initialValues[`unit_${param.ID}`] = param?.UnitHardware?.Unit ?? "";
           initialValues[`icon_${param.ID}`] = param?.Icon || "FaMicroscope";
+          initialValues[`alert_${param.ID}`] = !!param?.Alert;
         });
 
         form.setFieldsValue(initialValues);
@@ -267,6 +273,7 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
           const rawMin = values[`min_standard_${param.ID}`];
           const rawUnit = values[`unit_${param.ID}`];
           const icon = values[`icon_${param.ID}`];
+          const alert = values[`alert_${param.ID}`];
 
           const maxVal = Number(rawMax);
           const minVal = Number(rawMin);
@@ -300,7 +307,9 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
               })
             );
           }
-          tasks.push(UpdateIconByHardwareParameterID(param.ID, icon));
+
+          // ✅ อัปเดต Icon + Alert
+          tasks.push(UpdateIconByHardwareParameterID(param.ID, icon, alert));
 
           await Promise.all(tasks);
         })
@@ -329,7 +338,7 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
     >
       {/* Header */}
       <div className="bg-teal-600 text-white text-[1.15rem] font-semibold text-center py-3 rounded-t-xl tracking-wide">
-        แก้ไขค่า Standard (Min/Max), หน่วย และไอคอนของพารามิเตอร์
+        แก้ไขค่า Standard (Min/Max), หน่วย, ไอคอน และการแจ้งเตือน
       </div>
 
       <div className="px-4 sm:px-6 pt-4 pb-2 max-h-[80vh] overflow-y-auto bg-white">

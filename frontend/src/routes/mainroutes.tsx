@@ -36,7 +36,7 @@ const DatavizTCB = Loadable(lazy(() => import("../page/admin/data-visualization/
 //tapwater
 const EnvironmentTapwaterBlock = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/EnvironmentTapwaterBlock")));
 const DatavizAL = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/ALdataviz/ALdataviz")));
-const DatavizIR = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/IRdataviz/IRdataviz")));
+const DatavizIR = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/IRONdataviz/IRONdataviz")));
 const DatavizMN = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/MNdataviz/MNdataviz")));
 const DatavizNI = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/NIdataviz/NIdataviz")));
 const DatavizNTU = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/NTUdataviz/NTUdataviz")));
@@ -46,17 +46,17 @@ const DatavizTH = Loadable(lazy(() => import("../page/admin/data-visualization/t
 const DatavizTTCB = Loadable(lazy(() => import("../page/admin/data-visualization/tapwater/TTCBdataviz/TCBdataviz")));
 //drinkwater
 const EnvironmentDrinkwaterBlock = Loadable(lazy(() => import("../page/admin/data-visualization/drinkwater/EnvironmentDrinkwaterBlock")));
-const DatavizDFCB = Loadable(lazy(() => import("../page/admin/data-visualization/drinkwater/DFCBdataviz/FCBdataviz")));
-const DatavizDTCB = Loadable(lazy(() => import("../page/admin/data-visualization/drinkwater/DTCBdataviz/TCBdataviz")));
+const DatavizDFCB = Loadable(lazy(() => import("../page/admin/data-visualization/drinkwater/DFCBdataviz/DFCBdataviz")));
+const DatavizDTCB = Loadable(lazy(() => import("../page/admin/data-visualization/drinkwater/DTCBdataviz/DTCBdataviz")));
 const DatavizEC = Loadable(lazy(() => import("../page/admin/data-visualization/drinkwater/ECOLIdataviz/ECOLIdataviz")));
 
 //garab
 const EnvironmentGarbageBox = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/EnvironmentGarbageBox")));
-const DatavizCHE = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/chemicalWaste/chemicalWaste")));
-const DatavizGEN = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/generalWaste/generalWaste")));
-const DatavizHAZ = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/hazardousWaste/hazardousWaste")));
-const DatavizINF = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/infectiousWaste/infectiousWaste")));
-const DatavizREC = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/recycledWaste/recycledWaste")));
+const DatavizCHE = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/chemicalWaste/chemicalWasteDataviz")));
+const DatavizGEN = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/generalWaste/generalWasteDataviz")));
+const DatavizHAZ = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/hazardousWaste/hazardousWasteDataviz")));
+const DatavizINF = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/infectiousWaste/infectiousWasteDataviz")));
+const DatavizREC = Loadable(lazy(() => import("../page/admin/data-visualization/garbage/recycledWaste/recycledWasteDataviz")));
 
 // data-management
 const EnvironmentWastewaterTabs = Loadable(lazy(() => import("../page/admin/data-management/wastewater/EnvironmentWastewaterTabs")));

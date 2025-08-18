@@ -111,17 +111,17 @@ func SetupDatabase() {
 	// Status
 	status1 := entity.Status{StatusName: "ไม่ผ่านเกณฑ์มาตรฐาน"}
 	status2 := entity.Status{StatusName: "ผ่านเกณฑ์มาตรฐาน"}
-	status3 := entity.Status{StatusName: "เกินเกณฑ์มาตรฐาน"}
 
 	db.FirstOrCreate(&status1, entity.Status{StatusName: "ไม่ผ่านเกณฑ์มาตรฐาน"})
 	db.FirstOrCreate(&status2, entity.Status{StatusName: "ผ่านเกณฑ์มาตรฐาน"})
-	db.FirstOrCreate(&status3, entity.Status{StatusName: "เกินเกณฑ์มาตรฐาน"})
 
 	// Unit
 	Unit := entity.Unit{UnitName: "mg/L"}
 	Unit2 := entity.Unit{UnitName: "ไม่มีหน่วย"}
+	Unit3 := entity.Unit{UnitName: "Kg"}
 	db.FirstOrCreate(&Unit, &entity.Unit{UnitName: "mg/L"})
 	db.FirstOrCreate(&Unit2, &entity.Unit{UnitName: "ไม่มีหน่วย"})
+	db.FirstOrCreate(&Unit3, &entity.Unit{UnitName: "Kg"})
 
 	//BeforeAfter
 	Before := entity.BeforeAfterTreatment{TreatmentName: "ก่อน"}
@@ -193,37 +193,29 @@ func SetupDatabase() {
 		db.FirstOrCreate(&stackedGraph, entity.HardwareGraph{Graph: "Stacked"})
 
 		// ----- สร้าง StandardHardware 5 ค่า -----
-		formaldehydeStd := entity.StandardHardware{MaxValueStandard: 5,MinValueStandard: 2}
-		temperatureStd := entity.StandardHardware{MaxValueStandard: 30,MinValueStandard: 20}
-		humidityStd := entity.StandardHardware{MaxValueStandard: 70,MinValueStandard: 30}
-		lightStd := entity.StandardHardware{MaxValueStandard: 200,MinValueStandard: 100}
-		gasStd := entity.StandardHardware{MaxValueStandard: 7,MinValueStandard: 3}
+		formaldehydeStd := entity.StandardHardware{MaxValueStandard: 5, MinValueStandard: 2}
+		temperatureStd := entity.StandardHardware{MaxValueStandard: 30, MinValueStandard: 20}
+		humidityStd := entity.StandardHardware{MaxValueStandard: 70, MinValueStandard: 30}
 
-		db.FirstOrCreate(&formaldehydeStd, entity.StandardHardware{MaxValueStandard: 5,MinValueStandard: 2})
-		db.FirstOrCreate(&temperatureStd, entity.StandardHardware{MaxValueStandard: 30,MinValueStandard: 20})
-		db.FirstOrCreate(&humidityStd, entity.StandardHardware{MaxValueStandard: 70,MinValueStandard: 30})
-		db.FirstOrCreate(&lightStd, entity.StandardHardware{MaxValueStandard: 200,MinValueStandard: 100})
-		db.FirstOrCreate(&gasStd, entity.StandardHardware{MaxValueStandard: 7,MinValueStandard: 3})
+		db.FirstOrCreate(&formaldehydeStd, entity.StandardHardware{MaxValueStandard: 5, MinValueStandard: 2})
+		db.FirstOrCreate(&temperatureStd, entity.StandardHardware{MaxValueStandard: 30, MinValueStandard: 20})
+		db.FirstOrCreate(&humidityStd, entity.StandardHardware{MaxValueStandard: 70, MinValueStandard: 30})
 
 		// ----- สร้าง UnitHardware -----
 		unitPPM := entity.UnitHardware{Unit: "ppm"}
 		unitCelsius := entity.UnitHardware{Unit: "°C"}
 		unitPercent := entity.UnitHardware{Unit: "%"}
-		unitLux := entity.UnitHardware{Unit: "Lux"}
-		unitGas := entity.UnitHardware{Unit: "cm"}
 
 		db.FirstOrCreate(&unitPPM, entity.UnitHardware{Unit: "ppm"})
 		db.FirstOrCreate(&unitCelsius, entity.UnitHardware{Unit: "°C"})
 		db.FirstOrCreate(&unitPercent, entity.UnitHardware{Unit: "%"})
-		db.FirstOrCreate(&unitLux, entity.UnitHardware{Unit: "Lux"})
-		db.FirstOrCreate(&unitGas, entity.UnitHardware{Unit: "cm"})
 
 		// ----- สร้าง Parameter พร้อมผูก StandardHardwareID และ UnitHardwareID -----
 		paramhardware1 := entity.HardwareParameter{
 			Parameter:                "Formaldehyde",
 			Icon:                     "GiChemicalDrop",
 			GroupDisplay:             false,
-			LayoutDisplay: 		  false,
+			LayoutDisplay:            false,
 			Alert:                    false,
 			HardwareParameterColorID: colorPurple.ID,
 			HardwareGraphID:          defaultGraph.ID,
@@ -231,11 +223,11 @@ func SetupDatabase() {
 			UnitHardwareID:           unitPPM.ID,
 		}
 		paramhardware2 := entity.HardwareParameter{
-			Parameter:    "Temperature",
-			Icon:         "GiChemicalDrop",
-			GroupDisplay: false,
-			LayoutDisplay: false,
-			Alert: false,
+			Parameter:                "Temperature",
+			Icon:                     "GiChemicalDrop",
+			GroupDisplay:             false,
+			LayoutDisplay:            false,
+			Alert:                    false,
 			HardwareParameterColorID: colorBlue.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       temperatureStd.ID,
@@ -245,42 +237,18 @@ func SetupDatabase() {
 			Parameter:                "Humidity",
 			Icon:                     "GiChemicalDrop",
 			GroupDisplay:             false,
-			LayoutDisplay: false,
+			LayoutDisplay:            false,
 			Alert:                    false,
 			HardwareParameterColorID: colorOrange.ID,
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       humidityStd.ID,
 			UnitHardwareID:           unitPercent.ID,
 		}
-		paramhardware4 := entity.HardwareParameter{
-			Parameter:                "Light",
-			Icon:                     "GiChemicalDrop",
-			GroupDisplay:             false,
-			LayoutDisplay: false,
-			Alert:                    false,
-			HardwareParameterColorID: colorYellow.ID,
-			HardwareGraphID:          defaultGraph.ID,
-			StandardHardwareID:       lightStd.ID,
-			UnitHardwareID:           unitLux.ID,
-		}
-		paramhardware5 := entity.HardwareParameter{
-			Parameter:                "Gas",
-			Icon:                     "GiChemicalDrop",
-			GroupDisplay:             false,
-			LayoutDisplay: false,
-			Alert:                    false,
-			HardwareParameterColorID: colorGreen.ID,
-			HardwareGraphID:          defaultGraph.ID,
-			StandardHardwareID:       gasStd.ID,
-			UnitHardwareID:           unitGas.ID,
-		}
 
 		// บันทึก HardwareParameter ลงฐานข้อมูล
 		db.FirstOrCreate(&paramhardware1, entity.HardwareParameter{Parameter: "Formaldehyde", HardwareGraphID: defaultGraph.ID})
 		db.FirstOrCreate(&paramhardware2, entity.HardwareParameter{Parameter: "Temperature", HardwareGraphID: defaultGraph.ID})
 		db.FirstOrCreate(&paramhardware3, entity.HardwareParameter{Parameter: "Humidity", HardwareGraphID: defaultGraph.ID})
-		db.FirstOrCreate(&paramhardware4, entity.HardwareParameter{Parameter: "Light", HardwareGraphID: defaultGraph.ID})
-		db.FirstOrCreate(&paramhardware5, entity.HardwareParameter{Parameter: "Gas", HardwareGraphID: defaultGraph.ID})
 	}
 
 	hashedPassword, err := HashPassword("123")
@@ -387,7 +355,7 @@ func SetupDatabase() {
 	param6 := entity.Parameter{ParameterName: "Fats, Oils, and Grease"}
 	param7 := entity.Parameter{ParameterName: "Chemical Oxygen Demand"}
 	param8 := entity.Parameter{ParameterName: "Fecal Coliform Bacteria"}
-	param9 := entity.Parameter{ParameterName: "Residual"}
+	param9 := entity.Parameter{ParameterName: "Residuals"}
 	param10 := entity.Parameter{ParameterName: "Sulfide"}
 	param11 := entity.Parameter{ParameterName: "Total Coliform Bacteria"}
 
@@ -414,7 +382,7 @@ func SetupDatabase() {
 	db.FirstOrCreate(&param6, entity.Parameter{ParameterName: "Fats, Oils, and Grease"})
 	db.FirstOrCreate(&param7, entity.Parameter{ParameterName: "Chemical Oxygen Demand"})
 	db.FirstOrCreate(&param8, entity.Parameter{ParameterName: "Fecal Coliform Bacteria"})
-	db.FirstOrCreate(&param9, entity.Parameter{ParameterName: "Residual"})
+	db.FirstOrCreate(&param9, entity.Parameter{ParameterName: "Residuals"})
 	db.FirstOrCreate(&param10, entity.Parameter{ParameterName: "Sulfide"})
 	db.FirstOrCreate(&param11, entity.Parameter{ParameterName: "Total Coliform Bacteria"})
 
@@ -464,8 +432,7 @@ func SetupDatabase() {
 					SensorDataID:        1,
 					HardwareParameterID: 1,
 					Date:                date,
-					Note: 			 "",
-					Status: true,
+					Note:                "",
 				}
 				db.Create(&param1)
 				formIndex++
@@ -477,8 +444,7 @@ func SetupDatabase() {
 					SensorDataID:        1,
 					HardwareParameterID: 2,
 					Date:                date,
-					Note: 			 "",
-					Status: true,
+					Note:                "",
 				}
 				db.Create(&param2)
 				index++
@@ -489,34 +455,9 @@ func SetupDatabase() {
 					SensorDataID:        1,
 					HardwareParameterID: 3,
 					Date:                date,
-					Note: 			 "",
-					Status: true,
+					Note:                "",
 				}
 				db.Create(&param3)
-				index++
-
-				// 💡 Light
-				param4 := entity.SensorDataParameter{
-					Data:                100 + float64(month)*10 + float64(day)*2,
-					SensorDataID:        1,
-					HardwareParameterID: 4,
-					Date:                date,
-					Note: 			 "",
-					Status: true,
-				}
-				db.Create(&param4)
-				index++
-
-				// 🧪 Gas
-				param5 := entity.SensorDataParameter{
-					Data:                5 + float64(month)*0.4 + float64(day)*0.1,
-					SensorDataID:        1,
-					HardwareParameterID: 5,
-					Date:                date,
-					Note: 			 "",
-					Status: true,
-				}
-				db.Create(&param5)
 				index++
 			}
 		}
@@ -524,15 +465,6 @@ func SetupDatabase() {
 	} else {
 		fmt.Println("⚠️  ข้ามการเพิ่มข้อมูล SensorDataParameter เพราะมีข้อมูลอยู่แล้ว")
 	}
-
-	// environment := entity.Environment{EnvironmentName: "น้ำเสีย"}
-	// db.FirstOrCreate(&environment, &entity.Environment{EnvironmentName: "น้ำเสีย"})
-
-	// BodStandard := entity.Standard{StandardValue: 20}
-	// db.FirstOrCreate(&BodStandard, &entity.Standard{StandardValue: 20})
-
-	// BodUnit := entity.Unit{UnitName: "mg/L"}
-	// db.FirstOrCreate(&BodUnit, &entity.Unit{UnitName: "mg/L"})
 
 	BodParameter := entity.Parameter{ParameterName: "Biochemical Oxygen Demand"}
 	db.FirstOrCreate(&BodParameter, &entity.Parameter{ParameterName: "Biochemical Oxygen Demand"})
@@ -553,14 +485,12 @@ func SetupDatabase() {
 		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
 		"2025-01-01", "2025-02-01",
 	}
-
 	for i := 0; i < len(beforeValues); i++ {
 		date, err := time.Parse("2006-01-02", dates[i])
 		if err != nil {
 			fmt.Println("Parse date error:", err)
 			continue
 		}
-
 		// --- เช็คค่าก่อนบำบัด ---
 		var statusIDBeforeBOD uint
 		if beforeValues[i] <= 20.00 {
@@ -568,7 +498,6 @@ func SetupDatabase() {
 		} else {
 			statusIDBeforeBOD = status1.ID
 		}
-
 		beforeRecord := entity.EnvironmentalRecord{
 			Date:                   date,
 			Data:                   beforeValues[i],
@@ -593,7 +522,6 @@ func SetupDatabase() {
 		} else {
 			statusIDAfterBOD = status1.ID
 		}
-
 		afterRecord := entity.EnvironmentalRecord{
 			Date:                   date,
 			Data:                   afterValues[i],
@@ -612,7 +540,6 @@ func SetupDatabase() {
 			ParameterID:            BodParameter.ID,
 		})
 	}
-
 	fmt.Println("Insert BOD seed data done!")
 
 	// PH
@@ -652,7 +579,6 @@ func SetupDatabase() {
 			fmt.Println("Parse date error:", err)
 			continue
 		}
-
 		// --- เช็คค่าก่อนบำบัด ---
 		var statusIDBefore uint
 		if beforeValuesPH[iph] >= 5.00 && beforeValuesPH[iph] <= 9.00 {
@@ -660,7 +586,6 @@ func SetupDatabase() {
 		} else {
 			statusIDBefore = status1.ID
 		}
-
 		beforeRecord := entity.EnvironmentalRecord{
 			Date:                   date,
 			Data:                   beforeValuesPH[iph],
@@ -678,7 +603,6 @@ func SetupDatabase() {
 			EnvironmentID:          Wastewater.ID,
 			ParameterID:            param3.ID,
 		})
-
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfter uint
 		if afterValuesPH[iph] >= 5.00 && afterValuesPH[iph] <= 9.00 {
@@ -686,7 +610,6 @@ func SetupDatabase() {
 		} else {
 			statusIDAfter = status1.ID
 		}
-
 		afterRecord := entity.EnvironmentalRecord{
 			Date:                   date,
 			Data:                   afterValuesPH[iph],
@@ -738,22 +661,19 @@ func SetupDatabase() {
 		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
 		"2025-01-01", "2025-02-01",
 	}
-
 	for i := 0; i < len(beforeValuesTDS); i++ {
 		date, err := time.Parse("2006-01-02", datesTDS[i])
 		if err != nil {
 			fmt.Println("Parse date error:", err)
 			continue
 		}
-
 		// --- เช็คค่าก่อนบำบัด ---
 		var statusIDBeforeTDS uint
-		if beforeValuesPH[i] <= 500.00 {
+		if beforeValuesTDS[i] <= 500.00 {
 			statusIDBeforeTDS = status2.ID
 		} else {
 			statusIDBeforeTDS = status1.ID
 		}
-
 		// --- ก่อนบำบัด ---
 		beforeRecord := entity.EnvironmentalRecord{
 			Date:                   date,
@@ -772,15 +692,13 @@ func SetupDatabase() {
 			EnvironmentID:          Wastewater.ID,
 			ParameterID:            param4.ID,
 		})
-
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterTDS uint
-		if afterValuesPH[i] <= 500.00 {
+		if afterValuesTDS[i] <= 500.00 {
 			statusIDAfterTDS = status2.ID
 		} else {
 			statusIDAfterTDS = status1.ID
 		}
-
 		// --- หลังบำบัด ---
 		afterRecord := entity.EnvironmentalRecord{
 			Date:                   date,
@@ -800,7 +718,480 @@ func SetupDatabase() {
 			ParameterID:            param4.ID,
 		})
 	}
-
 	fmt.Println("Insert TDS seed data done!")
+	target1 := entity.Target{
+		MaxTarget:    0,
+		MiddleTarget: 0.7,
+		MinTarget:    0,
+	}
+	db.FirstOrCreate(&target1, entity.Target{MaxTarget: 0, MiddleTarget: 0.7, MinTarget: 0})
 
+	target2 := entity.Target{
+		MaxTarget:    0,
+		MiddleTarget: 1,
+		MinTarget:    0,
+	}
+	db.FirstOrCreate(&target2, entity.Target{MaxTarget: 0, MiddleTarget: 1, MinTarget: 0})
+
+	infectiousWastePerDay := []float64{794.26, 920.71, 7615.73, 6823.23, 6033.60}
+	infectiousWastePerMonth := []float64{24622.00, 25780.00, 228472.00, 211520.00, 181008.00}
+	infectiousWastePerAADC := []float64{0.02, 0.77, 5.67, 5.04, 3.89}
+	// infectiousWastetargetAADC := []float64{0.70, 0.70, 0.70, 0.70, 0.70}
+	infectiousWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(infectiousWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", infectiousWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะติดเชื้อ Parse date error :", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		var statusIDBeforeinfec uint
+		if infectiousWastePerAADC[i] <= 0.7 {
+			statusIDBeforeinfec = status2.ID
+		} else {
+			statusIDBeforeinfec = status1.ID
+		}
+
+		// --- ก่อนบำบัด ---
+		infectiousWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      infectiousWastePerMonth[i],
+			Quantity:            1200,
+			AverageDailyGarbage: infectiousWastePerDay[i],
+			AADC:                infectiousWastePerAADC[i],
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param22.ID,
+			TargetID:            &target1.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            &statusIDBeforeinfec,
+		}
+		db.FirstOrCreate(&infectiousWaste, entity.Garbage{
+			Date:          date,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param22.ID,
+			TargetID:      &target1.ID,
+		})
+	}
+
+	// TS
+	beforeValuesTS := []float64{
+		16, 26, 202, 34, 33, 12, 11, 5,
+		22, 13, 11, 9, 44, 11, 18, 46,
+		5, 6, 5, 6, 17, 14, 9432, 4,
+		14, 4, 5, 6, 17, 14, 9432, 4,
+		14, 1601, 1661, 1720, 1779, 46, 5, 6,
+		5, 6, 17, 14, 26, 202, 14, 4,
+		26, 202, 208, 267, 325, 384, 442, 501,
+		560, 618,
+	}
+	afterValuesTS := []float64{
+		98, 98, 9, 47, 28, 22, 13, 5,
+		5, 5, 16, 15, 7, 5, 5, 5,
+		5, 8, 7, 5, 17, 14, 9432, 4,
+		14, 4, 7, 5, 17, 14, 9432, 4,
+		14, 1596, 1655, 1715, 1774, 5, 5, 8,
+		7, 5, 17, 14, 98, 9, 14, 4,
+		98, 9, 51, 59, 67, 75, 83, 92,
+		100, 108,
+	}
+	datesTS := []string{
+		"2020-05-01", "2020-06-01", "2020-07-01", "2020-08-01", "2020-09-01", "2020-10-01", "2020-11-01", "2020-12-01",
+		"2021-01-01", "2021-02-01", "2021-03-01", "2021-04-01", "2021-05-01", "2021-06-01", "2021-07-01", "2021-08-01",
+		"2021-09-01", "2021-10-01", "2021-11-01", "2021-12-01", "2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+		"2025-01-01", "2025-02-01",
+	}
+	for i := 0; i < len(beforeValuesTS); i++ {
+		date, err := time.Parse("2006-01-02", datesTS[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+		// --- เช็คค่าก่อนบำบัด ---
+		var statusIDBeforeTS uint
+		if beforeValuesTS[i] <= 30.00 {
+			statusIDBeforeTS = status2.ID
+		} else {
+			statusIDBeforeTS = status1.ID
+		}
+		// --- ก่อนบำบัด ---
+		beforeRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   beforeValuesTS[i],
+			BeforeAfterTreatmentID: Before.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param2.ID,
+			StandardID:             4,
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDBeforeTS,
+		}
+		db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: Before.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param2.ID,
+		})
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterTS uint
+		if afterValuesTS[i] <= 30.00 {
+			statusIDAfterTS = status2.ID
+		} else {
+			statusIDAfterTS = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesTS[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param2.ID,
+			StandardID:             4,
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterTS,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param2.ID,
+		})
+	}
+	fmt.Println("Insert TS seed data done!")
+
+	// FOG
+	beforeValuesFOG := []float64{
+		21, 1.5, 1, 2, 1.4, 1, 2.4, 1.4,
+		1, 1, 2.5, 1, 1.3, 1, 1.4, 1,
+		1, 1, 1, 1, 1, 2, 2, 1,
+		3, 5, 2.5, 1, 1.3, 1, 1, 1,
+		1, 1, 1, 1, 2.5, 1, 1, 1,
+		1.4, 1, 1.4, 1, 1, 1, 1, 3,
+		1, 1, 1, 1, 1, 1.4, 1, 1,
+		1, 1,
+	}
+	afterValuesFOG := []float64{
+		2.2, 2.2, 1.6, 1, 2.6, 1, 1, 1.2,
+		1, 1, 2.3, 1, 1, 1, 1, 1,
+		1, 1, 1, 1, 1, 1, 2, 1,
+		3, 1, 2.3, 1, 1, 1, 1, 1,
+		1, 1, 1, 1, 2.3, 1, 1, 1,
+		1, 1, 1, 1, 1, 1, 1, 2,
+		1, 1, 1, 1, 1, 1, 1, 1,
+		1, 1,
+	}
+	datesFOG := []string{
+		"2020-05-01", "2020-06-01", "2020-07-01", "2020-08-01", "2020-09-01", "2020-10-01", "2020-11-01", "2020-12-01",
+		"2021-01-01", "2021-02-01", "2021-03-01", "2021-04-01", "2021-05-01", "2021-06-01", "2021-07-01", "2021-08-01",
+		"2021-09-01", "2021-10-01", "2021-11-01", "2021-12-01", "2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+		"2025-01-01", "2025-02-01",
+	}
+	for i := 0; i < len(beforeValuesFOG); i++ {
+		date, err := time.Parse("2006-01-02", datesFOG[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+		// --- เช็คค่าก่อนบำบัด ---
+		var statusIDBeforeFOG uint
+		if beforeValuesFOG[i] <= 20.00 {
+			statusIDBeforeFOG = status2.ID
+		} else {
+			statusIDBeforeFOG = status1.ID
+		}
+		// --- ก่อนบำบัด ---
+		beforeRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   beforeValuesFOG[i],
+			BeforeAfterTreatmentID: Before.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param6.ID,
+			StandardID:             3,
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDBeforeFOG,
+		}
+		db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: Before.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param6.ID,
+		})
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterFOG uint
+		if afterValuesFOG[i] <= 20.00 {
+			statusIDAfterFOG = status2.ID
+		} else {
+			statusIDAfterFOG = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesFOG[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param6.ID,
+			StandardID:             3,
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterFOG,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param6.ID,
+		})
+	}
+	fmt.Println("Insert FOG seed data done!")
+
+	// TKN
+	beforeValuesTKN := []float64{
+		1, 1, 1.4, 14, 31, 12, 28, 13,
+		8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+		11, 8, 12, 18, 9, 3, 30, 1.9,
+		1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+		12, 12, 3.2, 18, 2.9, 16, 11, 8,
+		1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+		8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+		18, 2.9,
+	}
+	afterValuesTKN := []float64{
+		1, 1, 1, 1.4, 1, 1.6, 14, 2,
+		1, 1.3, 14, 1.4, 12, 1.2, 13, 1.3,
+		2, 1, 1, 1, 1, 2, 3, 1.3,
+		14, 1.4, 12, 1.2, 13, 1.3, 2, 1,
+		1, 1.4, 12, 1.2, 13, 1.3, 2, 1,
+		1.3, 14, 1.4, 12, 1.2, 13, 1.3, 2,
+		1, 1, 43, 44, 1.3, 14, 1.4, 12,
+		1.2, 13,
+	}
+	datesTKN := []string{
+		"2020-05-01", "2020-06-01", "2020-07-01", "2020-08-01", "2020-09-01", "2020-10-01", "2020-11-01", "2020-12-01",
+		"2021-01-01", "2021-02-01", "2021-03-01", "2021-04-01", "2021-05-01", "2021-06-01", "2021-07-01", "2021-08-01",
+		"2021-09-01", "2021-10-01", "2021-11-01", "2021-12-01", "2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+		"2025-01-01", "2025-02-01",
+	}
+	for i := 0; i < len(beforeValuesTKN); i++ {
+		date, err := time.Parse("2006-01-02", datesTKN[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		var statusIDBeforeTKN uint
+		if beforeValuesTKN[i] <= 35.00 {
+			statusIDBeforeTKN = status2.ID
+		} else {
+			statusIDBeforeTKN = status1.ID
+		}
+		// --- ก่อนบำบัด ---
+		beforeRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   beforeValuesTKN[i],
+			BeforeAfterTreatmentID: Before.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param1.ID,
+			StandardID:             5,
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDBeforeTKN,
+		}
+		db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: Before.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param1.ID,
+		})
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterTKN uint
+		if afterValuesTKN[i] <= 35.00 {
+			statusIDAfterTKN = status2.ID
+		} else {
+			statusIDAfterTKN = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesTKN[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param1.ID,
+			StandardID:             5,
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterTKN,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param1.ID,
+		})
+	}
+	fmt.Println("Insert TKN seed data done!")
+
+	// Garbages
+	// recycledWaste
+	recycledWastePerDay := []float64{66.53, 144.99, 221.05, 205.57, 198.98}
+	recycledWastePerMonth := []float64{2062.50, 4059.65, 6852.50, 6167.00, 6168.50}
+	recycledWastePerTotalSale := []float64{3139.50, 4782.00, 6852.50, 6167.00, 6168.50}
+	recycledWastePerQuantity := []uint{1200, 1200, 1300, 1400, 1500}
+
+	recycledWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(recycledWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", recycledWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะอันตราย Parse date error :", err)
+			continue
+		}
+
+		chemicalWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      recycledWastePerMonth[i],
+			Quantity:            recycledWastePerQuantity[i],
+			AverageDailyGarbage: recycledWastePerDay[i],
+			TotalSale:           recycledWastePerTotalSale[i],
+			AADC:                0,
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param24.ID,
+			TargetID:            &target2.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            nil,
+		}
+		db.FirstOrCreate(&chemicalWaste, entity.Garbage{
+			Date:          date,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param24.ID,
+			TargetID:      &target2.ID,
+		})
+	}
+
+	// generalWaste
+	generalWastePerDay := []float64{1163.87, 1080.36, 1123.23, 1089.33, 1114.9}
+	generalWastePerMonth := []float64{36080.00, 30250.00, 34820.00, 32680.00, 34562.00}
+	generalWastePerAADC := []float64{0.06, 0.13, 0.20, 0.19, 0.18}
+	generalWastePerQuantity := []uint{1200, 1200, 1300, 1400, 1500}
+
+	generalWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(generalWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", generalWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะทั่วไป Parse date error :", err)
+			continue
+		}
+
+		var statusIDBeforegen uint
+		if generalWastePerAADC[i] > 1.00 {
+			statusIDBeforegen = status2.ID
+		} else {
+			statusIDBeforegen = status1.ID
+		}
+
+		generalWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      generalWastePerMonth[i],
+			Quantity:            generalWastePerQuantity[i],
+			AverageDailyGarbage: generalWastePerDay[i],
+			AADC:                generalWastePerAADC[i],
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param23.ID,
+			TargetID:            &target2.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            &statusIDBeforegen,
+		}
+		db.FirstOrCreate(&generalWaste, entity.Garbage{
+			Date:          date,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param23.ID,
+			TargetID:      &target2.ID,
+		})
+	}
+
+	// hazardousWaste //ฟิกไว้ก่อนยังไม่มีค่าจริง
+	hazardousWastePerDay := []float64{1163.87, 1080.36, 1123.23, 1089.33, 1114.9}
+	hazardousWastePerMonth := []float64{36080.00, 30250.00, 34820.00, 32680.00, 34562.00}
+	hazardousWastePerAADC := []float64{0.06, 0.13, 0.20, 0.19, 0.18}
+	hazardousWastePerQuantity := []uint{1200, 1200, 1300, 1400, 1500}
+
+	hazardousWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(hazardousWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", hazardousWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะอันตราย Parse date error :", err)
+			continue
+		}
+
+		chemicalWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      hazardousWastePerMonth[i],
+			Quantity:            hazardousWastePerQuantity[i],
+			AverageDailyGarbage: hazardousWastePerDay[i],
+			AADC:                hazardousWastePerAADC[i],
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param25.ID,
+			TargetID:            &target2.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            nil,
+		}
+		db.FirstOrCreate(&chemicalWaste, entity.Garbage{
+			Date:          date,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param25.ID,
+			TargetID:      &target2.ID,
+		})
+	}
+
+	// chemicalWaste //ฟิกไว้ก่อนยังไม่มีค่าจริง
+	chemicalWastePerDay := []float64{1163.87, 1080.36, 1123.23, 1089.33, 1114.9}
+	chemicalWastePerMonth := []float64{36080.00, 30250.00, 34820.00, 32680.00, 34562.00}
+	chemicalWastePerAADC := []float64{0.06, 0.13, 0.20, 0.19, 0.18}
+	chemicalWastePerQuantity := []uint{1200, 1200, 1300, 1400, 1500}
+
+	chemicalWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(chemicalWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", chemicalWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะเคมี Parse date error :", err)
+			continue
+		}
+
+		chemicalWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      chemicalWastePerMonth[i],
+			Quantity:            chemicalWastePerQuantity[i],
+			AverageDailyGarbage: chemicalWastePerDay[i],
+			AADC:                chemicalWastePerAADC[i],
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param26.ID,
+			TargetID:            &target2.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            nil,
+		}
+		db.FirstOrCreate(&chemicalWaste, entity.Garbage{
+			Date:          date,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param26.ID,
+			TargetID:      &target2.ID,
+		})
+	}
 }

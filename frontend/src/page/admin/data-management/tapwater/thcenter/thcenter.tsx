@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input, message } from 'antd';
 import dayjs from 'dayjs';
-import './THcenter.css';
+import './thcenter.css';
 import { THcenterInterface } from '../../../../../interface/Itapwater/Ith';
-import { createTH, GetfirstTH } from '../../../../../services/tapwaterServices/th';
 import { ListBeforeAfterTreatment, ListUnit } from '../../../../../services/index';
 import { ListBeforeAfterTreatmentInterface } from '../../../../../interface/IBeforeAfterTreatment';
 import { ListUnitInterface } from '../../../../../interface/IUnit';
+import { GetfirstTH, createTH } from '../../../../../services/tapwaterServices/th';
 import { ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, } from '../../../../../services/index';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';
 import { CheckUnit, CheckStandard } from '../../../../../services/tdsService';
@@ -170,7 +170,8 @@ const THCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
         const combinedDateTime = dayjs(values.date)
             .hour(dayjs(values.time).hour())
             .minute(dayjs(values.time).minute())
-            .second(0);
+            .second(dayjs(values.time).second())
+            .millisecond(0);
         // ตรวจสอบค่ามาตรฐาน
         const isOther = values.unit === 'other';
         const unitID = isOther ? null : values.unit;
@@ -262,6 +263,10 @@ const THCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     form={form}
                     layout="vertical"
                     onFinish={handleFinish}
+                    initialValues={{
+                        date: dayjs(),
+                        time: dayjs(),
+                    }}
                 >
                     <div className="th-form-group">
                         <Form.Item label="วันที่บันทึกข้อมูล" name="date">
@@ -541,7 +546,7 @@ const THCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
                                     ]}
                                 >
-                                    <InputNumber style={{ width: '100%' }} placeholder="กรุณากรอกค่าที่วัดได้" step={0.01} />
+                                    <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าที่วัดได้" step={0.01} />
                                 </Form.Item>
                             )}
                         </div>

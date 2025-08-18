@@ -8,4 +8,5 @@ type Notification struct {
 	gorm.Model
 	Name string
 	UserID string
+	Alert bool
 }

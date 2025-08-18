@@ -21,9 +21,9 @@ const EnvironmentBlock = () => {
   const [centers, setCenters] = useState([
     { name: 'Chemical Waste', standard: '-', image: che, path: 'DatavizCHE' },
     { name: 'General Waste', standard: '-', image: gen, path: 'DatavizGEN' },
-    { name: 'Hazardous Waste', standard: '30', image: haz, path: 'DatavizHAZ' },
+    { name: 'Hazardous Waste', standard: '-', image: haz, path: 'DatavizHAZ' },
     { name: 'Infectious Waste', standard: '-', image: inf, path: 'DatavizINF' },
-    { name: 'Recycled Waste', standard: '20', image: rec, path: 'DatavizREC' },
+    { name: 'Recycled Waste', standard: '-', image: rec, path: 'DatavizREC' },
   ]);
 
   const getTooltip = (name: string) => {
@@ -32,35 +32,35 @@ const EnvironmentBlock = () => {
         return (
           <>
             <b>ขยะเคมี (Chemical Waste)</b><br />
-            มักมีสารเคมีอันตราย เช่น กรด-เบส จึงต้องวัดค่า
+            คือ ของเสียที่เกิดจากสารเคมีต่าง ๆ<br />ไม่ว่าจะอยู่ในรูปของแข็ง ของเหลว หรือก๊าซ
           </>
         );
       case 'General Waste':
         return (
           <>
             <b>ขยะทั่วไป (General Waste)</b><br />
-            มักมีเศษอาหารและสารอินทรีย์
+            คือ ขยะจากการใช้ประจำวัน<br />ที่ไม่เป็นพิษและไม่สามารถรีไซเคิลได้
           </>
         );
       case 'Hazardous Waste':
         return (
           <>
             <b>ขยะอันตราย (Hazardous Waste)</b><br />
-            อาจมีโลหะหนักหรือสารพิษ
+            คือ ขยะที่มีคุณสมบัติเป็นพิษ ติดไฟ<br />ระเบิด กัดกร่อน หรือก่อให้เกิดอันตราย
           </>
         );
       case 'Infectious Waste':
         return (
           <>
             <b>ขยะติดเชื้อ (Infectious Waste)</b><br />
-            มักมีของเหลวจากร่างกายหรือสารคัดหลั่ง
+            คือ ขยะที่มีเชื้อโรคหรือปนเปื้อนสารชีวภาพ<br />อาจก่อให้เกิดการแพร่กระจายของโรคได้
           </>
         );
       case 'Recycled Waste':
         return (
           <>
             <b>ขยะรีไซเคิล (Recycled Waste)</b><br />
-            บางประเภทเช่น ขวดน้ำ หรือภาชนะที่มีคราบน้ำมัน<br />
+            คือ ขยะที่สามารถนำกลับมาใช้ใหม่ได้<br />เช่น กระดาษ พลาสติก แก้ว และโลหะ
           </>
         );
     }
@@ -113,28 +113,30 @@ const EnvironmentBlock = () => {
 
   return (
     <div>
-      <div className="title-header">
-        <h1>ขยะ</h1>
-        <p>
-          โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
-        </p>
+      <div className="g-title-header">
+        <div>
+          <h1>ขยะ</h1>
+          <p>
+            โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
+          </p>
+        </div>
       </div>
       <div className='buttom-footer'>
-        <div className="wqc-grid">
+        <div className="g-wqc-grid">
           {centers.map((center, index) => (
             <Tooltip title={getTooltip(center.name)} overlayClassName="custom-tooltip" key={index}>
               <div
-                className="wqc-card clickable"
+                className="g-wqc-card clickable"
                 onClick={() => navigate(`/admin/data-visualization/garbage/${center.path}`)}
               >
-                <div className="wqc-info">
+                <div className="g-wqc-info">
                   <h3>{center.name}</h3>
                   <p>
                     มาตรฐาน <span>{center.standard}</span>
                   </p>
                 </div>
-                <div className="wqc-divider" />
-                <img src={center.image} alt={center.name} className="wqc-icon" />
+                <div className="g-wqc-divider" />
+                <img src={center.image} alt={center.name} className="g-wqc-icon" />
               </div>
             </Tooltip>
           ))}

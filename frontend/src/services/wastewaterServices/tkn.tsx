@@ -194,3 +194,25 @@ export const DeleteAllTKNRecordsByDate = async (
     return null;
   }
 };
+
+export const GetBeforeAfterTKN = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-beforeafter-tkn`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating TKN record:", error.response?.data || error.message);
+    return null;
+  }
+};

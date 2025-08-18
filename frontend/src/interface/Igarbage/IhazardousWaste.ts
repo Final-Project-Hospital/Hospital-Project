@@ -9,28 +9,24 @@ export interface HazardouscenterInterface {
   // TargetID?: number;
   UnitID?: number;
   CustomUnit?: string | null;
-  EmployeeID?: number;  
+  EmployeeID?: number;
 }
 
 export interface listHazardousInterface {
-    ID: number;
-    Date: string;
-    Quantity: number;
-    AADC: number;
-    MonthlyGarbage: number;
-    TotalSale: number;
-    Note: string;
-    EnvironmentID: number;
-    ParameterID: number;
-    TargetID: number;
-    UnitID: number;
-    EmployeeID: number;
-    MinTarget: number;
-    MiddleTarget: number;
-    MaxTarget: number;
-    UnitName: string;
-}
-
-export interface DeleteHazardousInterface {
-    ID: number;
+  ID: number;
+  Date: string;
+  Quantity: number;
+  AADC: number;
+  MonthlyGarbage: number;
+  TotalSale: number;
+  Note: string;
+  EnvironmentID: number;
+  ParameterID: number;
+  TargetID: number;
+  UnitID: number;
+  EmployeeID: number;
+  MinTarget: number;
+  MiddleTarget: number;
+  MaxTarget: number;
+  UnitName: string;
 }

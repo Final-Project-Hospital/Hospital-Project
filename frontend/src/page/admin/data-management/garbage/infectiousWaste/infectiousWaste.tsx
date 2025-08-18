@@ -186,14 +186,14 @@ const InfectiousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
       if (response.status === 201) {
         messageApi.success('บันทึกข้อมูลขยะติดเชื้อสำเร็จ');
-        form.resetFields();
+        form.resetFields();               // เคลียร์ฟอร์มทั้งหมด
         setIsOtherunitSelected(false);   // ซ่อนช่องกรอกหน่วยเอง
         setUseCustomTarget(false);       // ซ่อนช่องกรอก target เอง
         setCustomSingleTarget(undefined);
         setCustomMinTarget(undefined);
         setCustomMaxTarget(undefined);
         await delay(500);
-        await fetchInitialData();
+        await fetchInitialData()
         GetfirstrowInfectious();
         if (onSuccess) await onSuccess();
         onCancel?.();
