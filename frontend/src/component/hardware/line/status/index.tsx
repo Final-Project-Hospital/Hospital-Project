@@ -12,6 +12,7 @@ const Status = () => {
         body: "pt-0",
         header: "border-0",
       }}
+      style={{height: "100%"}}
       bordered={false}
     >
       <TicketGraph />

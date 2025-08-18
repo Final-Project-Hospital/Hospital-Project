@@ -4,10 +4,12 @@ import { MediaCard } from "../MediaCard/index";
 import { useEffect, useState } from "react";
 import { ListBuilding } from "../../../../services/hardware"; 
 import { BuildingInterface } from "../../../../interface/IBuilding";
+import { useNotificationContext } from "../../line/NotificationContext"; // ✅ ใช้ context
 
 const Building = () => {
   const { t } = useTranslation();
   const [count, setCount] = useState<number>(0);
+  const { reloadKey } = useNotificationContext(); // ✅ ฟัง reloadKey
 
   useEffect(() => {
     const fetchCount = async () => {
@@ -22,12 +24,12 @@ const Building = () => {
       }
     };
     fetchCount();
-  }, []);
+  }, [reloadKey]); 
 
   return (
     <MediaCard
-      icon={<MdLocationCity />} // ✅ เปลี่ยน icon อาคาร
-      title={count.toString()}   // ✅ จำนวนจริงจาก API
+      icon={<MdLocationCity />}
+      title={count.toString()}
       desc={t("อาคาร")}
       style={{ backgroundColor: "#13c2c2", color: "#fff" }}
       classNames={{ body: "p-4" }}

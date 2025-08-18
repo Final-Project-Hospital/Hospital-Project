@@ -425,6 +425,12 @@ func main() {
 		public.POST("/webhook/notification", hardware.WebhookNotification)
 		public.PATCH("/notifications/:id/alert", line.UpdateAlertByNotificationID)
 		public.GET("/notifications", line.ListNotification)
+		public.DELETE("/delete-notifications/:id", line.DeleteNotificationByID)
+		public.GET("/room-notifications", line.ListRoomNotification)
+		public.DELETE("/room-notifications/:id", line.DeleteRoomNotificationByNotificationID)
+		public.POST("/room-notifications", line.CreateRoomNotification)
+		public.PUT("/room-notification/:room_id/notification", line.UpdateNotificationIDByRoomID)
+
 
 		//report hardware
 		public.GET("/report-hardware", report.ListReportHardware)
@@ -441,6 +447,9 @@ func main() {
 
 		//Building
 		public.GET("/buildings", building.ListBuilding)
+		public.POST("/create-buildings", building.CreateBuilding)
+		public.PUT("/update-buildings/:id", building.UpdateBuildingByID)
+		public.DELETE("/delete-buildings/:id", building.DeleteBuildingByID)
 
 		// Sensorparameter
 		public.GET("/data-sensorparameter", sensordata.ListDataSensorParameter)
@@ -492,7 +501,7 @@ func main() {
 	})
 
 	r.Run("localhost:" + PORT)
-	// r.Run("0.0.0.0:" + PORT)
+	//r.Run("0.0.0.0:" + PORT)
 
 }
 
