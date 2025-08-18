@@ -83,7 +83,7 @@ const RecycledWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
         Quantity: values.quantity,
         MonthlyGarbage: values.monthlyGarbage,
         AverageDailyGarbage: values.average_daily_garbage,
-        TotalSale: values.totalSale ?? 0,
+        TotalSale: values.totalSale,
         Note: values.note ?? '',
         UnitID: unitID,
         CustomUnit: customUnitValue,
@@ -98,7 +98,7 @@ const RecycledWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
       if (response.status === 201) {
         messageApi.success('บันทึกข้อมูลขยะรีไซเคิลสำเร็จ');
         form.resetFields();
-        setIsOtherunitSelected(false); 
+        setIsOtherunitSelected(false);
         await delay(500);
         await fetchInitialData();
         await GetfirstrowRecycled();
@@ -260,7 +260,7 @@ const RecycledWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             <div className="recy-from-mini">
               <Form.Item
                 label="ยอดขาย"
-                name="total_sale"
+                name="totalSale"
                 rules={[
                   {
                     validator: async (_, value) => {

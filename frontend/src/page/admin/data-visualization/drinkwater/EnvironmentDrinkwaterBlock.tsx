@@ -1,4 +1,4 @@
-import '../wastewater/EnvironmentWastewaterBlock.css';
+import './EnvironmentDrinkwaterBlock.css';
 import { Tooltip } from 'antd';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';

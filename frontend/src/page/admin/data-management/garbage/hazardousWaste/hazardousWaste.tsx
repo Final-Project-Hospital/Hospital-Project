@@ -98,7 +98,7 @@ const HazardousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
       if (response.status === 201) {
         messageApi.success('บันทึกข้อมูลขยะอันตรายสำเร็จ');
         form.resetFields();
-        setIsOtherunitSelected(false); 
+        setIsOtherunitSelected(false);
         await delay(500);
         await fetchInitialData();
         await GetfirstrowHazardous();
