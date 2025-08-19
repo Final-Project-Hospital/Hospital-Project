@@ -7,6 +7,7 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/building"
 	"github.com/Tawunchai/hospital-project/controller/calendar"
 	"github.com/Tawunchai/hospital-project/controller/line"
+	"github.com/Tawunchai/hospital-project/controller/predict"
 	"github.com/Tawunchai/hospital-project/controller/report"
 	"github.com/Tawunchai/hospital-project/controller/wastewater/bodcenter"
 	"github.com/Tawunchai/hospital-project/controller/wastewater/fogcenter"
@@ -62,6 +63,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+
+
 const PORT = "8000"
 
 func main() {
@@ -89,6 +92,7 @@ func main() {
 
 	public := r.Group("")
 	{
+		public.POST("/api/predict", predict.Predict)
 		public.GET("/users", user.ListUsers)
 		public.GET("/uploads/*filename", user.ServeImage)
 		public.GET("/user-data/:EmployeeID", user.GetDataByUserID)

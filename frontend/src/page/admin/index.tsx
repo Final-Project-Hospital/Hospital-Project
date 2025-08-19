@@ -15,6 +15,9 @@ import {
 } from "../../services/DashboardService";
 import "./dashboard.css";
 
+import { fetchPrediction } from "../../services/predict";
+import { PredictionOutput } from "../../interfaces/IPredict";
+
 const { Option } = Select;
 
 interface AlertItem {
@@ -45,6 +48,26 @@ const AdminDashboard: React.FC = () => {
 
   // state ใหม่: alert data
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
+
+  const [predictionData, setPredictionData] = useState<PredictionOutput | null>(null);
+  const [predictionLoading, setPredictionLoading] = useState<boolean>(true);
+  const [predictionError, setPredictionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getPrediction = async () => {
+      // เรียก API เฉพาะเมื่อหน้าเพจโหลดครั้งแรกเท่านั้น
+      try {
+        const data = await fetchPrediction();
+        setPredictionData(data);
+      } catch (err: any) {
+        setPredictionError(err.message);
+      } finally {
+        setPredictionLoading(false);
+      }
+    };
+    // เรียกใช้ฟังก์ชันเมื่อ Component ถูก Mount
+    getPrediction();
+  }, []);
 
   // ฟอร์แมตวันที่ใช้ส่ง API
   const formattedDate = date ? dayjs(date).format(
@@ -212,7 +235,25 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
         </div>
-
+        <div style={{
+          backgroundColor: '#e6f7ff',
+          border: '1px solid #91d5ff',
+          padding: '20px',
+          borderRadius: '8px',
+          textAlign: 'center',
+          marginBottom: '16px'
+        }}>
+          <h3>ค่า pH น้ำเสียก่อนบำบัด ที่คาดการณ์สำหรับเดือนถัดไป</h3>
+          {predictionLoading ? (
+            <p>กำลังคำนวณ...</p>
+          ) : predictionError ? (
+            <p style={{ color: 'red' }}>ไม่สามารถดึงค่าทำนายได้: {predictionError}</p>
+          ) : (
+            <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#0050b3' }}>
+              {predictionData?.prediction.toFixed(3)}
+            </div>
+          )}
+        </div>
         {/* CONTROLS */}
         <Row gutter={16} style={{ marginBottom: 16 }}>
           <Col>
