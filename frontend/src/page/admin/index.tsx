@@ -18,6 +18,9 @@ import ApexChart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import { Maximize2 } from "lucide-react";
 
+import { fetchPrediction } from "../../services/predict";
+import { PredictionOutput } from "../../interface/IPredict";
+
 import {
   GetEnvironmentalRecords,
   GetEnvironmentalEfficiency,
@@ -26,9 +29,6 @@ import {
   type RecordItem,
   type EfficiencyItem,
 } from "../../services/DashboardService";
-
-import { fetchPrediction } from "../../services/predict";
-import { PredictionOutput } from "../../interface/IPredict";
 
 import "./dashboard.css";
 import "./skydash-override.css";
@@ -103,11 +103,13 @@ const AdminDashboard: React.FC = () => {
     "dateRange"
   );
   const [dateRange, setDateRange] = useState<Dayjs[] | null>(null);
-
+  
   const [predictionData, setPredictionData] = useState<PredictionOutput | null>(null);
   const [predictionLoading, setPredictionLoading] = useState<boolean>(true);
   const [predictionError, setPredictionError] = useState<string | null>(null);
 
+
+  // load meta + records (ครั้งเดียว)
   useEffect(() => {
     const getPrediction = async () => {
       // เรียก API เฉพาะเมื่อหน้าเพจโหลดครั้งแรกเท่านั้น
@@ -120,18 +122,6 @@ const AdminDashboard: React.FC = () => {
         setPredictionLoading(false);
       }
     };
-    // เรียกใช้ฟังก์ชันเมื่อ Component ถูก Mount
-    getPrediction();
-  }, []);
-
-  // ฟอร์แมตวันที่ใช้ส่ง API
-  const formattedDate = date ? dayjs(date).format(
-    dateType === "year" ? "YYYY" :
-      dateType === "month" ? "YYYY-MM" : "YYYY-MM-DD") : undefined;
-
-  // โหลด environmental records (เหมือนเดิม)
-  // load meta + records (ครั้งเดียว)
-  useEffect(() => {
     const run = async () => {
       try {
         const m = await GetEnvironmentalMeta();
@@ -163,6 +153,7 @@ const AdminDashboard: React.FC = () => {
       setEfficiency(eff ?? null);
     };
     run();
+    getPrediction();
   }, []);
 
   // derived
@@ -349,42 +340,6 @@ const AdminDashboard: React.FC = () => {
             </div>
           )}
         </div>
-        {/* CONTROLS */}
-        <Row gutter={16} style={{ marginBottom: 16 }}>
-          <Col>
-            <Select value={view} onChange={setView} style={{ width: 160 }}>
-              <Option value="before">น้ำก่อนบำบัด</Option>
-              <Option value="after">น้ำหลังบำบัด</Option>
-              <Option value="compare">เปรียบเทียบก่อน–หลัง</Option>
-            </Select>
-          </Col>
-          <Col>
-            <Select value={selectedParam} onChange={setSelectedParam} style={{ width: 180 }}>
-              {params.map((p) => (
-                <Option key={p}>{p}</Option>
-              ))}
-            </Select>
-          </Col>
-          <Col>
-            <Select value={dateType} onChange={(v) => { setDateType(v); setDate(null); }} style={{ width: 120 }}>
-              <Option value="date">วัน</Option>
-              <Option value="month">เดือน</Option>
-              <Option value="year">ปี</Option>
-            </Select>
-          </Col>
-          <Col>
-            {dateType === "date" && <DatePicker value={date} onChange={setDate} />}
-            {dateType === "month" && <DatePicker picker="month" value={date} onChange={setDate} />}
-            {dateType === "year" && <DatePicker picker="year" value={date} onChange={setDate} />}
-          </Col>
-          <Col>
-            <Select value={chartType} onChange={setChartType} style={{ width: 110 }}>
-              <Option value="line">กราฟเส้น</Option>
-              <Option value="bar">กราฟแท่ง</Option>
-            </Select>
-          </Col>
-        </Row>
-
         {/* Controls Card */}
         <Card className="dashboard-controls-card" bordered={false}>
           <Row
