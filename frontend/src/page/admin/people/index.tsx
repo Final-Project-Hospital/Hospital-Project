@@ -65,40 +65,40 @@ export default function UserManagement() {
     }
   };
 
-  const resolveCurrentUserId = async (): Promise<number | null> => {
-    // 1) จาก localStorage ตรง ๆ
-    const stored = localStorage.getItem("employeeId");
-    if (stored && !Number.isNaN(Number(stored))) return Number(stored);
+  // const resolveCurrentUserId = async (): Promise<number | null> => {
+  //   // 1) จาก localStorage ตรง ๆ
+  //   const stored = localStorage.getItem("employeeId");
+  //   if (stored && !Number.isNaN(Number(stored))) return Number(stored);
 
-    // 2) ถอดจาก JWT
-    const token = localStorage.getItem("token") || "";
-    if (token) {
-      const payload = decodeJwtPayload(token);
-      const candidateKeys = ["id", "ID", "userId", "userID", "employeeId", "EmployeeID", "sub"];
-      for (const k of candidateKeys) {
-        const v = payload?.[k];
-        const num = typeof v === "string" ? Number(v) : v;
-        if (typeof num === "number" && !Number.isNaN(num)) return num;
-      }
-    }
+  //   // 2) ถอดจาก JWT
+  //   const token = localStorage.getItem("token") || "";
+  //   if (token) {
+  //     const payload = decodeJwtPayload(token);
+  //     const candidateKeys = ["id", "ID", "userId", "userID", "employeeId", "EmployeeID", "sub"];
+  //     for (const k of candidateKeys) {
+  //       const v = payload?.[k];
+  //       const num = typeof v === "string" ? Number(v) : v;
+  //       if (typeof num === "number" && !Number.isNaN(num)) return num;
+  //     }
+  //   }
 
-    // 3) fallback: /api/me (ต้องแนบ Authorization)
-    try {
-      const res = await axios.get("/api/me", {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-      const me = res.data || {};
-      const candidateKeys = ["id", "ID", "userId", "userID", "employeeId", "EmployeeID"];
-      for (const k of candidateKeys) {
-        const v = me?.[k];
-        const num = typeof v === "string" ? Number(v) : v;
-        if (typeof num === "number" && !Number.isNaN(num)) return num;
-      }
-    } catch {
-      // เงียบไว้พอ
-    }
-    return null;
-  };
+  //   // 3) fallback: /api/me (ต้องแนบ Authorization)
+  //   try {
+  //     const res = await axios.get("/api/me", {
+  //       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  //     });
+  //     const me = res.data || {};
+  //     const candidateKeys = ["id", "ID", "userId", "userID", "employeeId", "EmployeeID"];
+  //     for (const k of candidateKeys) {
+  //       const v = me?.[k];
+  //       const num = typeof v === "string" ? Number(v) : v;
+  //       if (typeof num === "number" && !Number.isNaN(num)) return num;
+  //     }
+  //   } catch {
+  //     // เงียบไว้พอ
+  //   }
+  //   return null;
+  // };
 
   // ---------- data fetching ----------
   const fetchEmployees = async () => {
@@ -127,15 +127,24 @@ export default function UserManagement() {
       message.error("ไม่สามารถโหลดตำแหน่งได้");
     }
   };
+  // เพิ่มไว้เหนือ useEffect หรือตรงบนๆ component
+const getCurrentEmployeeId = (): number | null => {
+  const raw =
+    localStorage.getItem("employeeid") ??
+    localStorage.getItem("employeeId") ??
+    "";
+  const num = Number(raw);
+  return Number.isFinite(num) ? num : null;
+};
+
 
   useEffect(() => {
-    (async () => {
-      const uid = await resolveCurrentUserId();
-      setCurrentUserId(uid);
-      fetchEmployees();
-      fetchPositions();
-    })();
-  }, []);
+  const uid = getCurrentEmployeeId();
+  setCurrentUserId(uid);
+  fetchEmployees();
+  fetchPositions();
+}, []);
+
 
   // ---------- actions ----------
   const openEdit = (emp: EmployeeInterface) => {
@@ -195,35 +204,35 @@ export default function UserManagement() {
       },
     },
     {
-      title: "จัดการ",
-    key: "action",
-    render: (_, record) => {
-      const isSelf = currentUserId != null && record.ID === currentUserId; // ✅ เช็คว่าเป็นตัวเองไหม
-      return (
-        <Space wrap>
-          <Button size="small" onClick={() => openEdit(record)}>
-            แก้ไข
-          </Button>
+  title: "จัดการ",
+  key: "action",
+  render: (_, record) => {
+    const isSelf = currentUserId != null && record.ID === currentUserId;
+    return (
+      <Space wrap>
+        <Button size="small" onClick={() => openEdit(record)}>
+          แก้ไข
+        </Button>
 
-          {!isSelf && ( // ✅ ซ่อนปุ่มลบถ้าเป็นตัวเอง
-            <Button
-              size="small"
-              danger
-              onClick={() => handleDelete(record.ID!)} // ✅ ใช้ฟังก์ชันที่คุณมี
-            >
-              ลบ
-            </Button>
-            )}
-          </Space>
-        );
-      },
-    },
+        {!isSelf && (
+          <Button
+            size="small"
+            danger
+            onClick={() => handleDelete(record.ID!)}
+          >
+            ลบ
+          </Button>
+        )}
+      </Space>
+    );
+  },
+},
   ];
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="title-header">
-        <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-4 py-6 rounded-b-3xl mb-1">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-lg sm:text-xl md:text-2xl font-semibold drop-shadow-md">
               จัดการสิทธิ์ผู้ใช้
