@@ -16,7 +16,7 @@ func DB() *gorm.DB {
 }
 
 func ConnectionDB() {
-	dsn := "host=localhost user=postgres password=123456 dbname=HospitalDB port=5432 sslmode=disable TimeZone=Asia/Bangkok"
+	dsn := "host=localhost user=postgres password=1234 dbname=hospital port=5432 sslmode=disable TimeZone=Asia/Bangkok"
 
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Error),
