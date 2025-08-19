@@ -5,7 +5,11 @@ import { useEffect, useState } from "react";
 import { ListRoom } from "../../../../services/hardware";
 import { RoomInterface } from "../../../../interface/IRoom";
 
-const Room = () => {
+interface RoomProps {
+  reloadKey?: number; // ✅ รับ prop reloadKey
+}
+
+const Room: React.FC<RoomProps> = ({ reloadKey }) => {
   const { t } = useTranslation();
   const [count, setCount] = useState<number>(0);
 
@@ -15,19 +19,19 @@ const Room = () => {
         const res = await ListRoom();
         if (res) {
           const rooms = res as RoomInterface[];
-          setCount(rooms.length); // ✅ นับจำนวนห้อง
+          setCount(rooms.length); 
         }
       } catch (error) {
         console.error("Error fetching room count:", error);
       }
     };
     fetchCount();
-  }, []);
+  }, [reloadKey]); 
 
   return (
     <MediaCard
-      icon={<MdMeetingRoom  />}
-      title={count.toString()} // ✅ ใช้จำนวนห้องจริง
+      icon={<MdMeetingRoom />}
+      title={count.toString()}
       desc={t("ห้อง")}
       style={{ backgroundColor: "#ffa940", color: "#fff" }}
       classNames={{ body: "p-4" }}

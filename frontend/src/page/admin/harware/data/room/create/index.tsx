@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Input, Select, Button, message } from 'antd';
+import React, { useEffect, useState } from "react";
+import { Input, Select, Button, message } from "antd";
 import {
   FaMicroscope,
   FaVial,
@@ -16,36 +16,39 @@ import {
   FaStethoscope,
   FaThermometerHalf,
   FaRadiation,
-} from 'react-icons/fa';
-import { IconType } from 'react-icons';
+} from "react-icons/fa";
+import { IconType } from "react-icons";
 import {
   CreateRoom,
   ListBuilding,
   ListHardware,
   ListRoom,
-} from '../../../../../../services/hardware';
-import { RoomInterface } from '../../../../../../interface/IRoom';
-import { BuildingInterface } from '../../../../../../interface/IBuilding';
-import { HardwareInterface } from '../../../../../../interface/IHardware';
+  ListNotification,
+  CreateRoomNotification
+} from "../../../../../../services/hardware";
+import { RoomInterface } from "../../../../../../interface/IRoom";
+import { BuildingInterface } from "../../../../../../interface/IBuilding";
+import { HardwareInterface } from "../../../../../../interface/IHardware";
+import { NotificationInterface } from "../../../../../../interface/INotification";
 
 const { Option } = Select;
 
 const iconOptions: { name: string; label: string; component: IconType }[] = [
-  { name: 'FaMicroscope', label: 'กล้องจุลทรรศน์', component: FaMicroscope },
-  { name: 'FaVial', label: 'ขวดทดลอง', component: FaVial },
-  { name: 'FaFlask', label: 'ขวดรูปชมพู่', component: FaFlask },
-  { name: 'FaLaptopMedical', label: 'โน้ตบุ๊กการแพทย์', component: FaLaptopMedical },
-  { name: 'FaBiohazard', label: 'สัญลักษณ์ชีวภาพ', component: FaBiohazard },
-  { name: 'FaDna', label: 'ดีเอ็นเอ', component: FaDna },
-  { name: 'FaSyringe', label: 'เข็มฉีดยา', component: FaSyringe },
-  { name: 'FaNotesMedical', label: 'สมุดบันทึกการแพทย์', component: FaNotesMedical },
-  { name: 'FaProcedures', label: 'ผู้ป่วยบนเตียง', component: FaProcedures },
-  { name: 'FaBriefcaseMedical', label: 'กระเป๋าพยาบาล', component: FaBriefcaseMedical },
-  { name: 'FaCapsules', label: 'แคปซูลยา', component: FaCapsules },
-  { name: 'FaHeartbeat', label: 'หัวใจเต้น', component: FaHeartbeat },
-  { name: 'FaStethoscope', label: 'หูฟังแพทย์', component: FaStethoscope },
-  { name: 'FaThermometerHalf', label: 'เทอร์โมมิเตอร์', component: FaThermometerHalf },
-  { name: 'FaRadiation', label: 'สัญลักษณ์รังสี', component: FaRadiation },
+  { name: "FaMicroscope", label: "กล้องจุลทรรศน์", component: FaMicroscope },
+  { name: "FaVial", label: "ขวดทดลอง", component: FaVial },
+  { name: "FaFlask", label: "ขวดรูปชมพู่", component: FaFlask },
+  { name: "FaLaptopMedical", label: "โน้ตบุ๊กการแพทย์", component: FaLaptopMedical },
+  { name: "FaBiohazard", label: "สัญลักษณ์ชีวภาพ", component: FaBiohazard },
+  { name: "FaDna", label: "ดีเอ็นเอ", component: FaDna },
+  { name: "FaSyringe", label: "เข็มฉีดยา", component: FaSyringe },
+  { name: "FaNotesMedical", label: "สมุดบันทึกการแพทย์", component: FaNotesMedical },
+  { name: "FaProcedures", label: "ผู้ป่วยบนเตียง", component: FaProcedures },
+  { name: "FaBriefcaseMedical", label: "กระเป๋าพยาบาล", component: FaBriefcaseMedical },
+  { name: "FaCapsules", label: "แคปซูลยา", component: FaCapsules },
+  { name: "FaHeartbeat", label: "หัวใจเต้น", component: FaHeartbeat },
+  { name: "FaStethoscope", label: "หูฟังแพทย์", component: FaStethoscope },
+  { name: "FaThermometerHalf", label: "เทอร์โมมิเตอร์", component: FaThermometerHalf },
+  { name: "FaRadiation", label: "สัญลักษณ์รังสี", component: FaRadiation },
 ];
 
 interface Props {
@@ -55,11 +58,14 @@ interface Props {
 }
 
 const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
+  const [employeeid, setEmployeeid] = useState<number>(
+    Number(localStorage.getItem("employeeid")) || 0
+  );
   const [room, setRoom] = useState<RoomInterface>({
-    RoomName: '',
-    Floor: '',
-    Employee: { ID: 1 },
-    Icon: 'FaMicroscope',
+    RoomName: "",
+    Floor: "",
+    Employee: { ID: employeeid },
+    Icon: "FaMicroscope",
   });
 
   const [buildings, setBuildings] = useState<BuildingInterface[]>([]);
@@ -67,27 +73,39 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
   const [usedHardwareIDs, setUsedHardwareIDs] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const selectedIcon = iconOptions.find(i => i.name === room.Icon)?.component;
+  const [notifications, setNotifications] = useState<NotificationInterface[]>([]);
+  const [selectedNotificationIDs, setSelectedNotificationIDs] = useState<number[]>([]); // ✅ multiple select
+
+  const selectedIcon = iconOptions.find((i) => i.name === room.Icon)?.component;
 
   useEffect(() => {
+    setEmployeeid(Number(localStorage.getItem("employeeid")));
     const fetchData = async () => {
       const b = await ListBuilding();
       const h = await ListHardware();
       const r = await ListRoom();
+      const n = await ListNotification(); // ✅ load notifications
 
       if (b) setBuildings(b);
       if (h) setAllHardwares(h);
+      if (n) setNotifications(n);
 
       if (r) {
         const used = r
-          .map(room => room.Hardware?.ID)
+          .map((room) => room.Hardware?.ID)
           .filter((id): id is number => id !== undefined);
         setUsedHardwareIDs(used);
       }
     };
 
     if (show) {
-      setRoom({ RoomName: '', Floor: '', Employee: { ID: 1 }, Icon: 'FaMicroscope' });
+      setRoom({
+        RoomName: "",
+        Floor: "",
+        Employee: { ID: employeeid },
+        Icon: "FaMicroscope",
+      });
+      setSelectedNotificationIDs([]);
       fetchData();
     }
   }, [show]);
@@ -101,17 +119,17 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
 
   const handleSubmit = async () => {
     if (!room.RoomName || !room.Floor || !room.Building?.ID || !room.Icon) {
-      message.warning('กรุณากรอกข้อมูลให้ครบทุกช่อง');
+      message.warning("กรุณากรอกข้อมูลให้ครบทุกช่อง");
       return;
     }
 
     if (availableHardwares.length === 0) {
-      message.warning('ไม่มีอุปกรณ์เซนเซอร์พร้อมใช้งาน');
+      message.warning("ไม่มีอุปกรณ์เซนเซอร์พร้อมใช้งาน");
       return;
     }
 
     if (!room.Hardware?.ID) {
-      message.warning('กรุณาเลือกอุปกรณ์เซนเซอร์');
+      message.warning("กรุณาเลือกอุปกรณ์เซนเซอร์");
       return;
     }
 
@@ -120,28 +138,40 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
       RoomName: room.RoomName,
       Floor: room.Floor,
       Building: buildings.find((b) => b.ID === Number(room.Building?.ID)),
-      Employee: { ID: 1 },
+      Employee: { ID: employeeid },
       Hardware: allHardwares.find((h) => h.ID === Number(room.Hardware?.ID)),
       Icon: room.Icon,
     };
-    const res = await CreateRoom(payload);
-    setLoading(false);
 
-    if (res) {
-      message.success('บันทึกสำเร็จ');
-      onCreateSuccess()
-      onClose()
+    const res = await CreateRoom(payload);
+
+    if (res && res.ID) {
+      // ✅ เพิ่มผู้รับผิดชอบเข้าไปด้วย
+      for (const nid of selectedNotificationIDs) {
+        await CreateRoomNotification({ room_id: res.ID, notification_id: nid });
+      }
+      message.success("บันทึกสำเร็จ");
+      onCreateSuccess();
+      onClose();
     } else {
-      message.error('เกิดข้อผิดพลาดในการบันทึก');
+      message.error("เกิดข้อผิดพลาดในการบันทึก");
     }
+
+    setLoading(false);
   };
 
   const handleReset = () => {
-    setRoom({ RoomName: '', Floor: '', Employee: { ID: 1 }, Icon: 'FaMicroscope' });
+    setRoom({
+      RoomName: "",
+      Floor: "",
+      Employee: { ID: employeeid },
+      Icon: "FaMicroscope",
+    });
+    setSelectedNotificationIDs([]);
   };
 
   const availableHardwares = allHardwares.filter(
-    hw => !usedHardwareIDs.includes(hw.ID!)
+    (hw) => !usedHardwareIDs.includes(hw.ID!)
   );
 
   if (!show) return null;
@@ -156,7 +186,12 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
         {/* Icon Preview */}
         <div className="flex justify-center mb-6">
           <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-md border border-teal-600">
-            {selectedIcon ? React.createElement(selectedIcon, { size: 40, className: "text-teal-600" }) : null}
+            {selectedIcon
+              ? React.createElement(selectedIcon, {
+                  size: 40,
+                  className: "text-teal-600",
+                })
+              : null}
           </div>
         </div>
 
@@ -165,14 +200,14 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
           <Input
             placeholder="ชื่อห้อง"
             value={room.RoomName}
-            onChange={(e) => handleChange('RoomName', e.target.value)}
+            onChange={(e) => handleChange("RoomName", e.target.value)}
             allowClear
           />
 
           <Select
             placeholder="เลือกเซนเซอร์"
             value={room.Hardware?.ID || undefined}
-            onChange={(val) => handleChange('Hardware', { ID: val })}
+            onChange={(val) => handleChange("Hardware", { ID: val })}
             allowClear
             className="w-full"
           >
@@ -194,8 +229,8 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
             value={room.Floor}
             maxLength={2}
             onChange={(e) => {
-              const val = e.target.value.replace(/[^0-9]/g, '');
-              handleChange('Floor', val);
+              const val = e.target.value.replace(/[^0-9]/g, "");
+              handleChange("Floor", val);
             }}
             allowClear
           />
@@ -203,7 +238,7 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
           <Select
             placeholder="เลือกอาคาร"
             value={room.Building?.ID || undefined}
-            onChange={(val) => handleChange('Building', { ID: val })}
+            onChange={(val) => handleChange("Building", { ID: val })}
             allowClear
             className="w-full"
           >
@@ -217,7 +252,7 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
           <Select
             placeholder="เลือกไอคอน"
             value={room.Icon || undefined}
-            onChange={(val) => handleChange('Icon', val)}
+            onChange={(val) => handleChange("Icon", val)}
             allowClear
             className="w-full col-span-2"
             showSearch
@@ -231,6 +266,22 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
                   </div>
                   <span className="text-gray-800 font-medium">{label}</span>
                 </div>
+              </Option>
+            ))}
+          </Select>
+
+          {/* ✅ เลือกผู้รับผิดชอบ */}
+          <Select
+            mode="multiple"
+            placeholder="เลือกผู้รับผิดชอบ"
+            value={selectedNotificationIDs}
+            onChange={(val) => setSelectedNotificationIDs(val)}
+            className="w-full col-span-2"
+            allowClear
+          >
+            {notifications.map((n) => (
+              <Option key={n.ID} value={n.ID}>
+                {n.Name}
               </Option>
             ))}
           </Select>

@@ -28,7 +28,7 @@ const Line = () => {
     <MediaCard
       icon={<RiTeamLine />}
       title={count.toString()} 
-      desc={t("บัญชีแอคเคาท์")}
+      desc={t("บัญชี")}
       classNames={{ body: "p-4" }}
       style={{ backgroundColor: "#20c997", color: "#fff" }}
     />

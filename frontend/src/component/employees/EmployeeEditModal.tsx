@@ -1,7 +1,7 @@
 // components/employees/EmployeeEditModal.tsx
-import React, { useEffect, useMemo, useState } from "react";
-import { Modal, Form, Input, message, Row, Col, Select, Button } from "antd";
-import { CameraOutlined } from "@ant-design/icons";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Modal, Form, Input, message, Row, Col, Select } from "antd";
+import { CameraOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { EmployeeInterface } from "../../interface/IEmployee";
 import { PositionInterface } from "../../interface/IPosition";
@@ -12,18 +12,28 @@ type Props = {
   onSuccess: () => void;
   employee: EmployeeInterface | null;
   positions: PositionInterface[];
+  /** ซ่อนการเปลี่ยนสิทธิ์และห้ามลบบัญชีตัวเองให้ส่งมาจากหน้า UserManagement */
+  isSelf?: boolean;
 };
 
 const { Option } = Select;
 
-const EmployeeEditModal: React.FC<Props> = ({ open, onClose, onSuccess, employee, positions }) => {
+const EmployeeEditModal: React.FC<Props> = ({
+  open,
+  onClose,
+  onSuccess,
+  employee,
+  positions,
+  isSelf = false,
+}) => {
   const [form] = Form.useForm();
   const [uploadFile, setUploadFile] = useState<File | undefined>();
   const [loading, setLoading] = useState(false);
 
-  // URL สำหรับแสดงรูปตัวอย่าง:
-  // ถ้ามีไฟล์ใหม่ => ใช้ URL.createObjectURL(uploadFile)
-  // ไม่งั้น => ใช้รูปเดิมของพนักงาน (employee.Profile)
+  // เก็บค่าเริ่มต้นไว้เทียบ (ใช้ ref เพื่อไม่ทำให้ re-render)
+  const initialValuesRef = useRef<Record<string, any> | null>(null);
+
+  // URL สำหรับแสดงรูปตัวอย่าง (ไฟล์ใหม่ > รูปเดิม)
   const previewUrl = useMemo(() => {
     if (uploadFile) return URL.createObjectURL(uploadFile);
     return employee?.Profile || "";
@@ -32,15 +42,18 @@ const EmployeeEditModal: React.FC<Props> = ({ open, onClose, onSuccess, employee
   useEffect(() => {
     if (!open || !employee) return;
 
-    form.setFieldsValue({
-      firstName: employee.FirstName,
-      lastName: employee.LastName,
-      email: employee.Email,
-      phone: employee.Phone,
-      positionID: employee.Position?.ID,
-      roleID: employee.Role?.ID,
+    const init = {
+      firstName: employee.FirstName ?? "",
+      lastName: employee.LastName ?? "",
+      email: employee.Email ?? "",
+      phone: employee.Phone ?? "",
+      positionID: employee.Position?.ID ?? undefined,
+      roleID: employee.Role?.ID ?? undefined,
       password: undefined, // เว้นว่างถ้าไม่เปลี่ยน
-    });
+    };
+
+    form.setFieldsValue(init);
+    initialValuesRef.current = init;
 
     // เคลียร์ไฟล์ใหม่ทุกครั้งที่เปิด modal/เปลี่ยนพนักงาน
     setUploadFile(undefined);
@@ -54,7 +67,6 @@ const EmployeeEditModal: React.FC<Props> = ({ open, onClose, onSuccess, employee
 
   const handleFileChange = (file?: File) => {
     if (!file) {
-      // กดลบไฟล์ใหม่ -> กลับไปใช้รูปเดิม (ถ้ามี)
       setUploadFile(undefined);
       return;
     }
@@ -71,61 +83,194 @@ const EmployeeEditModal: React.FC<Props> = ({ open, onClose, onSuccess, employee
     setUploadFile(file);
   };
 
+  // helper แปลง id -> label
+  const roleLabelById = (id?: number) =>
+    ({ 1: "Admin", 2: "Employee", 3: "Guest" } as Record<number, string>)[
+      id ?? -1
+    ] || "-";
+
+  const positionLabelById = (id?: number) => {
+    if (!id && id !== 0) return "-";
+    const p = positions.find((x) => (x as any).ID === id);
+    return p?.Position ?? String(id);
+  };
+
+  const equalish = (a: any, b: any) => String(a ?? "") === String(b ?? "");
+
+  // ตรวจว่ามีการแก้ไขหรือไม่ (ใช้สำหรับกันปิดโดยไม่ได้บันทึก)
+  const hasUnsavedChanges = () => {
+    const init = initialValuesRef.current || {};
+    const cur = form.getFieldsValue();
+    const keys = Object.keys(init);
+    for (const k of keys) {
+      if (!equalish(cur[k], init[k])) return true;
+    }
+    if (cur.password && String(cur.password).length > 0) return true; // ใส่รหัสผ่านใหม่
+    if (uploadFile) return true; // เปลี่ยนรูป
+    return false;
+  };
+
+  // เด้งยืนยันเมื่อจะปิด (X, ยกเลิก, Esc)
+  const handleCancel = () => {
+    if (!hasUnsavedChanges()) {
+      onClose();
+      return;
+    }
+    Modal.confirm({
+      title: "ยังไม่ได้บันทึก",
+      icon: <ExclamationCircleOutlined />,
+      content: "คุณมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก ต้องการปิดหน้าต่างนี้หรือไม่?",
+      okText: "ปิดโดยไม่บันทึก",
+      cancelText: "กลับไปแก้ต่อ",
+      okButtonProps: { danger: true },
+      onOk: () => onClose(),
+    });
+  };
+
+  // เด้งยืนยันก่อนบันทึก + สรุป diff ที่เปลี่ยน
   const handleSubmit = async () => {
     if (!employee?.ID) return;
     try {
       const values = await form.validateFields();
-      const token = localStorage.getItem("token");
-      if (!token) return message.error("กรุณาเข้าสู่ระบบก่อน");
 
-      const formData = new FormData();
-      // แนบเฉพาะฟิลด์ที่มีค่า
-      Object.entries(values).forEach(([k, v]) => {
-        if (v !== undefined && v !== null && v !== "") {
-          formData.append(k, String(v));
-        }
-      });
+      // === สร้าง diff ===
+      const changes: Array<{ key: string; label: string; oldVal: string; newVal: string }> = [];
+      const pushIfChanged = (
+        key: string,
+        label: string,
+        oldV: any,
+        newV: any,
+        fmt?: (v: any) => string
+      ) => {
+        const f = (v: any) => (fmt ? fmt(v) : (v ?? "") + "");
+        if (f(oldV) !== f(newV)) changes.push({ key, label, oldVal: f(oldV) || "-", newVal: f(newV) || "-" });
+      };
 
-      // ถ้าอัปโหลดไฟล์ใหม่ -> แนบไฟล์ใหม่ไป
-      if (uploadFile) {
-        formData.append("profile", uploadFile);
+      pushIfChanged("firstName", "ชื่อ", employee.FirstName, values.firstName);
+      pushIfChanged("lastName", "นามสกุล", employee.LastName, values.lastName);
+      pushIfChanged("email", "อีเมล", employee.Email, values.email);
+      pushIfChanged("phone", "เบอร์โทร", employee.Phone, values.phone);
+      pushIfChanged(
+        "positionID",
+        "ตำแหน่ง",
+        employee.Position?.ID,
+        values.positionID,
+        (v) => positionLabelById(Number(v))
+      );
+
+      if (!isSelf) {
+        pushIfChanged(
+          "roleID",
+          "สิทธิ์",
+          employee.Role?.ID,
+          values.roleID,
+          (v) => roleLabelById(Number(v))
+        );
       }
-      // ถ้าไม่แนบ -> backend ควรตีความว่า "คงรูปเดิม"
 
-      setLoading(true);
-      await axios.put(`/api/employees/${employee.ID}`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
+      if (values.password && String(values.password).length > 0) {
+        changes.push({
+          key: "password",
+          label: "รหัสผ่าน",
+          oldVal: "—",
+          newVal: "จะถูกเปลี่ยน (ไม่แสดงค่า)",
+        });
+      }
+      if (uploadFile) {
+        changes.push({
+          key: "profile",
+          label: "รูปโปรไฟล์",
+          oldVal: employee.Profile ? "มีรูปเดิม" : "—",
+          newVal: `อัปโหลดใหม่: ${uploadFile.name}`,
+        });
+      }
+
+      if (changes.length === 0) {
+        Modal.info({
+          title: "ไม่มีการเปลี่ยนแปลง",
+          content: "คุณยังไม่ได้แก้ไขข้อมูลใด ๆ",
+          okText: "ตกลง",
+        });
+        return;
+      }
+
+      const DiffView = (
+        <div>
+          <div className="mb-2">โปรดตรวจสอบความเปลี่ยนแปลงก่อนบันทึก:</div>
+          <ul style={{ paddingLeft: 18, margin: 0 }}>
+            {changes.map((c) => (
+              <li key={c.key} style={{ marginBottom: 6, lineHeight: 1.4 }}>
+                <b>{c.label}:</b>{" "}
+                <span style={{ color: "#8c8c8c" }}>{c.oldVal}</span> {" → "}
+                <span style={{ color: "#389e0d" }}>{c.newVal}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+
+      Modal.confirm({
+        title: "ยืนยันการแก้ไข",
+        icon: <ExclamationCircleOutlined />,
+        content: DiffView,
+        okText: "บันทึก",
+        cancelText: "ยกเลิก",
+        onOk: async () => {
+          try {
+            const token = localStorage.getItem("token");
+            if (!token) return message.error("กรุณาเข้าสู่ระบบก่อน");
+
+            // ตัด roleID ออกถ้าเป็นบัญชีตัวเอง
+            const { roleID, ...rest } = values as any;
+            const safeValues = isSelf ? rest : values;
+
+            const formData = new FormData();
+            Object.entries(safeValues).forEach(([k, v]) => {
+              if (v !== undefined && v !== null && v !== "") formData.append(k, String(v));
+            });
+            if (uploadFile) formData.append("profile", uploadFile);
+
+            setLoading(true);
+            await axios.put(`/api/employees/${employee.ID}`, formData, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "multipart/form-data",
+              },
+            });
+
+            message.success("แก้ไขข้อมูลสำเร็จ");
+            onSuccess();
+            onClose();
+          } catch (err: any) {
+            const msg = err?.response?.data?.error || "แก้ไขข้อมูลไม่สำเร็จ";
+            message.error(msg);
+          } finally {
+            setLoading(false);
+          }
         },
       });
-
-      message.success("แก้ไขข้อมูลสำเร็จ");
-      onSuccess();
-      onClose();
-    } catch (err: any) {
-      const msg = err?.response?.data?.error || "แก้ไขข้อมูลไม่สำเร็จ";
-      message.error(msg);
-    } finally {
-      setLoading(false);
+    } catch {
+      // validate ไม่ผ่าน — ฟอร์มจะโชว์ error เอง
     }
   };
 
   return (
     <Modal
       open={open}
-      onCancel={onClose}
+      onCancel={handleCancel}
       title="แก้ไขข้อมูลพนักงาน"
       okText="บันทึก"
       cancelText="ยกเลิก"
       onOk={handleSubmit}
       confirmLoading={loading}
       destroyOnClose
+      keyboard
+      maskClosable={false}  // กันคลิกฉากหลังแล้วปิด
     >
       {/* อัปโหลดโปรไฟล์แบบวงกลม (Tailwind-only) */}
       <div className="w-full flex items-center justify-center my-6">
         <div className="relative group">
-          {/* ปุ่มลบไฟล์ใหม่ (แสดงเฉพาะเมื่อมีไฟล์ใหม่) */}
+          {/* ปุ่มลบไฟล์ใหม่ */}
           {uploadFile && (
             <button
               type="button"
@@ -155,7 +300,6 @@ const EmployeeEditModal: React.FC<Props> = ({ open, onClose, onSuccess, employee
                   alt="profile"
                   className="w-full h-full object-cover rounded-full"
                 />
-                {/* overlay เมื่อ hover */}
                 <div
                   className={[
                     "absolute inset-0 rounded-full",
@@ -229,15 +373,34 @@ const EmployeeEditModal: React.FC<Props> = ({ open, onClose, onSuccess, employee
           </Select>
         </Form.Item>
 
-        <Form.Item name="roleID" label="สิทธิ์" rules={[{ required: true }]}>
-          <Select
-            options={[
-              { label: "Admin", value: 1 },
-              { label: "Employee", value: 2 },
-              { label: "Guest", value: 3 },
-            ]}
-          />
-        </Form.Item>
+        {/* สิทธิ์: ซ่อน select หากเป็นบัญชีตัวเอง */}
+        {isSelf ? (
+          <Form.Item label="สิทธิ์">
+            <div
+              style={{
+                padding: "8px 12px",
+                background: "#fafafa",
+                border: "1px solid #f0f0f0",
+                borderRadius: 6,
+              }}
+            >
+              {roleLabelById(employee?.Role?.ID)}
+            </div>
+            <div style={{ fontSize: 12, color: "#999", marginTop: 4 }}>
+              ไม่สามารถเปลี่ยนสิทธิ์ของบัญชีตัวเอง
+            </div>
+          </Form.Item>
+        ) : (
+          <Form.Item name="roleID" label="สิทธิ์" rules={[{ required: true }]}>
+            <Select
+              options={[
+                { label: "Admin", value: 1 },
+                { label: "Employee", value: 2 },
+                { label: "Guest", value: 3 },
+              ]}
+            />
+          </Form.Item>
+        )}
       </Form>
     </Modal>
   );

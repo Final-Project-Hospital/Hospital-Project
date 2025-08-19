@@ -28,7 +28,7 @@ const Node = () => {
     <MediaCard
       icon={<FaMicrochip />} // ✅ ใช้ icon sensor
       title={count.toString()} // ✅ จำนวนจริงจาก API
-      desc={t("อุปกรณ์ที่ติดตั้ง")}
+      desc={t("อุปกรณ์")}
       style={{ backgroundColor: "#ff4d4f", color: "#fff" }}
       classNames={{ body: "p-4" }}
     />
