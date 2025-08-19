@@ -469,7 +469,7 @@ func SetupDatabase() {
 
 	Notification1 := entity.Notification{
 		Name: "Tawunchai",
-		UserID: "U3af93a2f92b1048757172584d47571c8",
+		UserID: "Ucc082e3e6abf74aa767514630174b49f",
 		Alert: false,
 	}
 	Notification2 := entity.Notification{
@@ -483,7 +483,7 @@ func SetupDatabase() {
 		Alert: false,
 	}
 
-	db.FirstOrCreate(&Notification1, entity.Notification{UserID: "U3af93a2f92b1048757172584d47571c8"})
+	db.FirstOrCreate(&Notification1, entity.Notification{UserID: "Ucc082e3e6abf74aa767514630174b49f"})
 	db.FirstOrCreate(&Notification2, entity.Notification{UserID: "U3af93a2f92b1048757172584d4757123"})
 	db.FirstOrCreate(&Notification3, entity.Notification{UserID: "U3af93a2f92b1048757172584d4757124"})
 
