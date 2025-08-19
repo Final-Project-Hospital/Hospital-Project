@@ -135,6 +135,13 @@ func CreateTTCB(c *gin.Context) {
 func GetfirstTTCB(c *gin.Context) {
 	db := config.DB()
 
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?", "น้ำประปา").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
+
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?", "Total Coliform Bacteria").First(&parameter).Error; err != nil {
 		fmt.Println("Error fetching parameter:", err)
@@ -165,7 +172,7 @@ func GetfirstTTCB(c *gin.Context) {
 		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note,environmental_records.before_after_treatment_id,environmental_records.environment_id ,environmental_records.parameter_id ,environmental_records.standard_id ,environmental_records.unit_id ,environmental_records.employee_id,standards.min_value,standards.middle_value,standards.max_value,units.unit_name`).
 		Joins("inner join standards on environmental_records.standard_id = standards.id").
 		Joins("inner join units on environmental_records.unit_id = units.id").
-		Where("parameter_id = ?", parameter.ID).
+		Where("parameter_id = ? AND environmental_records.environment_id = ?", parameter.ID, environment.ID).
 		Order("environmental_records.created_at desc").
 		Scan(&firstttcb)
 
@@ -193,6 +200,13 @@ func formatThaiDate(t time.Time) string {
 
 func ListTTCB(c *gin.Context) {
 	db := config.DB()
+
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?", "น้ำประปา").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
 
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?", "Total Coliform Bacteria").First(&parameter).Error; err != nil {
@@ -223,7 +237,7 @@ func ListTTCB(c *gin.Context) {
 	// Query หลัก โดยใช้ subquery เพื่อหา record ล่าสุดของแต่ละวัน และแต่ละ treatment (before_after_treatment_id)
 	subQuery := db.Model(&entity.EnvironmentalRecord{}).
 		Select("MAX(id)").
-		Where("parameter_id = ?", parameter.ID).
+		Where("parameter_id = ? AND environmental_records.environment_id = ?", parameter.ID, environment.ID).
 		Group("DATE(date), before_after_treatment_id")
 
 	// ดึงข้อมูลหลักโดย join กับ subQuery ข้างบน
@@ -264,6 +278,13 @@ func DeleterTTCB(c *gin.Context) {
 func GetTTCBTABLE(c *gin.Context) {
 	db := config.DB()
 
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?", "น้ำประปา").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
+
 	// หา ParameterID ของ "Total Coliform Bacteria"
 	var param entity.Parameter
 	if err := db.Where("parameter_name = ?", "Total Coliform Bacteria").First(&param).Error; err != nil {
@@ -276,7 +297,7 @@ func GetTTCBTABLE(c *gin.Context) {
 		Preload("Environment").
 		Preload("Unit").
 		Preload("Employee").
-		Where("parameter_id = ?", param.ID).
+		Where("parameter_id = ? AND environmental_records.environment_id = ?", param.ID, environment.ID).
 		Order("date ASC").
 		Find(&ttcb)
 
@@ -660,6 +681,21 @@ func DeleteAllTTCBRecordsByDate(c *gin.Context) {
 
 	db := config.DB()
 
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?", "น้ำประปา").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
+
+	// หา parameter
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?", "Total Coliform Bacteria").First(&parameter).Error; err != nil {
+		fmt.Println("Error fetching parameter:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+		return
+	}
+
 	// หา record ก่อน
 	var targetRecord entity.EnvironmentalRecord
 	if err := db.First(&targetRecord, uint(uintID)).Error; err != nil {
@@ -667,10 +703,10 @@ func DeleteAllTTCBRecordsByDate(c *gin.Context) {
 		return
 	}
 
-	// ลบทั้งหมดที่มีวันที่เดียวกัน (ใช้เฉพาะ Date ไม่เอา Time)
-	dateKey := targetRecord.Date.Format("2006-01-02") // แปลงเป็น YYYY-MM-DD
-
-	if err := db.Where("DATE(date) = ?", dateKey).Delete(&entity.EnvironmentalRecord{}).Error; err != nil {
+	// ลบทั้งหมดที่มีวันที่เดียวกัน
+	dateKey := targetRecord.Date.Format("2006-01-02")
+	if err := db.Where("DATE(date) = ? AND parameter_id = ? AND environment_id = ?", dateKey, parameter.ID, environment.ID).
+		Delete(&entity.EnvironmentalRecord{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบไม่สำเร็จ"})
 		return
 	}
