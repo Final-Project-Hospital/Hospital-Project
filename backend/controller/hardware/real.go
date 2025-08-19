@@ -25,7 +25,7 @@ type HardwareInput struct {
 	Parameters []ParameterWithData `json:"parameters" binding:"required"`
 }
 
-const LineToken = "gvki3Wyt+y/sZKER+Gaex2EpillRDRDHvXq4+sYNE5jlLUcy2N2YIIONKwvMhqn8RxcaME5vQ3I1BW82d1/ZYezvWklVMUk+EGGfXRmI4jxn5I1vVbOsctQ7xNqB9n9A+Q/SRhEtXviKFCF9WOI/ZgdB04t89/1O/w1cDnyilFU="
+const LineToken = "qNf5S5s+Rkqr0gFDW++ObPJzfhUbCbWwbEdCeDzVIzhsSqe3R1HyycZOtY2+NSuBCZ8NIWO9jhx/a2cmUA+kbuL3GNfyp5Ze+4sj5lBY403ndhyoEqlpI90eaV/Kp0sc92opJl5uAYH9QSIKIWpq1wdB04t89/1O/w1cDnyilFU="
 
 // ฟังก์ชันส่ง LINE message ไปยัง userId เฉพาะ
 func SendWarningToLINE(userID string, message string) error {
@@ -100,8 +100,9 @@ func ReadDataForHardware(c *gin.Context) {
 	var createdParamIDs []uint
 
 	// กลุ่มข้อความแจ้งเตือน
-	var nearUnderParts []string
-	var underParts []string
+	var overParts []string     // เกิน Max
+	var underParts []string    // ต่ำกว่า Min
+	var nearUnderParts []string // ใกล้ต่ำกว่า Min
 
 	for _, p := range input.Parameters {
 		var hp entity.HardwareParameter
@@ -142,7 +143,7 @@ func ReadDataForHardware(c *gin.Context) {
 				HardwareGraphID:          1,
 				HardwareParameterColorID: 1,
 				Icon:                     "GiChemicalDrop",
-				Alert:                    false, 
+				Alert:                    false,
 			}
 			if err := db.Create(&hp).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create hardware parameter"})
@@ -172,14 +173,22 @@ func ReadDataForHardware(c *gin.Context) {
 
 		var std entity.StandardHardware
 		if err := db.First(&std, hp.StandardHardwareID).Error; err == nil {
+			// ✅ เช็ค MaxValueStandard
+			if std.MaxValueStandard > 0 && p.Data > std.MaxValueStandard {
+				overParts = append(overParts,
+					fmt.Sprintf("- %s: %.2f (เกณฑ์สูงสุด %.2f)", hp.Parameter, p.Data, std.MaxValueStandard))
+			}
+
+			// ✅ เช็ค MinValueStandard
 			if std.MinValueStandard > 0 {
 				min := std.MinValueStandard
 				nearUpper := min * 1.10
-
 				if p.Data < min {
-					underParts = append(underParts, fmt.Sprintf("- %s: %.2f (เกณฑ์ %.2f)", hp.Parameter, p.Data, min))
+					underParts = append(underParts,
+						fmt.Sprintf("- %s: %.2f (เกณฑ์ต่ำสุด %.2f)", hp.Parameter, p.Data, min))
 				} else if p.Data > min && p.Data <= nearUpper {
-					nearUnderParts = append(nearUnderParts, fmt.Sprintf("- %s: %.2f (เกณฑ์ %.2f)", hp.Parameter, p.Data, min))
+					nearUnderParts = append(nearUnderParts,
+						fmt.Sprintf("- %s: %.2f (ใกล้ต่ำสุด %.2f)", hp.Parameter, p.Data, min))
 				}
 			}
 		}
@@ -207,12 +216,12 @@ func ReadDataForHardware(c *gin.Context) {
 
 	// ─────────────────────────────────────────────────────────
 	// ส่ง LINE แจ้งเตือน
-	if len(nearUnderParts) > 0 || len(underParts) > 0 {
+	if len(overParts) > 0 || len(underParts) > 0 || len(nearUnderParts) > 0 {
 		loc, _ := time.LoadLocation("Asia/Bangkok")
 		now := time.Now().In(loc).Format("2006-01-02 15:04:05")
 
 		var sb strings.Builder
-		sb.WriteString("☣️ แจ้งเตือนสารเคมีเกินมาตรฐาน!\n")
+		sb.WriteString("☣️ แจ้งเตือนสารเคมีผิดปกติ!\n")
 		sb.WriteString(fmt.Sprintf("🗓️ เวลา: %s\n", now))
 		sb.WriteString(fmt.Sprintf("🏢 อาคาร: %s\n", safeStr(buildingName)))
 		sb.WriteString(fmt.Sprintf("🏬 ชั้น: %s\n", safeStr(floorStr)))
@@ -220,14 +229,19 @@ func ReadDataForHardware(c *gin.Context) {
 		sb.WriteString(fmt.Sprintf("📡 ฮาร์ดแวร์: %s\n", safeStr(hardware.Name)))
 		sb.WriteString(fmt.Sprintf("🆔 MAC: %s\n\n", safeStr(hardware.MacAddress)))
 
-		if len(nearUnderParts) > 0 {
-			sb.WriteString("พบค่าที่ใกล้ต่ำกว่ามาตรฐาน:\n")
-			sb.WriteString(strings.Join(nearUnderParts, "\n"))
+		if len(overParts) > 0 {
+			sb.WriteString("พบค่าที่เกินมาตรฐานสูงสุด:\n")
+			sb.WriteString(strings.Join(overParts, "\n"))
 			sb.WriteString("\n\n")
 		}
 		if len(underParts) > 0 {
 			sb.WriteString("พบค่าที่ต่ำกว่ามาตรฐาน:\n")
 			sb.WriteString(strings.Join(underParts, "\n"))
+			sb.WriteString("\n\n")
+		}
+		if len(nearUnderParts) > 0 {
+			sb.WriteString("พบค่าที่ใกล้ต่ำกว่ามาตรฐาน:\n")
+			sb.WriteString(strings.Join(nearUnderParts, "\n"))
 		}
 
 		// ✅ หา RoomNotification เพื่อตรวจว่าต้องส่งให้ใครบ้าง
@@ -260,7 +274,8 @@ func safeStr(s string) string {
 
 func safeInt(i int) string {
 	return strconv.Itoa(i)
-} 
+}
+
 
 
 type WebhookPayload struct {
@@ -321,3 +336,5 @@ func WebhookNotification(c *gin.Context) {
 
 	c.JSON(http.StatusOK, notification)
 }
+
+//Testing
