@@ -60,6 +60,8 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/dashboard"
 	"github.com/Tawunchai/hospital-project/controller/selectBoxAll"
 	"github.com/gin-gonic/gin"
+	"strconv"
+	"github.com/Tawunchai/hospital-project/entity"
 )
 
 const PORT = "8000"
@@ -85,6 +87,55 @@ func main() {
 		authorized.GET("/dashboard/environmental", dashboard.GetEnvironmentalDashboard)
 		authorized.GET("/dashboard/environmental/efficiency", dashboard.GetEnvironmentalEfficiency)
 		authorized.GET("/dashboard/environmental/alerts", dashboard.GetEnvironmentalAlerts)
+		authorized.GET("/dashboard/environmental/meta", dashboard.GetEnvironmentalMeta)
+		authorized.GET("/api/me", func(c *gin.Context) {
+    // ดึง user id จาก context (ลองหลาย key ที่พบบ่อย)
+    var id uint
+    var okFound bool
+    for _, k := range []string{"employee_id", "EmployeeID", "user_id", "userID", "id", "ID", "sub"} {
+        if v, ok := c.Get(k); ok {
+            switch t := v.(type) {
+            case uint:
+                id = t; okFound = true
+            case int:
+                id = uint(t); okFound = true
+            case int64:
+                id = uint(t); okFound = true
+            case float64:
+                id = uint(t); okFound = true
+            case string:
+                if u64, err := strconv.ParseUint(t, 10, 64); err == nil {
+                    id = uint(u64); okFound = true
+                }
+            }
+            if okFound { break }
+        }
+    }
+    if !okFound || id == 0 {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        return
+    }
+
+    // โหลดข้อมูลพนักงาน
+    var emp entity.Employee
+    if err := config.DB().Preload("Role").Preload("Position").First(&emp, id).Error; err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+        return
+    }
+
+    // ตอบข้อมูลเท่าที่ frontend ต้องใช้
+    c.JSON(http.StatusOK, gin.H{
+        "ID":        emp.ID,
+        "FirstName": emp.FirstName,
+        "LastName":  emp.LastName,
+        "Email":     emp.Email,
+        "Phone":     emp.Phone,
+        "Profile":   emp.Profile,
+        "Role":      emp.Role,      // มี RoleName อยู่ข้างใน
+        "Position":  emp.Position,  // มี Position อยู่ข้างใน
+    })
+})
+
 	}
 
 	public := r.Group("")
@@ -363,6 +414,7 @@ func main() {
 		public.GET("/get-hazardous/:id", hazardousWaste.GetHazardousbyID)
 		public.GET("/get-hazardous-table", hazardousWaste.GetHazardousTABLE)
 		public.PATCH("/update-or-create-hazardous/:d", hazardousWaste.UpdateOrCreateHazardous)
+		public.DELETE("/delete-hazardous/:id", hazardousWaste.DeleteHazardous)
 		public.DELETE("/delete-hazardous-day/:id", hazardousWaste.DeleteAllHazardousRecordsByDate)
 		//ใช้ร่วมกัน
 		public.GET("/check-target", hazardousWaste.CheckTarget)
@@ -374,6 +426,7 @@ func main() {
 		public.GET("/get-general/:id", generalWaste.GetGeneralbyID)
 		public.GET("/get-general-table", generalWaste.GetGeneralTABLE)
 		public.PATCH("/update-or-create-general/:d", generalWaste.UpdateOrCreateGeneral)
+		public.DELETE("/delete-general/:id", generalWaste.DeleteGeneral)
 		public.DELETE("/delete-general-day/:id", generalWaste.DeleteAllGeneralRecordsByDate)
 
 		//ChemicalWaste
@@ -383,6 +436,7 @@ func main() {
 		public.GET("/get-chemical/:id", chemicalWaste.GetChemicalbyID)
 		public.GET("/get-chemical-table", chemicalWaste.GetChemicalTABLE)
 		public.PATCH("/update-or-create-chemical/:d", chemicalWaste.UpdateOrCreateChemical)
+		public.DELETE("/delete-chemical/:id", chemicalWaste.DeleteChemical)
 		public.DELETE("/delete-chemical-day/:id", chemicalWaste.DeleteAllChemicalRecordsByDate)
 
 		//infectiousWaste
@@ -392,6 +446,7 @@ func main() {
 		public.GET("/get-infectious/:id", infectiousWaste.GetInfectiousbyID)
 		public.GET("/get-infectious-table", infectiousWaste.GetInfectiousTABLE)
 		public.PATCH("/update-or-create-infectious/:d", infectiousWaste.UpdateOrCreateInfectious)
+		public.DELETE("/delete-infectious/:id", infectiousWaste.DeleteInfectious)
 		public.DELETE("/delete-infectious-day/:id", infectiousWaste.DeleteAllInfectiousRecordsByDate)
 
 		//RecycledWaste
@@ -401,6 +456,7 @@ func main() {
 		public.GET("/get-recycled/:id", recycledWaste.GetRecycledbyID)
 		public.GET("/get-recycled-table", recycledWaste.GetRecycledTABLE)
 		public.PATCH("/update-or-create-recycled/:d", recycledWaste.UpdateOrCreateRecycled)
+		public.DELETE("/delete-recycled/:id", recycledWaste.DeleteRecycled)
 		public.DELETE("/delete-recycled-day/:id", recycledWaste.DeleteAllRecycledRecordsByDate)
 
 		//Room
@@ -425,12 +481,6 @@ func main() {
 		public.POST("/webhook/notification", hardware.WebhookNotification)
 		public.PATCH("/notifications/:id/alert", line.UpdateAlertByNotificationID)
 		public.GET("/notifications", line.ListNotification)
-		public.DELETE("/delete-notifications/:id", line.DeleteNotificationByID)
-		public.GET("/room-notifications", line.ListRoomNotification)
-		public.DELETE("/room-notifications/:id", line.DeleteRoomNotificationByNotificationID)
-		public.POST("/room-notifications", line.CreateRoomNotification)
-		public.PUT("/room-notification/:room_id/notification", line.UpdateNotificationIDByRoomID)
-
 
 		//report hardware
 		public.GET("/report-hardware", report.ListReportHardware)
@@ -447,9 +497,6 @@ func main() {
 
 		//Building
 		public.GET("/buildings", building.ListBuilding)
-		public.POST("/create-buildings", building.CreateBuilding)
-		public.PUT("/update-buildings/:id", building.UpdateBuildingByID)
-		public.DELETE("/delete-buildings/:id", building.DeleteBuildingByID)
 
 		// Sensorparameter
 		public.GET("/data-sensorparameter", sensordata.ListDataSensorParameter)
