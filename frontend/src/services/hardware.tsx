@@ -944,12 +944,17 @@ export const UpdateLineMasterByID = async (
 
 export const UpdateHardwareParameterColorByID = async (
   id: number,
-  code: string
+  code?: string,
+  employee_id?: number
 ): Promise<HardwareParameterColorInterface | null> => {
   try {
+    const payload: any = {};
+    if (typeof code !== "undefined") payload.code = code;
+    if (typeof employee_id !== "undefined") payload.employee_id = employee_id;
+
     const response = await axios.patch(
       `${apiUrl}/update-hardware-parameter-color/${id}`,
-      { code }, // ✅ ส่ง code สีใหม่
+      payload,
       {
         headers: {
           "Content-Type": "application/json",
@@ -959,7 +964,8 @@ export const UpdateHardwareParameterColorByID = async (
     );
 
     if (response.status === 200) {
-      return response.data; // ✅ คืน object ที่อัปเดตแล้ว
+      // backend ส่งกลับ object ของสี (ตามสัญญาเดิม)
+      return response.data as HardwareParameterColorInterface;
     } else {
       console.error("Unexpected status:", response.status);
       return null;

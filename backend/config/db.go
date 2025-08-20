@@ -295,7 +295,7 @@ func SetupDatabase() {
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       humidityStd.ID,
 			UnitHardwareID:           unitPercent.ID,
-			EmployeeID:               1,
+			EmployeeID:               3,
 		}
 
 		// บันทึก HardwareParameter ลงฐานข้อมูล

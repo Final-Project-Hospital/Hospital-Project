@@ -81,9 +81,11 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-
   const [formValues, setFormValues] = useState<ParamRow[]>([]);
   const [initialValues, setInitialValues] = useState<ParamRow[]>([]);
+  const [employeeid, setEmployeeid] = useState<number>(
+    Number(localStorage.getItem("employeeid")) || 0
+  );
 
   // ---- Drag state
   const [draggedParamId, setDraggedParamId] = useState<number | null>(null);
@@ -205,11 +207,11 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   const saveLayoutToStorage = (value: { slots: Slot[]; instances: GraphInstance[] }) => {
     try {
       localStorage.setItem(STORAGE_KEY(hardwareID), JSON.stringify(value));
-    } catch {}
+    } catch { }
   };
 
-  // ---------- load ----------
   useEffect(() => {
+    setEmployeeid(Number(localStorage.getItem("employeeid")));
     if (!open || !hardwareID) return;
     setLoading(true);
     ListHardwareParameterByHardwareID(hardwareID)
@@ -579,7 +581,8 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
           updates.push(
             UpdateHardwareParameterColorByID(
               cur.HardwareParameterColorID,
-              cur.HardwareParameterColorCode || "#000000"
+              cur.HardwareParameterColorCode || "#000000",
+              employeeid
             )
           );
         }
@@ -701,7 +704,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                           draggable
                           onDragStart={() => handleGraphInstanceDragStart(inst)}
                           onDragEnd={handleGraphInstanceDragEnd}
-                          title="ลากกล่องกราฟนี้ไปวางในเลย์เอาต์"
+                          title="ลากกล่องกราฟนี้ไปวางที่เลย์เอาต์"
                         >
                           <Image
                             src={meta?.img}
@@ -747,9 +750,8 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                   <div className="text-gray-500 text-sm">ทุกพารามิเตอร์ถูกใช้อยู่ในเลย์เอาต์แล้ว</div>
                 ) : (
                   <div
-                    className={`flex flex-col gap-2 ${
-                      visibleParams.length > 7 ? "max-h-[60vh] overflow-y-auto pr-1" : ""
-                    }`}
+                    className={`flex flex-col gap-2 ${visibleParams.length > 7 ? "max-h-[60vh] overflow-y-auto pr-1" : ""
+                      }`}
                   >
                     {visibleParams.map((rowParam) => (
                       <div
@@ -909,9 +911,8 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                         </div>
 
                         <div
-                          className={`grid gap-3 ${
-                            isSplit ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
-                          }`}
+                          className={`grid gap-3 ${isSplit ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
+                            }`}
                         >
                           {Array.from({ length: subCount }).map((_, subIdx) => {
                             const cell = slot.graphs[subIdx ?? 0];
@@ -924,16 +925,15 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                             return (
                               <div
                                 key={subIdx}
-                                className={`relative rounded-xl border p-3 min-h-[140px] transition ${
-                                  isOver ? "border-teal-400 bg-teal-50" : "border-gray-300 bg-gray-50"
-                                }`}
+                                className={`relative rounded-xl border p-3 min-h-[140px] transition ${isOver ? "border-teal-400 bg-teal-50" : "border-gray-300 bg-gray-50"
+                                  }`}
                                 onDragOver={(e) =>
                                   handleDragOverSlot(slotIdx, isSplit ? subIdx : null, e)
                                 }
                                 onDrop={() =>
                                   handleDropOnSlot(slotIdx, isSplit ? subIdx : null)
                                 }
-                                title={isSplit ? (subIdx === 0 ? "ช่องซ้าย" : "ช่องขวา") : "ช่องเดี่ยว"}
+                                title={isSplit ? (subIdx === 0 ? "ช่องซ้าย" : "ขวา") : "ช่องเดี่ยว"}
                               >
                                 {/* ส่วนหัวของ cell */}
                                 <div className="flex items-center justify-between mb-2">

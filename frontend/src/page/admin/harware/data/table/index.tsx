@@ -334,7 +334,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
       setSavingNote(true);
 
       // 1) อัปเดต UI ทันที (optimistic) ทั้ง filteredData และ tableData
-      const updatedFiltered = [...filteredData];
+      const updatedFiltered = [...filteredData];//@ts-ignore
       const rowKey = updatedFiltered[noteRowIndex].__key;
       const rowDate = updatedFiltered[noteRowIndex].วันที่;
       const rowTime = updatedFiltered[noteRowIndex].เวลา;

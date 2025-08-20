@@ -43,7 +43,7 @@ interface ListHardwareParameterResponse {
 
 const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }) => {
   const [hardwareStats, setHardwareStats] = useState<HardwareStat[]>([]);
-  const [parameterColors, setParameterColors] = useState<Record<string, string>>({});
+  const [parameterColors, setParameterColors] = useState<Record<string, string>>({});//@ts-ignore
   const [parameterMeta, setParameterMeta] = useState<
     Record<string, { unit?: string; standard?: number; standardMin?: number }>
   >({});

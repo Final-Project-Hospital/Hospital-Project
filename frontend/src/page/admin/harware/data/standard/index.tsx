@@ -95,7 +95,7 @@ const ParamRow: React.FC<{
 }> = ({ form, param }) => {
   const fieldIcon = `icon_${param.ID}`;
   const fieldAlert = `alert_${param.ID}`;
-  const iconName = Form.useWatch(fieldIcon, form) as string | undefined;
+  const iconName = Form.useWatch(fieldIcon, form) as string | undefined;//@ts-ignore
   const alertValue = Form.useWatch(fieldAlert, form) as boolean | undefined;
   const IconPreview = iconMap[iconName || "FaMicroscope"];
 

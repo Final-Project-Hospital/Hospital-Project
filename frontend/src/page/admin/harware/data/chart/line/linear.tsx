@@ -284,7 +284,7 @@ const LineChart: React.FC<LineChartProps> = ({
         }
 
         if (mounted.current && !stop) {
-          const filteredUnitMap = Object.fromEntries(
+          const filteredUnitMap = Object.fromEntries(//@ts-ignore
             Object.entries(unitMapping).filter(([unit, param]) => parameters.includes(param))
           );
 

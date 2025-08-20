@@ -636,47 +636,55 @@ func CreateNoteBySensorDataParameterID(c *gin.Context) {
 }
 
 func UpdateHardwareParameterColorByID(c *gin.Context) {
-	// 1. ดึง id จาก param
 	idParam := c.Param("id")
-	id, err := strconv.ParseUint(idParam, 10, 64)
+	idUint64, err := strconv.ParseUint(idParam, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
+	id := uint(idUint64)
 
-	// 2. Bind JSON body
 	var req struct {
-		Code *string `json:"code"`
+		Code       *string `json:"code"`
+		EmployeeID *uint   `json:"employee_id"` // ✅ เพิ่ม field optional สำหรับอัปเดตพนักงานผู้รับผิดชอบ
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 3. หา record เดิม
+	// 3) หา record สีเดิม
 	var color entity.HardwareParameterColor
 	if err := config.DB().First(&color, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "HardwareParameterColor not found"})
 		return
 	}
 
-	// 4. เตรียม fields ที่จะ update
+	// 4) เตรียม fields ที่จะ update เฉพาะในตารางสี
 	updateFields := map[string]interface{}{}
 	if req.Code != nil {
 		updateFields["code"] = *req.Code
 	}
 
-	if len(updateFields) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "no field to update"})
-		return
+	// 5) Update สี (ถ้ามี field ให้แก้)
+	if len(updateFields) > 0 {
+		if err := config.DB().Model(&color).Updates(updateFields).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
-	// 5. Update
-	if err := config.DB().Model(&color).Updates(updateFields).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	// 6) ถ้ามี employee_id ให้ไปอัปเดต HardwareParameter.EmployeeID
+	if req.EmployeeID != nil {
+		tx := config.DB().Model(&entity.HardwareParameter{}).
+			Where("hardware_parameter_color_id = ?", color.ID).
+			Update("employee_id", *req.EmployeeID)
+		if tx.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": tx.Error.Error()})
+			return
+		}
+
 	}
 
-	// 6. Return response
 	c.JSON(http.StatusOK, color)
 }
