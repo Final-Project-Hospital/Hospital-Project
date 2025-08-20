@@ -6,7 +6,6 @@ import { SensorDataParameterInterface } from "../interface/ISensorDataParameter"
 import { HardwareGraphInterface } from "../interface/IHardwareGraph"
 import { HardwareParameterColorInterface } from "../interface/IHardwareColor"
 import { HardwareParameterInterface } from "../interface/IHardwareParameter"
-import { UnitHardwareInterface } from "../interface/IUnitHardware";
 import { NotificationInterface } from "../interface/INotification";
 import { RoomNotificationInterface } from "../interface/IRoomNotification";
 import { LineMasterInterface } from "../interface/ILineMaster"
@@ -541,17 +540,34 @@ export const UpdateStandardHardwareByID = async (
     return null;
   }
 };
+
+export type UpdateUnitHardwarePayload = {
+  unit: string;          
+  employee_id?: number;  
+};
+
+
 export const UpdateUnitHardwareByID = async (
   id: number,
-  data: UnitHardwareInterface
+  data: UpdateUnitHardwarePayload | { Unit: string; employee_id?: number }
 ): Promise<any | null> => {
   try {
-    const response = await axios.put(`${apiUrl}/update-unit-hardware/${id}`, data, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-    });
+    // map key ให้ตรงกับ backend (unit เป็นตัวพิมพ์เล็ก)
+    const payload: UpdateUnitHardwarePayload = {
+      unit: (data as any).unit ?? (data as any).Unit,
+      employee_id: (data as any).employee_id,
+    };
+
+    const response = await axios.put(
+      `${apiUrl}/update-unit-hardware/${id}`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
 
     if (response.status === 200) {
       return response.data;
@@ -922,6 +938,34 @@ export const UpdateLineMasterByID = async (
     }
   } catch (error) {
     console.error("Error updating line master:", error);
+    return null;
+  }
+};
+
+export const UpdateHardwareParameterColorByID = async (
+  id: number,
+  code: string
+): Promise<HardwareParameterColorInterface | null> => {
+  try {
+    const response = await axios.patch(
+      `${apiUrl}/update-hardware-parameter-color/${id}`,
+      { code }, // ✅ ส่ง code สีใหม่
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      return response.data; // ✅ คืน object ที่อัปเดตแล้ว
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error updating hardware parameter color:", error);
     return null;
   }
 };

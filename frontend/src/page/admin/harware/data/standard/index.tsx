@@ -232,8 +232,12 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [params, setParams] = useState<any[]>([]);
+    const [employeeid, setEmployeeid] = useState<number>(
+    Number(localStorage.getItem("employeeid")) || 0
+  );
 
   useEffect(() => {
+    setEmployeeid(Number(localStorage.getItem("employeeid")));
     if (!open || !hardwareID) return;
     setLoading(true);
 
@@ -304,7 +308,8 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
             tasks.push(
               UpdateUnitHardwareByID(param.UnitHardware.ID, {
                 Unit: String(rawUnit ?? ""),
-              })
+                employee_id: employeeid,
+              } as any)
             );
           }
 

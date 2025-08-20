@@ -52,7 +52,6 @@ const RoomAdminTable: React.FC = () => {
     const [modalResponsibles, setModalResponsibles] = useState<string[]>([]);
 
     const { activeMenu } = useStateContext();
-    console.log("Active Menu:", activeMenu);
 
     const fetchRooms = async () => {
         setLoading(true);
