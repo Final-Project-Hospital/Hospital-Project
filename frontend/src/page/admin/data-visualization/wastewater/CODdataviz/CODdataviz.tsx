@@ -240,9 +240,13 @@ const CODdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterCOD
-        if (codRes) {
+        if (!codRes || !codRes.data || codRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After FOG");
+        } else {
           setBeforeAfter(codRes.data);
         }
+
       } else {
         setError("ไม่พบข้อมูล COD");
       }

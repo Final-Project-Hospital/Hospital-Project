@@ -449,6 +449,7 @@ func main() {
 		public.GET("/list-infectious", infectiousWaste.ListInfectious)
 		public.GET("/get-infectious/:id", infectiousWaste.GetInfectiousbyID)
 		public.GET("/get-infectious-table", infectiousWaste.GetInfectiousTABLE)
+		public.GET("/get-last-day-infectious", infectiousWaste.GetLastDayInfectious)
 		public.PATCH("/update-or-create-infectious/:d", infectiousWaste.UpdateOrCreateInfectious)
 		public.DELETE("/delete-infectious-day/:id", infectiousWaste.DeleteAllInfectiousRecordsByDate)
 
