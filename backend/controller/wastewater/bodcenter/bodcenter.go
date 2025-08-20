@@ -92,25 +92,6 @@ func CreateBod(c *gin.Context) {
 		return
 	}
 
-	// getStatusID := func(value float64) uint {
-	// 	var status entity.Status
-	// 	if standard.MiddleValue != 0 {
-	// 		if value <= float64(standard.MiddleValue) {
-	// 			db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
-	// 		} else {
-	// 			db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
-	// 		}
-	// 	} else {
-	// 		if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
-	// 			db.Where("status_name = ?", "อยู่ในเกณฑ์มาตรฐาน").First(&status)
-	// 		} else if value > float64(standard.MaxValue) {
-	// 			db.Where("status_name = ?", "เกินเกณฑ์มาตรฐาน").First(&status)
-	// 		} else {
-	// 			db.Where("status_name = ?", "ต่ำกว่าเกณฑ์มาตรฐาน").First(&status)
-	// 		}
-	// 	}
-	// 	return status.ID
-	// }
 	getStatusID := func(value float64) uint {
 		var status entity.Status
 		if standard.MiddleValue != 0 { // ค่าเดี่ยว
@@ -157,6 +138,13 @@ func CreateBod(c *gin.Context) {
 func GetfirstBOD(c *gin.Context) {
 	db := config.DB()
 
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?", "น้ำเสีย").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
+
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?", "Biochemical Oxygen Demand").First(&parameter).Error; err != nil {
 		fmt.Println("Error fetching parameter:", err)
@@ -187,7 +175,7 @@ func GetfirstBOD(c *gin.Context) {
 		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note,environmental_records.before_after_treatment_id,environmental_records.environment_id ,environmental_records.parameter_id ,environmental_records.standard_id ,environmental_records.unit_id ,environmental_records.employee_id,standards.min_value,standards.middle_value,standards.max_value,units.unit_name`).
 		Joins("inner join standards on environmental_records.standard_id = standards.id").
 		Joins("inner join units on environmental_records.unit_id = units.id").
-		Where("parameter_id = ?", parameter.ID).
+		Where("parameter_id = ? AND environmental_records.environment_id = ?", parameter.ID, environment.ID).
 		Order("environmental_records.created_at desc").
 		Scan(&firstbod)
 
@@ -215,6 +203,13 @@ func formatThaiDate(t time.Time) string {
 
 func ListBOD(c *gin.Context) {
 	db := config.DB()
+
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?", "น้ำเสีย").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
 
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?", "Biochemical Oxygen Demand").First(&parameter).Error; err != nil {
@@ -245,7 +240,7 @@ func ListBOD(c *gin.Context) {
 	// Query หลัก โดยใช้ subquery เพื่อหา record ล่าสุดของแต่ละวัน และแต่ละ treatment (before_after_treatment_id)
 	subQuery := db.Model(&entity.EnvironmentalRecord{}).
 		Select("MAX(id)").
-		Where("parameter_id = ?", parameter.ID).
+		Where("parameter_id = ? AND environmental_records.environment_id = ?", parameter.ID, environment.ID).
 		Group("DATE(date), before_after_treatment_id")
 
 	// ดึงข้อมูลหลักโดย join กับ subQuery ข้างบน
@@ -323,6 +318,13 @@ func DeleterBOD(c *gin.Context) {
 func GetBODTABLE(c *gin.Context) {
 	db := config.DB()
 
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?", "น้ำเสีย").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
+
 	// หา ParameterID ของ "Total Dissolved Solids"
 	var param entity.Parameter
 	if err := db.Where("parameter_name = ?", "Biochemical Oxygen Demand").First(&param).Error; err != nil {
@@ -335,10 +337,9 @@ func GetBODTABLE(c *gin.Context) {
 		Preload("Environment").
 		Preload("Unit").
 		Preload("Employee").
-		Where("parameter_id = ?", param.ID).
+		Where("parameter_id = ? AND environmental_records.environment_id = ?", param.ID, environment.ID).
 		Order("date ASC").
 		Find(&bod)
-		
 
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
@@ -885,6 +886,21 @@ func DeleteAllBODRecordsByDate(c *gin.Context) {
 
 	db := config.DB()
 
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?", "น้ำเสีย").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
+
+	// หา parameter
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?", "Biochemical Oxygen Demand").First(&parameter).Error; err != nil {
+		fmt.Println("Error fetching parameter:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+		return
+	}
+
 	// หา record ก่อน
 	var targetRecord entity.EnvironmentalRecord
 	if err := db.First(&targetRecord, uint(uintID)).Error; err != nil {
@@ -892,10 +908,10 @@ func DeleteAllBODRecordsByDate(c *gin.Context) {
 		return
 	}
 
-	// ลบทั้งหมดที่มีวันที่เดียวกัน (ใช้เฉพาะ Date ไม่เอา Time)
-	dateKey := targetRecord.Date.Format("2006-01-02") // แปลงเป็น YYYY-MM-DD
-
-	if err := db.Where("DATE(date) = ?", dateKey).Delete(&entity.EnvironmentalRecord{}).Error; err != nil {
+	// ลบทั้งหมดที่มีวันที่เดียวกัน
+	dateKey := targetRecord.Date.Format("2006-01-02")
+	if err := db.Where("DATE(date) = ? AND parameter_id = ? AND environment_id = ?", dateKey, parameter.ID, environment.ID).
+		Delete(&entity.EnvironmentalRecord{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบไม่สำเร็จ"})
 		return
 	}
@@ -908,6 +924,13 @@ func DeleteAllBODRecordsByDate(c *gin.Context) {
 
 func GetBeforeAfterBOD(c *gin.Context) {
 	db := config.DB()
+
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?", "น้ำเสีย").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
 
 	// หา parameter ของ BOD
 	var parameter entity.Parameter
@@ -975,7 +998,7 @@ func GetBeforeAfterBOD(c *gin.Context) {
 				units.unit_name`).
 		Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
 		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
-		Where("parameter_id = ? AND before_after_treatment_id = ?", parameter.ID, Before.ID).
+		Where("parameter_id = ? AND before_after_treatment_id = ? AND environment_id = ?", parameter.ID, Before.ID,environment.ID).
 		Order("environmental_records.date DESC").
 		First(&latestBefore).Error
 
@@ -988,7 +1011,7 @@ func GetBeforeAfterBOD(c *gin.Context) {
 				units.unit_name`).
 		Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
 		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
-		Where("parameter_id = ? AND before_after_treatment_id = ?", parameter.ID, After.ID).
+		Where("parameter_id = ? AND before_after_treatment_id = ?  AND environment_id = ?", parameter.ID, After.ID,environment.ID).
 		Order("environmental_records.date DESC").
 		First(&latestAfter).Error
 

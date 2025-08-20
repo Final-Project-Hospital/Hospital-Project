@@ -1,23 +1,24 @@
 //ใช้ทั้งกราฟและตาราง
 import React, { useEffect, useState } from "react";
-import { Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
+import { Select, DatePicker, Modal, message, Tooltip } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { LeftOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled, CheckCircleFilled, QuestionCircleFilled, CloseCircleFilled } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import './infectiousWasteDataviz.css';
 import dayjs, { Dayjs } from "dayjs";
-import { GetlistInfectious, GetfirstInfectious, GetBeforeAfterInfectious } from "../../../../../services/garbageServices/infectiousWaste";
-import BeforeWater from "../../../../../assets/mineral.png"
-import AftereWater from "../../../../../assets/rain.png"
-import Efficiency from "../../../../../assets/productivity.png"
+import { GetlistInfectious, GetfirstInfectious, GetLastDayInfectious } from "../../../../../services/garbageServices/infectiousWaste";
+import PhotoMonthlyGarbage from "../../../../../assets/waste/container.png"
+import PhotoDailyGarbage from "../../../../../assets/waste/garbage-bag.png"
+import PhotoAADC from "../../../../../assets/waste/garbage-truck.png"
+import { listInfectiousInterface } from "../../../../../interface/Igarbage/IinfectiousWaste";
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { ColorPicker } from "antd";
 import type { Color } from "antd/es/color-picker";
-import { BarChart3, LineChart, Maximize2 } from "lucide-react";
+import { BarChart3, LineChart } from "lucide-react";
 
 //ใช้กับตาราง
 import Table, { ColumnsType } from "antd/es/table";
@@ -26,6 +27,8 @@ import UpdateInfectiousCentralForm from "../../../data-management/garbage/infect
 import InfectiousCentralForm from "../../../data-management/garbage/infectiousWaste/infectiousWaste"
 import { ListStatus } from '../../../../../services/index';
 import { ListStatusInterface } from '../../../../../interface/IStatus';
+// import "./infectiousWaste.css"
+import Chart from "react-apexcharts";
 
 const normalizeString = (str: any) =>
   String(str).normalize("NFC").trim().toLowerCase();
@@ -48,28 +51,28 @@ const InfectiousWaste: React.FC = () => {
   const [, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [filterMode, setFilterMode] = useState<"dateRange" | "month" | "year">("year");
-  const [BeforeAfter, setBeforeAfter] = useState<{ before: any; after: any } | null>(null);
+  const [lastDayInfectious, setlastDayInfectious] = useState<listInfectiousInterface | null>(null);
 
   //ใช้กับกราฟ
-  const [chartTypeBefore, setChartTypeBefore] = useState<'bar' | 'line'>('line');
-  const [chartTypeAfter, setChartTypeAfter] = useState<'bar' | 'line'>('line');
-  const [chartTypeCompare, setChartTypeCompare] = useState<'bar' | 'line'>('line');
-  const [chartpercentChange, setpercentChange] = useState<'bar' | 'line'>('line');
-  const [compareData, setCompareData] = useState<{ date: string; before: number; after: number }[]>([]);
-  const [beforeData, setBeforeData] = useState<{ unit: string; date: string; data: number }[]>([]);
-  const [afterData, setAfterData] = useState<{ unit: string; date: string; data: number }[]>([]);
-  const [colorBefore, setColorBefore] = useState<string>("#2abdbf");
-  const [colorAfter, setColorAfter] = useState<string>("#1a4b57");
-  const [colorCompareBefore, setColorCompareBefore] = useState<string>("#2abdbf");
-  const [colorCompareAfter, setColorCompareAfter] = useState<string>("#1a4b57");
+  const [listdata, setListData] = useState<{ unit: string; date: string; avgValue: number }[]>([]);
+  const [aadcData, setAADCData] = useState<{ date: string; avgValue: number; unit: string }[]>([]);
+  const [compareMonthlyGarbageQuantity, setcompareMonthlyGarbageQuantity] = useState<{ date: string; monthlyGarbage: number; quantity: number; unit: string }[]>([]);
+  const [chartTypeData, setChartTypeData] = useState<'bar' | 'line'>('line');
+  const [chartTypeAadc, setChartTypeAadc] = useState<'bar' | 'line'>('line');
+  const [chartTypeCompareMonthlyGarbageQuantity, setChartTypeCompareMonthlyGarbageQuantity] = useState<'bar' | 'line'>('line');
+  const [colorGarbage, setColorGarbage] = useState<string>("#2abdbf");
+  const [colorAadc, setColorAadc] = useState<string>("#1a4b57");
+  const [colorCompareMonthlyGarbage, setColorCompareMonthlyGarbage] = useState<string>("#2abdbf");
+  const [colorCompareQuantity, setColorCompareQuantity] = useState<string>("#1a4b57");
+  const [totalMonthlyGarbage, setTotalMonthlyGarbage] = useState(0);
+  const [latestYear, setLatestYear] = useState<number | null>(null);
+  const [monthlyDataLatestYear, setMonthlyDataLatestYear] = useState<{ month: string; value: number }[]>([]);
+  const [middleTarget, setMiddleTarget] = useState<number | undefined>(undefined);
+  const [minTarget, setMinTarget] = useState<number | undefined>(undefined);
+  const [maxTarget, setMaxTarget] = useState<number | undefined>(undefined);
   const [unit, setUnit] = useState<string>("-");
-  const [middlestandard, setMiddleStandard] = useState<number | undefined>(undefined);
-  const [minstandard, setMinStandard] = useState<number | undefined>(undefined);
-  const [maxstandard, setMaxStandard] = useState<number | undefined>(undefined);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalGraphType, setModalGraphType] = useState<"before" | "after" | "compare" | "percentChange" | null>(null);
-  const [percentChangeData, setPercentChangeData] = useState<{ date: string; percent: number }[]>([]);
-  const [colorPercentChange, setcolorPercentChange] = useState<string>("#FF6F61");
+  const [totalQuantity, setTotalQuantity] = useState<number>(0);
+  const [monthlyQuantityLatestYear, setMonthlyQuantityLatestYear] = useState<{ month: string; value: number }[]>([]);
 
   //ใช้กับตาราง
   const [search] = useState(""); //setSearch
@@ -90,52 +93,87 @@ const InfectiousWaste: React.FC = () => {
 
   //ใช้กับกราฟ ---โหลดสีจาก localStorage----
   useEffect(() => {
-    const storedColorBefore = localStorage.getItem('colorBefore');
-    const storedColorAfter = localStorage.getItem('colorAfter');
-    const storedColorCompareBefore = localStorage.getItem('colorCompareBefore');
-    const storedColorCompareAfter = localStorage.getItem('colorCompareAfter');
-    const storedcolorPercentChange = localStorage.getItem('colorPercentChange');
-    if (storedColorBefore) setColorBefore(storedColorBefore);
-    if (storedColorAfter) setColorAfter(storedColorAfter);
-    if (storedColorCompareBefore) setColorCompareBefore(storedColorCompareBefore);
-    if (storedColorCompareAfter) setColorCompareAfter(storedColorCompareAfter);
-    if (storedcolorPercentChange) setcolorPercentChange(storedcolorPercentChange);
+    const storedColorGarbage = localStorage.getItem('colorGarbage');
+    const storedColorAadc = localStorage.getItem('colorAadc');
+    const storedColorCompareMonthlyGarbage = localStorage.getItem('colorCompareMonthlyGarbage');
+    const storedColorCompareQuantity = localStorage.getItem('colorCompareQuantity');
+    if (storedColorGarbage) setColorGarbage(storedColorGarbage);
+    if (storedColorAadc) setColorAadc(storedColorAadc);
+    if (storedColorCompareMonthlyGarbage) setColorCompareMonthlyGarbage(storedColorCompareMonthlyGarbage);
+    if (storedColorCompareQuantity) setColorCompareQuantity(storedColorCompareQuantity);
   }, []);
 
+
   // ใช้กับกราฟ
-  const fetchData = async () => {
+  const fetchInfectiousData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [lastrecyc, response, recycRes] = await Promise.all([
+      const [lastInfectious, response, lastDayInfectious] = await Promise.all([
         GetfirstInfectious(),
         GetlistInfectious(),
-        GetBeforeAfterInfectious(),
+        GetLastDayInfectious(),
       ]);
-
+      // const response = await GetlistInfectious();
       if (response) {
-        const grouped: Record<string, { before: number[]; after: number[]; beforeUnit?: string; afterUnit?: string }> = {};
+        // กลุ่มข้อมูลตามวันที่
+        const grouped: Record<string, { value: number[]; aadc: number[]; quantity: number[]; unit: string }> = {};
+
         response.data.forEach((item: any) => {
           const key = filterMode === "year"
-            ? dayjs(item.Date).format("YYYY-MM")
-            : dayjs(item.Date).format("YYYY-MM-DD");
+            ? dayjs(item.Date).format("YYYY-MM")  // กลุ่มตามเดือน
+            : dayjs(item.Date).format("YYYY-MM-DD"); // กลุ่มตามวัน
 
-          if (!grouped[key]) grouped[key] = { before: [], after: [], beforeUnit: "", afterUnit: "" };
-
-          if (item.BeforeAfterTreatmentID === 1) {
-            grouped[key].before.push(item.Data);
-            grouped[key].beforeUnit = item.UnitName;
-          } else if (item.BeforeAfterTreatmentID === 2) {
-            grouped[key].after.push(item.Data);
-            grouped[key].afterUnit = item.UnitName;
-          }
+          if (!grouped[key]) grouped[key] = { value: [], aadc: [], quantity: [], unit: "" };
+          grouped[key].value.push(item.MonthlyGarbage);
+          grouped[key].aadc.push(item.Aadc);
+          grouped[key].quantity.push(item.Quantity);
+          grouped[key].unit = item.UnitName;
         });
+        // หาผลรวม MonthlyGarbage ของปีล่าสุด
+        const allYears = response.data.map((item: any) =>
+          dayjs(item.Date).year()
+        );
+        const latestYear = Math.max(...allYears); // ปีล่าสุดจากข้อมูล
+        const latestYearThai = latestYear + 543;
+        const totalMonthlyGarbageLatestYear = response.data
+          .filter((item: any) => dayjs(item.Date).year() === latestYear)
+          .reduce(
+            (sum: number, item: any) => sum + (item.MonthlyGarbage || 0),
+            0
+          );
+        // หาผลรวม Quantity ของปีล่าสุด
+        const totalQuantityLatestYear = response.data
+          .filter((item: any) => dayjs(item.Date).year() === latestYear)
+          .reduce(
+            (sum: number, item: any) => sum + (item.Quantity || 0),
+            0
+          );
 
+        // ดึงข้อมูลรายเดือนของปีล่าสุด และรวมค่าเดือนเดียวกัน
+        const monthlyDataLatestYearMap: Record<string, number> = {};
+        const monthlyQuantityLatestYearMap: Record<string, number> = {};
+
+        response.data
+          .filter((item: any) => dayjs(item.Date).year() === latestYear)
+          .forEach((item: any) => {
+            const month = dayjs(item.Date).format("MMM"); // ชื่อเดือน Jan, Feb,...
+            if (!monthlyDataLatestYearMap[month]) monthlyDataLatestYearMap[month] = 0;
+            monthlyDataLatestYearMap[month] += item.MonthlyGarbage || 0; // รวมค่าเดือนเดียวกัน
+            // รวม Quantity
+            if (!monthlyQuantityLatestYearMap[month]) monthlyQuantityLatestYearMap[month] = 0;
+            monthlyQuantityLatestYearMap[month] += item.Quantity || 0;
+          });
+
+        // แปลงเป็น array สำหรับ ApexCharts
+        const monthlyDataLatestYear = Object.entries(monthlyDataLatestYearMap).map(([month, value]) => ({ month, value }));
+        const monthlyQuantityLatestYear = Object.entries(monthlyQuantityLatestYearMap).map(([month, value]) => ({ month, value }));
+
+        // ฟังก์ชันสร้างช่วงวันที่ (ใช้ใน month/day mode)
         const createDateRange = (start: Dayjs, end: Dayjs): string[] => {
           const arr: string[] = [];
           let curr = start.startOf(filterMode === "year" ? 'month' : 'day');
           const last = end.endOf(filterMode === "year" ? 'month' : 'day');
-
           while (curr.isBefore(last) || curr.isSame(last)) {
             arr.push(curr.format(filterMode === "year" ? "YYYY-MM" : "YYYY-MM-DD"));
             curr = curr.add(1, filterMode === "year" ? 'month' : 'day');
@@ -143,108 +181,97 @@ const InfectiousWaste: React.FC = () => {
           return arr;
         };
 
-        //ออกเฉพาะวันที่มีข้อมูล
+        // เลือกช่วงวันที่
         let allDates: string[] = [];
-
         if (dateRange) {
           if (filterMode === "year") {
-            // กรองเดือนที่มีข้อมูลและอยู่ในช่วงปีที่เลือก
             const startYear = dateRange[0].year();
             const endYear = dateRange[1].year();
-
             allDates = Object.keys(grouped)
               .filter(monthStr => {
                 const year = dayjs(monthStr).year();
                 return year >= startYear && year <= endYear;
               })
               .sort();
-          } else if (filterMode === "month") {
-            // สร้างช่วงเดือนเต็มตามช่วง dateRange ที่เลือก (จะใช้ createDateRange)
-            allDates = createDateRange(dateRange[0], dateRange[1]);
           } else {
-            // กรองช่วงวัน (dateRange) ใช้ createDateRange
             allDates = createDateRange(dateRange[0], dateRange[1]);
           }
         } else {
-          // กรณีไม่ได้เลือก dateRange เอง
-          if (filterMode === "year") {
-            const monthsWithData = Object.keys(grouped).sort();
-            if (monthsWithData.length > 0) {
-              const latestMonth = dayjs(monthsWithData[monthsWithData.length - 1]);
+          // ถ้าไม่ได้เลือก dateRange เอง
+          const allDatesInData = Object.keys(grouped).sort();
+          if (allDatesInData.length > 0) {
+            if (filterMode === "year") {
+              const latestMonth = dayjs(allDatesInData[allDatesInData.length - 1]);
               const startLimit = latestMonth.subtract(3, "year").startOf("month");
-
-              allDates = monthsWithData.filter(monthStr => {
+              allDates = allDatesInData.filter(monthStr => {
                 const monthDate = dayjs(monthStr);
                 return monthDate.isSame(startLimit) || monthDate.isAfter(startLimit);
               });
+            } else if (filterMode === "month") {
+              const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
+              allDates = createDateRange(latestDate.startOf("month"), latestDate.endOf("month"));
             } else {
-              allDates = [];
-            }
-          } else if (filterMode === "month") {
-            const allDatesInData = Object.keys(grouped).sort();
-            if (allDatesInData.length > 0) {
               const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
-              const start = latestDate.startOf("month");
-              const end = latestDate.endOf("month");
-              allDates = createDateRange(start, end);
-            }
-          } else {
-            const allDatesInData = Object.keys(grouped).sort();
-            if (allDatesInData.length > 0) {
-              const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
-              const start = latestDate.subtract(6, "day").startOf("day");
-              const end = latestDate.endOf("day");
-              allDates = createDateRange(start, end);
+              allDates = createDateRange(latestDate.subtract(6, "day").startOf("day"), latestDate.endOf("day"));
             }
           }
         }
+        const infectiousArr: { date: string; avgValue: number; unit: string }[] = [];
+        const aadcArr: { date: string; avgValue: number; unit: string }[] = [];
+        const compareArr: { date: string; monthlyGarbage: number; quantity: number; unit: string; }[] = [];
 
-        const before: { date: string; data: number; unit: string; }[] = [];
-        const after: { date: string; data: number; unit: string; }[] = [];
-        const compare: { date: string; before: number; after: number }[] = [];
 
         allDates.forEach(date => {
-          const values = grouped[date];
-          const avgBefore = values?.before.length
-            ? values.before.reduce((a, b) => a + b, 0) / values.before.length
-            : 0;
-          const avgAfter = values?.after.length
-            ? values.after.reduce((a, b) => a + b, 0) / values.after.length
-            : 0;
-          before.push({ date, data: avgBefore, unit: values?.beforeUnit || "" });
-          after.push({ date, data: avgAfter, unit: values?.afterUnit || "" });
-          compare.push({ date, before: avgBefore, after: avgAfter });
-        });
-        // console.log(lastrecyc.data)
-        if (lastrecyc.data.MiddleValue !== 0) {
-          setMiddleStandard(lastrecyc.data.MiddleValue);
-          setMaxStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
-          setMinStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
-        } else {
-          setMiddleStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
-          setMaxStandard(lastrecyc.data.MaxValue);
-          setMinStandard(lastrecyc.data.MinValue);
-        }
+          const values = grouped[date] || { value: [], aadc: [], quantity: [], unit: "" }; // ป้องกัน undefined
 
-        const percentageChangeData: { date: string; percent: number }[] = compare.map(item => {
-          const rawPercent = item.before !== 0
-            ? ((item.before - item.after) / item.before) * 100
+          // avg ขยะติดเชื้อ
+          const avgInfectious = values.value.length
+            ? values.value.reduce((a, b) => a + b, 0) / values.value.length
             : 0;
-          const percent = rawPercent < 0 ? 0 : rawPercent;
-          return { date: item.date, percent };
+          infectiousArr.push({ date, avgValue: avgInfectious, unit: values.unit });
+
+          // avg AADC
+          const avgAADC = values.aadc.length
+            ? values.aadc.reduce((a, b) => a + b, 0) / values.aadc.length
+            : 0;
+          aadcArr.push({ date, avgValue: avgAADC, /*unit: "AADC" */ unit: values.unit });
+
+          // avg Quantity
+          const avgQuantity = values.quantity.length
+            ? values.quantity.reduce((a, b) => a + b, 0) / values.quantity.length
+            : 0;
+
+          // ชุดเปรียบเทียบ MonthlyGarbage vs Quantity
+          compareArr.push({ date, monthlyGarbage: avgInfectious, quantity: avgQuantity, unit: values.unit, });
         });
-        console.log(response.data);
-        setUnit(lastrecyc.data.UnitName);
-        setBeforeData(before);
-        setAfterData(after);
-        setCompareData(compare);
-        setPercentChangeData(percentageChangeData);
-        // เซ็ตข้อมูลจาก GetBeforeAfterInfectious
-        if (recycRes) {
-          setBeforeAfter(recycRes.data);
+
+        if (lastInfectious.data.MiddleTarget !== 0) {
+          setMiddleTarget(lastInfectious.data.MiddleTarget);
+          setMaxTarget(0); //แก้ให้เส้นมาตรฐานอัพเดท
+          setMinTarget(0); //แก้ให้เส้นมาตรฐานอัพเดท
+        } else {
+          setMiddleTarget(0); //แก้ให้เส้นมาตรฐานอัพเดท
+          setMaxTarget(lastInfectious.data.MaxTarget);
+          setMinTarget(lastInfectious.data.MinTarget);
+        }
+        setListData(infectiousArr);
+        setAADCData(aadcArr);
+        setcompareMonthlyGarbageQuantity(compareArr);
+        setTotalMonthlyGarbage(totalMonthlyGarbageLatestYear);
+        setLatestYear(latestYearThai);
+        setMonthlyDataLatestYear(monthlyDataLatestYear);
+        setUnit(lastInfectious.data.UnitName);
+        setTotalQuantity(totalQuantityLatestYear);
+        setMonthlyQuantityLatestYear(monthlyQuantityLatestYear);
+        console.log(lastDayInfectious)
+        if (!lastDayInfectious || !lastDayInfectious.data || lastDayInfectious.data.length === 0) {
+          setlastDayInfectious(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After FOG");
+        } else {
+          setlastDayInfectious(lastDayInfectious.data);
         }
       } else {
-        setError("ไม่พบข้อมูล Infectious");
+        setError("ไม่พบข้อมูลขยะติดเชื้อ");
       }
     } catch (err) {
       console.error("Error fetching Infectious data:", err);
@@ -254,9 +281,9 @@ const InfectiousWaste: React.FC = () => {
     }
   };
 
-  // เรียก fetchData เมื่อเปลี่ยน filterMode หรือ dateRange (เฉพาะกราฟ)
+  // โหลดใหม่เมื่อเปลี่ยน filter
   useEffect(() => {
-    fetchData();
+    fetchInfectiousData();
   }, [dateRange, filterMode]);
 
   //ใช้กับตาราง
@@ -315,54 +342,56 @@ const InfectiousWaste: React.FC = () => {
     chartType: 'line' | 'bar',
     isYearMode = false,
     dataSeries: number[],
-    enableZoom = false, //ใช้บอกว่ากราฟนี้จะเปิดการซูมไหม
-    isPercentChart = false //ใช้บอกว่าคือกราฟประสิทธิภาพไหม
+    enableZoom = false,
+    isPercentChart = false,
   ): ApexOptions => {
-    const categoriesFormatted = isYearMode
-      ? categories.map((month) => formatMonthLabel(month))
-      : categories;
+    // จัด format ตาม filterMode
+    const categoriesFormatted =
+      isYearMode
+        ? categories.map((month) => formatMonthLabel(month))
+        : categories;
 
     const maxValueInData = Math.max(...dataSeries);
-    const isStandardRange = minstandard !== undefined && maxstandard !== undefined && minstandard !== maxstandard;
+    const isStandardRange = minTarget !== undefined && maxTarget !== undefined && minTarget !== maxTarget;
 
-    const standardCeil = middlestandard !== undefined && middlestandard !== 0 ? middlestandard : maxstandard ?? 0;
+    const standardCeil = middleTarget !== undefined && middleTarget !== 0 ? middleTarget : maxTarget ?? 0;
     const adjustedMax = Math.max(maxValueInData, standardCeil) * 1.1;
 
     return {
       chart: {
-        id: "infectious-chart",
-        toolbar: { show: true },
+        type: chartType,
         zoom: { enabled: enableZoom, type: 'x', autoScaleYaxis: true },
         fontFamily: "Prompt, 'Prompt', sans-serif",
+        toolbar: { show: true },
       },
       annotations: {
         yaxis: isPercentChart
-          ? []   //  ถ้าเป็นกราฟเปอร์เซ็นต์ จะไม่มีเส้นมาตรฐานเลย
+          ? []
           : (isStandardRange
             ? [
               {
-                y: minstandard ?? 0,
+                y: minTarget ?? 0,
                 borderWidth: 1.5,
                 strokeDashArray: 6,
                 borderColor: "rgba(255, 163, 24, 0.77)",
-                label: { text: `มาตรฐานต่ำสุด ${minstandard ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
+                label: { text: `มาตรฐานต่ำสุด ${minTarget ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
               },
               {
-                y: maxstandard ?? 0,
+                y: maxTarget ?? 0,
                 borderWidth: 1.5,
                 strokeDashArray: 6,
                 borderColor: "#035303ff",
-                label: { text: `มาตรฐานสูงสุด ${maxstandard ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
+                label: { text: `มาตรฐานสูงสุด ${maxTarget ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
               },
             ]
-            : middlestandard !== undefined && middlestandard !== 0
+            : middleTarget !== undefined && middleTarget !== 0
               ? [
                 {
-                  y: middlestandard,
+                  y: middleTarget,
                   borderColor: "#FF6F61",
-                  borderWidth: 1.5,
+                  borderWidth: 2.5,
                   strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middlestandard}`, style: { background: "#FF6F61", color: "#fff" } },
+                  label: { text: `มาตรฐาน ${middleTarget}`, style: { background: "#FF6F61", color: "#fff" } },
                 },
               ]
               : []
@@ -370,7 +399,8 @@ const InfectiousWaste: React.FC = () => {
       },
       xaxis: {
         categories: categoriesFormatted,
-        tickAmount: 6, // ให้แสดงประมาณ 6 จุดบนแกน X (ปรับได้ เช่น 4, 5)
+        // title: { text: filterMode === 'year' ? 'ปี' : filterMode === 'month' ? 'เดือน' : 'วันที่' },
+        tickAmount: 6,
         labels: {
           rotate: -45, // เอียงวันที่เล็กน้อยให้อ่านง่าย
           formatter: (value: string, _timestamp?: number) => {
@@ -388,92 +418,108 @@ const InfectiousWaste: React.FC = () => {
       },
       yaxis: {
         min: 0,
-        max: isPercentChart ? 100 : adjustedMax,
-        title: {
-          text: isPercentChart ? "เปอร์เซ็น ( % )" : (unit || "mg/L"),
-        },
+        max: adjustedMax,
+        title: { text: (unit || "ค่า") },
         labels: {
-          formatter: (value: number) => isPercentChart ? `${value.toFixed(2)}%` : value.toFixed(2)
+          formatter: (value: number) => {
+            // ถ้าเกิน 1000 แสดงเป็น k
+            if (value >= 1000) {
+              return `${(value / 1000).toFixed(2)}k`;
+            } else {
+              return value.toFixed(2);
+            }
+
+          }
         },
+      },
+      dataLabels: {
+        enabled: false, // ถ้าเป็นกราฟ % ไม่ต้องโชว์ label บนจุด
       },
       tooltip: {
         y: {
           formatter: (val: number, opts) => {
             const seriesName = opts.w.config.series[opts.seriesIndex]?.name || '';
-            const seriesIndex = opts.seriesIndex;
             const dataPointIndex = opts.dataPointIndex;
 
-            console.log('seriesIndex:', seriesIndex, 'seriesName:', seriesName, 'val:', val);
-
-            if (isPercentChart) {
-              return `${val.toFixed(2)}%`;
-            }
-
-            // กรณี beforeSeries หรือ compareSeries "ก่อนบำบัด"
-            if ((seriesName === "ก่อนบำบัด" || seriesName === "Infectious") && beforeData && beforeData.length > dataPointIndex) {
-              const unit = beforeData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดก่อนบำบัด';
-              if (unit === 'ไม่มีการตรวจวัดก่อนบำบัด') return unit;
+            // ค่าขยะติดเชื้อ
+            if (seriesName === "ค่าขยะติดเชื้อ" && listdata && listdata.length > dataPointIndex) {
+              const unit = listdata[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด';
+              if (unit === 'ไม่มีการตรวจวัด') return unit;
               return `${val.toFixed(2)} ${unit}`;
             }
 
-            // กรณี afterSeries หรือ compareSeries "หลังบำบัด"
-            if ((seriesName === "หลังบำบัด" || seriesName === "Infectious") && afterData && afterData.length > dataPointIndex) {
-              const unit = afterData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดหลังบำบัด';
-              if (unit === 'ไม่มีการตรวจวัดหลังบำบัด') return unit;
+            // ค่า AADC
+            if (seriesName === "ค่า AADC" && aadcData && aadcData.length > dataPointIndex) {
+              const unit = aadcData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด';
+              if (unit === 'ไม่มีการตรวจวัด') return unit;
               return `${val.toFixed(2)} ${unit}`;
             }
 
-            // กรณีอื่น ๆ
+            // MonthlyGarbage / Quantity
+            if (["ค่าขยะติดเชื้อ", "จำนวนคน"].includes(seriesName)
+              && compareMonthlyGarbageQuantity
+              && compareMonthlyGarbageQuantity.length > dataPointIndex) {
+              if (seriesName === "ค่าขยะติดเชื้อ") {
+                const unit = compareMonthlyGarbageQuantity[dataPointIndex]?.unit;
+                return unit ? `${val.toFixed(2)} ${unit}` : 'ไม่มีการตรวจวัด';
+              } else if (seriesName === "จำนวนคน") {
+                const quantity = compareMonthlyGarbageQuantity[dataPointIndex]?.quantity;
+                return quantity ? `${quantity} คน` : 'ไม่มีการตรวจวัด';
+              }
+            }
+
+            // Default fallback
             return `${val.toFixed(2)}`;
           }
-
-        },
-      },
-      dataLabels: {
-        enabled: false,
+        }
       },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
-      markers: chartType === "line"
-        ? {
-          size: 4.5,
-          shape: ["circle", "triangle"],
-          hover: { sizeOffset: 3 },
-        }
-        : { size: 0 },
-
+      markers: chartType === "line" ? { size: 4.5, shape: ["circle", "triangle"], hover: { sizeOffset: 3 }, } : { size: 0 },
+      legend: { show: true, showForSingleSeries: true, position: 'bottom', horizontalAlign: 'center', },
     };
   };
-  const beforeSeries = [
-    { name: "ก่อนบำบัด", data: beforeData.map(item => item.data), color: colorBefore }
-  ];
-  const afterSeries = [
-    { name: "หลังบำบัด", data: afterData.map(item => item.data), color: colorAfter }
-  ];
-  const compareSeries = [
-    { name: "ก่อนบำบัด", data: compareData.map(item => item.before), color: colorCompareBefore },
-    { name: "หลังบำบัด", data: compareData.map(item => item.after), color: colorCompareAfter },
+
+  const series = [{ name: "ค่าขยะติดเชื้อ", data: listdata.map(item => item.avgValue), color: colorGarbage }];
+  const seriesAADC = [{ name: "ค่า AADC", data: aadcData.map(item => item.avgValue), color: colorAadc }];
+  const seriesMonthlyGarbageQuantity = [
+    { name: "ค่าขยะติดเชื้อ", data: compareMonthlyGarbageQuantity.map(item => item.monthlyGarbage), color: colorCompareMonthlyGarbage },
+    { name: "จำนวนคน", data: compareMonthlyGarbageQuantity.map(item => item.quantity), color: colorCompareQuantity },
   ];
   const combinedCompareData = [
-    ...compareSeries[0].data,
-    ...compareSeries[1].data,
+    ...seriesMonthlyGarbageQuantity[0].data,
+    ...seriesMonthlyGarbageQuantity[1].data,
   ];
-  const percentChangeSeries = [
-    {
-      name: "เปอร์เซ็นต์การเปลี่ยนแปลง",
-      data: percentChangeData.map(item => item.percent),
-      color: colorPercentChange,
+  const pieOptions: ApexCharts.ApexOptions = {
+    labels: monthlyDataLatestYear.map(d => d.month),
+    dataLabels: {
+      enabled: false,
+      dropShadow: {
+        enabled: false // ปิดเงา label
+      },
     },
-  ];
-  //ใช้กับกราฟ
-  const openModal = (type: "before" | "after" | "compare" | "percentChange") => {
-    setModalGraphType(type);
-    setModalVisible(true);
+    chart: {
+      type: "donut",
+      fontFamily: "Prompt, 'Prompt', sans-serif", // ใส่ font ทั้ง chart
+    },
+    legend: {
+      show: false, // ปิด legend
+    },
+    stroke: {
+      show: false, // ปิดขอบ
+    },
+    tooltip: {
+      y: {
+        formatter: (val: number) => `${val.toLocaleString()} Kg`,
+      },
+    },
+    colors: [
+      "#a3faffff", "#fff4a3ff", "#a3ffb2ff", "#ffa3a3ff",
+      "#f9a3ffff", "#aba3ffff", "#26a69a", "#D10CE8",
+      "#FF9800", "#A569BD", "#CD6155", "#5DADE2"
+    ],
   };
-  //ใช้กับกราฟ
-  const closeModal = () => {
-    setModalVisible(false);
-    setModalGraphType(null);
-  };
+  const pieSeries = monthlyDataLatestYear.map(d => d.value); monthlyQuantityLatestYear
+  const pieSeriesQuantity = monthlyQuantityLatestYear.map(d => d.value);
 
   //ใช้กับกราฟ --- ฟังก์ชันช่วยแปลงชื่อเดือนไทย ---
   const monthShortNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
@@ -648,7 +694,7 @@ const InfectiousWaste: React.FC = () => {
         try {
           await DeleteAllInfectiousRecordsByDate(id);
           message.success("ลบข้อมูลสำเร็จ");
-          await fetchData();
+          await fetchInfectiousData();
           await loadInfectiousTable();
         } catch (error) {
           message.error("ลบข้อมูลไม่สำเร็จ");
@@ -667,7 +713,6 @@ const InfectiousWaste: React.FC = () => {
   const handleAddModalCancel = () => setIsModalVisible(false);
   const handleEditModalCancel = () => setIsEditModalVisible(false);
 
-
   return (
     <div>
       <div className="infectious-title-header">
@@ -676,84 +721,72 @@ const InfectiousWaste: React.FC = () => {
           <p>ขยะที่มีเชื้อโรคหรือปนเปื้อนสารชีวภาพอาจก่อให้เกิดการแพร่กระจายของโรคได้</p>
         </div>
         <div className="infectious-card">
-          <img src={BeforeWater} alt="Before Water" className="infectious-photo" />
+          <img src={PhotoMonthlyGarbage} alt="Quantity People" className="infectious-photo" />
           <div>
-            <h4>น้ำก่อนบำบัดล่าสุด</h4>
+            <h4>ขยะอันตรายต่อเดือนล่าสุด</h4>
             <div className="infectious-main">
-              <span>{BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined ? (<><span className="infectious-value">{BeforeAfter.before.Data}</span>{" "}{BeforeAfter.before.UnitName || ""}</>) : "-"}</span>
-            </div>
-            {BeforeAfter ? (
-              <p>
-                มาตรฐาน{" "}
-                <span>
-                  {(BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== 0) || (BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0) || (BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0) || (BeforeAfter.before.UnitName && BeforeAfter.before.UnitName.trim() !== "")
-                    ? (BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== 0
-                      ? BeforeAfter.before.MiddleValue : `${(BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0 ? BeforeAfter.before.MinValue : "-")} - ${(BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0 ? BeforeAfter.before.MaxValue : "-")}`) : "-"
-                  }
-                </span>{" "}
-                {BeforeAfter.before.UnitName || ""}
-              </p>
-            ) : (
-              <p>Loading...</p>
-            )}
-          </div>
-          <img src={AftereWater} alt="After Water" className="infectious-photo" />
-          <div>
-            <h4>น้ำหลังบำบัดล่าสุด</h4>
-            <div className="infectious-main">
-              <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="infectious-value">{BeforeAfter.after.Data}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
-              <span className="infectious-change">
-                {(() => {
-                  if (BeforeAfter?.after.Data != null && BeforeAfter?.before.Data != null) {
-                    const diff = BeforeAfter.after.Data - BeforeAfter.before.Data;
-                    const arrowStyle = { fontWeight: 'bold', fontSize: '17px', marginLeft: 4 };
-                    return (<> {diff >= 0 ? '+' : ''}{diff.toFixed(2)}{diff > 0 && <span style={{ ...arrowStyle, color: '#14C18B' }}>↑</span>}{diff < 0 && <span style={{ ...arrowStyle, color: '#EE404C' }}>↓</span>}{diff === 0 && null}</>);
-                  } return '-';
-                })()}
+              <span>
+                {lastDayInfectious !== null ? (
+                  <>
+                    <span className="infectious-value">{lastDayInfectious.MonthlyGarbage.toLocaleString()}</span>{" "}
+                    {lastDayInfectious.UnitName || ""}
+                  </>
+                ) : (
+                  "-"
+                )}
               </span>
             </div>
-            {BeforeAfter ? (
+            <br />
+          </div>
+          <img src={PhotoDailyGarbage} alt="After Water" className="infectious-photo" />
+          <div>
+            <h4>ขยะอันตรายต่อเดือนวันล่าสุด</h4>
+            <div className="infectious-main">
+              <span>
+                {lastDayInfectious !== null ? (
+                  <>
+                    <span className="infectious-value">{lastDayInfectious.AverageDailyGarbage.toLocaleString()}</span>{" "}
+                    {lastDayInfectious.UnitName || ""}
+                  </>
+                ) : (
+                  "-"
+                )}
+              </span>
+            </div>
+            <br />
+          </div>
+          <img src={PhotoAADC} alt="Before Water" className="infectious-photo" />
+          <div>
+            <h4>ค่า AADC ล่าสุด</h4>
+            <div className="infectious-main">
+              <span>
+                {lastDayInfectious !== null ? (
+                  <>
+                    <span className="infectious-value">{lastDayInfectious.AADC}</span>{" "}
+                    {lastDayInfectious.UnitName || ""}
+                  </>
+                ) : (
+                  "-"
+                )}
+              </span>
+            </div>
+            {lastDayInfectious ? (
               <p>
                 มาตรฐาน{" "}
                 <span>
                   {
-                    (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== 0) || (BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0) || (BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0) || (BeforeAfter.after.UnitName && BeforeAfter.after.UnitName.trim() !== "")
-                      ? (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== 0
-                        ? BeforeAfter.after.MiddleValue : `${(BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0 ? BeforeAfter.after.MinValue : "-")} - ${(BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0 ? BeforeAfter.after.MaxValue : "-")}`)
+                    (lastDayInfectious.MiddleTarget !== null && lastDayInfectious.MiddleTarget !== 0) || (lastDayInfectious.MinTarget !== null && lastDayInfectious.MinTarget !== 0) || (lastDayInfectious.MaxTarget !== null && lastDayInfectious.MaxTarget !== 0) || (lastDayInfectious.UnitName && lastDayInfectious.UnitName.trim() !== "")
+                      ? (lastDayInfectious.MiddleTarget !== null && lastDayInfectious.MiddleTarget !== 0
+                        ? lastDayInfectious.MiddleTarget : `${(lastDayInfectious.MinTarget !== null && lastDayInfectious.MinTarget !== 0 ? lastDayInfectious.MinTarget : "-")} - ${(lastDayInfectious.MaxTarget !== null && lastDayInfectious.MaxTarget !== 0 ? lastDayInfectious.MaxTarget : "-")}`)
                       : "-"
                   }
                 </span>{" "}
-                {BeforeAfter.after.UnitName || ""}
+                {lastDayInfectious.UnitName || ""}
               </p>
             ) : (
               <p>Loading...</p>
             )}
-          </div>
-          <img src={Efficiency} alt="Before Water" className="infectious-photo" />
-          <div>
-            <h4>ประสิทธิภาพล่าสุด</h4>
-            <div className="infectious-main">
-              <span>
-                {BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined &&
-                  BeforeAfter.before.Data !== 0 &&
-                  BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined
-                  ? (
-                    <>
-                      <span className="infectious-value">
-                        {Math.max(
-                          0,
-                          ((BeforeAfter.before.Data - BeforeAfter.after.Data) / BeforeAfter.before.Data) * 100
-                        ).toFixed(2)}
-                      </span>{" "}
-                      %
-                    </>
-                  )
-                  : "-"
-                }
-              </span>
 
-            </div>
-            <br />
           </div>
         </div>
       </div>
@@ -850,215 +883,212 @@ const InfectiousWaste: React.FC = () => {
           </div>
         </div>
         <div className="infectious-graph-container">
-          {/* ตารางน้ำก่อนบำบัดนะจ๊ะ */}
-          <div className="infectious-graph-card">
-            <div className="infectious-head-graph-card">
-              <div className="infectious-width25">
-                <h2 className="infectious-head-graph-card-text">น้ำก่อนบำบัด</h2>
+          {/* ฝั่งซ้าย */}
+          <div className="infectious-graph-left">
+            <div className="infectious-graph-card">
+              <div className="infectious-head-graph-card">
+                <div className="infectious-width25">
+                  <h2 className="infectious-head-graph-card-text" >กราฟขยะ</h2>
+                </div>
+                <div>
+                  <ColorPicker
+                    value={colorGarbage}
+                    onChange={(color: Color) => {
+                      const hex = color.toHexString();
+                      setColorGarbage(hex);
+                      localStorage.setItem('colorGarbage', hex);
+                    }}
+                  />
+                </div>
               </div>
-              <div>
-                <ColorPicker
-                  value={colorBefore}
-                  onChange={(color: Color) => {
-                    const hex = color.toHexString();
-                    setColorBefore(hex);
-                    localStorage.setItem('colorBefore', hex);
-                  }}
-                />
-                <Button className="infectious-expand-chat" onClick={() => openModal("before")}><Maximize2 /></Button>
+              <div className="infectious-right-select-graph">
+                <Select
+                  value={chartTypeData}
+                  onChange={val => setChartTypeData(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
               </div>
+              <ApexChart
+                key={chartTypeData}
+                options={getChartOptions(
+                  listdata.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                  chartTypeData,          // ประเภท chart
+                  filterMode === "year",   // 'day' | 'month' | 'year'
+                  series[0]?.data || [],
+                  false,          // array ของตัวเลข
+                  true            // isPercentChart (true/false)
+                )} series={series}
+                type={chartTypeData}
+                style={{ flex: 1 }}
+              />
             </div>
-            <div className="infectious-right-select-graph">
-              <Select
-                value={chartTypeBefore}
-                onChange={val => setChartTypeBefore(val)}
-                style={{ marginBottom: 10 }}
-              >
-                <Select.Option value="line">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <LineChart size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟเส้น</span>
-                  </div>
-                </Select.Option>
-                <Select.Option value="bar">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <BarChart3 size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟแท่ง</span>
-                  </div>
-                </Select.Option>
-              </Select>
-            </div>
-            <ApexChart
-              key={chartTypeBefore}
-              options={getChartOptions(
-                beforeData.map(item => item.date),
-                chartTypeBefore,
-                filterMode === "year",
-                beforeSeries[0]?.data || [] //  ส่ง data เพื่อใช้หาค่าสูงสุด
-              )}
-              series={beforeSeries}
-              type={chartTypeBefore}
-              height={350}
-            />
-          </div>
+            <div className="infectious-graph-card">
+              <div className="infectious-head-graph-card">
+                <div className="infectious-width40">
+                  <h2 className="infectious-head-graph-card-text" >กราฟขยะต่อคน</h2>
+                </div>
+                <div>
+                  <ColorPicker
+                    value={colorCompareMonthlyGarbage}
+                    onChange={(color: Color) => {
+                      const hex = color.toHexString();
+                      setColorCompareMonthlyGarbage(hex);
+                      localStorage.setItem('colorCompareMonthlyGarbage', hex);
+                    }}
+                  />
+                  <ColorPicker
+                    value={colorCompareQuantity}
+                    onChange={(color: Color) => {
+                      const hex = color.toHexString();
+                      setColorCompareQuantity(hex);
+                      localStorage.setItem('colorCompareQuantity', hex);
+                    }}
+                  />
+                </div>
+              </div>
 
-          <div className="infectious-graph-card">
-            <div className="infectious-head-graph-card">
-              <div className="infectious-width25">
-                <h2 className="infectious-head-graph-card-text">น้ำหลังบำบัด</h2>
+              <div className="infectious-right-select-graph">
+                <Select
+                  value={chartTypeCompareMonthlyGarbageQuantity}
+                  onChange={val => setChartTypeCompareMonthlyGarbageQuantity(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
               </div>
-              <div>
-                <ColorPicker
-                  value={colorAfter}
-                  onChange={(color: Color) => {
-                    const hex = color.toHexString();
-                    setColorAfter(hex);
-                    localStorage.setItem('colorAfter', hex);
-                  }}
-                />
-                <Button className="infectious-expand-chat" onClick={() => openModal("after")}><Maximize2 /></Button>
-              </div>
+              <ApexChart
+                key={chartTypeCompareMonthlyGarbageQuantity}
+                options={getChartOptions(
+                  compareMonthlyGarbageQuantity.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                  chartTypeCompareMonthlyGarbageQuantity,          // ประเภท chart
+                  filterMode === "year",   // 'day' | 'month' | 'year'
+                  combinedCompareData,
+                  false,          // array ของตัวเลข
+                  true            // isPercentChart (true/false)
+                )} series={seriesMonthlyGarbageQuantity}
+                type={chartTypeCompareMonthlyGarbageQuantity}
+                style={{ flex: 1 }}
+              />
             </div>
-            <div className="infectious-right-select-graph">
-              <Select
-                value={chartTypeAfter}
-                onChange={val => setChartTypeAfter(val)}
-                style={{ marginBottom: 10 }}
-              >
-                <Select.Option value="line">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <LineChart size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟเส้น</span>
-                  </div>
-                </Select.Option>
-                <Select.Option value="bar">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <BarChart3 size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟแท่ง</span>
-                  </div>
-                </Select.Option>
-              </Select>
-            </div>
-            <ApexChart
-              key={chartTypeAfter}
-              options={getChartOptions(
-                afterData.map(item => item.date),
-                chartTypeAfter,
-                filterMode === "year",
-                afterSeries[0]?.data || []
-              )}
-              series={afterSeries}
-              type={chartTypeAfter}
-              height={350}
-            />
           </div>
-          <div className="infectious-graph-card">
-            <div className="infectious-head-graph-card">
-              <div className="infectious-width40">
-                <h2 className="infectious-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
+          {/* ฝั่งขวา */}
+          <div className="infectious-graph-right">
+            <div className="infectious-graph-card">
+              <div className="infectious-head-graph-card">
+                <div className="infectious-width25">
+                  <h2 className="infectious-head-graph-card-text" >AADC</h2>
+                </div>
+                <div>
+                  <ColorPicker
+                    value={colorAadc}
+                    onChange={(color: Color) => {
+                      const hex = color.toHexString();
+                      setColorAadc(hex);
+                      localStorage.setItem('colorAadc', hex);
+                    }}
+                  />
+                </div>
               </div>
-              <div>
-                <ColorPicker
-                  value={colorCompareBefore}
-                  onChange={(color: Color) => {
-                    const hex = color.toHexString();
-                    setColorCompareBefore(hex);
-                    localStorage.setItem('colorCompareBefore', hex);
-                  }}
-                />
-                <ColorPicker
-                  value={colorCompareAfter}
-                  onChange={(color: Color) => {
-                    const hex = color.toHexString();
-                    setColorCompareAfter(hex);
-                    localStorage.setItem('colorCompareAfter', hex);
-                  }}
-                />
-                <Button className="infectious-expand-chat" onClick={() => openModal("compare")}><Maximize2 /></Button>
+              <div className="infectious-right-select-graph">
+                <Select
+                  value={chartTypeAadc}
+                  onChange={val => setChartTypeAadc(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <ApexChart
+                key={chartTypeAadc}
+                options={getChartOptions(
+                  aadcData.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                  chartTypeAadc,          // ประเภท chart
+                  filterMode === "year",   // 'day' | 'month' | 'year'
+                  seriesAADC[0]?.data || [],
+                  false,          // array ของตัวเลข
+                  false            // isPercentChart (true/false)
+                )} series={seriesAADC}
+                type={chartTypeAadc}
+                height="85%"
+              />
+            </div>
+            <div className="infectious-small-card-container">
+              <div className="infectious-box">
+                <div className="infectious-box-title">จำนวนขยะรวมปี {latestYear}</div>
+                <div className="infectious-box-number">
+                  <div>
+                    <div >
+                      {totalMonthlyGarbage.toLocaleString()} Kg
+                    </div >
+                    <div>
+                      <Chart
+                        options={pieOptions}
+                        series={pieSeries}
+                        type="donut"
+                        width={90}
+                        height={90}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <span className="infectious-box-date">Date per 29 June 2024</span>
+              </div>
+              <div className="infectious-box">
+                <div className="infectious-box-title">จำนวนคนรวมปี {latestYear}</div>
+                <div className="infectious-box-number">
+                  <div>
+                    <div >
+                      {totalQuantity.toLocaleString()} คน
+                    </div >
+                    <div>
+                      <Chart
+                        options={pieOptions}
+                        series={pieSeriesQuantity}
+                        type="donut"
+                        width={90}
+                        height={90}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <span className="infectious-box-date">Date per 29 June 2024</span>
               </div>
             </div>
-            <div className="infectious-right-select-graph">
-              <Select
-                value={chartTypeCompare}
-                onChange={val => setChartTypeCompare(val)}
-                style={{ marginBottom: 10 }}
-              >
-                <Select.Option value="line">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <LineChart size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟเส้น</span>
-                  </div>
-                </Select.Option>
-                <Select.Option value="bar">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <BarChart3 size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟแท่ง</span>
-                  </div>
-                </Select.Option>
-              </Select>
-            </div>
-            <ApexChart
-              key={chartTypeCompare}
-              options={getChartOptions(
-                compareData.map(item => item.date),
-                chartTypeCompare,
-                filterMode === "year",
-                combinedCompareData
-              )}
-              series={compareSeries}
-              type={chartTypeCompare}
-              height={350}
-            />
-          </div>
-          <div className="infectious-graph-card">
-            <div className="infectious-head-graph-card">
-              <div className="infectious-width25">
-                <h2 className="infectious-head-graph-card-text" >ประสิทธิภาพ</h2>
-              </div>
-              <div>
-                <ColorPicker
-                  value={colorPercentChange}
-                  onChange={(color: Color) => {
-                    const hex = color.toHexString();
-                    setcolorPercentChange(hex);
-                    localStorage.setItem('colorPercentChange', hex);
-                  }}
-                />
-              </div>
-            </div>
-            <div className="infectious-right-select-graph">
-              <Select
-                value={chartpercentChange}
-                onChange={val => setpercentChange(val)}
-                style={{ marginBottom: 10 }}
-              >
-                <Select.Option value="line">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <LineChart size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟเส้น</span>
-                  </div>
-                </Select.Option>
-                <Select.Option value="bar">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <BarChart3 size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟแท่ง</span>
-                  </div>
-                </Select.Option>
-              </Select>
-            </div>
-            <ApexChart
-              options={getChartOptions(
-                percentChangeData.map(item => item.date),
-                "line",
-                filterMode === "year",
-                percentChangeSeries[0].data,
-                false,
-                true
-              )}
-              series={percentChangeSeries}
-              type={chartpercentChange}
-              height={350}
-            />
           </div>
         </div>
         <div className="infectious-header-vis">
@@ -1245,7 +1275,7 @@ const InfectiousWaste: React.FC = () => {
         >
           <InfectiousCentralForm onCancel={handleAddModalCancel}
             onSuccess={async () => {
-              await fetchData();      // ✅ โหลดข้อมูลกราฟใหม่
+              await fetchInfectiousData();      // ✅ โหลดข้อมูลกราฟใหม่
               await loadInfectiousTable();   // ✅ โหลดข้อมูลตารางใหม่
             }}
           />
@@ -1268,154 +1298,11 @@ const InfectiousWaste: React.FC = () => {
                   setIsEditModalVisible(false);
                   setEditRecord(null);
                   await loadInfectiousTable();
-                  await fetchData();
+                  await fetchInfectiousData();
                 }, 500);
               }}
               onCancel={handleEditModalCancel}
             />
-          )}
-        </Modal>
-
-        <Modal
-          visible={modalVisible}
-          onCancel={closeModal}
-          footer={null}
-          className="infectious-custom-modal"
-          centered
-          destroyOnClose
-          maskClosable={true}
-        >
-          {modalGraphType === "before" && (
-            <div className="infectious-chat-modal" >
-              <div className="infectious-head-graph-card">
-                <div className="infectious-width25">
-                  <h2 className="infectious-head-graph-card-text">น้ำก่อนบำบัด</h2>
-                </div>
-              </div>
-              <div className="infectious-right-select-graph">
-                <Select
-                  value={chartTypeBefore}
-                  onChange={val => setChartTypeBefore(val)}
-                  style={{ marginBottom: 10 }}
-                >
-                  <Select.Option value="line">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <LineChart size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟเส้น</span>
-                    </div>
-                  </Select.Option>
-                  <Select.Option value="bar">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <BarChart3 size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟแท่ง</span>
-                    </div>
-                  </Select.Option>
-                </Select>
-              </div>
-              <div className="infectious-chart-containner">
-                <ApexChart
-                  key={chartTypeBefore}
-                  options={getChartOptions(
-                    beforeData.map(item => item.date),
-                    chartTypeBefore,
-                    filterMode === "year",
-                    beforeSeries[0]?.data || [], //  ส่ง data เพื่อใช้หาค่าสูงสุด
-                    true
-                  )}
-                  series={beforeSeries}
-                  type={chartTypeBefore}
-                  height="100%"
-                />
-              </div>
-            </div>
-          )}
-          {modalGraphType === "after" && (
-            <div className="infectious-chat-modal">
-              <div className="infectious-head-graph-card">
-                <div className="infectious-width25">
-                  <h2 className="infectious-head-graph-card-text">น้ำหลังบำบัด</h2>
-                </div>
-              </div>
-              <div className="infectious-right-select-graph">
-                <Select
-                  value={chartTypeAfter}
-                  onChange={val => setChartTypeAfter(val)}
-                  style={{ marginBottom: 10 }}
-                >
-                  <Select.Option value="line">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <LineChart size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟเส้น</span>
-                    </div>
-                  </Select.Option>
-                  <Select.Option value="bar">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <BarChart3 size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟแท่ง</span>
-                    </div>
-                  </Select.Option>
-                </Select>
-              </div>
-              <div className="infectious-chart-containner">
-                <ApexChart
-                  key={chartTypeAfter}
-                  options={getChartOptions(
-                    afterData.map(item => item.date),
-                    chartTypeAfter,
-                    filterMode === "year",
-                    afterSeries[0]?.data || [],
-                    true
-                  )}
-                  series={afterSeries}
-                  type={chartTypeAfter}
-                  height="100%"
-                />
-              </div>
-            </div>
-          )}
-          {modalGraphType === "compare" && (
-            <div className="infectious-chat-modal">
-              <div className="infectious-head-graph-card" >
-                <div className="infectious-width40">
-                  <h2 className="infectious-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
-                </div>
-              </div>
-              <div className="infectious-right-select-graph">
-                <Select
-                  value={chartTypeCompare}
-                  onChange={val => setChartTypeCompare(val)}
-                  style={{ marginBottom: 10 }}
-                >
-                  <Select.Option value="line">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <LineChart size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟเส้น</span>
-                    </div>
-                  </Select.Option>
-                  <Select.Option value="bar">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <BarChart3 size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟแท่ง</span>
-                    </div>
-                  </Select.Option>
-                </Select>
-              </div>
-              <div className="infectious-chart-containner">
-                <ApexChart
-                  key={chartTypeCompare}
-                  options={getChartOptions(
-                    compareData.map(item => item.date),
-                    chartTypeCompare,
-                    filterMode === "year",
-                    combinedCompareData,
-                    true
-                  )}
-                  series={compareSeries}
-                  type={chartTypeCompare}
-                  height="100%"
-                />
-              </div>
-            </div>
           )}
         </Modal>
 

@@ -295,6 +295,7 @@ const BODdataviz: React.FC = () => {
       const response2 = await GetBODTABLE();
       if (!response2 || response2.length === 0) {
         setError("ไม่พบข้อมูล BOD ของตาราง");
+         setData([])//แก้ลบข้อมูลสุดท้ายแล้วตารางไม่รีเฟรช
         return;
       }
 

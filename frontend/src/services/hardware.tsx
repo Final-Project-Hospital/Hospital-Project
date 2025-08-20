@@ -9,7 +9,8 @@ import { HardwareParameterInterface } from "../interface/IHardwareParameter"
 import { UnitHardwareInterface } from "../interface/IUnitHardware";
 import { NotificationInterface } from "../interface/INotification";
 import { RoomNotificationInterface } from "../interface/IRoomNotification";
-import {apiUrl} from "./index"
+import { LineMasterInterface } from "../interface/ILineMaster"
+import { apiUrl } from "./index"
 
 const getAuthHeader = () => {
   const token = localStorage.getItem("token");
@@ -47,7 +48,7 @@ export const CreateRoom = async (room: RoomInterface): Promise<RoomInterface | n
       BuildingID: room.Building?.ID,
       EmployeeID: room.Employee?.ID,
       HardwareID: room.Hardware?.ID,
-      Icon: room.Icon, 
+      Icon: room.Icon,
     };
 
     const response = await axios.post(`${apiUrl}/create-rooms`, payload, {
@@ -408,7 +409,7 @@ export const ListHardwareColors = async (): Promise<HardwareParameterColorInterf
     const response = await axios.get(`${apiUrl}/hardware-colors`, {
       headers: {
         "Content-Type": "application/json",
-        ...getAuthHeader(), 
+        ...getAuthHeader(),
       },
     });
 
@@ -785,7 +786,7 @@ export const ListDataHardware = async (): Promise<any[] | null> => {
     });
 
     if (response.status === 200) {
-      return response.data; 
+      return response.data;
     } else {
       console.error("Unexpected status:", response.status);
       return null;
@@ -874,6 +875,53 @@ export const UpdateNotificationIDByRoomID = async (
     }
   } catch (error) {
     console.error("Error updating NotificationID:", error);
+    return null;
+  }
+};
+
+// ดึง LineMaster record แรก
+export const GetLineMasterFirst = async (): Promise<LineMasterInterface | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/line-master/first`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data as LineMasterInterface;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching line master:", error);
+    return null;
+  }
+};
+
+// อัปเดต Token ของ LineMaster ตาม ID
+export const UpdateLineMasterByID = async (
+  id: number,
+  data: Partial<LineMasterInterface>
+): Promise<LineMasterInterface | null> => {
+  try {
+    const response = await axios.put(`${apiUrl}/line-master/${id}`, data, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data as LineMasterInterface;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error updating line master:", error);
     return null;
   }
 };

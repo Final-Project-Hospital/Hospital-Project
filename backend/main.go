@@ -63,12 +63,10 @@ import (
 
 	"github.com/Tawunchai/hospital-project/controller/dashboard"
 	"github.com/Tawunchai/hospital-project/controller/selectBoxAll"
+	"github.com/Tawunchai/hospital-project/entity"
 	"github.com/gin-gonic/gin"
 	"strconv"
-	"github.com/Tawunchai/hospital-project/entity"
 )
-
-
 
 const PORT = "8000"
 
@@ -95,52 +93,59 @@ func main() {
 		authorized.GET("/dashboard/environmental/alerts", dashboard.GetEnvironmentalAlerts)
 		authorized.GET("/dashboard/environmental/meta", dashboard.GetEnvironmentalMeta)
 		authorized.GET("/api/me", func(c *gin.Context) {
-    // ดึง user id จาก context (ลองหลาย key ที่พบบ่อย)
-    var id uint
-    var okFound bool
-    for _, k := range []string{"employee_id", "EmployeeID", "user_id", "userID", "id", "ID", "sub"} {
-        if v, ok := c.Get(k); ok {
-            switch t := v.(type) {
-            case uint:
-                id = t; okFound = true
-            case int:
-                id = uint(t); okFound = true
-            case int64:
-                id = uint(t); okFound = true
-            case float64:
-                id = uint(t); okFound = true
-            case string:
-                if u64, err := strconv.ParseUint(t, 10, 64); err == nil {
-                    id = uint(u64); okFound = true
-                }
-            }
-            if okFound { break }
-        }
-    }
-    if !okFound || id == 0 {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-        return
-    }
+			// ดึง user id จาก context (ลองหลาย key ที่พบบ่อย)
+			var id uint
+			var okFound bool
+			for _, k := range []string{"employee_id", "EmployeeID", "user_id", "userID", "id", "ID", "sub"} {
+				if v, ok := c.Get(k); ok {
+					switch t := v.(type) {
+					case uint:
+						id = t
+						okFound = true
+					case int:
+						id = uint(t)
+						okFound = true
+					case int64:
+						id = uint(t)
+						okFound = true
+					case float64:
+						id = uint(t)
+						okFound = true
+					case string:
+						if u64, err := strconv.ParseUint(t, 10, 64); err == nil {
+							id = uint(u64)
+							okFound = true
+						}
+					}
+					if okFound {
+						break
+					}
+				}
+			}
+			if !okFound || id == 0 {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+				return
+			}
 
-    // โหลดข้อมูลพนักงาน
-    var emp entity.Employee
-    if err := config.DB().Preload("Role").Preload("Position").First(&emp, id).Error; err != nil {
-        c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-        return
-    }
+			// โหลดข้อมูลพนักงาน
+			var emp entity.Employee
+			if err := config.DB().Preload("Role").Preload("Position").First(&emp, id).Error; err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+				return
+			}
 
-    // ตอบข้อมูลเท่าที่ frontend ต้องใช้
-    c.JSON(http.StatusOK, gin.H{
-        "ID":        emp.ID,
-        "FirstName": emp.FirstName,
-        "LastName":  emp.LastName,
-        "Email":     emp.Email,
-        "Phone":     emp.Phone,
-        "Profile":   emp.Profile,
-        "Role":      emp.Role,      // มี RoleName อยู่ข้างใน
-        "Position":  emp.Position,  // มี Position อยู่ข้างใน
-    })
-})
+			// ตอบข้อมูลเท่าที่ frontend ต้องใช้
+			c.JSON(http.StatusOK, gin.H{
+				"ID":        emp.ID,
+				"FirstName": emp.FirstName,
+				"LastName":  emp.LastName,
+				"Email":     emp.Email,
+				"Phone":     emp.Phone,
+				"Profile":   emp.Profile,
+				"Role":      emp.Role,     // มี RoleName อยู่ข้างใน
+				"Position":  emp.Position, // มี Position อยู่ข้างใน
+			})
+		})
 
 	}
 
@@ -265,7 +270,7 @@ func main() {
 		public.PATCH("/update-or-create-bod/:d", bodcenter.UpdateOrCreateBOD)
 		public.DELETE("/delete-bod/:id", bodcenter.DeleteBOD)
 		public.DELETE("/delete-bod-day/:id", bodcenter.DeleteAllBODRecordsByDate)
-		public.GET("/get-beforeafter-bod", bodcenter.GetBeforeAfterBOD)  //เพิ่ม
+		public.GET("/get-beforeafter-bod", bodcenter.GetBeforeAfterBOD) //เพิ่ม
 
 		//FOG
 		public.POST("/create-fog", fogcenter.CreateFOG)
@@ -345,7 +350,6 @@ func main() {
 		public.DELETE("/delete-dtcb-tank-day/:id", dtcbcenterT.DeleteAllDTCBtankRecordsByDate)
 		public.GET("/get-beforeafter-dtcb-tank", dtcbcenterT.GetBeforeAfterDTCBtank)
 
-		
 		//tapwater
 		//al
 		public.POST("/create-al", alcenter.CreateAL)
@@ -379,7 +383,7 @@ func main() {
 		public.DELETE("/delete-mn/:id", mncenter.DeleteMN)
 		public.DELETE("/delete-mn-day/:id", mncenter.DeleteAllMNRecordsByDate)
 		public.GET("/get-beforeafter-mn", mncenter.GetBeforeAfterMN)
-		
+
 		//ni
 		public.POST("/create-ni", nicenter.CreateNI)
 		public.GET("/get-first-ni", nicenter.GetfirstNI)
@@ -434,7 +438,7 @@ func main() {
 		public.DELETE("/delete-th/:id", thcenter.DeleteTH)
 		public.DELETE("/delete-th-day/:id", thcenter.DeleteAllTHRecordsByDate)
 		public.GET("/get-beforeafter-th", thcenter.GetBeforeAfterTH)
-		
+
 		//ttcb
 		public.POST("/create-ttcb", ttcbcenter.CreateTTCB)
 		public.GET("/get-first-ttcb", ttcbcenter.GetfirstTTCB)
@@ -445,7 +449,6 @@ func main() {
 		public.DELETE("/delete-ttcb/:id", ttcbcenter.DeleteTTCB)
 		public.DELETE("/delete-ttcb-day/:id", ttcbcenter.DeleteAllTTCBRecordsByDate)
 		public.GET("/get-beforeafter-ttcb", ttcbcenter.GetBeforeAfterTTCB)
-
 
 		//Garbage
 		//HazardousWaste
@@ -483,6 +486,7 @@ func main() {
 		public.GET("/list-infectious", infectiousWaste.ListInfectious)
 		public.GET("/get-infectious/:id", infectiousWaste.GetInfectiousbyID)
 		public.GET("/get-infectious-table", infectiousWaste.GetInfectiousTABLE)
+		public.GET("/get-last-day-infectious", infectiousWaste.GetLastDayInfectious)
 		public.PATCH("/update-or-create-infectious/:d", infectiousWaste.UpdateOrCreateInfectious)
 		public.DELETE("/delete-infectious-day/:id", infectiousWaste.DeleteAllInfectiousRecordsByDate)
 
@@ -522,6 +526,8 @@ func main() {
 		public.DELETE("/room-notifications/:id", line.DeleteRoomNotificationByNotificationID)
 		public.POST("/room-notifications", line.CreateRoomNotification)
 		public.PUT("/room-notification/:room_id/notification", line.UpdateNotificationIDByRoomID)
+		public.GET("/line-master/first", line.GetLineMasterFirstID)
+		public.PUT("/line-master/:id", line.UpdateLineMasterByID)
 
 		//report hardware
 		public.GET("/report-hardware", report.ListReportHardware)
@@ -549,7 +555,6 @@ func main() {
 		public.GET("/sensor-data-by-hardware/:id", sensordata.GetSensorDataIDByHardwareID)
 		public.DELETE("/sensor-data-parameters", hardware.DeleteSensorDataParametersByIds)
 		public.DELETE("/sensor-data-parameters/all/:sensorDataID", hardware.DeleteAllSensorDataParametersBySensorID)
-
 
 		//Calendar
 		public.GET("/calendars", calendar.ListCalendar)
