@@ -218,13 +218,6 @@ func ListInfectious(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
 	}
-	var before entity.BeforeAfterTreatment
-	if err := db.Where("treatment_name = ?", "ก่อน").First(&before).Error; err != nil {
-		fmt.Println("Error fetching parameter:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
-		return
-	}
-
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
 	var firstinf []struct {
 		ID                  uint      `json:"ID"`
@@ -245,6 +238,10 @@ func ListInfectious(c *gin.Context) {
 		MonthlyGarbage      float64 `json:"MonthlyGarbage"`
 		AverageDailyGarbage float64 `json:"AverageDailyGarbage"`
 	}
+	subQuery := db.Model(&entity.Garbage{}).
+		Select("MAX(id)").
+		Where("parameter_id = ?", parameter.ID).
+		Group("DATE(date)")
 
 	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
 	result := db.Model(&entity.Garbage{}).
@@ -253,7 +250,8 @@ func ListInfectious(c *gin.Context) {
 		Joins("inner join targets on garbages.target_id = targets.id").
 		Joins("inner join units on garbages.unit_id = units.id").
 		Joins("inner join statuses on garbages.status_id = statuses.id").
-		Where("garbages.parameter_id = ? ", parameter.ID).
+		Where("garbages.id IN (?)", subQuery).
+		Order("garbages.date DESC").
 		Find(&firstinf)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
