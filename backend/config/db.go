@@ -362,6 +362,9 @@ func SetupDatabase() {
 
 	//น้ำดื่ม
 	param12 := entity.Parameter{ParameterName: "Escherichia coli"}
+	param27 := entity.Parameter{ParameterName: "Escherichia coli of tank"}
+	param28 := entity.Parameter{ParameterName: "Fecal Coliform Bacteria of tank"}
+	param29 := entity.Parameter{ParameterName: "Total Coliform Bacteria of tank"}
 
 	//น้ำประปา
 	param13 := entity.Parameter{ParameterName: "Turbidity"}
@@ -389,6 +392,9 @@ func SetupDatabase() {
 
 	//น้ำดื่ม
 	db.FirstOrCreate(&param12, entity.Parameter{ParameterName: "Escherichia coli"})
+	db.FirstOrCreate(&param27, entity.Parameter{ParameterName: "Escherichia coli of tank"})
+	db.FirstOrCreate(&param28, entity.Parameter{ParameterName: "Fecal Coliform Bacteria of tank"})
+	db.FirstOrCreate(&param29, entity.Parameter{ParameterName: "Total Coliform Bacteria of tank"})
 
 	//น้ำประปา
 	db.FirstOrCreate(&param13, entity.Parameter{ParameterName: "Turbidity"})
