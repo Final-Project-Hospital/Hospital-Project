@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Modal,
   Form,
-  Select,
   Button,
   message,
   Spin,
@@ -15,10 +14,11 @@ import {
 import {
   UpdateHardwareParameterByID,
   ListHardwareParameterByHardwareID,
-  ListHardwareColors,
   UpdateGroupDisplay,
   UpdateLayoutDisplay,
+  UpdateHardwareParameterColorByID, // ✅ ใช้ service นี้ในการอัปเดตสี (code)
 } from "../../../../../../services/hardware";
+import { ColorPicker } from "antd";
 import LineChartingImg from "../../../../../../assets/chart/LineCharting.png";
 import AreaChartingImg from "../../../../../../assets/chart/AreaCharting.png";
 import MappingImg from "../../../../../../assets/chart/Mapping.png";
@@ -36,7 +36,7 @@ type SlotMode = "single" | "split";
 
 // โครงสร้างของ cell ใน layout
 type CellGraph = {
-  graphTypeId: number | null;       // 1..4
+  graphTypeId: number | null; // 1..4
   graphInstanceUid?: string | null; // uid ของ instance
   paramIds: number[];
 };
@@ -48,9 +48,9 @@ type ParamRow = {
   Parameter: string;
   GroupDisplay: boolean;
   LayoutDisplay: boolean;
-  HardwareGraphID?: number;           // 1..4
-  HardwareParameterColorID?: number;
-  HardwareParameterColorCode?: string;
+  HardwareGraphID?: number; // 1..4
+  HardwareParameterColorID?: number; // ✅ ใช้เพื่อชี้ไปยัง record สีเดิมที่ผูกอยู่
+  HardwareParameterColorCode?: string; // ✅ เก็บ code ของสีเพื่อแก้ด้วย ColorPicker
 };
 
 // ประเภทกราฟ
@@ -67,8 +67,8 @@ const STORAGE_KEY = (hardwareID: number) => `hw-layout-v2-${hardwareID}`;
 // instance ของกราฟ
 type GraphInstance = {
   uid: string;
-  graphTypeId: number;  // 1..4
-  name: string;         // เช่น "Area #2"
+  graphTypeId: number; // 1..4
+  name: string; // เช่น "Area #2"
 };
 
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -81,14 +81,18 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-
   const [formValues, setFormValues] = useState<ParamRow[]>([]);
   const [initialValues, setInitialValues] = useState<ParamRow[]>([]);
-  const [colorOptions, setColorOptions] = useState<any[]>([]);
+  const [employeeid, setEmployeeid] = useState<number>(
+    Number(localStorage.getItem("employeeid")) || 0
+  );
 
   // ---- Drag state
   const [draggedParamId, setDraggedParamId] = useState<number | null>(null);
-  const [draggedGraphInstance, setDraggedGraphInstance] = useState<{ uid: string; graphTypeId: number } | null>(null);
+  const [draggedGraphInstance, setDraggedGraphInstance] = useState<{
+    uid: string;
+    graphTypeId: number;
+  } | null>(null);
   const [dragOverSlot, setDragOverSlot] =
     useState<{ slot: number; sub: number | null } | null>(null);
 
@@ -109,7 +113,9 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     instances.find((it) => it.uid === u);
 
   const handleChange = (id: number, field: keyof ParamRow, value: any) => {
-    setFormValues((prev) => prev.map((it) => (it.ID === id ? { ...it, [field]: value } : it)));
+    setFormValues((prev) =>
+      prev.map((it) => (it.ID === id ? { ...it, [field]: value } : it))
+    );
   };
 
   const getParamName = (id: number) =>
@@ -151,19 +157,23 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       const validIds = new Set(rows.map((r) => r.ID));
       const cleanedSlots: Slot[] = parsed.slots.map((slot) => {
         const isSplit = slot.mode === "split";
-        const graphs = (slot.graphs || []).slice(0, isSplit ? 2 : 1).map((cg) => {
-          if (!cg) return null;
-          const graphTypeId =
-            typeof cg.graphTypeId === "number" && [1, 2, 3, 4].includes(cg.graphTypeId)
-              ? cg.graphTypeId
+        const graphs = (slot.graphs || [])
+          .slice(0, isSplit ? 2 : 1)
+          .map((cg) => {
+            if (!cg) return null;
+            const graphTypeId =
+              typeof cg.graphTypeId === "number" && [1, 2, 3, 4].includes(cg.graphTypeId)
+                ? cg.graphTypeId
+                : null;
+            const paramIds = Array.from(
+              new Set((cg.paramIds || []).filter((id) => validIds.has(id)))
+            );
+            const graphInstanceUid =
+              typeof cg.graphInstanceUid === "string" ? cg.graphInstanceUid : null;
+            return graphTypeId || paramIds.length
+              ? { graphTypeId, graphInstanceUid, paramIds }
               : null;
-          const paramIds = Array.from(new Set((cg.paramIds || []).filter((id) => validIds.has(id))));
-          const graphInstanceUid =
-            typeof cg.graphInstanceUid === "string" ? cg.graphInstanceUid : null;
-          return graphTypeId || paramIds.length
-            ? { graphTypeId, graphInstanceUid, paramIds }
-            : null;
-        });
+          });
         if (isSplit) {
           while (graphs.length < 2) graphs.push(null);
         } else {
@@ -172,8 +182,9 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         return { mode: isSplit ? "split" : "single", graphs };
       });
 
-      const cleanedInstances = (Array.isArray(parsed.instances) ? parsed.instances : [])
-        .filter((it) => it && typeof it.uid === "string" && [1,2,3,4].includes(it.graphTypeId));
+      const cleanedInstances = (Array.isArray(parsed.instances) ? parsed.instances : []).filter(
+        (it) => it && typeof it.uid === "string" && [1, 2, 3, 4].includes(it.graphTypeId)
+      );
 
       const paramInSplitLayout = new Set<number>();
       cleanedSlots.forEach((slot) => {
@@ -196,15 +207,15 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   const saveLayoutToStorage = (value: { slots: Slot[]; instances: GraphInstance[] }) => {
     try {
       localStorage.setItem(STORAGE_KEY(hardwareID), JSON.stringify(value));
-    } catch {}
+    } catch { }
   };
 
-  // ---------- load ----------
   useEffect(() => {
+    setEmployeeid(Number(localStorage.getItem("employeeid")));
     if (!open || !hardwareID) return;
     setLoading(true);
-    Promise.all([ListHardwareParameterByHardwareID(hardwareID), ListHardwareColors()])
-      .then(([params, colors]) => {
+    ListHardwareParameterByHardwareID(hardwareID)
+      .then((params) => {
         if (!params) return;
         const rows: ParamRow[] = params.map((p: any) => ({
           ID: p.ID,
@@ -228,28 +239,6 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         }
 
         setLayoutDirty(false); // reset สถานะ dirty หลังโหลด
-
-        if (colors) {
-          setColorOptions(
-            colors.map((color: any) => ({
-              value: color.ID,
-              label: (
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 14,
-                    height: 14,
-                    background: color.Code,
-                    borderRadius: 7,
-                    border: "1px solid #bbb",
-                    verticalAlign: "middle",
-                  }}
-                  title={color.Color}
-                />
-              ),
-            }))
-          );
-        }
       })
       .finally(() => setLoading(false));
   }, [open, hardwareID]);
@@ -265,7 +254,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         old.GroupDisplay !== cur.GroupDisplay ||
         old.LayoutDisplay !== cur.LayoutDisplay ||
         old.HardwareGraphID !== cur.HardwareGraphID ||
-        old.HardwareParameterColorID !== cur.HardwareParameterColorID
+        old.HardwareParameterColorCode !== cur.HardwareParameterColorCode // ✅ เทียบ code (ไม่ใช่ id)
       ) {
         return true;
       }
@@ -273,7 +262,10 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     return false;
   }, [initialValues, formValues]);
 
-  const canSave = useMemo(() => hasUnsavedChanges || layoutDirty, [hasUnsavedChanges, layoutDirty]);
+  const canSave = useMemo(
+    () => hasUnsavedChanges || layoutDirty,
+    [hasUnsavedChanges, layoutDirty]
+  );
 
   // ---------- Graph Instances ----------
   const addGraphInstance = () => {
@@ -344,7 +336,8 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       const next = [...prev];
       const idx = subIndex ?? 0;
       const s = { ...next[slotIndex], graphs: [...next[slotIndex].graphs] };
-      const cur: CellGraph = s.graphs[idx] ?? { graphTypeId: null, graphInstanceUid: null, paramIds: [] };
+      const cur: CellGraph =
+        s.graphs[idx] ?? { graphTypeId: null, graphInstanceUid: null, paramIds: [] };
       s.graphs[idx] = updater(cur);
       next[slotIndex] = s;
       return next;
@@ -477,7 +470,11 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   };
 
   // เอา parameter ออกจาก cell
-  const removeParamFromCell = (slotIndex: number, subIndex: number | null, paramId: number) => {
+  const removeParamFromCell = (
+    slotIndex: number,
+    subIndex: number | null,
+    paramId: number
+  ) => {
     setSlots((prev) => {
       const next = [...prev];
       const idx = subIndex ?? 0;
@@ -486,10 +483,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       if (!cell) return prev;
 
       const newParamIds = cell.paramIds.filter((id) => id !== paramId);
-      s.graphs[idx] =
-        newParamIds.length === 0
-          ? null
-          : { ...cell, paramIds: newParamIds };
+      s.graphs[idx] = newParamIds.length === 0 ? null : { ...cell, paramIds: newParamIds };
 
       next[slotIndex] = s;
       return next;
@@ -499,7 +493,8 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     const stillUsedSomewhere = slots.some((sl, si) =>
       sl.graphs.some((cg, ci) => {
         if (!cg) return false;
-        if (si === slotIndex && (sl.mode === "single" ? 0 : ci) === (subIndex ?? 0)) return false;
+        if (si === slotIndex && (sl.mode === "single" ? 0 : ci) === (subIndex ?? 0))
+          return false;
         return cg.paramIds.includes(paramId);
       })
     );
@@ -518,7 +513,9 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   // ---------- รายการพารามิเตอร์: ซ่อนตัวที่ถูกใช้ใน layout ----------
   const usedParamIds = useMemo(() => {
     const s = new Set<number>();
-    slots.forEach((sl) => sl.graphs.forEach((cg) => cg?.paramIds.forEach((id) => s.add(id))));
+    slots.forEach((sl) =>
+      sl.graphs.forEach((cg) => cg?.paramIds.forEach((id) => s.add(id)))
+    );
     return s;
   }, [slots]);
 
@@ -567,23 +564,35 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       formValues.forEach((cur) => {
         const old = initialMap.get(cur.ID);
 
-        if (
-          !old ||
-          old.HardwareGraphID !== cur.HardwareGraphID ||
-          old.HardwareParameterColorID !== cur.HardwareParameterColorID
-        ) {
+        // อัปเดตประเภทกราฟที่ผูกกับพารามิเตอร์ (ถ้าเปลี่ยน)
+        if (!old || old.HardwareGraphID !== cur.HardwareGraphID) {
           updates.push(
             UpdateHardwareParameterByID(cur.ID, {
               hardware_graph_id: cur.HardwareGraphID,
-              hardware_parameter_color_id: cur.HardwareParameterColorID,
             })
           );
         }
 
+        // ✅ อัปเดตสี: ถ้า code เปลี่ยน และมี HardwareParameterColorID
+        if (
+          (!old || old.HardwareParameterColorCode !== cur.HardwareParameterColorCode) &&
+          cur.HardwareParameterColorID
+        ) {
+          updates.push(
+            UpdateHardwareParameterColorByID(
+              cur.HardwareParameterColorID,
+              cur.HardwareParameterColorCode || "#000000",
+              employeeid
+            )
+          );
+        }
+
+        // GroupDisplay (auto ตามจำนวนพารามิเตอร์ใน cell)
         if (!old || old.GroupDisplay !== cur.GroupDisplay) {
           updates.push(UpdateGroupDisplay(cur.ID, { group_display: cur.GroupDisplay }));
         }
 
+        // LayoutDisplay (true เฉพาะที่อยู่ใน split layout)
         const desiredLayout = willLayoutTrue.has(cur.ID);
         if (!old || old.LayoutDisplay !== desiredLayout) {
           updates.push(UpdateLayoutDisplay(cur.ID, { layout_display: desiredLayout }));
@@ -648,13 +657,34 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
               <div className="bg-white rounded-xl shadow border border-gray-100 px-4 py-3">
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="font-semibold text-gray-800">เพิ่มกราฟ</span>
-                  <Select
-                    value={addingTypeId}
-                    onChange={setAddingTypeId}
-                    style={{ width: 240, maxWidth: "100%" }}
-                    options={graphTypes.map((g) => ({ label: g.name, value: g.id }))}
+                  <Button
                     size="small"
-                  />
+                    onClick={() => setAddingTypeId(1)}
+                    className={addingTypeId === 1 ? "border-blue-500" : ""}
+                  >
+                    Line
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={() => setAddingTypeId(2)}
+                    className={addingTypeId === 2 ? "border-blue-500" : ""}
+                  >
+                    Area
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={() => setAddingTypeId(3)}
+                    className={addingTypeId === 3 ? "border-blue-500" : ""}
+                  >
+                    Mapping
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={() => setAddingTypeId(4)}
+                    className={addingTypeId === 4 ? "border-blue-500" : ""}
+                  >
+                    Stacked
+                  </Button>
                   <Button size="small" type="primary" onClick={addGraphInstance}>
                     + เพิ่มกราฟ
                   </Button>
@@ -674,20 +704,26 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                           draggable
                           onDragStart={() => handleGraphInstanceDragStart(inst)}
                           onDragEnd={handleGraphInstanceDragEnd}
-                          title="ลากกล่องกราฟนี้ไปวางในเลย์เอาต์"
+                          title="ลากกล่องกราฟนี้ไปวางที่เลย์เอาต์"
                         >
                           <Image
-                            src={meta.img}
-                            alt={meta.name}
+                            src={meta?.img}
+                            alt={meta?.name}
                             preview={false}
-                            style={{ width: 52, height: 52, objectFit: "contain", borderRadius: 10, border: "1px solid #eee" }}
+                            style={{
+                              width: 52,
+                              height: 52,
+                              objectFit: "contain",
+                              borderRadius: 10,
+                              border: "1px solid #eee",
+                            }}
                           />
                           <div className="min-w-0">
                             <div className="font-semibold text-sm text-gray-800 truncate max-w-[140px] sm:max-w-[180px]">
                               {inst.name}
                             </div>
                             <div className="text-xs text-gray-500 truncate max-w-[140px] sm:max-w-[180px]">
-                              {meta.name}
+                              {meta?.name}
                             </div>
                           </div>
                           <Tag className="ml-auto text-[11px] hidden sm:inline-block" color="blue">
@@ -711,14 +747,11 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                 </div>
 
                 {visibleParams.length === 0 ? (
-                  <div className="text-gray-500 text-sm">
-                    ทุกพารามิเตอร์ถูกใช้อยู่ในเลย์เอาต์แล้ว
-                  </div>
+                  <div className="text-gray-500 text-sm">ทุกพารามิเตอร์ถูกใช้อยู่ในเลย์เอาต์แล้ว</div>
                 ) : (
                   <div
-                    className={`flex flex-col gap-2 ${
-                      visibleParams.length > 7 ? "max-h-[60vh] overflow-y-auto pr-1" : ""
-                    }`}
+                    className={`flex flex-col gap-2 ${visibleParams.length > 7 ? "max-h-[60vh] overflow-y-auto pr-1" : ""
+                      }`}
                   >
                     {visibleParams.map((rowParam) => (
                       <div
@@ -728,7 +761,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                         draggable
                         onDragStart={() => handleParamDragStart(rowParam.ID)}
                         onDragEnd={handleParamDragEnd}
-                        title="ลากพารามิเตอร์ไปวางในเลย์เอาต์"
+                        title="ลากพารามิเตอร์ไปวางที่เลย์เอาต์"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           {/* สีพารามิเตอร์ */}
@@ -758,21 +791,36 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                         </div>
 
                         <div className="flex items-center gap-3">
+                          {/* ✅ ColorPicker แทน Select รายการสี */}
                           <Form.Item style={{ marginBottom: 0 }}>
-                            <Select
-                              value={rowParam.HardwareParameterColorID}
-                              onChange={(v) =>
-                                handleChange(rowParam.ID, "HardwareParameterColorID", v)
-                              }
-                              options={colorOptions}
-                              size="small"
-                              className="no-arrow-select"
-                              style={{ width: 36, minWidth: 32 }}
-                              dropdownStyle={{ minWidth: 70, padding: 6 }}
+                            <ColorPicker
+                              value={rowParam.HardwareParameterColorCode || "#000000"}
+                              onChange={(c) => {
+                                const hex = c.toHexString();
+                                handleChange(rowParam.ID, "HardwareParameterColorCode", hex);
+                              }}
+                              presets={[
+                                {
+                                  label: "แนะนำ",
+                                  colors: [
+                                    "#1B3F71",
+                                    "#2563eb",
+                                    "#22c55e",
+                                    "#eab308",
+                                    "#ef4444",
+                                    "#9333ea",
+                                    "#0ea5e9",
+                                    "#64748b",
+                                  ],
+                                },
+                              ]}
                             />
                           </Form.Item>
 
-                          <Tooltip title="ตั้งค่าเป็น 'รวมกลุ่ม' อัตโนมัติเมื่อมี ≥ 2 พารามิเตอร์ในช่องเดียวกัน" placement="top">
+                          <Tooltip
+                            title="ตั้งค่าเป็น 'รวมกลุ่ม' อัตโนมัติเมื่อมี ≥ 2 พารามิเตอร์ในช่องเดียวกัน"
+                            placement="top"
+                          >
                             <Switch
                               size="small"
                               checked={rowParam.GroupDisplay}
@@ -781,7 +829,10 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                               unCheckedChildren="G"
                             />
                           </Tooltip>
-                          <Tooltip title="การแสดงในเลย์เอาต์ (เดี่ยว=ปิด, แบ่งสอง=เปิด)" placement="top">
+                          <Tooltip
+                            title="การแสดงในเลย์เอาต์ (เดี่ยว=ปิด, แบ่งสอง=เปิด)"
+                            placement="top"
+                          >
                             <Switch
                               size="small"
                               checked={rowParam.LayoutDisplay}
@@ -805,12 +856,17 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
               <div className="bg-white rounded-xl shadow border border-gray-100 px-4 sm:px-5 py-4">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-[16px] md:text-[17px] font-semibold text-gray-800">พื้นที่เลย์เอาต์</span>
+                    <span className="text-[16px] md:text-[17px] font-semibold text-gray-800">
+                      พื้นที่เลย์เอาต์
+                    </span>
                     <Tag className="rounded-md text-[11px]">
-                      แถวเดี่ยว: {slots.filter((s) => s.mode === "single").length}/{Math.max(1, formValues.length)}
+                      แถวเดี่ยว: {slots.filter((s) => s.mode === "single").length}/
+                      {Math.max(1, formValues.length)}
                     </Tag>
                     {canSave && (
-                      <Tag color="orange" className="rounded-md text-[11px]">มีการเปลี่ยนแปลง</Tag>
+                      <Tag color="orange" className="rounded-md text-[11px]">
+                        มีการเปลี่ยนแปลง
+                      </Tag>
                     )}
                   </div>
                   <Button
@@ -827,7 +883,10 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                     const isSplit = slot.mode === "split";
                     const subCount = isSplit ? 2 : 1;
                     return (
-                      <div key={slotIdx} className="rounded-lg border border-gray-200 p-3 bg-gradient-to-b from-white to-gray-50">
+                      <div
+                        key={slotIdx}
+                        className="rounded-lg border border-gray-200 p-3 bg-gradient-to-b from-white to-gray-50"
+                      >
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold">แถว {slotIdx + 1}</span>
@@ -851,7 +910,10 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                           </div>
                         </div>
 
-                        <div className={`grid gap-3 ${isSplit ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
+                        <div
+                          className={`grid gap-3 ${isSplit ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
+                            }`}
+                        >
                           {Array.from({ length: subCount }).map((_, subIdx) => {
                             const cell = slot.graphs[subIdx ?? 0];
                             const meta = graphMeta(cell?.graphTypeId ?? null);
@@ -863,20 +925,25 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                             return (
                               <div
                                 key={subIdx}
-                                className={`relative rounded-xl border p-3 min-h-[140px] transition ${
-                                  isOver
-                                    ? "border-teal-400 bg-teal-50"
-                                    : "border-gray-300 bg-gray-50"
-                                }`}
-                                onDragOver={(e) => handleDragOverSlot(slotIdx, isSplit ? subIdx : null, e)}
-                                onDrop={() => handleDropOnSlot(slotIdx, isSplit ? subIdx : null)}
-                                title={isSplit ? (subIdx === 0 ? "ช่องซ้าย" : "ช่องขวา") : "ช่องเดี่ยว"}
+                                className={`relative rounded-xl border p-3 min-h-[140px] transition ${isOver ? "border-teal-400 bg-teal-50" : "border-gray-300 bg-gray-50"
+                                  }`}
+                                onDragOver={(e) =>
+                                  handleDragOverSlot(slotIdx, isSplit ? subIdx : null, e)
+                                }
+                                onDrop={() =>
+                                  handleDropOnSlot(slotIdx, isSplit ? subIdx : null)
+                                }
+                                title={isSplit ? (subIdx === 0 ? "ช่องซ้าย" : "ขวา") : "ช่องเดี่ยว"}
                               >
                                 {/* ส่วนหัวของ cell */}
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2 min-w-0">
                                     {isSplit && (
-                                      <Tag className="text-[11px]" color="geekblue" style={{ borderRadius: 6 }}>
+                                      <Tag
+                                        className="text-[11px]"
+                                        color="geekblue"
+                                        style={{ borderRadius: 6 }}
+                                      >
                                         {subIdx === 0 ? "ซ้าย" : "ขวา"}
                                       </Tag>
                                     )}
@@ -886,7 +953,12 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                                           src={meta?.img}
                                           alt={meta?.name}
                                           preview={false}
-                                          style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 8 }}
+                                          style={{
+                                            width: 40,
+                                            height: 40,
+                                            objectFit: "contain",
+                                            borderRadius: 8,
+                                          }}
                                         />
                                         <div className="min-w-0">
                                           <div className="text-sm font-semibold truncate max-w-[180px] sm:max-w-[240px]">
@@ -900,7 +972,9 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                                         </div>
                                       </>
                                     ) : (
-                                      <div className="text-gray-500 text-sm">ลากกราฟหรือพารามิเตอร์มาวางที่นี่</div>
+                                      <div className="text-gray-500 text-sm">
+                                        ลากกราฟหรือพารามิเตอร์มาวางที่นี่
+                                      </div>
                                     )}
                                   </div>
                                 </div>
@@ -921,7 +995,11 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                                             closable
                                             onClose={(e) => {
                                               e.preventDefault();
-                                              removeParamFromCell(slotIdx, isSplit ? subIdx : null, pid);
+                                              removeParamFromCell(
+                                                slotIdx,
+                                                isSplit ? subIdx : null,
+                                                pid
+                                              );
                                             }}
                                             className="px-2 py-1"
                                           >
@@ -954,7 +1032,11 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-4">
-                  <Button onClick={onClose} size="small" className="rounded-md font-semibold px-4 h-[34px] text-[14px] border">
+                  <Button
+                    onClick={onClose}
+                    size="small"
+                    className="rounded-md font-semibold px-4 h-[34px] text-[14px] border"
+                  >
                     ยกเลิก
                   </Button>
                   <Button
@@ -978,8 +1060,8 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       <style>{`
         /* มือถือ: ขยับโมดัลลงมาอีกหน่อย และคง padding ด้านข้าง */
         @media (max-width: 640px) {
-          .ant-modal-root .ant-modal { 
-            padding: 0 8px; 
+          .ant-modal-root .ant-modal {
+            padding: 0 8px;
             top: 56px !important; /* ดันลงมาจากขอบบน */
           }
         }

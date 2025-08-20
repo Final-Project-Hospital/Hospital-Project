@@ -6,7 +6,6 @@ import (
 
 type HardwareParameterColor struct {
 	gorm.Model
-	Color string 
 	Code  string 
 
 	HardwareParameter []HardwareParameter `gorm:"foreignKey:HardwareParameterColorID"`

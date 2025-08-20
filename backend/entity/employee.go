@@ -24,4 +24,6 @@ type Employee struct {
 	Calendar []Calendar `gorm:"foreignKey: EmployeeID"`
 
 	EnvironmentalRecord []EnvironmentalRecord `gorm:"foreignKey: EmployeeID"`
+
+	HardwareParameter []HardwareParameter `gorm:"foreignKey: EmployeeID"`
 }

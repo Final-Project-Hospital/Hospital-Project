@@ -8,7 +8,6 @@ import {
   Category,
   Legend,
   Tooltip,
-  AxisModel,
   LineSeries,
 } from '@syncfusion/ej2-react-charts';
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
@@ -61,7 +60,7 @@ const Stacked: React.FC<ChartdataProps> = ({
 }) => {
   const { currentMode } = useStateContext();
   const [seriesDataByParam, setSeriesDataByParam] = useState<Record<string, { x: string; y: number }[]>>({});
-  const [standardLines, setStandardLines] = useState<any[]>([]);
+  const [standardLines, setStandardLines] = useState<any[]>([]);//@ts-ignore
   const [categories, setCategories] = useState<string[]>([]);
   const [unitMap, setUnitMap] = useState<Record<string, string>>({});
   const [sortedParams, setSortedParams] = useState<string[]>([]);
@@ -74,19 +73,7 @@ const Stacked: React.FC<ChartdataProps> = ({
     return () => { mounted.current = false; };
   }, [reloadKey]);
 
-  const primaryXAxis: AxisModel = {
-    valueType: 'Category',
-    majorGridLines: { width: 0 },
-    labelIntersectAction: 'Rotate45',
-    interval: 1,
-  };
 
-  const primaryYAxis = {
-    labelFormat: '{value}',
-    lineStyle: { width: 0 },
-    majorTickLines: { width: 0 },
-    minorTickLines: { width: 0 },
-  };
 
   useEffect(() => {
     (async () => {

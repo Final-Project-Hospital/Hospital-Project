@@ -95,7 +95,7 @@ const ParamRow: React.FC<{
 }> = ({ form, param }) => {
   const fieldIcon = `icon_${param.ID}`;
   const fieldAlert = `alert_${param.ID}`;
-  const iconName = Form.useWatch(fieldIcon, form) as string | undefined;
+  const iconName = Form.useWatch(fieldIcon, form) as string | undefined;//@ts-ignore
   const alertValue = Form.useWatch(fieldAlert, form) as boolean | undefined;
   const IconPreview = iconMap[iconName || "FaMicroscope"];
 
@@ -232,8 +232,12 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [params, setParams] = useState<any[]>([]);
+    const [employeeid, setEmployeeid] = useState<number>(
+    Number(localStorage.getItem("employeeid")) || 0
+  );
 
   useEffect(() => {
+    setEmployeeid(Number(localStorage.getItem("employeeid")));
     if (!open || !hardwareID) return;
     setLoading(true);
 
@@ -304,7 +308,8 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
             tasks.push(
               UpdateUnitHardwareByID(param.UnitHardware.ID, {
                 Unit: String(rawUnit ?? ""),
-              })
+                employee_id: employeeid,
+              } as any)
             );
           }
 

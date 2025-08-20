@@ -24,5 +24,8 @@ type HardwareParameter struct {
 	HardwareParameterColorID uint
 	HardwareParameterColor   *HardwareParameterColor `gorm:"foreignKey: HardwareParameterColorID"`
 
+	EmployeeID uint
+	Employee   *Employee `gorm:"foreignKey: EmployeeID"`
+
 	SensorDataParameter []SensorDataParameter `gorm:"foreignKey: HardwareParameterID"`
 }

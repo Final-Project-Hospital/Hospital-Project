@@ -269,11 +269,6 @@ const MainRoutes = (): RouteObject[] => [
 function ConfigRoutes() {
   const isLoggedIn = localStorage.getItem('isLogin') === 'true';
   const roleName = localStorage.getItem('roleName');
-  const userID = Number(localStorage.getItem('employeeid'));
-
-  console.log("isLoggedIn:", isLoggedIn);
-  console.log("roleName:", roleName);
-  console.log("employeeid:", userID);
 
   let routes: RouteObject[] = [];
 

@@ -46,13 +46,12 @@ const RoomAdminTable: React.FC = () => {
     const [isTabletView, setIsTabletView] = useState(false);
 
     const [reloadKey, setReloadKey] = useState(0);
-
-    const [showResponsibleModal, setShowResponsibleModal] = useState(false);
-    const [modalRoomName, setModalRoomName] = useState<string>("");
+    //@ts-ignore
+    const [showResponsibleModal, setShowResponsibleModal] = useState(false);//@ts-ignore
+    const [modalRoomName, setModalRoomName] = useState<string>("");//@ts-ignore
     const [modalResponsibles, setModalResponsibles] = useState<string[]>([]);
 
     const { activeMenu } = useStateContext();
-    console.log("Active Menu:", activeMenu);
 
     const fetchRooms = async () => {
         setLoading(true);

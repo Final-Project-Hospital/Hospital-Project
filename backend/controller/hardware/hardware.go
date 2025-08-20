@@ -238,31 +238,52 @@ func ListColors(c *gin.Context) {
 
 func UpdateUnitHardwareByID(c *gin.Context) {
 	id := c.Param("id")
-	var unit entity.UnitHardware
 
 	db := config.DB()
+
+	// 1) หา UnitHardware ก่อน
+	var unit entity.UnitHardware
 	if err := db.First(&unit, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "UnitHardware not found"})
 		return
 	}
 
+	// 2) รับ payload
 	var input struct {
-		Unit string `json:"unit" binding:"required"`
+		Unit       string `json:"unit" binding:"required"`
+		EmployeeID *uint  `json:"employee_id"` // optional
 	}
-
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	// 3) อัปเดตค่า unit
 	unit.Unit = input.Unit
-
 	if err := db.Save(&unit).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, unit)
+	// 4) ถ้ามี employee_id → อัปเดต HardwareParameter.EmployeeID
+	var rowsAffected int64 = 0
+	if input.EmployeeID != nil {
+		tx := db.Model(&entity.HardwareParameter{}).
+			Where("unit_hardware_id = ?", unit.ID).
+			Update("employee_id", *input.EmployeeID)
+
+		if tx.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": tx.Error.Error()})
+			return
+		}
+		rowsAffected = tx.RowsAffected
+	}
+
+	// 5) ตอบกลับ
+	c.JSON(http.StatusOK, gin.H{
+		"unit":          unit,
+		"updated_rows":  rowsAffected, // จำนวน HardwareParameter ที่ถูกอัปเดต employee_id
+	})
 }
 
 func UpdateStandardHardwareByID(c *gin.Context) {
@@ -612,4 +633,58 @@ func CreateNoteBySensorDataParameterID(c *gin.Context) {
 		"message": "บันทึกหมายเหตุสำเร็จ",
 		"data":    sdp,
 	})
+}
+
+func UpdateHardwareParameterColorByID(c *gin.Context) {
+	idParam := c.Param("id")
+	idUint64, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+	id := uint(idUint64)
+
+	var req struct {
+		Code       *string `json:"code"`
+		EmployeeID *uint   `json:"employee_id"` // ✅ เพิ่ม field optional สำหรับอัปเดตพนักงานผู้รับผิดชอบ
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 3) หา record สีเดิม
+	var color entity.HardwareParameterColor
+	if err := config.DB().First(&color, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "HardwareParameterColor not found"})
+		return
+	}
+
+	// 4) เตรียม fields ที่จะ update เฉพาะในตารางสี
+	updateFields := map[string]interface{}{}
+	if req.Code != nil {
+		updateFields["code"] = *req.Code
+	}
+
+	// 5) Update สี (ถ้ามี field ให้แก้)
+	if len(updateFields) > 0 {
+		if err := config.DB().Model(&color).Updates(updateFields).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	// 6) ถ้ามี employee_id ให้ไปอัปเดต HardwareParameter.EmployeeID
+	if req.EmployeeID != nil {
+		tx := config.DB().Model(&entity.HardwareParameter{}).
+			Where("hardware_parameter_color_id = ?", color.ID).
+			Update("employee_id", *req.EmployeeID)
+		if tx.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": tx.Error.Error()})
+			return
+		}
+
+	}
+
+	c.JSON(http.StatusOK, color)
 }
