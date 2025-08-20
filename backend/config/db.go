@@ -59,6 +59,7 @@ func SetupDatabase() {
 		&entity.Target{},
 		&entity.Garbage{},
 		&entity.Garbage{},
+		&entity.LineMaster{},
 		&entity.Notification{},
 		&entity.RoomNotification{},
 	)
@@ -210,6 +211,10 @@ func SetupDatabase() {
 		db.FirstOrCreate(&unitPPM, entity.UnitHardware{Unit: "ppm"})
 		db.FirstOrCreate(&unitCelsius, entity.UnitHardware{Unit: "°C"})
 		db.FirstOrCreate(&unitPercent, entity.UnitHardware{Unit: "%"})
+
+		//Token Line Master
+		lineMaster := entity.LineMaster{Token: "qNf5S5s+Rkqr0gFDW++ObPJzfhUbCbWwbEdCeDzVIzhsSqe3R1HyycZOtY2+NSuBCZ8NIWO9jhx/a2cmUA+kbuL3GNfyp5Ze+4sj5lBY403ndhyoEqlpI90eaV/Kp0sc92opJl5uAYH9QSIKIWpq1wdB04t89/1O/w1cDnyilFU="}
+		db.FirstOrCreate(&lineMaster, entity.LineMaster{Token: "qNf5S5s+Rkqr0gFDW++ObPJzfhUbCbWwbEdCeDzVIzhsSqe3R1HyycZOtY2+NSuBCZ8NIWO9jhx/a2cmUA+kbuL3GNfyp5Ze+4sj5lBY403ndhyoEqlpI90eaV/Kp0sc92opJl5uAYH9QSIKIWpq1wdB04t89/1O/w1cDnyilFU="})
 
 		// ----- สร้าง Parameter พร้อมผูก StandardHardwareID และ UnitHardwareID -----
 		paramhardware1 := entity.HardwareParameter{

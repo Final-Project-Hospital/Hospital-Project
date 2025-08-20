@@ -1,6 +1,9 @@
 package line
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -8,6 +11,8 @@ import (
 	"github.com/Tawunchai/hospital-project/entity"
 	"github.com/gin-gonic/gin"
 )
+
+const LineToken = "qNf5S5s+Rkqr0gFDW++ObPJzfhUbCbWwbEdCeDzVIzhsSqe3R1HyycZOtY2+NSuBCZ8NIWO9jhx/a2cmUA+kbuL3GNfyp5Ze+4sj5lBY403ndhyoEqlpI90eaV/Kp0sc92opJl5uAYH9QSIKIWpq1wdB04t89/1O/w1cDnyilFU="
 
 func ListNotification(c *gin.Context) {
 	var notifications []entity.Notification
@@ -23,7 +28,6 @@ func ListNotification(c *gin.Context) {
 
 func UpdateAlertByNotificationID(c *gin.Context) {
 	id := c.Param("id")
-
 	notificationID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
@@ -53,9 +57,88 @@ func UpdateAlertByNotificationID(c *gin.Context) {
 		return
 	}
 
+	// ส่งข้อความหา UserID ผ่าน LINE
+	var message string
+	if input.Alert {
+		message = fmt.Sprintf(
+			"สวัสดีครับ %s 🙌\n\n"+
+				"คุณได้รับการยืนยันการใช้บริการแจ้งเตือนผ่านไลน์เรียบร้อยแล้ว\n\n"+
+				"━━━━━━━━━━━━━━━━━━━━\n"+
+				"🔕 *หากท่านต้องการยกเลิกการใช้บริการแจ้งเตือนผ่านไลน์*\n"+
+				"กรุณาพิมพ์ข้อความ:\n\n"+
+				"👉 ยกเลิกการใช้บริการ\n"+
+				"━━━━━━━━━━━━━━━━━━━━",
+			notification.Name,
+		)
+	} else {
+		message = "ทำการยกเลิกการใช้บริการแจ้งเตือนผ่านไลน์แล้ว ❌\nถ้าต้องการใช้บริการอีกครั้ง กรุณาติดต่อผู้ดูแลระบบ\nขอบคุณครับ 🙏"
+	}
+
+	err = pushMessageToLine(notification.UserID, message)
+	if err != nil {
+		// log แต่อย่าส่ง error กลับไป client
+		fmt.Printf("Failed to push message to LINE: %v\n", err)
+	}
+
 	c.JSON(http.StatusOK, notification)
 }
-// ✅ Delete Notification + RoomNotification ที่เกี่ยวข้อง
+
+func getLineToken() (string, error) {
+	db := config.DB()
+	var lineMaster entity.LineMaster
+
+	if err := db.First(&lineMaster).Error; err != nil {
+		return "", err
+	}
+
+	return lineMaster.Token, nil
+}
+
+func pushMessageToLine(userID, message string) error {
+	url := "https://api.line.me/v2/bot/message/push"
+
+	payload := map[string]interface{}{
+		"to": userID,
+		"messages": []map[string]string{
+			{
+				"type": "text",
+				"text": message,
+			},
+		},
+	}
+
+	jsonBody, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	token, err := getLineToken()
+	if err != nil {
+		return fmt.Errorf("ไม่สามารถดึง Line Token จาก DB ได้: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("LINE API responded with status: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
 func DeleteNotificationByID(c *gin.Context) {
 	id := c.Param("id") // ดึง id จาก URL param
 
@@ -109,7 +192,6 @@ func DeleteRoomNotificationByNotificationID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "RoomNotifications deleted successfully"})
 }
-
 
 func ListRoomNotification(c *gin.Context) {
 	var roomNotifications []entity.RoomNotification
@@ -193,4 +275,46 @@ func UpdateNotificationIDByRoomID(c *gin.Context) {
 		"message":          "NotificationID updated successfully",
 		"roomNotification": roomNotification,
 	})
+}
+
+func GetLineMasterFirstID(c *gin.Context) {
+	db := config.DB()
+	var lineMaster entity.LineMaster
+
+	// ใช้ First() เพื่อดึงเรคคอร์ดแรก
+	if err := db.First(&lineMaster).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, &lineMaster)
+}
+
+func UpdateLineMasterByID(c *gin.Context) {
+	db := config.DB()
+	id := c.Param("id")
+
+	var lineMaster entity.LineMaster
+	if err := db.First(&lineMaster, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "LineMaster not found"})
+		return
+	}
+
+	// struct สำหรับรับ JSON จาก request body
+	var input struct {
+		Token string `json:"token"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	lineMaster.Token = input.Token
+
+	if err := db.Save(&lineMaster).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, &lineMaster)
 }

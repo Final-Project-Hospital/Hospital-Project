@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,7 +29,20 @@ type HardwareInput struct {
 
 const LineToken = "qNf5S5s+Rkqr0gFDW++ObPJzfhUbCbWwbEdCeDzVIzhsSqe3R1HyycZOtY2+NSuBCZ8NIWO9jhx/a2cmUA+kbuL3GNfyp5Ze+4sj5lBY403ndhyoEqlpI90eaV/Kp0sc92opJl5uAYH9QSIKIWpq1wdB04t89/1O/w1cDnyilFU="
 
-// ฟังก์ชันส่ง LINE message ไปยัง userId เฉพาะ
+func getLineToken() (string, error) {
+	db := config.DB()
+	var lm entity.LineMaster
+	// ถ้ามีหลายเรคคอร์ด คุณอาจเปลี่ยนเป็น Where(...) หรือ Order("id DESC").First(&lm)
+	if err := db.First(&lm).Error; err != nil {
+		return "", fmt.Errorf("query LineMaster failed: %w", err)
+	}
+	if lm.Token == "" {
+		return "", fmt.Errorf("LineMaster.Token is empty")
+	}
+	return lm.Token, nil
+}
+
+
 func SendWarningToLINE(userID string, message string) error {
 	url := "https://api.line.me/v2/bot/message/push"
 	body := map[string]interface{}{
@@ -36,11 +51,23 @@ func SendWarningToLINE(userID string, message string) error {
 			{"type": "text", "text": message},
 		},
 	}
-	jsonBody, _ := json.Marshal(body)
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
 
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
+	// ✅ ใช้ getLineToken แทน const
+	token, err := getLineToken()
+	if err != nil {
+		return fmt.Errorf("cannot get LINE token: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return err
+	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+LineToken)
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -48,9 +75,13 @@ func SendWarningToLINE(userID string, message string) error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("LINE API responded with status: %d", resp.StatusCode)
+	}
+
 	return nil
 }
-
 func ReadDataForHardware(c *gin.Context) {
 	var input HardwareInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -277,9 +308,10 @@ func safeInt(i int) string {
 }
 
 
-
+// WebhookPayload จาก LINE
 type WebhookPayload struct {
 	Events []struct {
+		ReplyToken string `json:"replyToken"`
 		Message struct {
 			Type string `json:"type"`
 			Text string `json:"text"`
@@ -293,48 +325,117 @@ type WebhookPayload struct {
 func WebhookNotification(c *gin.Context) {
 	var payload WebhookPayload
 
-	// Parse JSON จาก webhook
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// ตรวจว่ามี event มาจริงไหม
 	if len(payload.Events) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no events found"})
 		return
 	}
 
-	// ดึง name (text message) และ userId ออกมา
-	name := payload.Events[0].Message.Text
-	userID := payload.Events[0].Source.UserID
+	event := payload.Events[0]
+	text := event.Message.Text
+	userID := event.Source.UserID
+	replyToken := event.ReplyToken
 
 	db := config.DB()
 	var existing entity.Notification
 
-	// เช็คว่ามี UserID อยู่แล้วไหม
+	// ถ้ามี User อยู่แล้ว
 	if err := db.Where("user_id = ?", userID).First(&existing).Error; err == nil {
-		// ถ้ามีอยู่แล้ว → update name
-		existing.Name = name
-		if err := db.Save(&existing).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		// ===== กรณี "ยกเลิกการใช้งาน" =====
+		if text == "ยกเลิกการใช้บริการ" {
+			if existing.Alert {
+				// เปลี่ยน Alert เป็น false
+				existing.Alert = false
+				if err := db.Save(&existing).Error; err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+
+				// ตอบกลับว่า "ยกเลิกแล้ว"
+				cancelMessage := "ท่านได้ทำการยกเลิกการใช้งานบริการแจ้งเตือนสำเร็จ ❌\nถ้าต้องการใช้บริการอีกครั้ง กรุณาติดต่อผู้ดูแลระบบ\nขอบคุณครับ 🙏"
+				if err := replyToLINE(replyToken, cancelMessage); err != nil {
+					log.Printf("Error replying to LINE: %v", err)
+				}
+				c.JSON(http.StatusOK, gin.H{"message": "alert cancelled"})
+				return
+			}
+
+			// ถ้า Alert เป็น false อยู่แล้ว → เงียบ
+			c.JSON(http.StatusOK, gin.H{"message": "no action needed"})
 			return
 		}
-		c.JSON(http.StatusOK, existing)
+
+		// ถ้ามีข้อมูลแล้ว และไม่ใช่ "ยกเลิกการใช้งาน" → เมินเฉย
+		c.JSON(http.StatusOK, gin.H{"message": "user already registered, no changes"})
 		return
 	}
 
-	// ถ้ายังไม่มี → create ใหม่
+	// ถ้า user ยังไม่เคยลงทะเบียน → ลงทะเบียนใหม่
 	notification := entity.Notification{
-		Name:   name,
+		Name:   text,
 		UserID: userID,
+		Alert:  false,
 	}
+
 	if err := db.Create(&notification).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	replyMessage := fmt.Sprintf("คุณ %s ได้ทำการลงทะเบียนการใช้งานระบบการแจ้งเตือนสำเร็จ กรุณารอการยืนยันจากผู้ดูแลระบบ ขอบคุณครับ 🙏", text)
+	if err := replyToLINE(replyToken, replyMessage); err != nil {
+		log.Printf("Error replying to LINE: %v", err)
+	}
+
 	c.JSON(http.StatusOK, notification)
 }
 
-//Testing
+
+func replyToLINE(replyToken, message string) error {
+	url := "https://api.line.me/v2/bot/message/reply"
+
+	body := map[string]interface{}{
+		"replyToken": replyToken,
+		"messages": []map[string]string{
+			{
+				"type": "text",
+				"text": message,
+			},
+		},
+	}
+
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	token, err := getLineToken()
+	if err != nil {
+		return fmt.Errorf("cannot get LINE token from DB: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("LINE API response status: %d, body: %s", resp.StatusCode, string(b))
+	}
+
+	return nil
+}
