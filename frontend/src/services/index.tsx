@@ -8,6 +8,7 @@ import { ListMiddleTargetInterface, ListRangeTargetInterface, ListTargetInterfac
 import { ListMiddleStandardInterface, ListRangeStandardInterface, ListStandardInterface, AddMiddleStandardInterface, AddRangeStandardInterface } from "../interface/IStandard";
 
 //export const apiUrl = "http://10.0.14.228:8000";
+//export const apiUrl = "http://10.1.151.69:8000";
 export const apiUrl = "http://localhost:8000";
 
 const Authorization = localStorage.getItem("token");

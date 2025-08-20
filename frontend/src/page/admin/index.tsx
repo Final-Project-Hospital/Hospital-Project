@@ -10,6 +10,7 @@ import {
   Button,
   Card,
   Segmented,
+  Table,
 } from "antd";
 import type { Color } from "antd/es/color-picker";
 import dayjs, { Dayjs } from "dayjs";
@@ -17,7 +18,6 @@ import th_TH from "antd/es/date-picker/locale/th_TH";
 import ApexChart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import { Maximize2 } from "lucide-react";
-
 import { fetchPrediction } from "../../services/predict";
 import { PredictionOutput } from "../../interface/IPredict";
 
@@ -103,25 +103,9 @@ const AdminDashboard: React.FC = () => {
     "dateRange"
   );
   const [dateRange, setDateRange] = useState<Dayjs[] | null>(null);
-  
-  const [predictionData, setPredictionData] = useState<PredictionOutput | null>(null);
-  const [predictionLoading, setPredictionLoading] = useState<boolean>(true);
-  const [predictionError, setPredictionError] = useState<string | null>(null);
-
 
   // load meta + records (ครั้งเดียว)
   useEffect(() => {
-    const getPrediction = async () => {
-      // เรียก API เฉพาะเมื่อหน้าเพจโหลดครั้งแรกเท่านั้น
-      try {
-        const data = await fetchPrediction();
-        setPredictionData(data);
-      } catch (err: any) {
-        setPredictionError(err.message);
-      } finally {
-        setPredictionLoading(false);
-      }
-    };
     const run = async () => {
       try {
         const m = await GetEnvironmentalMeta();
@@ -153,7 +137,6 @@ const AdminDashboard: React.FC = () => {
       setEfficiency(eff ?? null);
     };
     run();
-    getPrediction();
   }, []);
 
   // derived
@@ -161,7 +144,19 @@ const AdminDashboard: React.FC = () => {
     () => metas.find((e) => e.id === selectedEnvId) || null,
     [metas, selectedEnvId]
   );
-  const paramList = selectedEnv?.params ?? [];
+
+  // เดดุปชื่อพารามิเตอร์ กันซ้ำชื่อ
+  const paramList = useMemo(() => {
+    const list = selectedEnv?.params ?? [];
+    const seen = new Set<string>();
+    return list.filter((p) => {
+      const key = (p.name || "").replace(/\s+/g, " ").trim().toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [selectedEnv]);
+
   const selectedParamMeta = useMemo(
     () => paramList.find((p) => p.id === selectedParamId) || null,
     [paramList, selectedParamId]
@@ -249,6 +244,25 @@ const AdminDashboard: React.FC = () => {
 
   const latestAlerts = alerts.slice(0, 3);
   const historyAlerts = alerts.slice(3);
+const [predictionData, setPredictionData] = useState<PredictionOutput | null>(null);
+  const [predictionLoading, setPredictionLoading] = useState<boolean>(true);
+  const [predictionError, setPredictionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getPrediction = async () => {
+      // เรียก API เฉพาะเมื่อหน้าเพจโหลดครั้งแรกเท่านั้น
+      try {
+        const data = await fetchPrediction();
+        setPredictionData(data);
+      } catch (err: any) {
+        setPredictionError(err.message);
+      } finally {
+        setPredictionLoading(false);
+      }
+    };
+    // เรียกใช้ฟังก์ชันเมื่อ Component ถูก Mount
+    getPrediction();
+  }, []);
 
   // graph height
   const graphHeight = alerts.length > 0 ? 250 : 350;
@@ -310,9 +324,8 @@ const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <div className="content-wrapper">
-      <div className="container-xl">
-        {/* Header */}
+    <>
+      {/* Header */}
         <div className="dashboard-title-header">
           <div className="dashboard-title-inner">
             <h1>การตรวจวัดคุณภาพสิ่งแวดล้อม</h1>
@@ -340,380 +353,431 @@ const AdminDashboard: React.FC = () => {
             </div>
           )}
         </div>
-        {/* Controls Card */}
-        <Card className="dashboard-controls-card" bordered={false}>
-          <Row
-            gutter={[12, 12]}
-            align="middle"
-            className="dashboard-controls-row"
-          >
-            {/* Environment */}
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <label className="dashboard-label">สภาพแวดล้อม</label>
-              <Select
-                value={selectedEnvId ?? undefined}
-                onChange={(v) => {
-                  setSelectedEnvId(v);
-                  const first = metas.find((e) => e.id === v)?.params?.[0];
-                  setSelectedParamId(first ? first.id : null);
-                  if (v && metas.find((e) => e.id === v)?.name === "ขยะ") {
-                    setView("after");
-                  }
-                }}
-                className="dashboard-select"
-                placeholder="เลือกสภาพแวดล้อม"
-                allowClear={false}
-              >
-                {metas.map((e) => (
-                  <Option key={e.id} value={e.id}>
-                    {e.name}
-                  </Option>
-                ))}
-              </Select>
-            </Col>
 
-            {/* Parameter */}
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <label className="dashboard-label">พารามิเตอร์</label>
-              <Select
-                value={selectedParamId ?? undefined}
-                onChange={setSelectedParamId}
-                className="dashboard-select"
-                placeholder="เลือกพารามิเตอร์"
-                allowClear={false}
-              >
-                {paramList.map((p) => (
-                  <Option key={p.id} value={p.id}>
-                    {p.name}
-                  </Option>
-                ))}
-              </Select>
-            </Col>
-
-            {/* View (hide compare for garbage) */}
-            {!isGarbage && (
+      <div className="content-wrapper">
+        <div className="container-xl">
+          {/* Controls Card */}
+          <Card className="dashboard-controls-card" bordered={false}>
+            <Row
+              gutter={[12, 12]}
+              align="middle"
+              className="dashboard-controls-row"
+            >
+              {/* Environment */}
               <Col xs={24} sm={12} md={8} lg={6}>
-                <label className="dashboard-label">มุมมอง</label>
+                <label className="dashboard-label">สภาพแวดล้อม</label>
                 <Select
-                  value={view}
-                  onChange={setView}
-                  className="dashboard-select"
-                >
-                  <Option value="before">น้ำก่อนบำบัด</Option>
-                  <Option value="after">น้ำหลังบำบัด</Option>
-                  <Option value="compare">เปรียบเทียบก่อน–หลัง</Option>
-                </Select>
-              </Col>
-            )}
+                  value={selectedEnvId ?? undefined}
+                  onChange={(v) => {
+                    setSelectedEnvId(v);
 
-            {/* Filter mode */}
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <label className="dashboard-label">ช่วงเวลา</label>
-              <Select
-                value={filterMode}
-                onChange={(val) => {
-                  setFilterMode(val);
-                  setDateRange(null);
-                }}
-                className="dashboard-select"
-                options={[
-                  { label: "เลือกช่วงวัน", value: "dateRange" },
-                  { label: "เลือกเดือน", value: "month" },
-                  { label: "เลือกปี", value: "year" },
-                ]}
-              />
-            </Col>
+                    // ✅ เลือก "พารามิเตอร์ตัวแรกหลัง dedupe"
+                    const all = metas.find((e) => e.id === v)?.params ?? [];
+                    const seen = new Set<string>();
+                    const deduped = all.filter((p) => {
+                      const k = (p.name || "").replace(/\s+/g, " ").trim().toLowerCase();
+                      if (seen.has(k)) return false;
+                      seen.add(k);
+                      return true;
+                    });
+                    setSelectedParamId(deduped.length ? deduped[0].id : null);
 
-            {/* Date pickers */}
-            <Col xs={24} md={16} lg={12}>
-              <label className="dashboard-label">เลือกวันที่</label>
-              {filterMode === "dateRange" && (
-                <RangePicker
-                  value={dateRange as [Dayjs, Dayjs] | undefined}
-                  onChange={(dates) => {
-                    if (dates && dates[0] && dates[1]) {
-                      setDateRange([dates[0], dates[1]]);
-                    } else {
-                      setDateRange(null);
+                    if (v && metas.find((e) => e.id === v)?.name === "ขยะ") {
+                      setView("after");
                     }
                   }}
-                  locale={th_TH}
-                  className="dashboard-picker"
-                  placeholder={["วันเริ่มต้น", "วันสิ้นสุด"]}
-                  allowClear
-                />
-              )}
-              {filterMode === "month" && (
-                <DatePicker
-                  picker="month"
-                  value={dateRange ? dateRange[0] : null}
-                  onChange={(date) => {
-                    if (date)
-                      setDateRange([date.startOf("month"), date.endOf("month")]);
-                    else setDateRange(null);
-                  }}
-                  locale={th_TH}
-                  className="dashboard-picker"
-                  placeholder="เลือกเดือน"
-                  allowClear
-                />
-              )}
-              {filterMode === "year" && (
-                <DatePicker.RangePicker
-                  picker="year"
-                  value={dateRange as [Dayjs, Dayjs] | undefined}
-                  onChange={(dates) => {
-                    if (dates && dates[0] && dates[1])
-                      setDateRange([
-                        dates[0].startOf("year"),
-                        dates[1].endOf("year"),
-                      ]);
-                    else setDateRange(null);
-                  }}
-                  locale={th_TH}
-                  className="dashboard-picker"
-                  placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
-                  allowClear
-                />
-              )}
-            </Col>
+                  className="dashboard-select"
+                  placeholder="เลือกสภาพแวดล้อม"
+                  allowClear={false}
+                >
+                  {metas.map((e) => (
+                    <Option key={e.id} value={e.id}>
+                      {e.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Col>
 
-            {/* Chart type toggle (line/bar) */}
-            <Col xs={24} md={8} lg={6}>
-              <label className="dashboard-label">ประเภทกราฟ</label>
-              <Segmented
-                className="dashboard-segmented"
-                options={[
-                  { label: "เส้น", value: "line" },
-                  { label: "แท่ง", value: "bar" },
-                ]}
-                value={chartType}
-                onChange={(v) => setChartType(v as "line" | "bar")}
-              />
-            </Col>
-          </Row>
-        </Card>
+              {/* Parameter */}
+              <Col xs={24} sm={12} md={8} lg={6}>
+                <label className="dashboard-label">พารามิเตอร์</label>
+                <Select
+                  value={selectedParamId ?? undefined}
+                  onChange={setSelectedParamId}
+                  className="dashboard-select"
+                  placeholder="เลือกพารามิเตอร์"
+                  allowClear={false}
+                >
+                  {paramList.map((p) => (
+                    <Option key={p.id} value={p.id}>
+                      {p.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Col>
 
-        {/* Graphs */}
-        <Row gutter={[16, 16]}>
-          <Col xs={24} lg={12}>
-            <div className="dashboard-graph-card card">
-              <div className="dashboard-head-graph-card">
-                <div className="dashboard-head-title">
-                  {isGarbage
-                    ? "ปริมาณขยะ"
-                    : view === "before"
-                    ? "น้ำก่อนบำบัด"
-                    : view === "after"
-                    ? "น้ำหลังบำบัด"
-                    : "เปรียบเทียบก่อน-หลัง"}
-                </div>
-                <div className="dashboard-head-controls">
-                  {!isGarbage && (view === "before" || view === "after") && (
-                    <ColorPicker
-                      value={
-                        view === "before" ? chartColor.before : chartColor.after
+              {/* View (hide compare for garbage) */}
+              {!isGarbage && (
+                <Col xs={24} sm={12} md={8} lg={6}>
+                  <label className="dashboard-label">มุมมอง</label>
+                  <Select
+                    value={view}
+                    onChange={setView}
+                    className="dashboard-select"
+                  >
+                    <Option value="before">น้ำก่อนบำบัด</Option>
+                    <Option value="after">น้ำหลังบำบัด</Option>
+                    <Option value="compare">เปรียบเทียบก่อน–หลัง</Option>
+                  </Select>
+                </Col>
+              )}
+
+              {/* Filter mode */}
+              <Col xs={24} sm={12} md={8} lg={6}>
+                <label className="dashboard-label">ช่วงเวลา</label>
+                <Select
+                  value={filterMode}
+                  onChange={(val) => {
+                    setFilterMode(val);
+                    setDateRange(null);
+                  }}
+                  className="dashboard-select"
+                  options={[
+                    { label: "เลือกช่วงวัน", value: "dateRange" },
+                    { label: "เลือกเดือน", value: "month" },
+                    { label: "เลือกปี", value: "year" },
+                  ]}
+                />
+              </Col>
+
+              {/* Date pickers */}
+              <Col xs={24} md={16} lg={12}>
+                <label className="dashboard-label">เลือกวันที่</label>
+                {filterMode === "dateRange" && (
+                  <RangePicker
+                    value={dateRange as [Dayjs, Dayjs] | undefined}
+                    onChange={(dates) => {
+                      if (dates && dates[0] && dates[1]) {
+                        setDateRange([dates[0], dates[1]]);
+                      } else {
+                        setDateRange(null);
                       }
-                      onChange={(c: Color) => {
-                        const hex = c.toHexString();
-                        if (view === "before")
-                          setChartColor({ ...chartColor, before: hex });
-                        else setChartColor({ ...chartColor, after: hex });
-                      }}
-                    />
-                  )}
-                  {!isGarbage && view === "compare" && (
-                    <>
-                      <ColorPicker
-                        value={chartColor.compareBefore}
-                        onChange={(c) =>
-                          setChartColor({
-                            ...chartColor,
-                            compareBefore: c.toHexString(),
-                          })
-                        }
-                      />
-                      <ColorPicker
-                        value={chartColor.compareAfter}
-                        onChange={(c) =>
-                          setChartColor({
-                            ...chartColor,
-                            compareAfter: c.toHexString(),
-                          })
-                        }
-                      />
-                    </>
-                  )}
-                  <Button
-                    type="text"
-                    icon={<Maximize2 size={18} />}
-                    onClick={() => setShowModal(true)}
+                    }}
+                    locale={th_TH}
+                    className="dashboard-picker"
+                    placeholder={["วันเริ่มต้น", "วันสิ้นสุด"]}
+                    allowClear
                   />
-                </div>
-              </div>
+                )}
+                {filterMode === "month" && (
+                  <DatePicker
+                    picker="month"
+                    value={dateRange ? dateRange[0] : null}
+                    onChange={(date) => {
+                      if (date)
+                        setDateRange([date.startOf("month"), date.endOf("month")]);
+                      else setDateRange(null);
+                    }}
+                    locale={th_TH}
+                    className="dashboard-picker"
+                    placeholder="เลือกเดือน"
+                    allowClear
+                  />
+                )}
+                {filterMode === "year" && (
+                  <DatePicker.RangePicker
+                    picker="year"
+                    value={dateRange as [Dayjs, Dayjs] | undefined}
+                    onChange={(dates) => {
+                      if (dates && dates[0] && dates[1])
+                        setDateRange([
+                          dates[0].startOf("year"),
+                          dates[1].endOf("year"),
+                        ]);
+                      else setDateRange(null);
+                    }}
+                    locale={th_TH}
+                    className="dashboard-picker"
+                    placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
+                    allowClear
+                  />
+                )}
+              </Col>
 
-              <ApexChart
-                key={
-                  String(selectedEnvId) + String(selectedParamId) + view + chartType
-                }
-                options={buildOpts("")}
-                series={
-                  isGarbage
-                    ? [
-                        {
-                          name: "ปริมาณ",
-                          data: labels.map((lb) => {
-                            const f = data.find(
-                              (d) =>
-                                d.parameter === selectedParamName &&
-                                formatThaiLabel(d.date, filterMode) === lb
-                            );
-                            return { x: lb, y: f ? Number(dFix(f.value)) : 0 };
-                          }),
-                          color: chartColor.after,
-                        },
-                      ]
-                    : view === "before"
-                    ? [
-                        {
-                          name: "ก่อน",
-                          data: makeSeries("ก่อน"),
-                          color: chartColor.before,
-                        },
-                      ]
-                    : view === "after"
-                    ? [
-                        {
-                          name: "หลัง",
-                          data: makeSeries("หลัง"),
-                          color: chartColor.after,
-                        },
-                      ]
-                    : [
-                        {
-                          name: "ก่อน",
-                          data: makeSeries("ก่อน"),
-                          color: chartColor.compareBefore,
-                        },
-                        {
-                          name: "หลัง",
-                          data: makeSeries("หลัง"),
-                          color: chartColor.compareAfter,
-                        },
-                      ]
-                }
-                type={chartType}
-                height={graphHeight}
-              />
-            </div>
-          </Col>
+              {/* Chart type toggle (line/bar) */}
+              <Col xs={24} md={8} lg={6}>
+                <label className="dashboard-label">ประเภทกราฟ</label>
+                <Segmented
+                  className="dashboard-segmented"
+                  options={[
+                    { label: "เส้น", value: "line" },
+                    { label: "แท่ง", value: "bar" },
+                  ]}
+                  value={chartType}
+                  onChange={(v) => setChartType(v as "line" | "bar")}
+                />
+              </Col>
+            </Row>
+          </Card>
 
-          {!isGarbage && (
+          {/* Graphs */}
+          <Row gutter={[16, 16]}>
             <Col xs={24} lg={12}>
               <div className="dashboard-graph-card card">
                 <div className="dashboard-head-graph-card">
-                  <div className="dashboard-head-title">ประสิทธิภาพ (%)</div>
+                  <div className="dashboard-head-title">
+                    {isGarbage
+                      ? "ปริมาณขยะ"
+                      : view === "before"
+                      ? "น้ำก่อนบำบัด"
+                      : view === "after"
+                      ? "น้ำหลังบำบัด"
+                      : "เปรียบเทียบก่อน-หลัง"}
+                  </div>
                   <div className="dashboard-head-controls">
-                    <ColorPicker
-                      value={chartColor.efficiency}
-                      onChange={(c) =>
-                        setChartColor({ ...chartColor, efficiency: c.toHexString() })
-                      }
+                    {!isGarbage && (view === "before" || view === "after") && (
+                      <ColorPicker
+                        value={
+                          view === "before" ? chartColor.before : chartColor.after
+                        }
+                        onChange={(c: Color) => {
+                          const hex = c.toHexString();
+                          if (view === "before")
+                            setChartColor({ ...chartColor, before: hex });
+                          else setChartColor({ ...chartColor, after: hex });
+                        }}
+                      />
+                    )}
+                    {!isGarbage && view === "compare" && (
+                      <>
+                        <ColorPicker
+                          value={chartColor.compareBefore}
+                          onChange={(c) =>
+                            setChartColor({
+                              ...chartColor,
+                              compareBefore: c.toHexString(),
+                            })
+                          }
+                        />
+                        <ColorPicker
+                          value={chartColor.compareAfter}
+                          onChange={(c) =>
+                            setChartColor({
+                              ...chartColor,
+                              compareAfter: c.toHexString(),
+                            })
+                          }
+                        />
+                      </>
+                    )}
+                    <Button
+                      type="text"
+                      icon={<Maximize2 size={18} />}
+                      onClick={() => setShowModal(true)}
                     />
                   </div>
                 </div>
+
                 <ApexChart
-                  options={buildOpts("Efficiency (%)")}
-                  series={effSeriesData}
-                  type="bar"
+                  key={
+                    String(selectedEnvId) + String(selectedParamId) + view + chartType
+                  }
+                  options={buildOpts("")}
+                  series={
+                    isGarbage
+                      ? [
+                          {
+                            name: "ปริมาณ",
+                            data: labels.map((lb) => {
+                              const f = data.find(
+                                (d) =>
+                                  d.parameter === selectedParamName &&
+                                  formatThaiLabel(d.date, filterMode) === lb
+                              );
+                              return { x: lb, y: f ? Number(dFix(f.value)) : 0 };
+                            }),
+                            color: chartColor.after,
+                          },
+                        ]
+                      : view === "before"
+                      ? [
+                          {
+                            name: "ก่อน",
+                            data: makeSeries("ก่อน"),
+                            color: chartColor.before,
+                          },
+                        ]
+                      : view === "after"
+                      ? [
+                          {
+                            name: "หลัง",
+                            data: makeSeries("หลัง"),
+                            color: chartColor.after,
+                          },
+                        ]
+                      : [
+                          {
+                            name: "ก่อน",
+                            data: makeSeries("ก่อน"),
+                            color: chartColor.compareBefore,
+                          },
+                          {
+                            name: "หลัง",
+                            data: makeSeries("หลัง"),
+                            color: chartColor.compareAfter,
+                          },
+                        ]
+                  }
+                  type={chartType}
                   height={graphHeight}
                 />
               </div>
             </Col>
-          )}
-        </Row>
 
-        {/* Alerts */}
-        {alerts.length > 0 && (
-          <Card className="dashboard-alerts-card" bordered={false}>
-            <div className="dashboard-alerts-list">
-              {latestAlerts.map((a, i) => (
-                <div key={i} className="dashboard-alert-item">
-                  <div>
-                    <b>เดือน:</b> {a.month_year}
+            {!isGarbage && (
+              <Col xs={24} lg={12}>
+                <div className="dashboard-graph-card card">
+                  <div className="dashboard-head-graph-card">
+                    <div className="dashboard-head-title">ประสิทธิภาพ (%)</div>
+                    <div className="dashboard-head-controls">
+                      <ColorPicker
+                        value={chartColor.efficiency}
+                        onChange={(c) =>
+                          setChartColor({ ...chartColor, efficiency: c.toHexString() })
+                        }
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <b>พารามิเตอร์:</b> {a.parameter}
-                  </div>
-                  <div>
-                    <b>ค่าเฉลี่ย:</b> {a.average.toFixed(2)} {a.unit}
-                  </div>
-                  <div>
-                    <b>มาตรฐานสูงสุด:</b> {a.max_value.toFixed(2)} {a.unit}
-                  </div>
+                  <ApexChart
+                    options={buildOpts("Efficiency (%)")}
+                    series={effSeriesData}
+                    type="bar"
+                    height={graphHeight}
+                  />
                 </div>
-              ))}
-            </div>
-
-            {historyAlerts.length > 0 && (
-              <div style={{ marginTop: 12, textAlign: "right" }}>
-                <Button type="link" onClick={() => setShowAllAlerts(true)}>
-                  ดูประวัติการแจ้งเตือนทั้งหมด
-                </Button>
-              </div>
+              </Col>
             )}
-          </Card>
-        )}
+          </Row>
 
-        {/* Zoom modal */}
-        <Modal
-          open={showModal}
-          footer={null}
-          onCancel={() => setShowModal(false)}
-          width={1000}
-        >
-          <ApexChart
-            key={"modal" + view + chartType}
-            options={buildOpts("Zoom Chart")}
-            series={
-              isGarbage
-                ? [
-                    {
-                      name: "ปริมาณ",
-                      data: labels.map((lb) => {
-                        const f = data.find(
-                          (d) =>
-                            d.parameter === selectedParamName &&
-                            formatThaiLabel(d.date, filterMode) === lb
-                        );
-                        return { x: lb, y: f ? Number(dFix(f.value)) : 0 };
-                      }),
-                      color: chartColor.after,
-                    },
-                  ]
-                : view === "before"
-                ? [{ name: "ก่อน", data: makeSeries("ก่อน"), color: chartColor.before }]
-                : view === "after"
-                ? [{ name: "หลัง", data: makeSeries("หลัง"), color: chartColor.after }]
-                : [
-                    {
-                      name: "ก่อน",
-                      data: makeSeries("ก่อน"),
-                      color: chartColor.compareBefore,
-                    },
-                    {
-                      name: "หลัง",
-                      data: makeSeries("หลัง"),
-                      color: chartColor.compareAfter,
-                    },
-                  ]
-            }
-            type={chartType}
-            height={600}
-          />
-        </Modal>
+          {/* Alerts */}
+          {alerts.length > 0 && (
+            <Card className="dashboard-alerts-card" bordered={false}>
+              <div className="dashboard-alerts-list">
+                {latestAlerts.map((a, i) => (
+                  <div key={i} className="dashboard-alert-item">
+                    <div>
+                      <b>เดือน:</b> {a.month_year}
+                    </div>
+                    <div>
+                      <b>พารามิเตอร์:</b> {a.parameter}
+                    </div>
+                    <div>
+                      <b>ค่าเฉลี่ย:</b> {a.average.toFixed(2)} {a.unit}
+                    </div>
+                    <div>
+                      <b>มาตรฐานสูงสุด:</b> {a.max_value.toFixed(2)} {a.unit}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {historyAlerts.length > 0 && (
+                <div style={{ marginTop: 12, textAlign: "right" }}>
+                  <Button type="link" onClick={() => setShowAllAlerts(true)}>
+                    ดูประวัติการแจ้งเตือนทั้งหมด
+                  </Button>
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* Alerts History modal */}
+          <Modal
+            open={showAllAlerts}
+            title="ประวัติการแจ้งเตือนทั้งหมด"
+            footer={null}
+            onCancel={() => setShowAllAlerts(false)}
+            width={900}
+          >
+            <Table
+              rowKey={(_, i) => String(i)}
+              dataSource={alerts.map((a) => ({
+                month_year: a.month_year,
+                parameter: a.parameter,
+                average: a.average,
+                max_value: a.max_value,
+                unit: a.unit,
+                exceed: a.average > a.max_value ? "เกินมาตรฐาน" : "ปกติ",
+              }))}
+              pagination={{ pageSize: 10 }}
+              columns={[
+                { title: "เดือน", dataIndex: "month_year" },
+                { title: "พารามิเตอร์", dataIndex: "parameter" },
+                {
+                  title: "ค่าเฉลี่ย",
+                  dataIndex: "average",
+                  render: (v: number, r) => `${v.toFixed(2)} ${r.unit || ""}`.trim(),
+                },
+                {
+                  title: "มาตรฐานสูงสุด",
+                  dataIndex: "max_value",
+                  render: (v: number, r) => `${v.toFixed(2)} ${r.unit || ""}`.trim(),
+                },
+                { title: "สถานะ", dataIndex: "exceed" },
+              ]}
+            />
+          </Modal>
+
+          {/* Zoom modal */}
+          <Modal
+            open={showModal}
+            footer={null}
+            onCancel={() => setShowModal(false)}
+            width={1000}
+          >
+            <ApexChart
+              key={"modal" + view + chartType}
+              options={buildOpts("Zoom Chart")}
+              series={
+                isGarbage
+                  ? [
+                      {
+                        name: "ปริมาณ",
+                        data: labels.map((lb) => {
+                          const f = data.find(
+                            (d) =>
+                              d.parameter === selectedParamName &&
+                              formatThaiLabel(d.date, filterMode) === lb
+                          );
+                          return { x: lb, y: f ? Number(dFix(f.value)) : 0 };
+                        }),
+                        color: chartColor.after,
+                      },
+                    ]
+                  : view === "before"
+                  ? [{ name: "ก่อน", data: makeSeries("ก่อน"), color: chartColor.before }]
+                  : view === "after"
+                  ? [{ name: "หลัง", data: makeSeries("หลัง"), color: chartColor.after }]
+                  : [
+                      {
+                        name: "ก่อน",
+                        data: makeSeries("ก่อน"),
+                        color: chartColor.compareBefore,
+                      },
+                      {
+                        name: "หลัง",
+                        data: makeSeries("หลัง"),
+                        color: chartColor.compareAfter,
+                      },
+                    ]
+              }
+              type={chartType}
+              height={600}
+            />
+          </Modal>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
