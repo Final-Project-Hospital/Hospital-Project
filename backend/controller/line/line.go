@@ -276,3 +276,45 @@ func UpdateNotificationIDByRoomID(c *gin.Context) {
 		"roomNotification": roomNotification,
 	})
 }
+
+func GetLineMasterFirstID(c *gin.Context) {
+	db := config.DB()
+	var lineMaster entity.LineMaster
+
+	// ใช้ First() เพื่อดึงเรคคอร์ดแรก
+	if err := db.First(&lineMaster).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, &lineMaster)
+}
+
+func UpdateLineMasterByID(c *gin.Context) {
+	db := config.DB()
+	id := c.Param("id")
+
+	var lineMaster entity.LineMaster
+	if err := db.First(&lineMaster, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "LineMaster not found"})
+		return
+	}
+
+	// struct สำหรับรับ JSON จาก request body
+	var input struct {
+		Token string `json:"token"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	lineMaster.Token = input.Token
+
+	if err := db.Save(&lineMaster).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, &lineMaster)
+}
