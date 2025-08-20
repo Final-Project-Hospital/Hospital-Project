@@ -2,10 +2,8 @@ import './EnvironmentGarbageBox.css';
 import { Tooltip } from 'antd';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { GetfirstPH } from '../../../../services/wastewaterServices/ph';
-import { GetfirstTDS } from '../../../../services/tdsService';
-import { GetfirstBOD } from '../../../../services/bodService';
-import { GetfirstFOG } from '../../../../services/wastewaterServices/fog';
+import { GetfirstGeneral } from '../../../../services/garbageServices/generalWaste';
+import { GetfirstInfectious } from '../../../../services/garbageServices/infectiousWaste';
 
 import che from '../../../../../src/assets/waste/radiation.png';
 import gen from '../../../../../src/assets/waste/food-waste.png';
@@ -70,35 +68,27 @@ const EnvironmentBlock = () => {
   useEffect(() => {
     const fetchStandards = async () => {
       try {
-        const [phRes, tdsRes, bodRes, fogRes] = await Promise.all([
-          GetfirstPH(),
-          GetfirstTDS(),
-          GetfirstBOD(),
-          GetfirstFOG(),
+        const [genRes, infRes] = await Promise.all([
+          GetfirstGeneral(),
+          GetfirstInfectious(),
         ]);
 
         const getDisplayStandard = (data: any) => {
-          const { MinValue, MaxValue, MiddleValue } = data;
-          if (MinValue !== 0 || MaxValue !== 0) return `${MinValue} - ${MaxValue}`;
-          if (MiddleValue !== 0) return `${MiddleValue}`;
+          const { MinTarget, MaxTarget, MiddleTarget } = data;
+          if (MinTarget !== 0 || MaxTarget !== 0) return `${MinTarget} - ${MaxTarget}`;
+          if (MiddleTarget !== 0) return `${MiddleTarget}`;
           return '-';
         };
 
-        const phStandard = getDisplayStandard(phRes.data || phRes);
-        const bodStandard = getDisplayStandard(bodRes.data || bodRes);
-        const tdsStandard = getDisplayStandard(tdsRes.data || tdsRes);
-        const fogStandard = getDisplayStandard(fogRes.data || fogRes);
+        const genStandard = getDisplayStandard(genRes.data || genRes);
+        const infStandard = getDisplayStandard(infRes.data || infRes);
 
         setCenters(prev =>
           prev.map(center => {
-            if (center.name === 'PH Center') {
-              return { ...center, standard: phStandard };
-            } else if (center.name === 'TDS Center') {
-              return { ...center, standard: tdsStandard };
-            } else if (center.name === 'BOD Center') {
-              return { ...center, standard: bodStandard };
-            } else if (center.name === 'FOG Center') {
-              return { ...center, standard: fogStandard };
+            if (center.name === 'General Waste') {
+              return { ...center, standard: genStandard };
+            } else if (center.name === 'Infectious Waste') {
+              return { ...center, standard: infStandard };
             }
             return center;
           })
@@ -131,9 +121,11 @@ const EnvironmentBlock = () => {
               >
                 <div className="g-wqc-info">
                   <h3>{center.name}</h3>
-                  <p>
-                    มาตรฐาน <span>{center.standard}</span>
-                  </p>
+                  {center.standard && center.standard !== "-" && (
+                    <p>
+                      มาตรฐาน <span>{center.standard}</span>
+                    </p>
+                  )}
                 </div>
                 <div className="g-wqc-divider" />
                 <img src={center.image} alt={center.name} className="g-wqc-icon" />

@@ -2,9 +2,12 @@ import './EnvironmentDrinkwaterBlock.css';
 import { Tooltip } from 'antd';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { GetfirstDFCB } from '../../../../services/drinkwaterServices/dfcb';
-import { GetfirstDTCB } from '../../../../services/drinkwaterServices/dtcb';
-import { GetfirstECO } from '../../../../services/drinkwaterServices/eco';
+import { GetfirstDFCB } from '../../../../services/drinkwaterServices/glass/dfcb';
+import { GetfirstDTCB } from '../../../../services/drinkwaterServices/glass/dtcb';
+import { GetfirstECO } from '../../../../services/drinkwaterServices/glass/eco';
+import { GetfirstDFCBtank } from '../../../../services/drinkwaterServices/tank/dfcbT';
+import { GetfirstDTCBtank } from '../../../../services/drinkwaterServices/tank/dtcbT';
+import { GetfirstECOtank } from '../../../../services/drinkwaterServices/tank/ecoT';
 
 import ecoli from '../../../../../src/assets/drinkwater/E-Coli-Center.png';
 import dfcb from '../../../../../src/assets/drinkwater/FCB-Center.png';
@@ -15,28 +18,34 @@ const { Footer } = Layout;
 const EnvironmentBlock = () => {
   const navigate = useNavigate();
   const [centers, setCenters] = useState([
-    { name: 'E Coli Center', standard: '-', image: ecoli, path: 'datavizEC' },
-    { name: 'FCB Center', standard: '-', image: dfcb, path: 'datavizDFCB' },
-    { name: 'TCB Center', standard: '30', image: dtcb, path: 'datavizDTCB' },
+    { name: 'E Coli Center of Glass', standard: '-', image: ecoli, path: 'datavizEC' },
+    { name: 'FCB Center of Glass', standard: '-', image: dfcb, path: 'datavizDFCB' },
+    { name: 'TCB Center of Glass', standard: '-', image: dtcb, path: 'datavizDTCB' },
+    { name: 'E Coli Center of Tank', standard: '-', image: ecoli, path: 'datavizECtank' },
+    { name: 'FCB Center of Tank', standard: '-', image: dfcb, path: 'datavizDFCBtank' },
+    { name: 'TCB Center of Tank', standard: '-', image: dtcb, path: 'datavizDTCBtank' },
   ]);
 
   const getTooltip = (name: string) => {
     switch (name) {
-      case 'E Coli Center':
+      case 'E Coli Center of Glass':
+      case 'E Coli Center of Tank':
         return (
           <>
             Escherichia coli (E. coli)<br />
             คือ แบคทีเรียชี้วัดการปนเปื้อนอุจจาระในน้ำ
           </>
         );
-      case 'FCB Center':
+      case 'FCB Center of Glass':
+      case 'FCB Center of Tank':
         return (
           <>
             Fecal Coliform Bacteria (FCB)<br />
             คือ แบคทีเรียจากอุจจาระ<br />ใช้บ่งชี้การปนเปื้อนน้ำ
           </>
         );
-      case 'TCB Center':
+      case 'TCB Center of Glass':
+      case 'TCB Center of Tank':
         return (
           <>
             Total Coliform Bacteria (TCB)<br />
@@ -51,10 +60,13 @@ const EnvironmentBlock = () => {
   useEffect(() => {
     const fetchStandards = async () => {
       try {
-        const [dfcbRes, dtcbRes, ecoRes] = await Promise.all([
+        const [dfcbRes, dtcbRes, ecoRes, dfcbTRes, dtcbTRes, ecoTRes] = await Promise.all([
           GetfirstDFCB(),
           GetfirstDTCB(),
           GetfirstECO(),
+          GetfirstDFCBtank(),
+          GetfirstDTCBtank(),
+          GetfirstECOtank(),
         ]);
 
         const getDisplayStandard = (data: any) => {
@@ -68,14 +80,24 @@ const EnvironmentBlock = () => {
         const dtcbStandard = getDisplayStandard(dtcbRes.data || dtcbRes);
         const ecoStandard = getDisplayStandard(ecoRes.data || ecoRes);
 
+        const dfcbTStandard = getDisplayStandard(dfcbTRes.data || dfcbTRes);
+        const dtcbTStandard = getDisplayStandard(dtcbTRes.data || dtcbTRes);
+        const ecoTStandard = getDisplayStandard(ecoTRes.data || ecoTRes);
+
         setCenters(prev =>
           prev.map(center => {
-            if (center.name === 'E Coli Center') {
+            if (center.name === 'E Coli Center of Glass') {
               return { ...center, standard: ecoStandard };
-            } else if (center.name === 'FCB Center') {
+            } else if (center.name === 'FCB Center of Glass') {
               return { ...center, standard: dfcbStandard };
-            } else if (center.name === 'TCB Center') {
+            } else if (center.name === 'TCB Center of Glass') {
               return { ...center, standard: dtcbStandard };
+            } else if (center.name === 'E Coli Center of Tank') {
+              return { ...center, standard: ecoTStandard };
+            } else if (center.name === 'FCB Center of Tank') {
+              return { ...center, standard: dfcbTStandard };
+            } else if (center.name === 'TCB Center of Tank') {
+              return { ...center, standard: dtcbTStandard };
             }
             return center;
           })
@@ -141,4 +163,3 @@ const EnvironmentBlock = () => {
 };
 
 export default EnvironmentBlock;
-
