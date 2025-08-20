@@ -5,14 +5,12 @@ import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { LeftOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled, CloseCircleFilled, CheckCircleFilled, QuestionCircleFilled } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import './BODdataviz.css';
+import './ECOLItankdataviz.css';
 import dayjs, { Dayjs } from "dayjs";
-import { GetlistBOD, GetfirstBOD } from "../../../../../services/bodService";
-import BeforeWater from "../../../../../assets/mineral.png"
-import AftereWater from "../../../../../assets/rain.png"
-import Efficiency from "../../../../../assets/productivity.png"
-import { GetBeforeAfterBOD } from "../../../../../services/bodService";
-
+import { GetlistECOtank, GetfirstECOtank, GetBeforeAfterECOtank } from "../../../../../../services/drinkwaterServices/tank/ecoT";
+import BeforeWater from "../../../../../../assets/mineral.png"
+import AftereWater from "../../../../../../assets/rain.png"
+import Efficiency from "../../../../../../assets/productivity.png"
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -23,18 +21,14 @@ import { BarChart3, LineChart, Maximize2 } from "lucide-react";
 
 //ใช้กับตาราง
 import Table, { ColumnsType } from "antd/es/table";
-import { GetBODbyID } from "../../../../../services/bodService";
-import UpdateBODCentralForm from "../../../data-management/wastewater/BODcenter/updateBODcenter";
-import BODCentralForm from "../../../data-management/wastewater/BODcenter/BODcenter"
-import { DeleteAllBODRecordsByDate } from "../../../../../services/bodService";
-import { GetBODTABLE } from "../../../../../services/bodService";
-import { ListStatus } from '../../../../../services/index';
-import { ListStatusInterface } from '../../../../../interface/IStatus';
+import { GetECOtankbyID, GetECOtankTABLE, DeleteAllECOtankRecordsByDate } from "../../../../../../services/drinkwaterServices/tank/ecoT";
+import UpdateECOtankCentralForm from "../../../../data-management/drinkwater/tank/ecolicenterT/updateECOtankcenter";
+import ECOtankCentralForm from "../../../../data-management/drinkwater/tank/ecolicenterT/ecolicenterT"
+import { ListStatus } from '../../../../../../services/index';
+import { ListStatusInterface } from '../../../../../../interface/IStatus';
+
 const normalizeString = (str: any) =>
   String(str).normalize("NFC").trim().toLowerCase();
-
-
-
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';
@@ -45,11 +39,11 @@ dayjs.extend(isBetween);
 
 const { RangePicker } = DatePicker;
 
-const BODdataviz: React.FC = () => {
+const ECOtankdataviz: React.FC = () => {
   const navigate = useNavigate();
 
   //ใช้ทั้งกราฟและตาราง
-  const [data, setData] = useState<any[]>([]); // ดึง BOD ทั้งหมด
+  const [data, setData] = useState<any[]>([]); // ดึง ECOtank ทั้งหมด
   const [loading, setLoading] = useState<boolean>(false);
   const [, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
@@ -79,7 +73,7 @@ const BODdataviz: React.FC = () => {
 
   //ใช้กับตาราง
   const [search] = useState(""); //setSearch
-  const [isModalVisible, setIsModalVisible] = useState(false);  // --- Modal สำหรับเพิ่ม/แก้ไข BOD (ถ้าต้องการใช้) ---
+  const [isModalVisible, setIsModalVisible] = useState(false);  // --- Modal สำหรับเพิ่ม/แก้ไข ECOtank (ถ้าต้องการใช้) ---
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingRecord, setEditRecord] = useState<any>(null);
   const { confirm } = Modal;
@@ -93,7 +87,6 @@ const BODdataviz: React.FC = () => {
     const status = (d.status ?? "").trim(); return status.includes("ผ่าน") && !status.includes("ไม่ผ่าน");
   }).length;
   const inProgressTasks = data.filter((d: any) => normalizeString(d.status ?? "").includes(normalizeString("ไม่ผ่าน"))).length;
-
 
   //ใช้กับกราฟ ---โหลดสีจาก localStorage----
   useEffect(() => {
@@ -114,10 +107,10 @@ const BODdataviz: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [lastbod, response, bodRes] = await Promise.all([
-        GetfirstBOD(),
-        GetlistBOD(),
-        GetBeforeAfterBOD(),
+      const [lasteco, response, ecoRes] = await Promise.all([
+        GetfirstECOtank(),
+        GetlistECOtank(),
+        GetBeforeAfterECOtank(),
       ]);
 
       if (response) {
@@ -149,29 +142,6 @@ const BODdataviz: React.FC = () => {
           }
           return arr;
         };
-        ////วันออกหมดแม้ไม่มีข้อมูล
-        // let allDates: string[] = [];
-        // if (dateRange) {
-        //   allDates = createDateRange(dateRange[0], dateRange[1]);
-        // } else {
-        //   const allDatesInData = Object.keys(grouped).sort();
-        //   if (allDatesInData.length > 0) {
-        //     const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
-        //     let start;
-        //     let end = latestDate;
-
-        //     if (filterMode === "year") {
-        //       start = latestDate.subtract(3, "year").startOf("month");
-        //     } else if (filterMode === "month") {
-        //       start = latestDate.startOf("month");
-        //       end = latestDate.endOf("month");
-        //     } else {
-        //       start = latestDate.subtract(6, "day").startOf("day");
-        //     }
-
-        //     allDates = createDateRange(start, end);
-        //   }
-        // }
 
         //ออกเฉพาะวันที่มีข้อมูล
         let allDates: string[] = [];
@@ -245,15 +215,15 @@ const BODdataviz: React.FC = () => {
           after.push({ date, data: avgAfter, unit: values?.afterUnit || "" });
           compare.push({ date, before: avgBefore, after: avgAfter });
         });
-        // console.log(lastbod.data)
-        if (lastbod.data.MiddleValue !== 0) {
-          setMiddleStandard(lastbod.data.MiddleValue);
+        // console.log(lasteco.data)
+        if (lasteco.data.MiddleValue !== 0) {
+          setMiddleStandard(lasteco.data.MiddleValue);
           setMaxStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
           setMinStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
         } else {
           setMiddleStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
-          setMaxStandard(lastbod.data.MaxValue);
-          setMinStandard(lastbod.data.MinValue);
+          setMaxStandard(lasteco.data.MaxValue);
+          setMinStandard(lasteco.data.MinValue);
         }
 
         const percentageChangeData: { date: string; percent: number }[] = compare.map(item => {
@@ -264,20 +234,20 @@ const BODdataviz: React.FC = () => {
           return { date: item.date, percent };
         });
         console.log(response.data);
-        setUnit(lastbod.data.UnitName);
+        setUnit(lasteco.data.UnitName);
         setBeforeData(before);
         setAfterData(after);
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
-        // เซ็ตข้อมูลจาก GetBeforeAfterBOD
-        if (bodRes) {
-          setBeforeAfter(bodRes.data);
+        // เซ็ตข้อมูลจาก GetBeforeAfterECOtank
+        if (ecoRes) {
+          setBeforeAfter(ecoRes.data);
         }
       } else {
-        setError("ไม่พบข้อมูล BOD");
+        setError("ไม่พบข้อมูล ECOtank");
       }
     } catch (err) {
-      console.error("Error fetching BOD data:", err);
+      console.error("Error fetching ECOtank data:", err);
       setError("เกิดข้อผิดพลาดในการดึงข้อมูล");
     } finally {
       setLoading(false);
@@ -290,12 +260,12 @@ const BODdataviz: React.FC = () => {
   }, [dateRange, filterMode]);
 
   //ใช้กับตาราง
-  const loadBODTable = async () => {
+  const loadECOtankTable = async () => {
     try {
-      const response2 = await GetBODTABLE();
+      const response2 = await GetECOtankTABLE();
       if (!response2 || response2.length === 0) {
-        setError("ไม่พบข้อมูล BOD ของตาราง");
-         setData([])//แก้ลบข้อมูลสุดท้ายแล้วตารางไม่รีเฟรช
+        setError("ไม่พบข้อมูล ECOtank ของตาราง");
+        setData([])//แก้ลบข้อมูลสุดท้ายแล้วตารางไม่รีเฟรช
         return;
       }
 
@@ -316,14 +286,14 @@ const BODdataviz: React.FC = () => {
 
       setData(processedData); // ✅ ใช้ชื่อเดิมเหมือนคุณเลย
     } catch (err) {
-      console.error("Error fetching BODTABLE data:", err);
-      setError("เกิดข้อผิดพลาดในการดึงข้อมูล BOD");
+      console.error("Error fetching ECOtankTABLE data:", err);
+      setError("เกิดข้อผิดพลาดในการดึงข้อมูล ECOtank");
     }
   };
 
   // โหลดครั้งแรก
   useEffect(() => {
-    loadBODTable();
+    loadECOtankTable();
   }, []);
 
   useEffect(() => {
@@ -360,7 +330,7 @@ const BODdataviz: React.FC = () => {
 
     return {
       chart: {
-        id: "bod-chart",
+        id: "eco-chart",
         toolbar: { show: true },
         zoom: { enabled: enableZoom, type: 'x', autoScaleYaxis: true },
         fontFamily: "Prompt, 'Prompt', sans-serif",
@@ -440,14 +410,14 @@ const BODdataviz: React.FC = () => {
             }
 
             // กรณี beforeSeries หรือ compareSeries "ก่อนบำบัด"
-            if ((seriesName === "ก่อนบำบัด" || seriesName === "BOD") && beforeData && beforeData.length > dataPointIndex) {
+            if ((seriesName === "ก่อนบำบัด" || seriesName === "ECOtank") && beforeData && beforeData.length > dataPointIndex) {
               const unit = beforeData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดก่อนบำบัด';
               if (unit === 'ไม่มีการตรวจวัดก่อนบำบัด') return unit;
               return `${val.toFixed(2)} ${unit}`;
             }
 
             // กรณี afterSeries หรือ compareSeries "หลังบำบัด"
-            if ((seriesName === "หลังบำบัด" || seriesName === "BOD") && afterData && afterData.length > dataPointIndex) {
+            if ((seriesName === "หลังบำบัด" || seriesName === "ECOtank") && afterData && afterData.length > dataPointIndex) {
               const unit = afterData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดหลังบำบัด';
               if (unit === 'ไม่มีการตรวจวัดหลังบำบัด') return unit;
               return `${val.toFixed(2)} ${unit}`;
@@ -592,7 +562,7 @@ const BODdataviz: React.FC = () => {
         const statusName = record.status;
         if (!statusName) {
           return (
-            <span className="bod-status-badge status-none">
+            <span className="eco-status-badge status-none">
               <QuestionCircleFilled style={{ fontSize: 20 }} />
               ไม่มีข้อมูล
             </span>
@@ -600,7 +570,7 @@ const BODdataviz: React.FC = () => {
         }
         if (statusName.includes("ไม่ผ่าน")) {
           return (
-            <span className="bod-status-badge status-high">
+            <span className="eco-status-badge status-high">
               <CloseCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
               {statusName}
             </span>
@@ -608,7 +578,7 @@ const BODdataviz: React.FC = () => {
         }
         if (statusName.includes("ผ่าน")) {
           return (
-            <span className="bod-status-badge status-good">
+            <span className="eco-status-badge status-good">
               <CheckCircleFilled style={{ marginBottom: -4, fontSize: 18 }} />
               {statusName}
             </span>
@@ -640,10 +610,10 @@ const BODdataviz: React.FC = () => {
       render: (_: any, record: any) => {
         // console.log('record:', record);
         return (
-          <div className="bod-action-buttons">
+          <div className="eco-action-buttons">
             <Tooltip title="แก้ไข">
               <button
-                className="bod-circle-btn bod-edit-btn"
+                className="eco-circle-btn eco-edit-btn"
                 onClick={() => handleEdit([record.before_id, record.after_id])}
               >
                 <EditOutlined />
@@ -651,7 +621,7 @@ const BODdataviz: React.FC = () => {
             </Tooltip>
             <Tooltip title="ลบ">
               <button
-                className="bod-circle-btn bod-delete-btn"
+                className="eco-circle-btn eco-delete-btn"
                 onClick={() => handleDelete([record.before_id, record.after_id])}  // ✅ ส่ง ID เดียว
               >
                 <DeleteOutlined />
@@ -676,7 +646,7 @@ const BODdataviz: React.FC = () => {
     }
 
     try {
-      const responses = await Promise.all(filteredIds.map((id) => GetBODbyID(id)));
+      const responses = await Promise.all(filteredIds.map((id) => GetECOtankbyID(id)));
       const validData = responses
         .filter((res) => res && res.status === 200)
         .map((res) => res.data);
@@ -689,7 +659,7 @@ const BODdataviz: React.FC = () => {
       setEditRecord(validData);
       setIsEditModalVisible(true);
     } catch (error) {
-      console.error("Error fetching BOD data:", error);
+      console.error("Error fetching ECOtank data:", error);
       message.error("เกิดข้อผิดพลาดในการดึงข้อมูล");
     }
   };
@@ -720,10 +690,10 @@ const BODdataviz: React.FC = () => {
       cancelText: "ยกเลิก",
       async onOk() {
         try {
-          await DeleteAllBODRecordsByDate(firstId);
+          await DeleteAllECOtankRecordsByDate(firstId);
           message.success("ลบข้อมูลสำเร็จ");
           await fetchData();
-          await loadBODTable();
+          await loadECOtankTable();
         } catch (error) {
           message.error("ลบข้อมูลไม่สำเร็จ");
         }
@@ -744,17 +714,17 @@ const BODdataviz: React.FC = () => {
 
   return (
     <div>
-      <div className="bod-title-header">
+      <div className="eco-title-header">
         <div>
-          <h1>BOD Central</h1>
-          <p>ค่าความต้องการออกซิเจนทางชีวภาพแสดงปริมาณสารอินทรีย์ที่ย่อยสลายได้</p>
+          <h1>ECOtank Central of Tank</h1>
+          <p>ค่าแบคทีเรียชี้วัดการปนเปื้อนอุจจาระในน้ำ</p>
         </div>
-        <div className="bod-card">
-          <img src={BeforeWater} alt="Before Water" className="bod-photo" />
+        <div className="eco-card">
+          <img src={BeforeWater} alt="Before Water" className="eco-photo" />
           <div>
             <h4>น้ำก่อนบำบัดล่าสุด</h4>
-            <div className="bod-main">
-              <span>{BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined ? (<><span className="bod-value">{BeforeAfter.before.Data}</span>{" "}{BeforeAfter.before.UnitName || ""}</>) : "-"}</span>
+            <div className="eco-main">
+              <span>{BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined ? (<><span className="eco-value">{BeforeAfter.before.Data}</span>{" "}{BeforeAfter.before.UnitName || ""}</>) : "-"}</span>
             </div>
             {BeforeAfter ? (
               <p>
@@ -771,12 +741,12 @@ const BODdataviz: React.FC = () => {
               <p>Loading...</p>
             )}
           </div>
-          <img src={AftereWater} alt="After Water" className="bod-photo" />
+          <img src={AftereWater} alt="After Water" className="eco-photo" />
           <div>
             <h4>น้ำหลังบำบัดล่าสุด</h4>
-            <div className="bod-main">
-              <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="bod-value">{BeforeAfter.after.Data}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
-              <span className="bod-change">
+            <div className="eco-main">
+              <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="eco-value">{BeforeAfter.after.Data}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
+              <span className="eco-change">
                 {(() => {
                   if (BeforeAfter?.after.Data != null && BeforeAfter?.before.Data != null) {
                     const diff = BeforeAfter.after.Data - BeforeAfter.before.Data;
@@ -803,17 +773,17 @@ const BODdataviz: React.FC = () => {
               <p>Loading...</p>
             )}
           </div>
-          <img src={Efficiency} alt="Before Water" className="bod-photo" />
+          <img src={Efficiency} alt="Before Water" className="eco-photo" />
           <div>
             <h4>ประสิทธิภาพล่าสุด</h4>
-            <div className="bod-main">
+            <div className="eco-main">
               <span>
                 {BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined &&
                   BeforeAfter.before.Data !== 0 &&
                   BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined
                   ? (
                     <>
-                      <span className="bod-value">
+                      <span className="eco-value">
                         {Math.max(
                           0,
                           ((BeforeAfter.before.Data - BeforeAfter.after.Data) / BeforeAfter.before.Data) * 100
@@ -832,18 +802,18 @@ const BODdataviz: React.FC = () => {
         </div>
       </div>
       <div style={{ padding: "20px", backgroundColor: "#F8F9FA" }}>
-        <div className="bod-title">
+        <div className="eco-title">
           <div>
             <h1
-              className="bod-title-text"
+              className="eco-title-text"
               onClick={() => navigate(-1)}
               style={{ cursor: 'pointer' }}
             >
-              <LeftOutlined className="bod-back-icon" />
-              กราฟ Biochemical Oxygen Demand
+              <LeftOutlined className="eco-back-icon" />
+              กราฟ Escherichia coli of Tank
             </h1>
           </div>
-          <div className="bod-select-date">
+          <div className="eco-select-date">
             <div>
               <Select
 
@@ -852,7 +822,7 @@ const BODdataviz: React.FC = () => {
                   setFilterMode(val);
                   setDateRange(null); // เคลียร์ช่วงวันที่เดิม
                 }}
-                className="bod-select-filter"
+                className="eco-select-filter"
                 options={[
                   { label: "เลือกช่วงวัน", value: "dateRange" },
                   { label: "เลือกเดือน", value: "month" },
@@ -923,12 +893,12 @@ const BODdataviz: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bod-graph-container">
+        <div className="eco-graph-container">
           {/* ตารางน้ำก่อนบำบัดนะจ๊ะ */}
-          <div className="bod-graph-card">
-            <div className="bod-head-graph-card">
-              <div className="bod-width25">
-                <h2 className="bod-head-graph-card-text">น้ำก่อนบำบัด</h2>
+          <div className="eco-graph-card">
+            <div className="eco-head-graph-card">
+              <div className="eco-width25">
+                <h2 className="eco-head-graph-card-text">น้ำก่อนบำบัด</h2>
               </div>
               <div>
                 <ColorPicker
@@ -939,10 +909,10 @@ const BODdataviz: React.FC = () => {
                     localStorage.setItem('colorBefore', hex);
                   }}
                 />
-                <Button className="bod-expand-chat" onClick={() => openModal("before")}><Maximize2 /></Button>
+                <Button className="eco-expand-chat" onClick={() => openModal("before")}><Maximize2 /></Button>
               </div>
             </div>
-            <div className="bod-right-select-graph">
+            <div className="eco-right-select-graph">
               <Select
                 value={chartTypeBefore}
                 onChange={val => setChartTypeBefore(val)}
@@ -976,10 +946,10 @@ const BODdataviz: React.FC = () => {
             />
           </div>
 
-          <div className="bod-graph-card">
-            <div className="bod-head-graph-card">
-              <div className="bod-width25">
-                <h2 className="bod-head-graph-card-text">น้ำหลังบำบัด</h2>
+          <div className="eco-graph-card">
+            <div className="eco-head-graph-card">
+              <div className="eco-width25">
+                <h2 className="eco-head-graph-card-text">น้ำหลังบำบัด</h2>
               </div>
               <div>
                 <ColorPicker
@@ -990,10 +960,10 @@ const BODdataviz: React.FC = () => {
                     localStorage.setItem('colorAfter', hex);
                   }}
                 />
-                <Button className="bod-expand-chat" onClick={() => openModal("after")}><Maximize2 /></Button>
+                <Button className="eco-expand-chat" onClick={() => openModal("after")}><Maximize2 /></Button>
               </div>
             </div>
-            <div className="bod-right-select-graph">
+            <div className="eco-right-select-graph">
               <Select
                 value={chartTypeAfter}
                 onChange={val => setChartTypeAfter(val)}
@@ -1026,10 +996,10 @@ const BODdataviz: React.FC = () => {
               height={350}
             />
           </div>
-          <div className="bod-graph-card">
-            <div className="bod-head-graph-card">
-              <div className="bod-width40">
-                <h2 className="bod-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
+          <div className="eco-graph-card">
+            <div className="eco-head-graph-card">
+              <div className="eco-width40">
+                <h2 className="eco-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
               </div>
               <div>
                 <ColorPicker
@@ -1048,10 +1018,10 @@ const BODdataviz: React.FC = () => {
                     localStorage.setItem('colorCompareAfter', hex);
                   }}
                 />
-                <Button className="bod-expand-chat" onClick={() => openModal("compare")}><Maximize2 /></Button>
+                <Button className="eco-expand-chat" onClick={() => openModal("compare")}><Maximize2 /></Button>
               </div>
             </div>
-            <div className="bod-right-select-graph">
+            <div className="eco-right-select-graph">
               <Select
                 value={chartTypeCompare}
                 onChange={val => setChartTypeCompare(val)}
@@ -1084,10 +1054,10 @@ const BODdataviz: React.FC = () => {
               height={350}
             />
           </div>
-          <div className="bod-graph-card">
-            <div className="bod-head-graph-card">
-              <div className="bod-width25">
-                <h2 className="bod-head-graph-card-text" >ประสิทธิภาพ</h2>
+          <div className="eco-graph-card">
+            <div className="eco-head-graph-card">
+              <div className="eco-width25">
+                <h2 className="eco-head-graph-card-text" >ประสิทธิภาพ</h2>
               </div>
               <div>
                 <ColorPicker
@@ -1100,7 +1070,7 @@ const BODdataviz: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="bod-right-select-graph">
+            <div className="eco-right-select-graph">
               <Select
                 value={chartpercentChange}
                 onChange={val => setpercentChange(val)}
@@ -1135,14 +1105,14 @@ const BODdataviz: React.FC = () => {
             />
           </div>
         </div>
-        <div className="bod-header-vis">
-          <h1 className="bod-title-text-vis">ข้อมูล Biochemical Oxygen Demand</h1>
-          <div className="bod-btn-container">
-            <button className="bod-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
+        <div className="eco-header-vis">
+          <h1 className="eco-title-text-vis">ข้อมูล Escherichia coli of Tank</h1>
+          <div className="eco-btn-container">
+            <button className="eco-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
           </div>
         </div>
-        <div className="bod-select-date">
-          <div className="bod-filter-status-and-efficiency">
+        <div className="eco-select-date">
+          <div className="eco-filter-status-and-efficiency">
             <p>ประสิทธิภาพ</p>
             <Select
               allowClear
@@ -1168,7 +1138,7 @@ const BODdataviz: React.FC = () => {
               }))}
             />
           </div>
-          <div className="bod-filter-date">
+          <div className="eco-filter-date">
             <div >
               <Select
                 value={tableFilterMode}
@@ -1176,7 +1146,7 @@ const BODdataviz: React.FC = () => {
                   setTableFilterMode(val);
                   setTableDateRange(null);
                 }}
-                className="bod-select-filter"
+                className="eco-select-filter"
                 options={[
                   { label: "เลือกช่วงวัน", value: "dateRange" },
                   { label: "เลือกเดือน", value: "month" },
@@ -1248,21 +1218,21 @@ const BODdataviz: React.FC = () => {
           </div>
         </div>
         <br />
-        <div className="bod-table-data">
-          <div className="bod-width40">
-            <h1 className="bod-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
+        <div className="eco-table-data">
+          <div className="eco-width40">
+            <h1 className="eco-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
           </div>
-          <div className="bod-task-summary">
-            <div className="bod-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
-            <div className="bod-task-stats">
-              <div className="bod-task-item">
-                <div className="bod-task-number">{doneTasks}</div>
-                <div className="bod-task-label">ผ่านเกณฑ์มาตรฐาน</div>
+          <div className="eco-task-summary">
+            <div className="eco-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
+            <div className="eco-task-stats">
+              <div className="eco-task-item">
+                <div className="eco-task-number">{doneTasks}</div>
+                <div className="eco-task-label">ผ่านเกณฑ์มาตรฐาน</div>
               </div>
-              <div className="bod-task-divider" />
-              <div className="bod-task-item">
-                <div className="bod-task-number">{inProgressTasks}</div>
-                <div className="bod-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
+              <div className="eco-task-divider" />
+              <div className="eco-task-item">
+                <div className="eco-task-number">{inProgressTasks}</div>
+                <div className="eco-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
               </div>
             </div>
           </div>
@@ -1309,7 +1279,7 @@ const BODdataviz: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล BOD ใหม่"}
+          title={"เพิ่มข้อมูล E Coli of Tank ใหม่"}
           open={isModalVisible}
           footer={null}
           width={1100}
@@ -1317,15 +1287,15 @@ const BODdataviz: React.FC = () => {
           closable={false}
           centered
         >
-          <BODCentralForm onCancel={handleAddModalCancel}
+          <ECOtankCentralForm onCancel={handleAddModalCancel}
             onSuccess={async () => {
               await fetchData();      // ✅ โหลดข้อมูลกราฟใหม่
-              await loadBODTable();   // ✅ โหลดข้อมูลตารางใหม่
+              await loadECOtankTable();   // ✅ โหลดข้อมูลตารางใหม่
             }}
           />
         </Modal>
         <Modal
-          title="แก้ไขข้อมูล BOD"
+          title="แก้ไขข้อมูล E Coli of Tank"
           open={isEditModalVisible}
           footer={null}
           width={1100}
@@ -1335,13 +1305,13 @@ const BODdataviz: React.FC = () => {
           onCancel={handleEditModalCancel}
         >
           {editingRecord && (
-            <UpdateBODCentralForm
+            <UpdateECOtankCentralForm
               initialValues={editingRecord}
               onSuccess={() => {
                 setTimeout(async () => {
                   setIsEditModalVisible(false);
                   setEditRecord(null);
-                  await loadBODTable();
+                  await loadECOtankTable();
                   await fetchData();
                 }, 500);
               }}
@@ -1354,19 +1324,19 @@ const BODdataviz: React.FC = () => {
           visible={modalVisible}
           onCancel={closeModal}
           footer={null}
-          className="bod-custom-modal"
+          className="eco-custom-modal"
           centered
           destroyOnClose
           maskClosable={true}
         >
           {modalGraphType === "before" && (
-            <div className="bod-chat-modal" >
-              <div className="bod-head-graph-card">
-                <div className="bod-width25">
-                  <h2 className="bod-head-graph-card-text">น้ำก่อนบำบัด</h2>
+            <div className="eco-chat-modal" >
+              <div className="eco-head-graph-card">
+                <div className="eco-width25">
+                  <h2 className="eco-head-graph-card-text">น้ำก่อนบำบัด</h2>
                 </div>
               </div>
-              <div className="bod-right-select-graph">
+              <div className="eco-right-select-graph">
                 <Select
                   value={chartTypeBefore}
                   onChange={val => setChartTypeBefore(val)}
@@ -1386,7 +1356,7 @@ const BODdataviz: React.FC = () => {
                   </Select.Option>
                 </Select>
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="eco-chart-containner">
                 <ApexChart
                   key={chartTypeBefore}
                   options={getChartOptions(
@@ -1404,13 +1374,13 @@ const BODdataviz: React.FC = () => {
             </div>
           )}
           {modalGraphType === "after" && (
-            <div className="bod-chat-modal">
-              <div className="bod-head-graph-card">
-                <div className="bod-width25">
-                  <h2 className="bod-head-graph-card-text">น้ำหลังบำบัด</h2>
+            <div className="eco-chat-modal">
+              <div className="eco-head-graph-card">
+                <div className="eco-width25">
+                  <h2 className="eco-head-graph-card-text">น้ำหลังบำบัด</h2>
                 </div>
               </div>
-              <div className="bod-right-select-graph">
+              <div className="eco-right-select-graph">
                 <Select
                   value={chartTypeAfter}
                   onChange={val => setChartTypeAfter(val)}
@@ -1430,7 +1400,7 @@ const BODdataviz: React.FC = () => {
                   </Select.Option>
                 </Select>
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="eco-chart-containner">
                 <ApexChart
                   key={chartTypeAfter}
                   options={getChartOptions(
@@ -1448,13 +1418,13 @@ const BODdataviz: React.FC = () => {
             </div>
           )}
           {modalGraphType === "compare" && (
-            <div className="bod-chat-modal">
-              <div className="bod-head-graph-card" >
-                <div className="bod-width40">
-                  <h2 className="bod-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
+            <div className="eco-chat-modal">
+              <div className="eco-head-graph-card" >
+                <div className="eco-width40">
+                  <h2 className="eco-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
                 </div>
               </div>
-              <div className="bod-right-select-graph">
+              <div className="eco-right-select-graph">
                 <Select
                   value={chartTypeCompare}
                   onChange={val => setChartTypeCompare(val)}
@@ -1474,7 +1444,7 @@ const BODdataviz: React.FC = () => {
                   </Select.Option>
                 </Select>
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="eco-chart-containner">
                 <ApexChart
                   key={chartTypeCompare}
                   options={getChartOptions(
@@ -1498,4 +1468,4 @@ const BODdataviz: React.FC = () => {
   );
 };
 
-export default BODdataviz;
+export default ECOtankdataviz;

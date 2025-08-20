@@ -1,4 +1,4 @@
-package tdscenter
+package ecocenterT
 
 import (
 	"errors"
@@ -22,7 +22,7 @@ func (f Float64TwoDecimal) MarshalJSON() ([]byte, error) {
 	return []byte(s), nil
 }
 
-func CreateTDS(c *gin.Context) {
+func CreateECOtank(c *gin.Context) {
 	fmt.Println("Creating Environment Record")
 
 	var input struct {
@@ -70,14 +70,14 @@ func CreateTDS(c *gin.Context) {
 	}
 
 	var parameter entity.Parameter
-	if err := db.Where("parameter_name = ?", "Total Dissolved Solids").First(&parameter).Error; err != nil {
+	if err := db.Where("parameter_name = ?", "Escherichia coli of tank").First(&parameter).Error; err != nil {
 		fmt.Println("Error fetching parameter:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
 	}
 
 	var environment entity.Environment
-	if err := db.Where("environment_name = ?", "น้ำเสีย").First(&environment).Error; err != nil {
+	if err := db.Where("environment_name = ?", "น้ำดื่ม").First(&environment).Error; err != nil {
 		fmt.Println("Error fetching environment:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
 		return
@@ -121,29 +121,29 @@ func CreateTDS(c *gin.Context) {
 	}
 
 	if err := db.Create(&environmentRecord).Error; err != nil {
-		fmt.Println("Error saving Total Dissolved Solids:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save Total Dissolved Solids"})
+		fmt.Println("Error saving Escherichia coli of tank:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save Escherichia coli of tank"})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "Total Dissolved Solids created successfully", // แก้ข้อความตรงนี้
+		"message": "Escherichia coli of tank created successfully", // แก้ข้อความตรงนี้
 		"data":    environmentRecord,
 	})
 }
 
-func GetfirstTDS(c *gin.Context) {
+func GetfirstECOtank(c *gin.Context) {
 	db := config.DB()
 
 	var parameter entity.Parameter
-	if err := db.Where("parameter_name = ?", "Total Dissolved Solids").First(&parameter).Error; err != nil {
+	if err := db.Where("parameter_name = ?", "Escherichia coli of tank").First(&parameter).Error; err != nil {
 		fmt.Println("Error fetching parameter:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
 	}
 
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
-	var firsttds struct {
+	var firstecoT struct {
 		ID                     uint              `json:"ID"`
 		Date                   time.Time         `json:"Date"`
 		Data                   float64           `json:"Data"`
@@ -167,7 +167,7 @@ func GetfirstTDS(c *gin.Context) {
 		Joins("inner join units on environmental_records.unit_id = units.id").
 		Where("parameter_id = ?", parameter.ID).
 		Order("environmental_records.created_at desc").
-		Scan(&firsttds)
+		Scan(&firstecoT)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
 	if result.Error != nil {
@@ -176,7 +176,7 @@ func GetfirstTDS(c *gin.Context) {
 	}
 
 	// ส่งข้อมูลกลับในรูปแบบ JSON
-	c.JSON(http.StatusOK, firsttds)
+	c.JSON(http.StatusOK, firstecoT)
 }
 
 var thaiMonths = [...]string{
@@ -191,17 +191,17 @@ func formatThaiDate(t time.Time) string {
 	return strconv.Itoa(day) + " " + month + " " + strconv.Itoa(year)
 }
 
-func ListTDS(c *gin.Context) {
+func ListECOtank(c *gin.Context) {
 	db := config.DB()
 
 	var parameter entity.Parameter
-	if err := db.Where("parameter_name = ?", "Total Dissolved Solids").First(&parameter).Error; err != nil {
+	if err := db.Where("parameter_name = ?", "Escherichia coli of tank").First(&parameter).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
 	}
 
 	// โครงสร้างผลลัพธ์
-	var resultds []struct {
+	var resulecoT []struct {
 		ID                     uint      `json:"ID"`
 		Date                   time.Time `json:"Date"`
 		Data                   float64   `json:"Data"`
@@ -238,17 +238,17 @@ func ListTDS(c *gin.Context) {
 		Joins("inner join statuses on environmental_records.status_id = statuses.id").
 		Where("environmental_records.id IN (?)", subQuery).
 		Order("environmental_records.date DESC").
-		Find(&resultds).Error
+		Find(&resulecoT).Error
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, resultds)
+	c.JSON(http.StatusOK, resulecoT)
 }
 
-func DeleterTDS(c *gin.Context) {
+func DeleterECOtank(c *gin.Context) {
 	id := c.Param("id")
 	db := config.DB()
 
@@ -261,24 +261,24 @@ func DeleterTDS(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Soft Deleted Environmental Records Successfully"})
 }
 
-func GetTDSTABLE(c *gin.Context) {
+func GetECOtankTABLE(c *gin.Context) {
 	db := config.DB()
 
-	// หา ParameterID ของ "Total Dissolved Solids"
+	// หา ParameterID ของ "Escherichia coli of tank"
 	var param entity.Parameter
-	if err := db.Where("parameter_name = ?", "Total Dissolved Solids").First(&param).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่พบ Parameter Total Dissolved Solids"})
+	if err := db.Where("parameter_name = ?", "Escherichia coli of tank").First(&param).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่พบ Parameter Escherichia coli of tank"})
 		return
 	}
 
-	var tds []entity.EnvironmentalRecord
+	var ecoT []entity.EnvironmentalRecord
 	result := db.Preload("BeforeAfterTreatment").
 		Preload("Environment").
 		Preload("Unit").
 		Preload("Employee").
 		Where("parameter_id = ?", param.ID).
 		Order("date ASC").
-		Find(&tds)
+		Find(&ecoT)
 
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
@@ -290,7 +290,7 @@ func GetTDSTABLE(c *gin.Context) {
 		EnvironmentID uint
 	}
 
-	type TDSRecord struct {
+	type ECOtankRecord struct {
 		Date          string   `json:"date"`
 		Unit          string   `json:"unit"`
 		StandardValue string   `json:"standard_value"`
@@ -304,9 +304,9 @@ func GetTDSTABLE(c *gin.Context) {
 		Status        string   `json:"status"`
 	}
 
-	tdsMap := make(map[keyType]*TDSRecord)
+	ecoTMap := make(map[keyType]*ECOtankRecord)
 
-	for _, rec := range tds {
+	for _, rec := range ecoT {
 		dateStr := rec.Date.Format("2006-01-02")
 		k := keyType{
 			Date:          dateStr,
@@ -317,7 +317,7 @@ func GetTDSTABLE(c *gin.Context) {
 		var latestRec entity.EnvironmentalRecord
 		err := db.
 			Joins("JOIN parameters p ON p.id = environmental_records.parameter_id").
-			Where("p.parameter_name = ?", "Total Dissolved Solids").
+			Where("p.parameter_name = ?", "Escherichia coli of tank").
 			Where("DATE(environmental_records.date) = ?", dateStr).
 			Where("environmental_records.environment_id = ?", rec.EnvironmentID).
 			Order("environmental_records.date DESC").
@@ -335,7 +335,7 @@ func GetTDSTABLE(c *gin.Context) {
 			}
 		}
 
-		if _, existds := tdsMap[k]; !existds {
+		if _, exisecoT := ecoTMap[k]; !exisecoT {
 			unitName := rec.Unit.UnitName // default
 
 			// ลองใช้ unit ของ latestRec ถ้ามี
@@ -346,7 +346,7 @@ func GetTDSTABLE(c *gin.Context) {
 				}
 			}
 
-			tdsMap[k] = &TDSRecord{
+			ecoTMap[k] = &ECOtankRecord{
 				Date:          dateStr,
 				Unit:          unitName,
 				StandardValue: stdVal,
@@ -356,48 +356,48 @@ func GetTDSTABLE(c *gin.Context) {
 		// Before / After
 		val := rec.Data
 		if rec.BeforeAfterTreatmentID == 1 {
-			tdsMap[k].BeforeValue = &val
-			tdsMap[k].BeforeID = &rec.ID
+			ecoTMap[k].BeforeValue = &val
+			ecoTMap[k].BeforeID = &rec.ID
 		} else if rec.BeforeAfterTreatmentID == 2 {
-			tdsMap[k].AfterValue = &val
-			tdsMap[k].AfterID = &rec.ID
+			ecoTMap[k].AfterValue = &val
+			ecoTMap[k].AfterID = &rec.ID
 		}
 
 		// Efficiency
-		if tdsMap[k].BeforeValue != nil && tdsMap[k].AfterValue != nil && *tdsMap[k].BeforeValue != 0 {
-			eff := ((*tdsMap[k].BeforeValue - *tdsMap[k].AfterValue) / (*tdsMap[k].BeforeValue)) * 100
+		if ecoTMap[k].BeforeValue != nil && ecoTMap[k].AfterValue != nil && *ecoTMap[k].BeforeValue != 0 {
+			eff := ((*ecoTMap[k].BeforeValue - *ecoTMap[k].AfterValue) / (*ecoTMap[k].BeforeValue)) * 100
 			// ✅ ถ้าค่าติดลบให้กลายเป็น 0.00
 			//fmt.Printf("Efficiency2: %.2f\n", eff)
 			if eff < 0 {
 				eff = 0.00
 			}
-			tdsMap[k].Efficiency = &eff
+			ecoTMap[k].Efficiency = &eff
 		}
 
 		// คำนวณ Status
-		if tdsMap[k].AfterValue != nil && latestRec.StandardID != 0 {
+		if ecoTMap[k].AfterValue != nil && latestRec.StandardID != 0 {
 			var std entity.Standard
 			if db.First(&std, latestRec.StandardID).Error == nil {
-				after := *tdsMap[k].AfterValue
+				after := *ecoTMap[k].AfterValue
 				if std.MinValue != 0 || std.MaxValue != 0 {
 					if after < float64(std.MinValue) || after > float64(std.MaxValue) {
-						tdsMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
+						ecoTMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
-						tdsMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
+						ecoTMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
 					}
 				} else {
 					if after > float64(std.MiddleValue) {
-						tdsMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
+						ecoTMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
-						tdsMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
+						ecoTMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
 					}
 				}
 
-				// ✅ อัปเดตลง DB ทันที (อัปเดต record หลังการบำบัด)
-				if tdsMap[k].AfterID != nil {
+				// ✅ อัปเดตลง DB ทันที (อัปเดต recoTrd หลังการบำบัด)
+				if ecoTMap[k].AfterID != nil {
 					db.Model(&entity.EnvironmentalRecord{}).
-						Where("id = ?", *tdsMap[k].AfterID).
-						Update("status_id", getStatusIDFromName(tdsMap[k].Status)) // แปลงชื่อเป็น ID
+						Where("id = ?", *ecoTMap[k].AfterID).
+						Update("status_id", getStatusIDFromName(ecoTMap[k].Status)) // แปลงชื่อเป็น ID
 				}
 			}
 		}
@@ -405,12 +405,12 @@ func GetTDSTABLE(c *gin.Context) {
 
 	// สร้าง map รวบรวม id -> note เพื่อดึง note ของ before และ after จากข้อมูลดิบ
 	noteMap := make(map[uint]string)
-	for _, rec := range tds {
+	for _, rec := range ecoT {
 		noteMap[rec.ID] = rec.Note
 	}
 
-	// เติม BeforeNote และ AfterNote ใน tdsMap
-	for _, val := range tdsMap {
+	// เติม BeforeNote และ AfterNote ใน ecoTMap
+	for _, val := range ecoTMap {
 		if val.BeforeID != nil {
 			if note, ok := noteMap[*val.BeforeID]; ok {
 				val.BeforeNote = note
@@ -424,8 +424,8 @@ func GetTDSTABLE(c *gin.Context) {
 	}
 
 	// รวมข้อมูลส่งกลับ
-	var mergedRecords []TDSRecord
-	for _, val := range tdsMap {
+	var mergedRecords []ECOtankRecord
+	for _, val := range ecoTMap {
 		mergedRecords = append(mergedRecords, *val)
 	}
 
@@ -440,7 +440,7 @@ func getStatusIDFromName(name string) uint {
 	return 0 // หรือค่าดีฟอลต์ถ้าไม่เจอ
 }
 
-func UpdateOrCreateTDS(c *gin.Context) {
+func UpdateOrCreateECOtank(c *gin.Context) {
 	var input struct {
 		entity.EnvironmentalRecord
 		CustomStandard *struct {
@@ -594,7 +594,7 @@ func UpdateOrCreateTDS(c *gin.Context) {
 	}
 }
 
-func DeleteTDS(c *gin.Context) {
+func DeleteECOtank(c *gin.Context) {
 	id := c.Param("id")
 	uintID, err := strconv.ParseUint(id, 10, 32)
 
@@ -610,14 +610,14 @@ func DeleteTDS(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "ลบข้อมูล TDS สำเร็จ"})
+	c.JSON(http.StatusOK, gin.H{"message": "ลบข้อมูล ECOtank สำเร็จ"})
 }
 
-func GetTDSbyID(c *gin.Context) {
+func GetECOtankbyID(c *gin.Context) {
 	id := c.Param("id")
 	db := config.DB()
 
-	var tds struct {
+	var ecoT struct {
 		ID                     uint      `json:"ID"`
 		Date                   time.Time `json:"Date"`
 		Data                   float64   `json:"Data"`
@@ -640,17 +640,17 @@ func GetTDSbyID(c *gin.Context) {
 			standards.min_value, standards.middle_value, standards.max_value`).
 		Joins("inner join standards on environmental_records.standard_id = standards.id").
 		Where("environmental_records.id = ?", id).
-		Scan(&tds)
+		Scan(&ecoT)
 
 	if result.Error != nil || result.RowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Record not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, tds)
+	c.JSON(http.StatusOK, ecoT)
 }
 
-func DeleteAllTDSRecordsByDate(c *gin.Context) {
+func DeleteAllECOtankRecordsByDate(c *gin.Context) {
 	id := c.Param("id")
 	uintID, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
@@ -660,9 +660,10 @@ func DeleteAllTDSRecordsByDate(c *gin.Context) {
 
 	db := config.DB()
 
-	// หา ParameterID
+	// หา parameter
 	var parameter entity.Parameter
-	if err := db.Where("parameter_name = ?", "Total Dissolved Solids").First(&parameter).Error; err != nil {
+	if err := db.Where("parameter_name = ?", "Escherichia coli of tank").First(&parameter).Error; err != nil {
+		fmt.Println("Error fetching parameter:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
 	}
@@ -683,17 +684,17 @@ func DeleteAllTDSRecordsByDate(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "ลบข้อมูล TDS สำเร็จ",
+		"message": "ลบข้อมูล ECOtank สำเร็จ",
 		"date":    dateKey,
 	})
 }
 
-func GetBeforeAfterTDS(c *gin.Context) {
+func GetBeforeAfterECOtank(c *gin.Context) {
 	db := config.DB()
 
-	// หา parameter ของ TDS
+	// หา parameter ของ ECOtank
 	var parameter entity.Parameter
-	if err := db.Where("parameter_name = ?", "Total Dissolved Solids").First(&parameter).Error; err != nil {
+	if err := db.Where("parameter_name = ?", "Escherichia coli of tank").First(&parameter).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
 	}
@@ -710,7 +711,7 @@ func GetBeforeAfterTDS(c *gin.Context) {
 		return
 	}
 
-	type TDSRecord struct {
+	type ECOtankRecord struct {
 		ID                     *uint              `json:"ID"`
 		Date                   *time.Time         `json:"Date"`
 		Data                   *float64           `json:"Data"`
@@ -728,7 +729,7 @@ func GetBeforeAfterTDS(c *gin.Context) {
 	}
 
 	// ค่าว่างเริ่มต้น
-	defaultEmpty := TDSRecord{
+	defaultEmpty := ECOtankRecord{
 		ID:                     nil,
 		Date:                   nil,
 		Data:                   nil,
@@ -745,8 +746,8 @@ func GetBeforeAfterTDS(c *gin.Context) {
 		UnitName:               "",
 	}
 
-	var latestBefore TDSRecord
-	var latestAfter TDSRecord
+	var latestBefore ECOtankRecord
+	var latestAfter ECOtankRecord
 
 	// Query หา Before ล่าสุด
 	errBefore := db.Model(&entity.EnvironmentalRecord{}).
@@ -776,7 +777,7 @@ func GetBeforeAfterTDS(c *gin.Context) {
 
 	// ถ้าไม่มีทั้ง Before และ After
 	if errBefore != nil && errAfter != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "No TDS records found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "No ECOtank records found"})
 		return
 	}
 
@@ -808,54 +809,4 @@ func GetBeforeAfterTDS(c *gin.Context) {
 		"before": beforeRes,
 		"after":  afterRes,
 	})
-}
-
-// ใช้ส่วนรวม
-func CheckUnit(c *gin.Context) {
-	name := c.Query("name")
-	var unit entity.Unit
-
-	// ตรวจสอบในฐานข้อมูลว่ามีหรือไม่
-	if err := config.DB().Where("unit_name = ?", name).First(&unit).Error; err == nil {
-		c.JSON(200, gin.H{"exists": true})
-		return
-	}
-	c.JSON(200, gin.H{"exists": false})
-}
-
-// ใช้ส่วนรวม
-func CheckStandard(c *gin.Context) {
-	standardType := c.Query("type")
-
-	if standardType == "middle" {
-		middleValue := c.Query("value")
-		var std entity.Standard
-		if err := config.DB().Where("middle_value = ?", middleValue).First(&std).Error; err == nil {
-			c.JSON(200, gin.H{"exists": true})
-			return
-		}
-		c.JSON(200, gin.H{"exists": false})
-		return
-	}
-
-	if standardType == "range" {
-		min := c.Query("min")
-		max := c.Query("max")
-		var std entity.Standard
-		if err := config.DB().
-			Where("min_value = ? AND max_value = ?", min, max).
-			First(&std).Error; err == nil {
-			c.JSON(200, gin.H{"exists": true})
-			return
-		}
-		c.JSON(200, gin.H{"exists": false})
-		return
-	}
-
-	c.JSON(400, gin.H{"error": "invalid type"})
-}
-
-// ใช้ส่วนรวม  //กำลังจะทำ
-func GetAlertWater(c *gin.Context) {
-
 }

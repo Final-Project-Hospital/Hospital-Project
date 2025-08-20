@@ -1,6 +1,6 @@
 import axios from "axios";
-import { InfectiouscenterInterface } from "../../interface/Igarbage/IinfectiousWaste";
-import { apiUrl } from "../index"
+import { ECOtankcenterInterface, DeleteECOtankInterface } from "../../../interface/Idrinkwater/tank/IecoT";
+import { apiUrl } from "../../index"
 
 const getAuthHeader = () => {
   const token = localStorage.getItem("token");
@@ -8,11 +8,11 @@ const getAuthHeader = () => {
   return { Authorization: `${tokenType} ${token}` };
 };
 
-export const createInfectious = async (
-  data: InfectiouscenterInterface
+export const createECOtank = async (
+  data: ECOtankcenterInterface
 ): Promise<any | null> => {
   try {
-    const response = await axios.post(`${apiUrl}/create-infectious`, data, {
+    const response = await axios.post(`${apiUrl}/create-eco-tank`, data, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -26,14 +26,14 @@ export const createInfectious = async (
       return null;
     }
   } catch (error: any) {
-    console.error("Error creating hazard record:", error.response?.data || error.message);
+    console.error("Error creating ECOtank reco-tankrd:", error.response?.data || error.message);
     return null;
   }
 };
-export const GetfirstInfectious = async (
+export const GetfirstECOtank = async (
 ): Promise<any | null> => {
   try {
-    const response = await axios.get(`${apiUrl}/get-first-infectious`, {
+    const response = await axios.get(`${apiUrl}/get-first-eco-tank`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -47,15 +47,15 @@ export const GetfirstInfectious = async (
       return null;
     }
   } catch (error: any) {
-    console.error("Error creating Infectious record:", error.response?.data || error.message);
+    console.error("Error creating ECOtank reco-tankrd:", error.response?.data || error.message);
     return null;
   }
 };
 
-export const GetlistInfectious = async (
+export const GetlistECOtank = async (
 ): Promise<any | null> => {
   try {
-    const response = await axios.get(`${apiUrl}/list-infectious`, {
+    const response = await axios.get(`${apiUrl}/list-eco-tank`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -69,14 +69,14 @@ export const GetlistInfectious = async (
       return null;
     }
   } catch (error: any) {
-    console.error("Error creating Infectious record:", error.response?.data || error.message);
+    console.error("Error creating ECOtank reco-tankrd:", error.response?.data || error.message);
     return null;
   }
 };
 
-export const GetInfectiousTABLE = async () => {
+export const GetECOtankTABLE = async () => {
   try {
-    const response = await axios.get(`${apiUrl}/get-infectious-table`, {
+    const response = await axios.get(`${apiUrl}/get-eco-tank-table`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -89,17 +89,17 @@ export const GetInfectiousTABLE = async () => {
       return null;
     }
   } catch (error) {
-    console.error("Error fetching Infectious:", error);
+    console.error("Error fetching ECOtank:", error);
     return null;
   }
 };
 
-export const UpdateOrCreateInfectious = async (payload: any) => {
+export const UpdateOrCreateECOtank = async (payload: any) => {
   try {
     let response;
 
     if (payload.ID) {
-      const url = `${apiUrl}/update-or-create-infectious/${payload.ID}`;
+      const url = `${apiUrl}/update-or-create-eco-tank/${payload.ID}`;
       console.log("PATCH URL:", url);
       console.log("Payload:", payload);
 
@@ -111,7 +111,7 @@ export const UpdateOrCreateInfectious = async (payload: any) => {
       });
     } else {
       // Create
-      const url = `${apiUrl}/create-infectious`;
+      const url = `${apiUrl}/create-eco-tank`;
       console.log("POST URL:", url);
       console.log("Payload:", payload);
 
@@ -125,14 +125,35 @@ export const UpdateOrCreateInfectious = async (payload: any) => {
 
     return response.data;
   } catch (error) {
-    console.error("Error in UpdateOrCreateInfectious:", error);
+    console.error("Error in UpdateOrCreateECOtank:", error);
     throw error;
   }
 };
 
-export const GetInfectiousbyID = async (id: number): Promise<any | null> => {
+export const DeleteECOtank = async (id: number): Promise<DeleteECOtankInterface[] | null> => {
   try {
-    const response = await axios.get(`${apiUrl}/get-infectious/${id}`, {
+    const response = await axios.delete(`${apiUrl}/delete-eco-tank/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error deleting ECOtank :", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const GetECOtankbyID = async (id: number): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-eco-tank/${id}`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -146,16 +167,16 @@ export const GetInfectiousbyID = async (id: number): Promise<any | null> => {
       return null;
     }
   } catch (error: any) {
-    console.error("Error fetching Infectious by ID:", error.response?.data || error.message);
+    console.error("Error fetching ECOtank by ID:", error.response?.data || error.message);
     return null;
   }
 };
 
-export const DeleteAllInfectiousRecordsByDate = async (
+export const DeleteAllECOtankRecordsByDate = async (
   id: number
 ): Promise<any | null> => {
   try {
-    const response = await axios.delete(`${apiUrl}/delete-infectious-day/${id}`, {
+    const response = await axios.delete(`${apiUrl}/delete-eco-tank-day/${id}`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -169,15 +190,15 @@ export const DeleteAllInfectiousRecordsByDate = async (
       return null;
     }
   } catch (error: any) {
-    console.error("Error deleting Infectious records by date:", error.response?.data || error.message);
+    console.error("Error deleting ECOtank reco-tankrds by date:", error.response?.data || error.message);
     return null;
   }
 };
 
-export const GetBeforeAfterInfectious = async (
+export const GetBeforeAfterECOtank = async (
 ): Promise<any | null> => {
   try {
-    const response = await axios.get(`${apiUrl}/get-beforeafter-infectious`, {
+    const response = await axios.get(`${apiUrl}/get-beforeafter-eco-tank`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -191,29 +212,7 @@ export const GetBeforeAfterInfectious = async (
       return null;
     }
   } catch (error: any) {
-    console.error("Error creating Infectious record:", error.response?.data || error.message);
-    return null;
-  }
-};
-
-export const GetLastDayInfectious = async (
-): Promise<any | null> => {
-  try {
-    const response = await axios.get(`${apiUrl}/get-last-day-infectious`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-    });
-
-    if (response.status === 200) {
-      return response;
-    } else {
-      console.error("Unexpected status:", response.status);
-      return null;
-    }
-  } catch (error: any) {
-    console.error("Error creating Infectious record:", error.response?.data || error.message);
+    console.error("Error creating ECOtank reco-tankrd:", error.response?.data || error.message);
     return null;
   }
 };

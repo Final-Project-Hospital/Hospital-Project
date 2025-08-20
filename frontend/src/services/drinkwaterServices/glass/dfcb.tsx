@@ -1,6 +1,6 @@
 import axios from "axios";
-import { InfectiouscenterInterface } from "../../interface/Igarbage/IinfectiousWaste";
-import { apiUrl } from "../index"
+import { DFCBcenterInterface, DeleteDFCBInterface } from "../../../interface/Idrinkwater/glass/Idfcb";
+import { apiUrl } from "../../index"
 
 const getAuthHeader = () => {
   const token = localStorage.getItem("token");
@@ -8,11 +8,11 @@ const getAuthHeader = () => {
   return { Authorization: `${tokenType} ${token}` };
 };
 
-export const createInfectious = async (
-  data: InfectiouscenterInterface
+export const createDFCB = async (
+  data: DFCBcenterInterface
 ): Promise<any | null> => {
   try {
-    const response = await axios.post(`${apiUrl}/create-infectious`, data, {
+    const response = await axios.post(`${apiUrl}/create-dfcb`, data, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -26,14 +26,14 @@ export const createInfectious = async (
       return null;
     }
   } catch (error: any) {
-    console.error("Error creating hazard record:", error.response?.data || error.message);
+    console.error("Error creating DFCB record:", error.response?.data || error.message);
     return null;
   }
 };
-export const GetfirstInfectious = async (
+export const GetfirstDFCB = async (
 ): Promise<any | null> => {
   try {
-    const response = await axios.get(`${apiUrl}/get-first-infectious`, {
+    const response = await axios.get(`${apiUrl}/get-first-dfcb`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -47,15 +47,15 @@ export const GetfirstInfectious = async (
       return null;
     }
   } catch (error: any) {
-    console.error("Error creating Infectious record:", error.response?.data || error.message);
+    console.error("Error creating DFCB record:", error.response?.data || error.message);
     return null;
   }
 };
 
-export const GetlistInfectious = async (
+export const GetlistDFCB = async (
 ): Promise<any | null> => {
   try {
-    const response = await axios.get(`${apiUrl}/list-infectious`, {
+    const response = await axios.get(`${apiUrl}/list-dfcb`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -69,14 +69,14 @@ export const GetlistInfectious = async (
       return null;
     }
   } catch (error: any) {
-    console.error("Error creating Infectious record:", error.response?.data || error.message);
+    console.error("Error creating DFCB record:", error.response?.data || error.message);
     return null;
   }
 };
 
-export const GetInfectiousTABLE = async () => {
+export const GetDFCBTABLE = async () => {
   try {
-    const response = await axios.get(`${apiUrl}/get-infectious-table`, {
+    const response = await axios.get(`${apiUrl}/get-dfcb-table`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -89,17 +89,17 @@ export const GetInfectiousTABLE = async () => {
       return null;
     }
   } catch (error) {
-    console.error("Error fetching Infectious:", error);
+    console.error("Error fetching DFCB:", error);
     return null;
   }
 };
 
-export const UpdateOrCreateInfectious = async (payload: any) => {
+export const UpdateOrCreateDFCB = async (payload: any) => {
   try {
     let response;
 
     if (payload.ID) {
-      const url = `${apiUrl}/update-or-create-infectious/${payload.ID}`;
+      const url = `${apiUrl}/update-or-create-dfcb/${payload.ID}`;
       console.log("PATCH URL:", url);
       console.log("Payload:", payload);
 
@@ -111,7 +111,7 @@ export const UpdateOrCreateInfectious = async (payload: any) => {
       });
     } else {
       // Create
-      const url = `${apiUrl}/create-infectious`;
+      const url = `${apiUrl}/create-dfcb`;
       console.log("POST URL:", url);
       console.log("Payload:", payload);
 
@@ -125,14 +125,35 @@ export const UpdateOrCreateInfectious = async (payload: any) => {
 
     return response.data;
   } catch (error) {
-    console.error("Error in UpdateOrCreateInfectious:", error);
+    console.error("Error in UpdateOrCreateDFCB:", error);
     throw error;
   }
 };
 
-export const GetInfectiousbyID = async (id: number): Promise<any | null> => {
+export const DeleteDFCB = async (id: number): Promise<DeleteDFCBInterface[] | null> => {
   try {
-    const response = await axios.get(`${apiUrl}/get-infectious/${id}`, {
+    const response = await axios.delete(`${apiUrl}/delete-dfcb/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error deleting DFCB :", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const GetDFCBbyID = async (id: number): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-dfcb/${id}`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -146,16 +167,16 @@ export const GetInfectiousbyID = async (id: number): Promise<any | null> => {
       return null;
     }
   } catch (error: any) {
-    console.error("Error fetching Infectious by ID:", error.response?.data || error.message);
+    console.error("Error fetching DFCB by ID:", error.response?.data || error.message);
     return null;
   }
 };
 
-export const DeleteAllInfectiousRecordsByDate = async (
+export const DeleteAllDFCBRecordsByDate = async (
   id: number
 ): Promise<any | null> => {
   try {
-    const response = await axios.delete(`${apiUrl}/delete-infectious-day/${id}`, {
+    const response = await axios.delete(`${apiUrl}/delete-dfcb-day/${id}`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -169,15 +190,15 @@ export const DeleteAllInfectiousRecordsByDate = async (
       return null;
     }
   } catch (error: any) {
-    console.error("Error deleting Infectious records by date:", error.response?.data || error.message);
+    console.error("Error deleting DFCB records by date:", error.response?.data || error.message);
     return null;
   }
 };
 
-export const GetBeforeAfterInfectious = async (
+export const GetBeforeAfterDFCB = async (
 ): Promise<any | null> => {
   try {
-    const response = await axios.get(`${apiUrl}/get-beforeafter-infectious`, {
+    const response = await axios.get(`${apiUrl}/get-beforeafter-dfcb`, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -191,29 +212,7 @@ export const GetBeforeAfterInfectious = async (
       return null;
     }
   } catch (error: any) {
-    console.error("Error creating Infectious record:", error.response?.data || error.message);
-    return null;
-  }
-};
-
-export const GetLastDayInfectious = async (
-): Promise<any | null> => {
-  try {
-    const response = await axios.get(`${apiUrl}/get-last-day-infectious`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-    });
-
-    if (response.status === 200) {
-      return response;
-    } else {
-      console.error("Unexpected status:", response.status);
-      return null;
-    }
-  } catch (error: any) {
-    console.error("Error creating Infectious record:", error.response?.data || error.message);
+    console.error("Error creating DFCB record:", error.response?.data || error.message);
     return null;
   }
 };

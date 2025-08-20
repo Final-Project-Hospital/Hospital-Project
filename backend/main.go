@@ -29,9 +29,12 @@ import (
 	"github.com/Tawunchai/hospital-project/controller/wastewater/tscenter"
 
 	//drinkwater
-	"github.com/Tawunchai/hospital-project/controller/drinkwater/dfcbcenter"
-	"github.com/Tawunchai/hospital-project/controller/drinkwater/dtcbcenter"
-	"github.com/Tawunchai/hospital-project/controller/drinkwater/ecoilcenter"
+	"github.com/Tawunchai/hospital-project/controller/drinkwater/glass/dfcbcenter"
+	"github.com/Tawunchai/hospital-project/controller/drinkwater/glass/dtcbcenter"
+	"github.com/Tawunchai/hospital-project/controller/drinkwater/glass/ecoilcenter"
+	"github.com/Tawunchai/hospital-project/controller/drinkwater/tank/dfcbcenterT"
+	"github.com/Tawunchai/hospital-project/controller/drinkwater/tank/dtcbcenterT"
+	"github.com/Tawunchai/hospital-project/controller/drinkwater/tank/ecoilcenterT"
 
 	//tapwater
 	"github.com/Tawunchai/hospital-project/controller/tapwater/alcenter"
@@ -179,6 +182,7 @@ func main() {
 
 		public.GET("/check-units", tdscenter.CheckUnit)
 		public.GET("/check-standard", tdscenter.CheckStandard)
+		public.GET("/get-alert-water", tdscenter.GetAlertWater)
 
 		//TKN
 		public.POST("/create-tkn", tkncenter.CreateTKN)
@@ -280,7 +284,7 @@ func main() {
 		public.GET("/get-beforeafter-fog", fogcenter.GetBeforeAfterFOG)
 
 		//drinkwater
-		//ecoin
+		//ecoin(glass)
 		public.POST("/create-eco", ecocenter.CreateECO)
 		public.GET("/get-first-eco", ecocenter.GetfirstECO)
 		public.GET("/list-eco", ecocenter.ListECO)
@@ -291,7 +295,7 @@ func main() {
 		public.DELETE("/delete-eco-day/:id", ecocenter.DeleteAllECORecordsByDate)
 		public.GET("/get-beforeafter-eco", ecocenter.GetBeforeAfterECO)
 
-		//DFCB
+		//DFCB(glass)
 		public.POST("/create-dfcb", dfcbcenter.CreateDFCB)
 		public.GET("/get-first-dfcb", dfcbcenter.GetfirstDFCB)
 		public.GET("/list-dfcb", dfcbcenter.ListDFCB)
@@ -302,7 +306,7 @@ func main() {
 		public.DELETE("/delete-dfcb-day/:id", dfcbcenter.DeleteAllDFCBRecordsByDate)
 		public.GET("/get-beforeafter-dfcb", dfcbcenter.GetBeforeAfterDFCB)
 
-		//DTCB
+		//DTCB(glass)
 		public.POST("/create-dtcb", dtcbcenter.CreateDTCB)
 		public.GET("/get-first-dtcb", dtcbcenter.GetfirstDTCB)
 		public.GET("/list-dtcb", dtcbcenter.ListDTCB)
@@ -312,6 +316,39 @@ func main() {
 		public.DELETE("/delete-dtcb/:id", dtcbcenter.DeleteDTCB)
 		public.DELETE("/delete-dtcb-day/:id", dtcbcenter.DeleteAllDTCBRecordsByDate)
 		public.GET("/get-beforeafter-dtcb", dtcbcenter.GetBeforeAfterDTCB)
+
+		//ecoin(tank)
+		public.POST("/create-eco-tank", ecocenterT.CreateECOtank)
+		public.GET("/get-first-eco-tank", ecocenterT.GetfirstECOtank)
+		public.GET("/list-eco-tank", ecocenterT.ListECOtank)
+		public.GET("/get-eco-tank/:id", ecocenterT.GetECOtankbyID)
+		public.GET("/get-eco-tank-table", ecocenterT.GetECOtankTABLE)
+		public.PATCH("/update-or-create-eco-tank/:d", ecocenterT.UpdateOrCreateECOtank)
+		public.DELETE("/delete-eco-tank/:id", ecocenterT.DeleteECOtank)
+		public.DELETE("/delete-eco-tank-day/:id", ecocenterT.DeleteAllECOtankRecordsByDate)
+		public.GET("/get-beforeafter-eco-tank", ecocenterT.GetBeforeAfterECOtank)
+
+		//DFCB(tank)
+		public.POST("/create-dfcb-tank", dfcbcenterT.CreateDFCBtank)
+		public.GET("/get-first-dfcb-tank", dfcbcenterT.GetfirstDFCBtank)
+		public.GET("/list-dfcb-tank", dfcbcenterT.ListDFCBtank)
+		public.GET("/get-dfcb-tank/:id", dfcbcenterT.GetDFCBtankbyID)
+		public.GET("/get-dfcb-tank-table", dfcbcenterT.GetDFCBtankTABLE)
+		public.PATCH("/update-or-create-dfcb-tank/:d", dfcbcenterT.UpdateOrCreateDFCBtank)
+		public.DELETE("/delete-dfcb-tank/:id", dfcbcenterT.DeleteDFCBtank)
+		public.DELETE("/delete-dfcb-tank-day/:id", dfcbcenterT.DeleteAllDFCBtankRecordsByDate)
+		public.GET("/get-beforeafter-dfcb-tank", dfcbcenterT.GetBeforeAfterDFCBtank)
+
+		//DTCB(tank)
+		public.POST("/create-dtcb-tank", dtcbcenterT.CreateDTCBtank)
+		public.GET("/get-first-dtcb-tank", dtcbcenterT.GetfirstDTCBtank)
+		public.GET("/list-dtcb-tank", dtcbcenterT.ListDTCBtank)
+		public.GET("/get-dtcb-tank/:id", dtcbcenterT.GetDTCBtankbyID)
+		public.GET("/get-dtcb-tank-table", dtcbcenterT.GetDTCBtankTABLE)
+		public.PATCH("/update-or-create-dtcb-tank/:d", dtcbcenterT.UpdateOrCreateDTCBtank)
+		public.DELETE("/delete-dtcb-tank/:id", dtcbcenterT.DeleteDTCBtank)
+		public.DELETE("/delete-dtcb-tank-day/:id", dtcbcenterT.DeleteAllDTCBtankRecordsByDate)
+		public.GET("/get-beforeafter-dtcb-tank", dtcbcenterT.GetBeforeAfterDTCBtank)
 
 		//tapwater
 		//al
@@ -449,6 +486,7 @@ func main() {
 		public.GET("/list-infectious", infectiousWaste.ListInfectious)
 		public.GET("/get-infectious/:id", infectiousWaste.GetInfectiousbyID)
 		public.GET("/get-infectious-table", infectiousWaste.GetInfectiousTABLE)
+		public.GET("/get-last-day-infectious", infectiousWaste.GetLastDayInfectious)
 		public.PATCH("/update-or-create-infectious/:d", infectiousWaste.UpdateOrCreateInfectious)
 		public.DELETE("/delete-infectious-day/:id", infectiousWaste.DeleteAllInfectiousRecordsByDate)
 
