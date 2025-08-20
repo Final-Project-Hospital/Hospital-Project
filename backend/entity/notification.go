@@ -8,4 +8,7 @@ type Notification struct {
 	gorm.Model
 	Name string
 	UserID string
+	Alert bool
+
+	RoomNotification []RoomNotification `gorm:"foreignKey: NotificationID"`
 }

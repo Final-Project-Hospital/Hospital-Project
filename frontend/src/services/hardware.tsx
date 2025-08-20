@@ -7,29 +7,14 @@ import { HardwareGraphInterface } from "../interface/IHardwareGraph"
 import { HardwareParameterColorInterface } from "../interface/IHardwareColor"
 import { HardwareParameterInterface } from "../interface/IHardwareParameter"
 import { UnitHardwareInterface } from "../interface/IUnitHardware";
+import { NotificationInterface } from "../interface/INotification";
+import { RoomNotificationInterface } from "../interface/IRoomNotification";
 import {apiUrl} from "./index"
 
 const getAuthHeader = () => {
   const token = localStorage.getItem("token");
   const tokenType = localStorage.getItem("token_type");
   return { Authorization: `${tokenType} ${token}` };
-};
-
-
-const Authorization = localStorage.getItem("token");
-
-const Bearer = localStorage.getItem("token_type");
-
-const requestOptions = {
-
-  headers: {
-
-    "Content-Type": "application/json",
-
-    Authorization: `${Bearer} ${Authorization}`,
-
-  },
-
 };
 
 export const ListRoom = async (): Promise<RoomInterface[] | null> => {
@@ -172,6 +157,77 @@ export const ListBuilding = async (): Promise<BuildingInterface[] | null> => {
   } catch (error) {
     console.error("Error fetching buildings:", error);
     return null;
+  }
+};
+
+// ✅ Create Building
+export const CreateBuilding = async (
+  data: BuildingInterface
+): Promise<BuildingInterface | null> => {
+  try {
+    const response = await axios.post(`${apiUrl}/create-buildings`, data, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200 || response.status === 201) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error creating building:", error);
+    return null;
+  }
+};
+
+// ✅ Update Building by ID
+export const UpdateBuildingByID = async (
+  id: number,
+  data: BuildingInterface
+): Promise<BuildingInterface | null> => {
+  try {
+    const response = await axios.put(`${apiUrl}/update-buildings/${id}`, data, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error updating building:", error);
+    return null;
+  }
+};
+
+// ✅ Delete Building by ID
+export const DeleteBuildingByID = async (id: number): Promise<boolean> => {
+  try {
+    const response = await axios.delete(`${apiUrl}/delete-buildings/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return true;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return false;
+    }
+  } catch (error) {
+    console.error("Error deleting building:", error);
+    return false;
   }
 };
 
@@ -370,12 +426,13 @@ export const ListHardwareColors = async (): Promise<HardwareParameterColorInterf
 
 export const UpdateIconByHardwareParameterID = async (
   id: number,
-  icon: string
+  icon: string,
+  alert: boolean
 ): Promise<boolean> => {
   try {
     const response = await axios.patch(
       `${apiUrl}/hardware-parameters/${id}/icon`,
-      { icon },
+      { icon, alert }, // ✅ ส่ง icon + alert พร้อมกัน
       {
         headers: {
           "Content-Type": "application/json",
@@ -391,10 +448,11 @@ export const UpdateIconByHardwareParameterID = async (
       return false;
     }
   } catch (error) {
-    console.error("Error updating icon:", error);
+    console.error("Error updating hardware parameter:", error);
     return false;
   }
 };
+
 
 // ฟังก์ชันสำหรับอัปเดต HardwareParameter
 export const UpdateHardwareParameterByID = async (
@@ -623,19 +681,199 @@ export const UpdateLayoutDisplay = async (
     return null;
   }
 };
-async function ListDataHardware() {
 
-  return await axios
+// 📌 ดึงรายการ Notification ทั้งหมด
+export const ListNotification = async (): Promise<NotificationInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/notifications`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
 
-    .get(`${apiUrl}/data-sensorparameter`, requestOptions)
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    return null;
+  }
+};
 
-    .then((res) => res)
+// 📌 อัปเดต Alert ของ Notification ตาม ID
+export const UpdateAlertByNotificationID = async (
+  id: number,
+  alert: boolean
+): Promise<NotificationInterface | null> => {
+  try {
+    const response = await axios.patch(
+      `${apiUrl}/notifications/${id}/alert`,
+      { alert },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
 
-    .catch((e) => e.response);
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error(`Error updating alert for notification ${id}:`, error);
+    return null;
+  }
+};
 
+export const ListRoomNotification = async (): Promise<RoomNotificationInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/room-notifications`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching room notifications:", error);
+    return null;
+  }
+};
+
+export const DeleteNotificationByID = async (id: number): Promise<boolean> => {
+  try {
+    const response = await axios.delete(`${apiUrl}/delete-notifications/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return true; // ลบสำเร็จ
+    } else {
+      console.error("Unexpected status:", response.status);
+      return false;
+    }
+  } catch (error) {
+    console.error("Error deleting notification:", error);
+    return false;
+  }
+};
+
+export const ListDataHardware = async (): Promise<any[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/data-sensorparameter`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data; 
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching hardware data:", error);
+    return null;
+  }
+};
+
+export const DeleteRoomNotificationByNotificationID = async (id: number): Promise<boolean> => {
+  try {
+    const response = await axios.delete(`${apiUrl}/room-notifications/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return true;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return false;
+    }
+  } catch (error) {
+    console.error("Error deleting RoomNotification:", error);
+    return false;
+  }
+};
+
+interface CreateRoomNotificationPayload {
+  room_id: number;
+  notification_id: number;
 }
 
-export {
-  ListDataHardware,
-}
+// ✅ Service: Create RoomNotification
+export const CreateRoomNotification = async (
+  payload: CreateRoomNotificationPayload
+): Promise<RoomNotificationInterface | null> => {
+  try {
+    const response = await axios.post(
+      `${apiUrl}/room-notifications`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
 
+    if (response.status === 201) {
+      return response.data as RoomNotificationInterface;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error creating RoomNotification:", error);
+    return null;
+  }
+};
+
+export const UpdateNotificationIDByRoomID = async (
+  roomId: number,
+  notificationId: number
+): Promise<RoomNotificationInterface | null> => {
+  try {
+    const response = await axios.put(
+      `${apiUrl}/room-notification/${roomId}/notification`,
+      { notification_id: notificationId },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      return response.data.roomNotification as RoomNotificationInterface;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error updating NotificationID:", error);
+    return null;
+  }
+};

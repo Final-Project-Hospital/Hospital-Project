@@ -660,6 +660,13 @@ func DeleteAllTSRecordsByDate(c *gin.Context) {
 
 	db := config.DB()
 
+	// หา parameter
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?", "Total Solid").First(&parameter).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+		return
+	}
+
 	// หา record ก่อน
 	var targetRecord entity.EnvironmentalRecord
 	if err := db.First(&targetRecord, uint(uintID)).Error; err != nil {
@@ -667,10 +674,10 @@ func DeleteAllTSRecordsByDate(c *gin.Context) {
 		return
 	}
 
-	// ลบทั้งหมดที่มีวันที่เดียวกัน (ใช้เฉพาะ Date ไม่เอา Time)
-	dateKey := targetRecord.Date.Format("2006-01-02") // แปลงเป็น YYYY-MM-DD
-
-	if err := db.Where("DATE(date) = ?", dateKey).Delete(&entity.EnvironmentalRecord{}).Error; err != nil {
+	// ลบทั้งหมดที่มีวันที่เดียวกัน
+	dateKey := targetRecord.Date.Format("2006-01-02")
+	if err := db.Where("DATE(date) = ? AND parameter_id = ?", dateKey, parameter.ID).
+		Delete(&entity.EnvironmentalRecord{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบไม่สำเร็จ"})
 		return
 	}

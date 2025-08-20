@@ -11,7 +11,6 @@ import {
   Switch,
   Tooltip,
   Tag,
-  Popconfirm,
 } from "antd";
 import {
   UpdateHardwareParameterByID,
@@ -35,10 +34,10 @@ interface EditParameterModalProps {
 
 type SlotMode = "single" | "split";
 
-// Cell ใน layout: เก็บชนิดกราฟ (จาก instance) และรายการพารามิเตอร์ที่ใช้
+// โครงสร้างของ cell ใน layout
 type CellGraph = {
   graphTypeId: number | null;       // 1..4
-  graphInstanceUid?: string | null; // uid ของ instance (อาจมีหรือไม่มีก็ได้)
+  graphInstanceUid?: string | null; // uid ของ instance
   paramIds: number[];
 };
 
@@ -54,20 +53,20 @@ type ParamRow = {
   HardwareParameterColorCode?: string;
 };
 
-// ประเภทกราฟ (ชนิด)
+// ประเภทกราฟ
 const graphTypes = [
-  { id: 1, name: "Default Graph", img: LineChartingImg },
-  { id: 2, name: "Area", img: AreaChartingImg },
-  { id: 3, name: "Color Mapping", img: MappingImg },
-  { id: 4, name: "Stacked", img: StackChartingImg },
+  { id: 1, name: "กราฟเส้น (ค่าเริ่มต้น)", img: LineChartingImg },
+  { id: 2, name: "กราฟพื้นที่ (Area)", img: AreaChartingImg },
+  { id: 3, name: "กราฟ Color Mapping", img: MappingImg },
+  { id: 4, name: "กราฟ Stacked", img: StackChartingImg },
 ];
 
 const deepClone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 const STORAGE_KEY = (hardwareID: number) => `hw-layout-v2-${hardwareID}`;
 
-// instance กราฟ (สร้างได้หลายอัน)
+// instance ของกราฟ
 type GraphInstance = {
-  uid: string;          // unique ต่อ instance
+  uid: string;
   graphTypeId: number;  // 1..4
   name: string;         // เช่น "Area #2"
 };
@@ -95,14 +94,19 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
 
   // ---- Layout
   const [slots, setSlots] = useState<Slot[]>([{ mode: "single", graphs: [null] }]);
+  // ใช้ตรวจว่ามีการแก้ layout/instances เพื่อเปิดปุ่ม "บันทึกทั้งหมด"
+  const [layoutDirty, setLayoutDirty] = useState(false);
 
-  // ---- Graph Instances (เพิ่มได้หลายอัน)
+  // ---- Graph Instances
   const [instances, setInstances] = useState<GraphInstance[]>([]);
   const [addingTypeId, setAddingTypeId] = useState<number>(1);
 
   // ---------- helpers ----------
   const graphMeta = (typeId: number | null | undefined) =>
     graphTypes.find((g) => g.id === (typeId ?? 0));
+
+  const getInstanceByUid = (u?: string | null) =>
+    instances.find((it) => it.uid === u);
 
   const handleChange = (id: number, field: keyof ParamRow, value: any) => {
     setFormValues((prev) => prev.map((it) => (it.ID === id ? { ...it, [field]: value } : it)));
@@ -111,28 +115,29 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   const getParamName = (id: number) =>
     formValues.find((x) => x.ID === id)?.Parameter ?? `#${id}`;
 
+  const getParamColorCode = (id: number): string | undefined =>
+    formValues.find((x) => x.ID === id)?.HardwareParameterColorCode;
+
   // Layout เริ่มต้น
   const buildInitialSlots = (): Slot[] => [{ mode: "single", graphs: [null] }];
 
-  // ---------- iterate helpers ----------
-  type CellCoord = { slotIdx: number; subIdx: number; cell: CellGraph };
-  const foreachCell = (fn: (coord: CellCoord) => void) => {
-    slots.forEach((sl, slotIdx) =>
-      sl.graphs.forEach((cg, subIdx) => {
-        if (cg) fn({ slotIdx, subIdx, cell: cg });
-      })
-    );
-  };
-  const findOtherOwnerWith2Plus = (graphTypeId: number, except?: { slotIdx: number; subIdx: number }) => {
-    let owner: CellCoord | null = null;
-    foreachCell(({ slotIdx, subIdx, cell }) => {
-      if (cell.graphTypeId !== graphTypeId) return;
-      if (except && slotIdx === except.slotIdx && subIdx === except.subIdx) return;
-      if ((cell.paramIds?.length ?? 0) >= 2) {
-        owner = { slotIdx, subIdx, cell };
+  // ---------- utilities: per-graph constraints ----------
+  const hasOtherCellWithTwoOrMore = (
+    graphTypeId: number,
+    except?: { slotIdx: number; subIdx: number }
+  ) => {
+    for (let si = 0; si < slots.length; si++) {
+      const sl = slots[si];
+      for (let ci = 0; ci < sl.graphs.length; ci++) {
+        const cg = sl.graphs[ci];
+        if (!cg) continue;
+        if (except && si === except.slotIdx && ci === except.subIdx) continue;
+        if (cg.graphTypeId === graphTypeId && (cg.paramIds?.length ?? 0) >= 2) {
+          return true;
+        }
       }
-    });
-    return owner;
+    }
+    return false;
   };
 
   // ---------- localStorage: load/save layout & instances ----------
@@ -167,11 +172,9 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         return { mode: isSplit ? "split" : "single", graphs };
       });
 
-      // instances
       const cleanedInstances = (Array.isArray(parsed.instances) ? parsed.instances : [])
         .filter((it) => it && typeof it.uid === "string" && [1,2,3,4].includes(it.graphTypeId));
 
-      // โหลดค่า L จาก layout: ให้ L=true เฉพาะ param ที่อยู่ใน "Split" slots
       const paramInSplitLayout = new Set<number>();
       cleanedSlots.forEach((slot) => {
         if (slot.mode !== "split") return;
@@ -215,7 +218,6 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         setFormValues(rows);
         setInitialValues(deepClone(rows));
 
-        // พยายามโหลด layout + instances จาก localStorage
         const fromStore = loadLayoutFromStorage(rows);
         if (fromStore?.slots?.length) {
           setSlots(fromStore.slots);
@@ -224,6 +226,8 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
           setSlots(buildInitialSlots());
           setInstances([]);
         }
+
+        setLayoutDirty(false); // reset สถานะ dirty หลังโหลด
 
         if (colors) {
           setColorOptions(
@@ -250,7 +254,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       .finally(() => setLoading(false));
   }, [open, hardwareID]);
 
-  // ---------- unsaved detection ----------
+  // ---------- ตรวจจับการแก้ไข (formValues) ----------
   const hasUnsavedChanges = useMemo(() => {
     if (initialValues.length !== formValues.length) return true;
     const byId = new Map(initialValues.map((p) => [p.ID, p]));
@@ -269,7 +273,9 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     return false;
   }, [initialValues, formValues]);
 
-  // ---------- Graph Instances: add/remove ----------
+  const canSave = useMemo(() => hasUnsavedChanges || layoutDirty, [hasUnsavedChanges, layoutDirty]);
+
+  // ---------- Graph Instances ----------
   const addGraphInstance = () => {
     const meta = graphMeta(addingTypeId);
     if (!meta) return;
@@ -280,6 +286,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       name: `${meta.name} #${countSameType + 1}`,
     };
     setInstances((prev) => [...prev, inst]);
+    setLayoutDirty(true);
   };
 
   const removeGraphInstance = (uidToRemove: string) => {
@@ -296,6 +303,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         }),
       }))
     );
+    setLayoutDirty(true);
   };
 
   // ---------- drag param ----------
@@ -341,27 +349,42 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       next[slotIndex] = s;
       return next;
     });
+    setLayoutDirty(true);
   };
 
   const handleDropOnSlot = (slotIndex: number, subIndex: number | null) => {
     const slot = slots[slotIndex];
-    const wantLayout = slot.mode === "split"; // split => L=true, single => L=false
+    const wantLayout = slot.mode === "split";
     const idx = subIndex ?? 0;
     const curCell = slots[slotIndex].graphs[idx];
 
-    // 1) ลาก "graph instance" → ตั้งชนิดกราฟใน cell
+    // ✅ 1) ลาก "graph instance" → เปลี่ยนกราฟโดยคงพารามิเตอร์เดิมไว้
     if (draggedGraphInstance) {
       const { uid: instUid, graphTypeId } = draggedGraphInstance;
+      const existingParamIds = curCell?.paramIds ?? [];
+
       setCell(slotIndex, subIndex, (cg) => ({
         graphTypeId,
         graphInstanceUid: instUid,
         paramIds: cg.paramIds ?? [],
       }));
+
+      // อัปเดต HardwareGraphID ให้กับทุกพารามิเตอร์ใน cell นี้
+      existingParamIds.forEach((pid) => {
+        const old = formValues.find((x) => x.ID === pid);
+        if (old?.HardwareGraphID !== graphTypeId) {
+          handleChange(pid, "HardwareGraphID", graphTypeId);
+        }
+        if (wantLayout && !old?.LayoutDisplay) {
+          handleChange(pid, "LayoutDisplay", true);
+        }
+      });
+
       handleGraphInstanceDragEnd();
       return;
     }
 
-    // 2) ลาก "parameter" → เพิ่ม parameter เข้า cell
+    // 2) ลาก "parameter"
     if (draggedParamId != null) {
       const paramId = draggedParamId;
       const target = formValues.find((x) => x.ID === paramId);
@@ -372,21 +395,21 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       }
 
       const existingTypeId = curCell?.graphTypeId ?? null;
-      const cellGraphType = existingTypeId;
-      // ถ้า cell ยังไม่มีกราฟ → ใช้ชนิดกราฟจากพารามิเตอร์ (หรือ 1 = Default Graph)
-      const graphTypeToUse = cellGraphType ?? (target.HardwareGraphID ?? 1);
+      const graphTypeToUse = existingTypeId ?? (target.HardwareGraphID ?? 1);
 
-      // ---- RULE: สำหรับกราฟชนิดเดียวกัน อนุญาตให้มี instance ที่มี >=2 params ได้เพียง 1 instance เท่านั้น
-      // จะเพิ่ม param เข้า cell ปัจจุบัน → ตรวจว่าถ้าหลังเพิ่มแล้วจำนวนจะ >=2 ?
-      const currentParamCount = curCell?.paramIds?.length ?? 0;
-      const isGoingToBeAtLeastTwo = currentParamCount + (curCell?.paramIds?.includes(paramId) ? 0 : 1) >= 2;
+      // กฎจำกัด: cell อื่นของกราฟเดียวกันที่มี ≥2 พารามิเตอร์ได้เพียง 1 จุด
+      const currentSet = new Set([...(curCell?.paramIds ?? [])]);
+      currentSet.add(paramId);
+      const willBeCount = currentSet.size;
 
-      if (isGoingToBeAtLeastTwo) {
-        const owner = findOtherOwnerWith2Plus(graphTypeToUse, { slotIdx: slotIndex, subIdx: idx });
-        // ถ้ามี owner อยู่แล้ว และ cell นี้ยังไม่ได้มี >=2 (หรือจะกลายเป็น >=2 ครั้งแรก) → บล็อก
-        if (owner) {
+      if (willBeCount >= 2) {
+        const haveOther2Plus = hasOtherCellWithTwoOrMore(graphTypeToUse, {
+          slotIdx: slotIndex,
+          subIdx: idx,
+        });
+        if (haveOther2Plus) {
           message.warning(
-            `ชนิดกราฟ "${graphMeta(graphTypeToUse)?.name ?? graphTypeToUse}" มี cell ที่ถือ ≥2 parameters อยู่แล้ว (อนุญาตแค่ 1 cell ต่อชนิดกราฟ). Cell อื่นต้องมีได้ไม่เกิน 1 parameter.`
+            `กราฟ "${graphMeta(graphTypeToUse)?.name ?? graphTypeToUse}" มีตำแหน่งอื่นที่มี ≥ 2 พารามิเตอร์อยู่แล้ว — จุดอื่นของกราฟเดียวกันรองรับได้แค่ 1 พารามิเตอร์`
           );
           setDraggedParamId(null);
           setDragOverSlot(null);
@@ -394,19 +417,18 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         }
       }
 
-      // ผ่านเงื่อนไข → อนุญาตให้เพิ่ม
       setCell(slotIndex, subIndex, (cg) => ({
         graphTypeId: graphTypeToUse,
         graphInstanceUid: cg.graphInstanceUid ?? null,
         paramIds: Array.from(new Set([...(cg.paramIds ?? []), paramId])),
       }));
 
-      // sync graph type (ถ้าต้องเก็บลง backend)
       if (target.HardwareGraphID !== graphTypeToUse) {
         handleChange(paramId, "HardwareGraphID", graphTypeToUse);
       }
-      // Single ⇒ L=false, Split ⇒ L=true
-      handleChange(paramId, "LayoutDisplay", wantLayout);
+      if (wantLayout && !target.LayoutDisplay) {
+        handleChange(paramId, "LayoutDisplay", true);
+      }
 
       setDraggedParamId(null);
       setDragOverSlot(null);
@@ -419,51 +441,42 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   const addSingleSlot = () => {
     if (slots.length >= Math.max(1, paramCount)) return;
     setSlots((prev) => [...prev, { mode: "single", graphs: [null] }]);
+    setLayoutDirty(true);
   };
 
+  // ลบพารามิเตอร์ทั้งหมดใน slot หนึ่ง ๆ และอัปเดต LayoutDisplay = false
+  const clearParamsInSlot = (slotIndex: number) => {
+    const slot = slots[slotIndex];
+    if (!slot) return;
+    const allParamIds = new Set<number>();
+    slot.graphs.forEach((cg) => cg?.paramIds.forEach((pid) => allParamIds.add(pid)));
+    allParamIds.forEach((pid) => handleChange(pid, "LayoutDisplay", false));
+  };
+
+  // เมื่อกด Split/Merge → ลบพารามิเตอร์ใน slot นั้นออกให้หมด
   const toggleSplitAt = (slotIndex: number) => {
     const slot = slots[slotIndex];
+    if (!slot) return;
+
+    clearParamsInSlot(slotIndex);
+
     if (slot.mode === "single") {
       setSlots((prev) => {
         const next = [...prev];
-        const cur = next[slotIndex];
-        // คง cell เดิมไว้ที่ฝั่งซ้ายเพื่อไม่ให้กราฟ/รูปหาย
-        next[slotIndex] = { mode: "split", graphs: [cur.graphs[0] ?? null, null] };
+        next[slotIndex] = { mode: "split", graphs: [null, null] };
         return next;
       });
     } else {
-      // merge → L=false ทุกตัวใน 2 ช่องนั้น
-      const cellGraphs = slot.graphs.filter(Boolean) as CellGraph[];
-      const allParamIds = new Set<number>();
-      cellGraphs.forEach((cg) => cg.paramIds.forEach((pid) => allParamIds.add(pid)));
-      allParamIds.forEach((pid) => handleChange(pid, "LayoutDisplay", false));
-
       setSlots((prev) => {
         const next = [...prev];
         next[slotIndex] = { mode: "single", graphs: [null] };
         return next;
       });
     }
+    setLayoutDirty(true);
   };
 
-  const removeGraphFromSlot = (slotIndex: number, subIndex: number | null) => {
-    const slot = slots[slotIndex];
-    const idx = slot.mode === "single" ? 0 : subIndex ?? 0;
-    const cell = slot.graphs[idx];
-    if (!cell) return;
-
-    // L=false ให้พารามิเตอร์ทั้งหมดใน cell นี้
-    cell.paramIds.forEach((pid) => handleChange(pid, "LayoutDisplay", false));
-
-    setSlots((prev) => {
-      const next = [...prev];
-      const s = { ...next[slotIndex], graphs: [...next[slotIndex].graphs] };
-      s.graphs[idx] = null;
-      next[slotIndex] = s;
-      return next;
-    });
-  };
-
+  // เอา parameter ออกจาก cell
   const removeParamFromCell = (slotIndex: number, subIndex: number | null, paramId: number) => {
     setSlots((prev) => {
       const next = [...prev];
@@ -471,12 +484,18 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       const s = { ...next[slotIndex], graphs: [...next[slotIndex].graphs] };
       const cell = s.graphs[idx];
       if (!cell) return prev;
-      s.graphs[idx] = { ...cell, paramIds: cell.paramIds.filter((id) => id !== paramId) };
+
+      const newParamIds = cell.paramIds.filter((id) => id !== paramId);
+      s.graphs[idx] =
+        newParamIds.length === 0
+          ? null
+          : { ...cell, paramIds: newParamIds };
+
       next[slotIndex] = s;
       return next;
     });
 
-    // ถ้าไม่ได้ใช้ใน cell อื่นเลย → L=false
+    // อัปเดต LayoutDisplay ถ้า parameter ไม่ถูกใช้ที่อื่น
     const stillUsedSomewhere = slots.some((sl, si) =>
       sl.graphs.some((cg, ci) => {
         if (!cg) return false;
@@ -487,35 +506,16 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     if (!stillUsedSomewhere) {
       handleChange(paramId, "LayoutDisplay", false);
     }
-  };
-
-  const clearParamsInCell = (slotIndex: number, subIndex: number | null) => {
-    const slot = slots[slotIndex];
-    const idx = slot.mode === "single" ? 0 : subIndex ?? 0;
-    const cell = slot.graphs[idx];
-    if (!cell) return;
-
-    cell.paramIds.forEach((pid) => handleChange(pid, "LayoutDisplay", false));
-
-    setSlots((prev) => {
-      const next = [...prev];
-      const s = { ...next[slotIndex], graphs: [...next[slotIndex].graphs] };
-      s.graphs[idx] = { ...(cell ?? { graphTypeId: null, graphInstanceUid: null, paramIds: [] }), paramIds: [] };
-      next[slotIndex] = s;
-      return next;
-    });
+    setLayoutDirty(true);
   };
 
   const deleteSlot = (slotIndex: number) => {
-    const slot = slots[slotIndex];
-    const cellGraphs = slot.graphs.filter(Boolean) as CellGraph[];
-    const allParamIds = new Set<number>();
-    cellGraphs.forEach((cg) => cg.paramIds.forEach((pid) => allParamIds.add(pid)));
-    allParamIds.forEach((pid) => handleChange(pid, "LayoutDisplay", false));
+    clearParamsInSlot(slotIndex);
     setSlots((prev) => prev.filter((_, i) => i !== slotIndex));
+    setLayoutDirty(true);
   };
 
-  // ---------- Parameters list: ซ่อนตัวที่ถูกใช้ใน layout ----------
+  // ---------- รายการพารามิเตอร์: ซ่อนตัวที่ถูกใช้ใน layout ----------
   const usedParamIds = useMemo(() => {
     const s = new Set<number>();
     slots.forEach((sl) => sl.graphs.forEach((cg) => cg?.paramIds.forEach((id) => s.add(id))));
@@ -527,7 +527,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     [formValues, usedParamIds]
   );
 
-  // ---------- GroupDisplay AUTO: มี >=2 พารามิเตอร์ใน cell ใด ๆ ⇒ กลุ่มอัตโนมัติ ----------
+  // ---------- GroupDisplay AUTO (≥2 ใน cell เดียว) ----------
   useEffect(() => {
     const grouped = new Set<number>();
     slots.forEach((slot) =>
@@ -538,7 +538,6 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         }
       })
     );
-    // อัปเดตค่า GroupDisplay อัตโนมัติ (true เฉพาะตัวที่อยู่ในกลุ่ม ≥2, นอกนั้น false)
     setFormValues((prev) =>
       prev.map((p) =>
         p.GroupDisplay === grouped.has(p.ID)
@@ -549,7 +548,6 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   }, [slots]);
 
   // ---------- save ----------
-  // NOTE: L=true เฉพาะที่อยู่ใน split slots
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -594,15 +592,19 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
 
       await Promise.all(updates);
 
+      // บันทึก layout/instances ลง localStorage
       saveLayoutToStorage({ slots, instances });
 
+      // sync ค่าเริ่มต้นใหม่ และปิด flag dirty
       setInitialValues(deepClone(formValues));
-      message.success("Update Success!");
+      setLayoutDirty(false);
+
+      message.success("บันทึกสำเร็จ");
       if (onSuccess) await onSuccess();
       onClose();
     } catch (e) {
       console.error(e);
-      message.error("Update Failed");
+      message.error("บันทึกล้มเหลว");
     } finally {
       setSaving(false);
     }
@@ -613,21 +615,23 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       open={open}
       onCancel={onClose}
       footer={null}
-      width={1960}
-      style={{ top: 12, maxWidth: "128vw" }}
+      width="min(96vw, 1400px)"
+      style={{ top: 12 }}
       bodyStyle={{
         padding: 0,
-        maxHeight: "88vh",
+        maxHeight: "calc(100dvh - 96px)",
         overflowY: "auto",
         borderRadius: 18,
         background: "#f7f7f8",
       }}
       title=""
       className="paddings"
+      destroyOnClose
     >
-      <div className="flex justify-center items-center w-full mt-5 mb-6">
-        <span className="text-center text-[20px] font-bold bg-emerald-600 text-white py-2 px-8 mt-5 rounded-xl shadow select-none tracking-wide">
-          Edit Parameters and Graph
+      {/* Header */}
+      <div className="flex justify-center items-center w-full mt-4 mb-5 px-3">
+        <span className="text-center text-[18px] md:text-[20px] font-bold bg-emerald-600 text-white py-2 px-5 md:px-8 rounded-xl shadow select-none tracking-wide">
+          แก้ไขข้อมูลการแสดงผลของกราฟ
         </span>
       </div>
 
@@ -636,32 +640,31 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
           <Spin size="large" />
         </div>
       ) : (
-        <div className="px-4 md:px-7 pb-6 pt-0 w-full">
-          {/* สองคอลัมน์: ซ้าย(Add Graph + Parameters) : ขวา(Layout) */}
-          <div className="grid gap-6" style={{ gridTemplateColumns: "1.35fr 1fr" }}>
-            {/* LEFT */}
-            <div className="space-y-6">
-              {/* Add Graph */}
+        <div className="px-3 sm:px-5 md:px-7 pb-6 pt-0 w-full">
+          <div className="grid gap-6 xl:[grid-template-columns:1.35fr_1fr]">
+            {/* ซ้าย: รายการกราฟ + พารามิเตอร์ */}
+            <div className="order-2 xl:order-1 space-y-6">
+              {/* เพิ่มกราฟ */}
               <div className="bg-white rounded-xl shadow border border-gray-100 px-4 py-3">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className="font-semibold text-gray-800">Add Graph</span>
+                  <span className="font-semibold text-gray-800">เพิ่มกราฟ</span>
                   <Select
                     value={addingTypeId}
                     onChange={setAddingTypeId}
-                    style={{ width: 220 }}
+                    style={{ width: 240, maxWidth: "100%" }}
                     options={graphTypes.map((g) => ({ label: g.name, value: g.id }))}
                     size="small"
                   />
                   <Button size="small" type="primary" onClick={addGraphInstance}>
-                    + Add Graph
+                    + เพิ่มกราฟ
                   </Button>
                 </div>
                 {instances.length === 0 ? (
                   <div className="text-gray-500 text-sm mt-3">
-                    ยังไม่มีกราฟ (สร้างด้วยปุ่ม + Add Graph)
+                    ยังไม่มีกล่องกราฟ (กดปุ่ม “+ เพิ่มกราฟ” เพื่อสร้าง)
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                     {instances.map((inst) => {
                       const meta = graphMeta(inst.graphTypeId)!;
                       return (
@@ -671,29 +674,29 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                           draggable
                           onDragStart={() => handleGraphInstanceDragStart(inst)}
                           onDragEnd={handleGraphInstanceDragEnd}
-                          title="Drag this graph instance into the Layout"
+                          title="ลากกล่องกราฟนี้ไปวางในเลย์เอาต์"
                         >
                           <Image
                             src={meta.img}
                             alt={meta.name}
                             preview={false}
-                            style={{ width: 56, height: 56, objectFit: "contain", borderRadius: 10, border: "1px solid #eee" }}
+                            style={{ width: 52, height: 52, objectFit: "contain", borderRadius: 10, border: "1px solid #eee" }}
                           />
                           <div className="min-w-0">
-                            <div className="font-semibold text-sm text-gray-800 truncate">{inst.name}</div>
-                            <div className="text-xs text-gray-500 truncate">{meta.name}</div>
+                            <div className="font-semibold text-sm text-gray-800 truncate max-w-[140px] sm:max-w-[180px]">
+                              {inst.name}
+                            </div>
+                            <div className="text-xs text-gray-500 truncate max-w-[140px] sm:max-w-[180px]">
+                              {meta.name}
+                            </div>
                           </div>
-                          <Tag className="ml-auto text-[11px]" color="blue">
-                            Drag me to Layout
+                          <Tag className="ml-auto text-[11px] hidden sm:inline-block" color="blue">
+                            ลากไปที่เลย์เอาต์
                           </Tag>
-                          <Popconfirm
-                            title="Remove this graph instance?"
-                            okText="Remove"
-                            cancelText="Cancel"
-                            onConfirm={() => removeGraphInstance(inst.uid)}
-                          >
-                            <Button size="small" danger>Remove</Button>
-                          </Popconfirm>
+                          {/* ลบได้เลย ไม่ต้องยืนยัน */}
+                          <Button size="small" danger onClick={() => removeGraphInstance(inst.uid)}>
+                            ลบ
+                          </Button>
                         </div>
                       );
                     })}
@@ -701,100 +704,94 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                 )}
               </div>
 
-              {/* Parameters (ซ่อนตัวที่ถูกใช้ใน layout แล้ว) */}
+              {/* พารามิเตอร์ */}
               <div className="bg-white rounded-xl shadow border border-gray-100 px-4 py-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="font-semibold text-gray-800">Parameters</span>
-                  <Tag className="text-[11px]">{visibleParams.length}</Tag>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="font-semibold text-gray-800">พารามิเตอร์</span>
                 </div>
 
                 {visibleParams.length === 0 ? (
                   <div className="text-gray-500 text-sm">
-                    ทุกพารามิเตอร์ถูกใช้อยู่ใน Layout แล้ว
+                    ทุกพารามิเตอร์ถูกใช้อยู่ในเลย์เอาต์แล้ว
                   </div>
                 ) : (
                   <div
                     className={`flex flex-col gap-2 ${
-                      visibleParams.length > 7 ? "max-h-80 overflow-y-auto pr-1" : ""
-                    } scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent`}
+                      visibleParams.length > 7 ? "max-h-[60vh] overflow-y-auto pr-1" : ""
+                    }`}
                   >
                     {visibleParams.map((rowParam) => (
                       <div
                         key={rowParam.ID}
-                        className="inline-flex items-center bg-gray-50 rounded-lg px-3 py-2 cursor-move border border-gray-200 w-full"
+                        className="inline-flex items-center bg-gray-50 rounded-lg px-3 py-2 cursor-mmove border border-gray-200 w-full hover:bg-gray-100 transition"
                         style={{ minHeight: 44, gap: 10, justifyContent: "space-between" }}
                         draggable
                         onDragStart={() => handleParamDragStart(rowParam.ID)}
                         onDragEnd={handleParamDragEnd}
-                        title="Drag parameter into a Layout cell"
+                        title="ลากพารามิเตอร์ไปวางในเลย์เอาต์"
                       >
-                        <div className="flex items-center gap-2 w-full justify-between">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span
-                              className="font-medium text-gray-700"
-                              style={{
-                                fontSize: 13.5,
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                maxWidth: 260,
-                              }}
-                              title={rowParam.Parameter}
-                            >
-                              {rowParam.Parameter}
-                            </span>
-                            <Form.Item style={{ marginBottom: 0 }}>
-                              <Select
-                                value={rowParam.HardwareParameterColorID}
-                                onChange={(v) =>
-                                  handleChange(rowParam.ID, "HardwareParameterColorID", v)
-                                }
-                                options={colorOptions}
-                                size="small"
-                                className="no-arrow-select"
-                                style={{ width: 36, minWidth: 32 }}
-                                dropdownStyle={{ minWidth: 70, padding: 6 }}
-                              />
-                            </Form.Item>
-                          </div>
+                        <div className="flex items-center gap-2 min-w-0">
+                          {/* สีพารามิเตอร์ */}
+                          <span
+                            style={{
+                              display: "inline-block",
+                              width: 10,
+                              height: 10,
+                              borderRadius: 999,
+                              background: rowParam.HardwareParameterColorCode || "#8b8b8b",
+                              border: "1px solid #d1d5db",
+                            }}
+                          />
+                          <span
+                            className="font-medium text-gray-700"
+                            style={{
+                              fontSize: 13.5,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: 220,
+                            }}
+                            title={rowParam.Parameter}
+                          >
+                            {rowParam.Parameter}
+                          </span>
+                        </div>
 
-                          <div className="hidden 2xl:flex items-center gap-1">
-                            <Tag
-                              className="rounded-md px-2 py-0.5 text-[11px]"
-                              color={rowParam.GroupDisplay ? "green" : "default"}
-                            >
-                              Group {rowParam.GroupDisplay ? "On" : "Off"}
-                            </Tag>
-                            <Tag
-                              className="rounded-md px-2 py-0.5 text-[11px]"
-                              color={rowParam.LayoutDisplay ? "geekblue" : "default"}
-                            >
-                              Layout {rowParam.LayoutDisplay ? "On" : "Off"}
-                            </Tag>
-                          </div>
+                        <div className="flex items-center gap-3">
+                          <Form.Item style={{ marginBottom: 0 }}>
+                            <Select
+                              value={rowParam.HardwareParameterColorID}
+                              onChange={(v) =>
+                                handleChange(rowParam.ID, "HardwareParameterColorID", v)
+                              }
+                              options={colorOptions}
+                              size="small"
+                              className="no-arrow-select"
+                              style={{ width: 36, minWidth: 32 }}
+                              dropdownStyle={{ minWidth: 70, padding: 6 }}
+                            />
+                          </Form.Item>
 
-                          <div className="flex items-center gap-3">
-                            <Tooltip title="ตั้งอัตโนมัติเมื่อมี ≥ 2 พารามิเตอร์ใน cell เดียวกัน" placement="top">
-                              <Switch
-                                size="small"
-                                checked={rowParam.GroupDisplay}
-                                disabled
-                                checkedChildren="G"
-                                unCheckedChildren="G"
-                              />
-                            </Tooltip>
-                            <Tooltip title="แสดงในเลย์เอาต์ (Single=Off, Split=On)" placement="top">
-                              <Switch
-                                size="small"
-                                checked={rowParam.LayoutDisplay}
-                                onChange={(checked) =>
-                                  handleChange(rowParam.ID, "LayoutDisplay", checked)
-                                }
-                                checkedChildren="L"
-                                unCheckedChildren="L"
-                              />
-                            </Tooltip>
-                          </div>
+                          <Tooltip title="ตั้งค่าเป็น 'รวมกลุ่ม' อัตโนมัติเมื่อมี ≥ 2 พารามิเตอร์ในช่องเดียวกัน" placement="top">
+                            <Switch
+                              size="small"
+                              checked={rowParam.GroupDisplay}
+                              disabled
+                              checkedChildren="G"
+                              unCheckedChildren="G"
+                            />
+                          </Tooltip>
+                          <Tooltip title="การแสดงในเลย์เอาต์ (เดี่ยว=ปิด, แบ่งสอง=เปิด)" placement="top">
+                            <Switch
+                              size="small"
+                              checked={rowParam.LayoutDisplay}
+                              onChange={(checked) =>
+                                handleChange(rowParam.ID, "LayoutDisplay", checked)
+                              }
+                              checkedChildren="L"
+                              unCheckedChildren="L"
+                            />
+                          </Tooltip>
                         </div>
                       </div>
                     ))}
@@ -803,17 +800,17 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
               </div>
             </div>
 
-            {/* RIGHT: Layout Area */}
-            <div className="space-y-5">
-              <div className="bg-white rounded-xl shadow border border-gray-100 px-5 py-4">
+            {/* ขวา: พื้นที่เลย์เอาต์ */}
+            <div className="order-1 xl:order-2 space-y-5">
+              <div className="bg-white rounded-xl shadow border border-gray-100 px-4 sm:px-5 py-4">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-[17px] font-semibold text-gray-800">Layout Area</span>
+                    <span className="text-[16px] md:text-[17px] font-semibold text-gray-800">พื้นที่เลย์เอาต์</span>
                     <Tag className="rounded-md text-[11px]">
-                      Singles: {slots.filter((s) => s.mode === "single").length}/{Math.max(1, formValues.length)}
+                      แถวเดี่ยว: {slots.filter((s) => s.mode === "single").length}/{Math.max(1, formValues.length)}
                     </Tag>
-                    {hasUnsavedChanges && (
-                      <Tag color="orange" className="rounded-md text-[11px]">Unsaved changes</Tag>
+                    {canSave && (
+                      <Tag color="orange" className="rounded-md text-[11px]">มีการเปลี่ยนแปลง</Tag>
                     )}
                   </div>
                   <Button
@@ -821,7 +818,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                     onClick={addSingleSlot}
                     disabled={slots.length >= Math.max(1, formValues.length)}
                   >
-                    + Add Single Slot
+                    + เพิ่มแถวเดี่ยว
                   </Button>
                 </div>
 
@@ -830,29 +827,27 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                     const isSplit = slot.mode === "split";
                     const subCount = isSplit ? 2 : 1;
                     return (
-                      <div key={slotIdx} className="rounded-lg border border-gray-200 p-3">
+                      <div key={slotIdx} className="rounded-lg border border-gray-200 p-3 bg-gradient-to-b from-white to-gray-50">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold">Slot {slotIdx + 1}</span>
+                            <span className="text-sm font-semibold">แถว {slotIdx + 1}</span>
                             <Tag color={isSplit ? "blue" : "default"} className="text-[11px]">
-                              {isSplit ? "Split (L=ON)" : "Single (L=OFF)"}
+                              {isSplit ? "แบ่ง 2 ช่อง (ซ้าย/ขวา)" : "เดี่ยว"}
                             </Tag>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button size="small" onClick={() => toggleSplitAt(slotIdx)}>
-                              {isSplit ? "Merge to Single" : "Split this Slot"}
+                              {isSplit ? "รวมเป็นเดี่ยว" : "แบ่ง 2 ช่อง"}
                             </Button>
-                            <Popconfirm
-                              title="Delete this slot?"
-                              okText="Delete"
-                              cancelText="Cancel"
-                              onConfirm={() => deleteSlot(slotIdx)}
+                            {/* ลบได้เลย ไม่ต้องยืนยัน */}
+                            <Button
+                              size="small"
+                              danger
+                              onClick={() => deleteSlot(slotIdx)}
                               disabled={slots.length <= 1}
                             >
-                              <Button size="small" danger disabled={slots.length <= 1}>
-                                Delete Slot
-                              </Button>
-                            </Popconfirm>
+                              ลบแถว
+                            </Button>
                           </div>
                         </div>
 
@@ -860,85 +855,92 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                           {Array.from({ length: subCount }).map((_, subIdx) => {
                             const cell = slot.graphs[subIdx ?? 0];
                             const meta = graphMeta(cell?.graphTypeId ?? null);
+                            const inst = getInstanceByUid(cell?.graphInstanceUid || undefined);
+                            const isOver =
+                              dragOverSlot?.slot === slotIdx &&
+                              dragOverSlot?.sub === (isSplit ? subIdx : null);
 
                             return (
                               <div
                                 key={subIdx}
-                                className={`rounded-lg border border-dashed p-3 ${
-                                  dragOverSlot?.slot === slotIdx && dragOverSlot?.sub === (isSplit ? subIdx : null)
-                                    ? "border-blue-400 bg-blue-50"
+                                className={`relative rounded-xl border p-3 min-h-[140px] transition ${
+                                  isOver
+                                    ? "border-teal-400 bg-teal-50"
                                     : "border-gray-300 bg-gray-50"
                                 }`}
                                 onDragOver={(e) => handleDragOverSlot(slotIdx, isSplit ? subIdx : null, e)}
                                 onDrop={() => handleDropOnSlot(slotIdx, isSplit ? subIdx : null)}
-                                title={isSplit ? "Drop graph/parameter (L = true)" : "Drop graph/parameter (L = false)"}
+                                title={isSplit ? (subIdx === 0 ? "ช่องซ้าย" : "ช่องขวา") : "ช่องเดี่ยว"}
                               >
-                                {/* header */}
+                                {/* ส่วนหัวของ cell */}
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2 min-w-0">
+                                    {isSplit && (
+                                      <Tag className="text-[11px]" color="geekblue" style={{ borderRadius: 6 }}>
+                                        {subIdx === 0 ? "ซ้าย" : "ขวา"}
+                                      </Tag>
+                                    )}
                                     {cell?.graphTypeId ? (
                                       <>
                                         <Image
                                           src={meta?.img}
                                           alt={meta?.name}
                                           preview={false}
-                                          style={{ width: 42, height: 42, objectFit: "contain", borderRadius: 8 }}
+                                          style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 8 }}
                                         />
-                                        <div className="text-sm font-semibold truncate">
-                                          {meta?.name}
-                                          {/* เอา uid ออก: ไม่แสดง "— xxx" อีกต่อไป */}
+                                        <div className="min-w-0">
+                                          <div className="text-sm font-semibold truncate max-w-[180px] sm:max-w-[240px]">
+                                            {meta?.name || "กราฟ"}
+                                          </div>
+                                          {inst?.name && (
+                                            <div className="text-xs text-gray-500 truncate max-w-[180px] sm:max-w-[240px]">
+                                              {inst.name}
+                                            </div>
+                                          )}
                                         </div>
-                                        <Tag className="ml-1" color="geekblue" style={{ borderRadius: 6 }}>
-                                          {cell.paramIds.length} param
-                                        </Tag>
                                       </>
                                     ) : (
-                                      <div className="text-gray-500 text-sm">Drop a graph instance or parameter</div>
-                                    )}
-                                  </div>
-
-                                  <div className="flex items-center gap-2">
-                                    {cell?.graphTypeId && (
-                                      <>
-                                        <Button
-                                          size="small"
-                                          onClick={() => clearParamsInCell(slotIdx, isSplit ? subIdx : null)}
-                                        >
-                                          Clear Params
-                                        </Button>
-                                        <Button
-                                          size="small"
-                                          danger
-                                          onClick={() => removeGraphFromSlot(slotIdx, isSplit ? subIdx : null)}
-                                        >
-                                          Remove Graph
-                                        </Button>
-                                      </>
+                                      <div className="text-gray-500 text-sm">ลากกราฟหรือพารามิเตอร์มาวางที่นี่</div>
                                     )}
                                   </div>
                                 </div>
 
-                                {/* param tags ใน cell */}
+                                {/* รายการพารามิเตอร์ใน cell */}
                                 {cell?.graphTypeId && (
                                   <div className="flex flex-wrap gap-2">
                                     {cell.paramIds.length === 0 ? (
                                       <span className="text-xs text-gray-500">
-                                        Drag parameters here…
+                                        ลากพารามิเตอร์มาวางที่นี่…
                                       </span>
                                     ) : (
-                                      cell.paramIds.map((pid) => (
-                                        <Tag
-                                          key={pid}
-                                          closable
-                                          onClose={(e) => {
-                                            e.preventDefault();
-                                            removeParamFromCell(slotIdx, isSplit ? subIdx : null, pid);
-                                          }}
-                                          className="px-2 py-1"
-                                        >
-                                          {getParamName(pid)}
-                                        </Tag>
-                                      ))
+                                      cell.paramIds.map((pid) => {
+                                        const color = getParamColorCode(pid);
+                                        return (
+                                          <Tag
+                                            key={pid}
+                                            closable
+                                            onClose={(e) => {
+                                              e.preventDefault();
+                                              removeParamFromCell(slotIdx, isSplit ? subIdx : null, pid);
+                                            }}
+                                            className="px-2 py-1"
+                                          >
+                                            <span
+                                              style={{
+                                                display: "inline-block",
+                                                width: 8,
+                                                height: 8,
+                                                borderRadius: 999,
+                                                background: color || "#8b8b8b",
+                                                marginRight: 6,
+                                                border: "1px solid #d1d5db",
+                                                verticalAlign: "middle",
+                                              }}
+                                            />
+                                            {getParamName(pid)}
+                                          </Tag>
+                                        );
+                                      })
                                     )}
                                   </div>
                                 )}
@@ -951,19 +953,19 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                   })}
                 </div>
 
-                <div className="flex justify-end gap-2 pt-4">
+                <div className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-4">
                   <Button onClick={onClose} size="small" className="rounded-md font-semibold px-4 h-[34px] text-[14px] border">
-                    Cancel
+                    ยกเลิก
                   </Button>
                   <Button
                     type="primary"
                     loading={saving}
                     onClick={handleSave}
-                    disabled={!hasUnsavedChanges || saving}
+                    disabled={!canSave || saving}
                     size="small"
                     className="rounded-md font-semibold px-4 h-[34px] text-[14px]"
                   >
-                    Save All
+                    บันทึกทั้งหมด
                   </Button>
                 </div>
               </div>
@@ -971,6 +973,17 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
           </div>
         </div>
       )}
+
+      {/* สไตล์เสริมเฉพาะคอมโพเนนต์นี้ */}
+      <style>{`
+        /* มือถือ: ขยับโมดัลลงมาอีกหน่อย และคง padding ด้านข้าง */
+        @media (max-width: 640px) {
+          .ant-modal-root .ant-modal { 
+            padding: 0 8px; 
+            top: 56px !important; /* ดันลงมาจากขอบบน */
+          }
+        }
+      `}</style>
     </Modal>
   );
 };

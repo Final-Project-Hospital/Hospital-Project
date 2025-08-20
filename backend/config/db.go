@@ -60,6 +60,7 @@ func SetupDatabase() {
 		&entity.Garbage{},
 		&entity.Garbage{},
 		&entity.Notification{},
+		&entity.RoomNotification{},
 	)
 	// Enviroment
 	Wastewater := entity.Environment{EnvironmentName: "น้ำเสีย"}
@@ -196,27 +197,19 @@ func SetupDatabase() {
 		formaldehydeStd := entity.StandardHardware{MaxValueStandard: 5, MinValueStandard: 2}
 		temperatureStd := entity.StandardHardware{MaxValueStandard: 30, MinValueStandard: 20}
 		humidityStd := entity.StandardHardware{MaxValueStandard: 70, MinValueStandard: 30}
-		lightStd := entity.StandardHardware{MaxValueStandard: 200, MinValueStandard: 100}
-		gasStd := entity.StandardHardware{MaxValueStandard: 7, MinValueStandard: 3}
 
 		db.FirstOrCreate(&formaldehydeStd, entity.StandardHardware{MaxValueStandard: 5, MinValueStandard: 2})
 		db.FirstOrCreate(&temperatureStd, entity.StandardHardware{MaxValueStandard: 30, MinValueStandard: 20})
 		db.FirstOrCreate(&humidityStd, entity.StandardHardware{MaxValueStandard: 70, MinValueStandard: 30})
-		db.FirstOrCreate(&lightStd, entity.StandardHardware{MaxValueStandard: 200, MinValueStandard: 100})
-		db.FirstOrCreate(&gasStd, entity.StandardHardware{MaxValueStandard: 7, MinValueStandard: 3})
 
 		// ----- สร้าง UnitHardware -----
 		unitPPM := entity.UnitHardware{Unit: "ppm"}
 		unitCelsius := entity.UnitHardware{Unit: "°C"}
 		unitPercent := entity.UnitHardware{Unit: "%"}
-		unitLux := entity.UnitHardware{Unit: "Lux"}
-		unitGas := entity.UnitHardware{Unit: "cm"}
 
 		db.FirstOrCreate(&unitPPM, entity.UnitHardware{Unit: "ppm"})
 		db.FirstOrCreate(&unitCelsius, entity.UnitHardware{Unit: "°C"})
 		db.FirstOrCreate(&unitPercent, entity.UnitHardware{Unit: "%"})
-		db.FirstOrCreate(&unitLux, entity.UnitHardware{Unit: "Lux"})
-		db.FirstOrCreate(&unitGas, entity.UnitHardware{Unit: "cm"})
 
 		// ----- สร้าง Parameter พร้อมผูก StandardHardwareID และ UnitHardwareID -----
 		paramhardware1 := entity.HardwareParameter{
@@ -252,35 +245,11 @@ func SetupDatabase() {
 			StandardHardwareID:       humidityStd.ID,
 			UnitHardwareID:           unitPercent.ID,
 		}
-		paramhardware4 := entity.HardwareParameter{
-			Parameter:                "Light",
-			Icon:                     "GiChemicalDrop",
-			GroupDisplay:             false,
-			LayoutDisplay:            false,
-			Alert:                    false,
-			HardwareParameterColorID: colorYellow.ID,
-			HardwareGraphID:          defaultGraph.ID,
-			StandardHardwareID:       lightStd.ID,
-			UnitHardwareID:           unitLux.ID,
-		}
-		paramhardware5 := entity.HardwareParameter{
-			Parameter:                "Gas",
-			Icon:                     "GiChemicalDrop",
-			GroupDisplay:             false,
-			LayoutDisplay:            false,
-			Alert:                    false,
-			HardwareParameterColorID: colorGreen.ID,
-			HardwareGraphID:          defaultGraph.ID,
-			StandardHardwareID:       gasStd.ID,
-			UnitHardwareID:           unitGas.ID,
-		}
 
 		// บันทึก HardwareParameter ลงฐานข้อมูล
 		db.FirstOrCreate(&paramhardware1, entity.HardwareParameter{Parameter: "Formaldehyde", HardwareGraphID: defaultGraph.ID})
 		db.FirstOrCreate(&paramhardware2, entity.HardwareParameter{Parameter: "Temperature", HardwareGraphID: defaultGraph.ID})
 		db.FirstOrCreate(&paramhardware3, entity.HardwareParameter{Parameter: "Humidity", HardwareGraphID: defaultGraph.ID})
-		db.FirstOrCreate(&paramhardware4, entity.HardwareParameter{Parameter: "Light", HardwareGraphID: defaultGraph.ID})
-		db.FirstOrCreate(&paramhardware5, entity.HardwareParameter{Parameter: "Gas", HardwareGraphID: defaultGraph.ID})
 	}
 
 	hashedPassword, err := HashPassword("123")
@@ -465,7 +434,6 @@ func SetupDatabase() {
 					HardwareParameterID: 1,
 					Date:                date,
 					Note:                "",
-					Status:              true,
 				}
 				db.Create(&param1)
 				formIndex++
@@ -478,7 +446,6 @@ func SetupDatabase() {
 					HardwareParameterID: 2,
 					Date:                date,
 					Note:                "",
-					Status:              true,
 				}
 				db.Create(&param2)
 				index++
@@ -490,33 +457,8 @@ func SetupDatabase() {
 					HardwareParameterID: 3,
 					Date:                date,
 					Note:                "",
-					Status:              true,
 				}
 				db.Create(&param3)
-				index++
-
-				// 💡 Light
-				param4 := entity.SensorDataParameter{
-					Data:                100 + float64(month)*10 + float64(day)*2,
-					SensorDataID:        1,
-					HardwareParameterID: 4,
-					Date:                date,
-					Note:                "",
-					Status:              true,
-				}
-				db.Create(&param4)
-				index++
-
-				// 🧪 Gas
-				param5 := entity.SensorDataParameter{
-					Data:                5 + float64(month)*0.4 + float64(day)*0.1,
-					SensorDataID:        1,
-					HardwareParameterID: 5,
-					Date:                date,
-					Note:                "",
-					Status:              true,
-				}
-				db.Create(&param5)
 				index++
 			}
 		}
@@ -524,6 +466,45 @@ func SetupDatabase() {
 	} else {
 		fmt.Println("⚠️  ข้ามการเพิ่มข้อมูล SensorDataParameter เพราะมีข้อมูลอยู่แล้ว")
 	}
+
+	Notification1 := entity.Notification{
+		Name: "Tawunchai",
+		UserID: "Ucc082e3e6abf74aa767514630174b49f",
+		Alert: false,
+	}
+	Notification2 := entity.Notification{
+		Name: "Google",
+		UserID: "U3af93a2f92b1048757172584d4757123",
+		Alert: false,
+	}
+	Notification3 := entity.Notification{
+		Name: "Facebook",
+		UserID: "U3af93a2f92b1048757172584d4757124",
+		Alert: false,
+	}
+
+	db.FirstOrCreate(&Notification1, entity.Notification{UserID: "Ucc082e3e6abf74aa767514630174b49f"})
+	db.FirstOrCreate(&Notification2, entity.Notification{UserID: "U3af93a2f92b1048757172584d4757123"})
+	db.FirstOrCreate(&Notification3, entity.Notification{UserID: "U3af93a2f92b1048757172584d4757124"})
+
+	RoomNotification1 := entity.RoomNotification{
+		RoomID: 1,
+		NotificationID: 1,
+	}
+
+	RoomNotification2 := entity.RoomNotification{
+		RoomID: 1,
+		NotificationID: 2,
+	}
+
+	RoomNotification3 := entity.RoomNotification{
+		RoomID: 1,
+		NotificationID: 3,
+	}
+
+	db.FirstOrCreate(&RoomNotification1, entity.RoomNotification{RoomID: 1 , NotificationID: 1})
+	db.FirstOrCreate(&RoomNotification2, entity.RoomNotification{RoomID: 1 , NotificationID: 2})
+	db.FirstOrCreate(&RoomNotification3, entity.RoomNotification{RoomID: 1 , NotificationID: 3})
 
 	BodParameter := entity.Parameter{ParameterName: "Biochemical Oxygen Demand"}
 	db.FirstOrCreate(&BodParameter, &entity.Parameter{ParameterName: "Biochemical Oxygen Demand"})
@@ -828,9 +809,9 @@ func SetupDatabase() {
 		}
 		db.FirstOrCreate(&infectiousWaste, entity.Garbage{
 			Date:          date,
-            EnvironmentID: Garbage.ID,
-            ParameterID:   param22.ID,
-            TargetID:      &target1.ID,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param22.ID,
+			TargetID:      &target1.ID,
 		})
 	}
 
@@ -1104,4 +1085,153 @@ func SetupDatabase() {
 		})
 	}
 	fmt.Println("Insert TKN seed data done!")
+
+	// Garbages
+	// recycledWaste
+	recycledWastePerDay := []float64{66.53, 144.99, 221.05, 205.57, 198.98}
+	recycledWastePerMonth := []float64{2062.50, 4059.65, 6852.50, 6167.00, 6168.50}
+	recycledWastePerTotalSale := []float64{3139.50, 4782.00, 6852.50, 6167.00, 6168.50}
+	recycledWastePerQuantity := []uint{1200, 1200, 1300, 1400, 1500}
+
+	recycledWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(recycledWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", recycledWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะอันตราย Parse date error :", err)
+			continue
+		}
+
+		chemicalWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      recycledWastePerMonth[i],
+			Quantity:            recycledWastePerQuantity[i],
+			AverageDailyGarbage: recycledWastePerDay[i],
+			TotalSale:           recycledWastePerTotalSale[i],
+			AADC:                0,
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param24.ID,
+			TargetID:            &target2.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            nil,
+		}
+		db.FirstOrCreate(&chemicalWaste, entity.Garbage{
+			Date:          date,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param24.ID,
+			TargetID:      &target2.ID,
+		})
+	}
+
+	// generalWaste
+	generalWastePerDay := []float64{1163.87, 1080.36, 1123.23, 1089.33, 1114.9}
+	generalWastePerMonth := []float64{36080.00, 30250.00, 34820.00, 32680.00, 34562.00}
+	generalWastePerAADC := []float64{0.06, 0.13, 0.20, 0.19, 0.18}
+	generalWastePerQuantity := []uint{1200, 1200, 1300, 1400, 1500}
+
+	generalWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(generalWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", generalWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะทั่วไป Parse date error :", err)
+			continue
+		}
+
+		var statusIDBeforegen uint
+		if generalWastePerAADC[i] > 1.00 {
+			statusIDBeforegen = status2.ID
+		} else {
+			statusIDBeforegen = status1.ID
+		}
+
+		generalWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      generalWastePerMonth[i],
+			Quantity:            generalWastePerQuantity[i],
+			AverageDailyGarbage: generalWastePerDay[i],
+			AADC:                generalWastePerAADC[i],
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param23.ID,
+			TargetID:            &target2.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            &statusIDBeforegen,
+		}
+		db.FirstOrCreate(&generalWaste, entity.Garbage{
+			Date:          date,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param23.ID,
+			TargetID:      &target2.ID,
+		})
+	}
+
+	// hazardousWaste //ฟิกไว้ก่อนยังไม่มีค่าจริง
+	hazardousWastePerDay := []float64{1163.87, 1080.36, 1123.23, 1089.33, 1114.9}
+	hazardousWastePerMonth := []float64{36080.00, 30250.00, 34820.00, 32680.00, 34562.00}
+	hazardousWastePerAADC := []float64{0.06, 0.13, 0.20, 0.19, 0.18}
+	hazardousWastePerQuantity := []uint{1200, 1200, 1300, 1400, 1500}
+
+	hazardousWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(hazardousWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", hazardousWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะอันตราย Parse date error :", err)
+			continue
+		}
+
+		chemicalWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      hazardousWastePerMonth[i],
+			Quantity:            hazardousWastePerQuantity[i],
+			AverageDailyGarbage: hazardousWastePerDay[i],
+			AADC:                hazardousWastePerAADC[i],
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param25.ID,
+			TargetID:            &target2.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            nil,
+		}
+		db.FirstOrCreate(&chemicalWaste, entity.Garbage{
+			Date:          date,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param25.ID,
+			TargetID:      &target2.ID,
+		})
+	}
+
+	// chemicalWaste //ฟิกไว้ก่อนยังไม่มีค่าจริง
+	chemicalWastePerDay := []float64{1163.87, 1080.36, 1123.23, 1089.33, 1114.9}
+	chemicalWastePerMonth := []float64{36080.00, 30250.00, 34820.00, 32680.00, 34562.00}
+	chemicalWastePerAADC := []float64{0.06, 0.13, 0.20, 0.19, 0.18}
+	chemicalWastePerQuantity := []uint{1200, 1200, 1300, 1400, 1500}
+
+	chemicalWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
+	for i := 0; i < len(chemicalWastePerMonth); i++ {
+		date, err := time.Parse("2006-01-02", chemicalWastedates[i])
+		if err != nil {
+			fmt.Println("ขยะเคมี Parse date error :", err)
+			continue
+		}
+
+		chemicalWaste := entity.Garbage{
+			Date:                date,
+			MonthlyGarbage:      chemicalWastePerMonth[i],
+			Quantity:            chemicalWastePerQuantity[i],
+			AverageDailyGarbage: chemicalWastePerDay[i],
+			AADC:                chemicalWastePerAADC[i],
+			EnvironmentID:       Garbage.ID,
+			ParameterID:         param26.ID,
+			TargetID:            &target2.ID,
+			UnitID:              Unit3.ID,
+			EmployeeID:          Admin.ID,
+			StatusID:            nil,
+		}
+		db.FirstOrCreate(&chemicalWaste, entity.Garbage{
+			Date:          date,
+			EnvironmentID: Garbage.ID,
+			ParameterID:   param26.ID,
+			TargetID:      &target2.ID,
+		})
+	}
 }

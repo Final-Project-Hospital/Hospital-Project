@@ -1,0 +1,616 @@
+.infectious-title-header {
+  /* background: linear-gradient(90deg, #356768, #5AEEF0); */
+  background-color: #13b7b9;
+  padding: 20px;
+  border-radius: 0 0 20px 20px;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.infectious-title-header h1 {
+  font-size: 2rem;
+  text-shadow: 0 4px 20px #d9d9d9a4;
+  font-weight: bold;
+  margin: 0;
+}
+
+.infectious-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.infectious-card h4 {
+  color: rgba(255, 255, 255, 0.799);
+}
+
+.infectious-photo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.infectious-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.infectious-value {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.infectious-change {
+  background: rgba(255, 255, 255, 0.952);
+  color: black;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.infectious-title-header,
+.infectious-card p {
+  font-size: 12px;
+  opacity: 0.9;
+  margin: 4px 0 0 0;
+}
+
+.infectious-card p span {
+  font-weight: bold;
+}
+
+.infectious-title {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 25px;
+  gap: 16px;
+}
+
+.infectious-title-text {
+  margin: 0;
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: #1b4242;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  /* จัดกลางแนวตั้ง */
+}
+
+.infectious-back-icon {
+  font-size: 1.5rem;
+  color: #007b8a;
+  cursor: pointer;
+  margin-right: 4px;
+}
+
+.infectious-select-group {
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.infectious-graph-container {
+  display: grid;
+  grid-template-columns: 1.3fr 1.8fr;
+  /* ซ้ายเล็ก ขวาใหญ่ */
+  grid-template-rows: 1fr;
+  /* แถวเดียว ฝั่งซ้ายใช้ nested flex */
+  gap: 16px;
+}
+/* ฝั่งซ้ายเป็น grid 2 แถวเท่ากัน */
+.infectious-graph-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  /* ยืดเต็มพื้นที่ฝั่งซ้าย */
+  min-height: 0;
+  /* สำคัญมาก ป้องกัน flex item ขยายเกิน */
+}
+
+.infectious-graph-left .infectious-graph-card {
+  flex: 1;
+  /* ให้แต่ละการ์ดสูงเท่ากัน */
+  min-height: 0;
+  /* ป้องกัน ApexChart ขยายเกิน */
+  display: flex;
+  /* ทำให้ chart ยืดเต็มการ์ด */
+  flex-direction: column;
+}
+
+/* ให้ ApexChart เต็มสูง parent */
+.infectious-graph-left .infectious-graph-card>div {
+  flex: 1;
+}
+
+/* .infectious-graph-left .infectious-graph-card:nth-child(1) {
+  background-color: #ffffff;
+}
+
+.infectious-graph-left .infectious-graph-card:nth-child(3) {
+  background-color: aquamarine;
+} */
+
+/* ฝั่งขวาใหญ่ + ล่างเล็ก */
+.infectious-graph-right {
+  display: grid;
+  grid-template-rows: 4fr 1fr;
+  /* กราฟใหญ่ 80% / การ์ดเล็ก 20% */
+  gap: 16px;
+}
+
+/* กราฟใหญ่ */
+/* .infectious-graph-right .infectious-graph-card:nth-child(2) {
+  background-color: antiquewhite;
+} */
+
+/* ล่างขวา (2 ช่องเล็ก) */
+.infectious-small-card-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  /* แบ่งครึ่งแนวนอน */
+  gap: 16px;
+}
+
+.infectious-small-card-container .infectious-graph-card {
+  /* background-color: lightpink; */
+  height: 100%;
+}
+
+/* แค่ตกแต่ง */
+.infectious-graph-card {
+  /* border: 2px solid black; */
+  padding: 20px;
+  background: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.infectious-width25 {
+  width: 25%;
+}
+
+.infectious-width40 {
+  width: 40%;
+}
+
+.infectious-head-graph-card {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.infectious-head-graph-card-text {
+  color: #1b4242;
+  border-radius: 50px 0px 0px 50px;
+  background-image: linear-gradient(to right, #5DDFE2, #ffffff);
+  padding: 8.5px;
+  margin: 0;
+}
+
+.infectious-right-select-graph {
+  /* margin-top: 10px; */
+  text-align: right;
+}
+
+.infectious-right-select-graph .ant-select-selector {
+  border: none !important;
+  box-shadow: none !important;
+  background-color: #efefef !important;
+  border-radius: 50px !important;
+}
+
+.apexcharts-tooltip {
+  box-shadow: none !important;
+  /* border: none !important; */
+  background-color: #ffffff !important;
+  color: rgb(0, 0, 0) !important;
+}
+
+.infectious-right-select-graph .ant-select-arrow {
+  color: #000000;
+  /* ใส่สีที่ต้องการ */
+}
+
+.infectious-select-filter {
+  width: fit-content;
+  min-width: 120px;
+}
+
+.infectious-select-date {
+  display: flex;
+  justify-content: space-between;
+  /* ซ้าย-ขวา */
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ลบกรอบของ Select */
+.infectious-select-date .ant-select-selector {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 50px !important;
+  background-color: white !important;
+}
+
+/* ลบกรอบของ DatePicker และ RangePicker */
+.infectious-select-date .ant-picker {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 50px !important;
+  background-color: rgb(255, 255, 255) !important;
+}
+
+.infectious-select-date .ant-picker-input input::placeholder {
+  color: #333 !important;
+}
+
+.infectious-filter-date {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  /* align-items: center; */
+  flex-wrap: wrap;
+}
+
+.infectious-filter-status-and-efficiency {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  /* align-items: center; */
+  flex-wrap: wrap;
+}
+
+.infectious-filter-status-and-efficiency p {
+  margin: 0;
+  white-space: nowrap;
+  color: #6e6e76;
+  align-self: center;
+}
+
+.infectious-filter-date p {
+  margin: 0;
+  color: #6e6e76;
+}
+
+.infectious-select-date .ant-select-selection-placeholder {
+  color: #333 !important;
+  /* สี placeholder */
+}
+
+.infectious-header-vis {
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.infectious-title-search-vis {
+  align-items: center;
+  width: 25%;
+}
+
+.infectious-title-text-vis {
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: #1b4242;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  /* จัดกลางแนวตั้ง */
+}
+
+.infectious-search-box {
+  margin: 10px 0px;
+}
+
+.infectious-btn-container {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.infectious-add-btn {
+  height: 100%;
+  background-color: #1a4b57;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 18px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.infectious-add-btn:hover {
+  background-color: #49d4d7;
+}
+
+.infectious-task-summary {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.infectious-task-total {
+  font-size: 14px;
+  color: #666;
+}
+
+.infectious-task-stats {
+  margin-left: auto;
+  display: flex;
+  align-items: stretch;
+  /* ✅ ทำให้ divider สูงเท่ากับ item */
+  gap: 20px;
+}
+
+.infectious-task-item {
+  text-align: center;
+}
+
+.infectious-task-number {
+  font-size: 28px;
+  font-weight: bold;
+  color: #1a4b57;
+}
+
+.infectious-task-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.infectious-task-divider {
+  width: 1.5px;
+  background-color: #ddd;
+  margin: 0 12px;
+}
+
+
+.infectious-table-data {
+  background: white;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0px 2px 15px rgba(162, 162, 162, 0.5);
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 5;
+}
+
+.infectious-table-data .ant-table-thead>tr>th {
+  background-color: #e7ffff;
+  color: #777777;
+  font-weight: normal;
+  text-align: center;
+}
+
+.infectious-table-data .ant-table {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.infectious-table-data .ant-table-ttsy>tr>td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* โค้งขอบหัวตาราง (thead) */
+.infectious-table-data .ant-table-thead>tr>th:first-child {
+  border-top-left-radius: 20px;
+}
+
+.infectious-table-data .ant-table-thead>tr>th:last-child {
+  border-top-right-radius: 20px;
+}
+
+/* ลบสีพื้นหลังและสีตัวอักษรที่หัวคอลัมน์เวลามีการ sort */
+.ant-table-thead .ant-table-column-sort {
+  background-color: #e7ffff !important;
+  color: #5D5D5D !important;
+  font-weight: bold !important;
+}
+
+.ant-table-thead>tr>th.ant-table-column-has-sorters:hover {
+  background-color: #e7ffff !important;
+  /* หรือสีพื้นเดิมที่ต้องการ */
+  color: inherit !important;
+}
+
+/* ลบสีไอคอน sort ที่ active */
+.ant-table-column-sort .ant-table-column-sorter-up.active,
+.ant-table-column-sort .ant-table-column-sorter-down.active {
+  color: #ff6f61 !important;
+}
+
+
+.infectious-title-text-table {
+  margin: 0;
+  font-weight: normal;
+  font-size: 1.25rem;
+  color: #494949;
+}
+
+.infectious-title-text-statistics {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 100px 0px;
+  color: #333;
+}
+
+/*สถานะ*/
+.infectious-status-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.status-low {
+  color: #faad14;
+}
+
+.status-high {
+  color: #EE404C;
+}
+
+.status-good {
+  color: #14C18B;
+}
+
+.status-none {
+  color: #999;
+}
+
+.infectious-action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.infectious-circle-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  /* border: 2px solid #d9d9d9; */
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.infectious-circle-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.infectious-edit-btn .anticon {
+  font-size: 20px;
+  color: #666;
+}
+
+.infectious-delete-btn .anticon {
+  font-size: 20px;
+  color: #ff6b6b;
+}
+
+.infectious-expand-chat {
+  color: #8d8a8a !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.infectious-expand-chat:hover {
+  transform: scale(1.1);
+  color: #666 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.infectious-custom-modal {
+  width: 90% !important;
+  /* important ใช้ในกรณีที่ Ant Design อาจ override ค่า */
+  max-width: 1200px !important;
+}
+
+.infectious-custom-modal .ant-modal-tsy {
+  height: 80vh;
+}
+
+.infectious-chart-containner {
+  flex: 1;
+  min-height: 400px;
+}
+
+.infectious-chart-containner .apexcharts-canvas {
+  height: 100%;
+}
+
+/* Card แบบ Gradient ใช้ใน infectious-graph */
+.infectious-box {
+  position: relative;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  color: #fff;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2abdbf 0%, #1f9a9c 70%, #138486 100%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+/* เส้นโค้งมุมขวาบน */
+.infectious-box::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 60%;
+  height: 60%;
+  border-bottom-left-radius: 100% 100%;
+  pointer-events: none;
+  background: linear-gradient(135deg,
+      rgba(219, 218, 218, 0.45) 0%,
+      rgba(255, 255, 255, 0.25) 40%,
+      rgba(255, 255, 255, 0) 100%);
+
+}
+
+/* Title ด้านบน */
+.infectious-box-title {
+  font-size: 17px;
+  font-weight: normal;
+  opacity: 0.95;
+}
+
+/* ตัวเลขหลัก */
+.infectious-box-number {
+  margin-bottom: auto;
+  /* ดันลงล่าง */
+  font-size: 30px;
+  font-weight: bold;
+  line-height: 1;
+  letter-spacing: 1px;
+  height: auto;
+}
+
+.infectious-box-number>div {
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  /* ดันลูกไปชิดล่าง */
+}
+
+.infectious-box-number .apexcharts-canvas {
+  filter: drop-shadow(6px 0 10px rgba(255, 255, 255, 0.368));
+}
+
+/* วันที่ */
+.infectious-box-date {
+  font-size: 10px;
+  margin-top: 4px;
+  opacity: 0.95;
+}

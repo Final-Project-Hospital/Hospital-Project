@@ -1,0 +1,725 @@
+.recycled-title-header {
+  /* background: linear-gradient(90deg, #356768, #5AEEF0); */
+  background-color: #13b7b9;
+  padding: 20px;
+  border-radius: 0 0 20px 20px;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.recycled-title-header h1 {
+  font-size: 2rem;
+  text-shadow: 0 4px 20px #d9d9d9a4;
+  font-weight: bold;
+  margin: 0;
+}
+
+.recycled-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.recycled-card h4 {
+  color: rgba(255, 255, 255, 0.799);
+}
+
+.recycled-photo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.recycled-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.recycled-value {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.recycled-change {
+  background: rgba(255, 255, 255, 0.952);
+  color: black;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.recycled-title-header,
+.recycled-card p {
+  font-size: 12px;
+  opacity: 0.9;
+  margin: 4px 0 0 0;
+}
+
+.recycled-card p span {
+  font-weight: bold;
+}
+
+.recycled-title {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 25px;
+  gap: 16px;
+}
+
+.recycled-title-text {
+  margin: 0;
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: #1b4242;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  /* จัดกลางแนวตั้ง */
+}
+
+.recycled-back-icon {
+  font-size: 1.5rem;
+  color: #007b8a;
+  cursor: pointer;
+  margin-right: 4px;
+}
+
+.recycled-select-group {
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.recycled-graph-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.recycled-graph-card {
+  flex: 0 1 calc(50% - 10px);
+  max-width: calc(50% - 10px);
+  background-color: white;
+  border-radius: 10px;
+  min-height: 450px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+}
+
+.recycled-width25 {
+  width: 25%;
+}
+
+.recycled-width40 {
+  width: 40%;
+}
+
+.recycled-head-graph-card {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.recycled-head-graph-card-text {
+  color: #1b4242;
+  border-radius: 50px 0px 0px 50px;
+  background-image: linear-gradient(to right, #5DDFE2, #ffffff);
+  padding: 8.5px;
+  margin: 0;
+}
+
+.recycled-right-select-graph {
+  margin-top: 10px;
+  text-align: right;
+}
+
+.recycled-right-select-graph .ant-select-selector {
+  border: none !important;
+  box-shadow: none !important;
+  background-color: #efefef !important;
+  border-radius: 50px !important;
+}
+
+.apexcharts-tooltip {
+  box-shadow: none !important;
+  /* border: none !important; */
+  background-color: #ffffff !important;
+  color: rgb(0, 0, 0) !important;
+}
+
+.recycled-right-select-graph .ant-select-arrow {
+  color: #000000;
+  /* ใส่สีที่ต้องการ */
+}
+
+.recycled-select-filter {
+  width: fit-content;
+  min-width: 120px;
+}
+
+.recycled-select-date {
+  display: flex;
+  justify-content: space-between;
+  /* ซ้าย-ขวา */
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ลบกรอบของ Select */
+.recycled-select-date .ant-select-selector {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 50px !important;
+  background-color: white !important;
+}
+
+/* ลบกรอบของ DatePicker และ RangePicker */
+.recycled-select-date .ant-picker {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 50px !important;
+  background-color: rgb(255, 255, 255) !important;
+}
+
+.recycled-select-date .ant-picker-input input::placeholder {
+  color: #333 !important;
+}
+
+.recycled-filter-date {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  /* align-items: center; */
+  flex-wrap: wrap;
+}
+
+.recycled-filter-status-and-efficiency {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  /* align-items: center; */
+  flex-wrap: wrap;
+}
+
+.recycled-filter-status-and-efficiency p {
+  margin: 0;
+  white-space: nowrap;
+  color: #6e6e76;
+  align-self: center;
+}
+
+.recycled-filter-date p {
+  margin: 0;
+  color: #6e6e76;
+}
+
+.recycled-select-date .ant-select-selection-placeholder {
+  color: #333 !important;
+  /* สี placeholder */
+}
+
+.recycled-header-vis {
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.recycled-title-search-vis {
+  align-items: center;
+  width: 25%;
+}
+
+.recycled-title-text-vis {
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: #1b4242;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  /* จัดกลางแนวตั้ง */
+}
+
+.recycled-search-box {
+  margin: 10px 0px;
+}
+
+.recycled-btn-container {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.recycled-add-btn {
+  height: 100%;
+  background-color: #1a4b57;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 18px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.recycled-add-btn:hover {
+  background-color: #49d4d7;
+}
+
+.recycled-task-summary {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.recycled-task-total {
+  font-size: 14px;
+  color: #666;
+}
+
+.recycled-task-stats {
+  margin-left: auto;
+  display: flex;
+  align-items: stretch;
+  /* ✅ ทำให้ divider สูงเท่ากับ item */
+  gap: 20px;
+}
+
+.recycled-task-item {
+  text-align: center;
+}
+
+.recycled-task-number {
+  font-size: 28px;
+  font-weight: bold;
+  color: #1a4b57;
+}
+
+.recycled-task-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.recycled-task-divider {
+  width: 1.5px;
+  background-color: #ddd;
+  margin: 0 12px;
+}
+
+
+.recycled-table-data {
+  background: white;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0px 2px 15px rgba(162, 162, 162, 0.5);
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 5;
+}
+
+.recycled-table-data .ant-table-thead>tr>th {
+  background-color: #e7ffff;
+  color: #777777;
+  font-weight: normal;
+  text-align: center;
+}
+
+.recycled-table-data .ant-table {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.recycled-table-data .ant-table-ttsy>tr>td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* โค้งขอบหัวตาราง (thead) */
+.recycled-table-data .ant-table-thead>tr>th:first-child {
+  border-top-left-radius: 20px;
+}
+
+.recycled-table-data .ant-table-thead>tr>th:last-child {
+  border-top-right-radius: 20px;
+}
+
+/* ลบสีพื้นหลังและสีตัวอักษรที่หัวคอลัมน์เวลามีการ sort */
+.ant-table-thead .ant-table-column-sort {
+  background-color: #e7ffff !important;
+  color: #5D5D5D !important;
+  font-weight: bold !important;
+}
+
+.ant-table-thead>tr>th.ant-table-column-has-sorters:hover {
+  background-color: #e7ffff !important;
+  /* หรือสีพื้นเดิมที่ต้องการ */
+  color: inherit !important;
+}
+
+/* ลบสีไอคอน sort ที่ active */
+.ant-table-column-sort .ant-table-column-sorter-up.active,
+.ant-table-column-sort .ant-table-column-sorter-down.active {
+  color: #ff6f61 !important;
+}
+
+
+.recycled-title-text-table {
+  margin: 0;
+  font-weight: normal;
+  font-size: 1.25rem;
+  color: #494949;
+}
+
+.recycled-title-text-statistics {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 100px 0px;
+  color: #333;
+}
+
+/*สถานะ*/
+.recycled-status-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.status-low {
+  color: #faad14;
+}
+
+.status-high {
+  color: #EE404C;
+}
+
+.status-good {
+  color: #14C18B;
+}
+
+.status-none {
+  color: #999;
+}
+
+.recycled-action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.recycled-circle-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  /* border: 2px solid #d9d9d9; */
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.recycled-circle-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.recycled-edit-btn .anticon {
+  font-size: 20px;
+  color: #666;
+}
+
+.recycled-delete-btn .anticon {
+  font-size: 20px;
+  color: #ff6b6b;
+}
+
+.recycled-expand-chat {
+  color: #8d8a8a !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.recycled-expand-chat:hover {
+  transform: scale(1.1);
+  color: #666 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.recycled-custom-modal {
+  width: 90% !important;
+  /* important ใช้ในกรณีที่ Ant Design อาจ override ค่า */
+  max-width: 1200px !important;
+}
+
+.recycled-custom-modal .ant-modal-tsy {
+  height: 80vh;
+}
+
+.recycled-chart-containner {
+  flex: 1;
+  min-height: 400px;
+}
+
+.recycled-chart-containner .apexcharts-canvas {
+  height: 100%;
+}
+
+/* Responsive for tablets (max-width: 1024px) */
+@media (max-width: 1025px) {
+  .recycled-graph-card {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  .recycled-select-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .recycled-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .recycled-right-select-graph {
+    width: 100%;
+    text-align: left;
+  }
+
+  .recycled-select-date {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+  }
+}
+
+/* Responsive for medium screens (max-width: 768px) */
+@media (max-width: 768px) {
+  .recycled-title-header {
+    margin-top: 50px;
+    text-align: center;
+  }
+
+  .recycled-title-header h1 {
+    font-size: 2rem;
+  }
+
+  .recycled-title-text {
+    font-size: 1.25rem;
+    text-align: center;
+  }
+
+  .recycled-select-group {
+    flex-direction: column;
+  }
+
+  .recycled-table-data {
+    overflow-x: auto;
+    padding: 10px;
+  }
+
+  .recycled-table-data .ant-table {
+    min-width: 600px !important;
+    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
+  }
+
+  .recycled-table-data .ant-table-thead>tr>th,
+  .recycled-table-data .ant-table-ttsy>tr>td {
+    white-space: nowrap !important;
+    /* บรรทัดไม่ตัด */
+    padding: 8px !important;
+    font-size: 12px !important;
+  }
+
+  .recycled-title-text-table {
+    text-align: center;
+    font-size: 1rem;
+  }
+
+  .recycled-add-btn {
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+
+  .recycled-search-input {
+    font-size: 12px;
+    height: 28px;
+  }
+}
+
+/* Responsive for small screens (max-width: 480px) */
+@media (max-width: 480px) {
+  .recycled-title-header {
+    padding: 15px;
+  }
+
+  .recycled-title-header h1 {
+    font-size: 1.5rem;
+    margin-top: 10px;
+  }
+
+  .recycled-graph-card {
+    min-height: 350px;
+  }
+
+  .recycled-select-group {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .recycled-head-graph-card {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  .recycled-right-select-graph {
+    text-align: left;
+    width: 100%;
+  }
+
+  .recycled-width25 {
+    width: 40%;
+  }
+
+  .recycled-width40 {
+    width: 60%;
+  }
+
+  /* .recycled-table-data {
+    overflow-x: auto;
+    padding: 10px;
+  }
+  .recycled-table-data .ant-table {
+    min-width: 600px !important;
+  }
+  .recycled-table-data .ant-table-thead>tr>th,
+  .recycled-table-data .ant-table-ttsy>tr>td {
+    white-space: nowrap !important;
+    padding: 8px !important;
+    font-size: 5px !important;
+  } */
+  .recycled-select-date {
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+  }
+
+  /* ปรับ Select filter ให้เต็มจอเล็ก */
+  .recycled-select-date .recycled-select-filter {
+    width: 50% !important;
+  }
+
+  /* ปรับ DatePicker และ RangePicker ให้เต็มจอ */
+  .recycled-select-date .ant-picker {
+    width: 100% !important;
+  }
+
+}
+
+/* Responsive for small screens (max-width: 480px) */
+@media (max-width: 376px) {
+  .recycled-title-header {
+    padding: 15px;
+    max-width: 100%;
+  }
+
+  .recycled-width25 {
+    width: 40%;
+  }
+
+  .recycled-width40 {
+    width: 60%;
+  }
+
+  .recycled-title-header h1 {
+    font-size: 1rem;
+  }
+
+  .recycled-graph-card {
+    min-height: 350px;
+    max-width: 375px;
+  }
+
+  .recycled-select-group {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .recycled-head-graph-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .recycled-right-select-graph {
+    text-align: left;
+    width: 100%;
+  }
+
+  .recycled-table-data {
+    overflow-x: auto;
+    padding: 10px;
+  }
+
+  .recycled-table-data .ant-table {
+    min-width: 600px !important;
+    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
+  }
+
+  .recycled-table-data .ant-table-thead>tr>th,
+  .recycled-table-data .ant-table-ttsy>tr>td {
+    white-space: nowrap !important;
+    /* บรรทัดไม่ตัด */
+    padding: 5px !important;
+    font-size: 7px !important;
+  }
+
+  .recycled-circle-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #d9d9d9;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+  }
+
+  .recycled-circle-btn:hover {
+    background-color: #f5f5f5;
+  }
+
+  .recycled-custom-modal {
+    width: 90% !important;
+    /* important ใช้ในกรณีที่ Ant Design อาจ override ค่า */
+    max-width: 1200px !important;
+    margin-top: 60px !important;
+  }
+}

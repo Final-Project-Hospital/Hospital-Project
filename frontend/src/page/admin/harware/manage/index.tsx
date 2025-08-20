@@ -13,12 +13,18 @@ import {
     DeleteOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
-import { ListRoom, DeleteRoomById } from "../../../../services/hardware";
+import {
+    ListRoom,
+    DeleteRoomById,
+    ListRoomNotification,
+} from "../../../../services/hardware";
 import { RoomInterface } from "../../../../interface/IRoom";
+import { RoomNotificationInterface } from "../../../../interface/IRoomNotification";
 import AddRoomModal from "../data/room/create";
 import EditRoomModal from "../data/room/edit";
 import { FaHome } from "react-icons/fa";
-
+import MainLine from "../../../../component/hardware/index";
+import { useStateContext } from "../../../../contexts/ContextProvider";
 const { Option } = Select;
 
 const RoomAdminTable: React.FC = () => {
@@ -27,15 +33,26 @@ const RoomAdminTable: React.FC = () => {
     const [searchText, setSearchText] = useState("");
     const [loading, setLoading] = useState(false);
 
+    const [notifications, setNotifications] = useState<RoomNotificationInterface[]>([]);
     const [selectedBuilding, setSelectedBuilding] = useState<string | number>("");
     const [selectedFloor, setSelectedFloor] = useState<string>("");
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedRoom, setSelectedRoom] = useState<RoomInterface | null>(null);
+
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [isTabletView, setIsTabletView] = useState(false);
+
+    const [reloadKey, setReloadKey] = useState(0);
+
+    const [showResponsibleModal, setShowResponsibleModal] = useState(false);
+    const [modalRoomName, setModalRoomName] = useState<string>("");
+    const [modalResponsibles, setModalResponsibles] = useState<string[]>([]);
+
+    const { activeMenu } = useStateContext();
+    console.log("Active Menu:", activeMenu);
 
     const fetchRooms = async () => {
         setLoading(true);
@@ -44,8 +61,14 @@ const RoomAdminTable: React.FC = () => {
         setLoading(false);
     };
 
+    const fetchRoomNotifications = async () => {
+        const data = await ListRoomNotification();
+        if (data) setNotifications(data);
+    };
+
     useEffect(() => {
         fetchRooms();
+        fetchRoomNotifications();
     }, []);
 
     useEffect(() => {
@@ -87,13 +110,19 @@ const RoomAdminTable: React.FC = () => {
         setShowEditModal(true);
     };
 
-    const handleUpdateSuccess = () => {
+    const handleUpdateSuccess = async () => {
         setShowEditModal(false);
         setSelectedRoom(null);
-        fetchRooms();
+        await fetchRooms();
+        await fetchRoomNotifications();
+        setReloadKey((prev) => prev + 1);
     };
 
     const handleDeleteSelected = () => {
+        if (selectedRowKeys.length === 0) {
+            message.warning("กรุณาเลือกห้องก่อนลบ");
+            return;
+        }
         setShowDeleteModal(true);
     };
 
@@ -107,6 +136,8 @@ const RoomAdminTable: React.FC = () => {
             message.success(`ลบสำเร็จ ${successCount} รายการ`);
             setSelectedRowKeys([]);
             fetchRooms();
+            fetchRoomNotifications();
+            setReloadKey((prev) => prev + 1);
         } else {
             message.error("ลบข้อมูลไม่สำเร็จ");
         }
@@ -127,11 +158,10 @@ const RoomAdminTable: React.FC = () => {
 
     const columns: ColumnsType<RoomInterface> = [
         {
-            title: <span className="text-teal-600 font-bold">ID</span>,
-            dataIndex: "ID",
-            key: "ID",
-            width: 60,
-            sorter: (a, b) => (a.ID ?? 0) - (b.ID ?? 0),
+            title: <span className="text-teal-600 font-bold">ลำดับ</span>,
+            key: "index",
+            width: 70,
+            render: (_: any, __: RoomInterface, index: number) => index + 1,
         },
         {
             title: <span className="text-teal-600 font-bold">ชื่อห้อง</span>,
@@ -154,7 +184,9 @@ const RoomAdminTable: React.FC = () => {
             title: <span className="text-teal-600 font-bold">MAC Address</span>,
             key: "HardwareIP",
             render: (_, r) => (
-                <span className="text-cyan-600 font-semibold">{r.Hardware?.MacAddress ?? "-"}</span>
+                <span className="text-cyan-600 font-semibold">
+                    {r.Hardware?.MacAddress ?? "-"}
+                </span>
             ),
         },
         {
@@ -165,6 +197,39 @@ const RoomAdminTable: React.FC = () => {
                     {r.Hardware?.Name ?? "-"}
                 </span>
             ),
+        },
+        {
+            title: <span className="text-teal-600 font-bold">ผู้รับผิดชอบ</span>,
+            key: "Notification",
+            render: (_, r) => {
+                const related = notifications.filter((n) => n.Room?.ID === r.ID);
+                if (related.length === 0) return "-";
+
+                const names = related.map((n, idx) => `${idx + 1}. ${n.Notification?.Name ?? "-"}`);
+
+                if (names.length <= 2) {
+                    return (
+                        <div className="flex flex-col">
+                            {names.map((n, idx) => (
+                                <span key={idx}>{n}</span>
+                            ))}
+                        </div>
+                    );
+                }
+
+                return (
+                    <Button
+                        type="link"
+                        onClick={() => {
+                            setModalRoomName(r.RoomName ?? "-");
+                            setModalResponsibles(names);
+                            setShowResponsibleModal(true);
+                        }}
+                    >
+                        ผู้รับผิดชอบทั้งหมด ({names.length})
+                    </Button>
+                );
+            },
         },
         {
             title: <span className="text-teal-600 font-bold">จัดการ</span>,
@@ -188,166 +253,158 @@ const RoomAdminTable: React.FC = () => {
     );
 
     return (
-        <div className="min-h-screen bg-gray-100 mt-16 md:mt-0">
-            <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-4 py-6 rounded-b-3xl mb-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold">จัดการข้อมูลเซนเซอร์</h1>
-                        <p className="text-sm">จัดการห้องที่ติดตั้งเซนเซอร์ในแต่ละอาคาร</p>
-                    </div>
-                    <button
-                        onClick={() => setShowAddModal(true)}
-                        className="flex items-center gap-2 bg-white text-teal-800 px-4 py-2 rounded-full hover:bg-teal-100 transition"
-                    >
-                        <FaHome />
-                        เพิ่มห้อง
-                    </button>
-                </div>
-            </div>
-
-            <div className="px-2 sm:px-6 pb-10">
-                <div className="bg-white rounded-2xl shadow p-4 sm:p-6">
-                    {/* Filters */}
-                    <div className="flex flex-col md:flex-col lg:flex-row justify-between gap-3 mb-4">
-                        <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full">
-                            <Select
-                                allowClear
-                                placeholder="ทุกอาคาร"
-                                className="w-full sm:w-40"
-                                value={selectedBuilding}
-                                onChange={(val) => setSelectedBuilding(val)}
-                            >
-                                <Option value="">ทุกอาคาร</Option>
-                                {buildingOptions.map(([id, name]) => (
-                                    <Option key={id} value={id}>{name}</Option>
-                                ))}
-                            </Select>
-
-                            <Select
-                                allowClear
-                                placeholder="ทุกชั้น"
-                                className="w-full sm:w-32"
-                                value={selectedFloor}
-                                onChange={(val) => setSelectedFloor(val)}
-                            >
-                                <Option value="">ทุกชั้น</Option>
-                                {floorOptions.map((floor) => (
-                                    <Option key={floor} value={String(floor)}>{`ชั้น ${floor}`}</Option>
-                                ))}
-                            </Select>
-
-                            <Input
-                                allowClear
-                                value={searchText}
-                                onChange={(e) => setSearchText(e.target.value)}
-                                placeholder="ค้นหาทุกคอลัมน์..."
-                                prefix={<SearchOutlined />}
-                                className="w-full sm:w-64"
-                            />
+        <>
+            <div className="min-h-screen bg-gray-100 mt-16 md:mt-0">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-4 py-6 rounded-b-3xl mb-1">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h1 className="text-2xl font-bold">จัดการข้อมูลเซนเซอร์</h1>
+                            <p className="text-sm">จัดการห้องที่ติดตั้งเซนเซอร์ในแต่ละอาคาร</p>
                         </div>
-
-                        {selectedRowKeys.length > 0 && (
-                            <Button
-                                type="primary"
-                                danger
-                                icon={<DeleteOutlined />}
-                                onClick={handleDeleteSelected}
-                                className="w-full lg:w-auto"
-                            >
-                                ลบที่เลือก ({selectedRowKeys.length})
-                            </Button>
-                        )}
-                    </div>
-
-                    {/* Table */}
-                    <div className="w-full overflow-x-auto">
-                        <div className={isTabletView ? "min-w-[600px]" : "min-w-[1000px]"}>
-                            <Table
-                                rowSelection={{
-                                    selectedRowKeys,
-                                    onChange: setSelectedRowKeys,
-                                }}
-                                columns={columns}
-                                dataSource={filteredData}
-                                rowKey="ID"
-                                loading={loading}
-                                pagination={{
-                                    pageSize: 5,
-                                    showSizeChanger: true,
-                                    pageSizeOptions: [5, 10, 20],
-                                    position: ["bottomCenter"],
-                                }}
-                                scroll={{ x: isTabletView ? 600 : 1000 }}
-                                className="w-full"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <Modal
-                open={showDeleteModal}
-                onCancel={() => setShowDeleteModal(false)}
-                onOk={confirmDeleteRooms}
-                okText="ลบ"
-                cancelText="ยกเลิก"
-                centered
-                title={null}
-                footer={null}
-                bodyStyle={{ padding: 0 }}
-            >
-                <div className="rounded-lg p-6 bg-white">
-                    <div className="flex flex-col items-center text-center">
-                        <div className="bg-red-100 p-3 rounded-full mb-3 shadow-sm">
-                            <DeleteOutlined className="text-red-500 text-2xl" />
-                        </div>
-                        <h2 className="text-lg text-red-600 font-medium">ยืนยันการลบห้องที่เลือก</h2>
-                        <p className="text-sm text-gray-700 mt-1 mb-3">
-                            คุณแน่ใจหรือไม่ว่าต้องการลบห้องทั้งหมด <span className="text-red-500">{selectedRowKeys.length}</span> รายการ?
-                        </p>
-
-                        <ul className="bg-gray-50 border border-gray-200 rounded-md max-h-40 overflow-y-auto px-4 py-2 text-left w-full text-sm text-gray-700 list-disc list-inside">
-                            {selectedRooms.map((room) => (
-                                <li key={room.ID}>{room.RoomName}</li>
-                            ))}
-                        </ul>
-
-                        <p className="text-xs text-gray-500 mt-3">การลบนี้ไม่สามารถย้อนกลับได้</p>
-                    </div>
-
-                    <div className="mt-6 flex justify-center gap-4">
-                        <Button
-                            onClick={() => setShowDeleteModal(false)}
-                            className="rounded-md"
+                        <button
+                            onClick={() => setShowAddModal(true)}
+                            className="flex items-center gap-2 bg-white text-teal-800 px-4 py-2 rounded-full hover:bg-teal-100 transition"
                         >
-                            ยกเลิก
-                        </Button>
-                        <Button
-                            type="primary"
-                            danger
-                            onClick={confirmDeleteRooms}
-                            className="bg-red-400 hover:bg-red-500 text-white font-semibold rounded-md border-none"
-                        >
-                            ลบ
-                        </Button>
+                            <FaHome />
+                            เพิ่มห้อง
+                        </button>
                     </div>
                 </div>
-            </Modal>
 
-            <AddRoomModal
-                show={showAddModal}
-                onClose={() => setShowAddModal(false)}
-                onCreateSuccess={fetchRooms}
-            />
-            {selectedRoom && (
-                <EditRoomModal
-                    show={showEditModal}
-                    onClose={() => setShowEditModal(false)}
-                    onSaveSuccess={handleUpdateSuccess}
-                    initialData={selectedRoom}
+                {/* Main graph */}
+                <div className="paddings">
+                    <MainLine reloadKey={reloadKey} />
+                </div>
+
+                <div
+                    className={`px-2 sm:px-6 pb-10 ${isTabletView
+                        ? activeMenu ? "w-[900px]" : "w-full"
+                        : "w-full"
+                        }`}
+                >
+                    <div className="bg-white rounded-2xl shadow p-4 sm:p-6">
+                        {/* Filters */}
+                        <div className="flex flex-col lg:flex-row justify-between gap-3 mb-4">
+                            {/* Filter group */}
+                            <div className="flex flex-col md:flex-row flex-wrap gap-2 w-full">
+                                <Select
+                                    allowClear
+                                    placeholder="ทุกอาคาร"
+                                    className="flex-1 min-w-[150px]"
+                                    value={selectedBuilding}
+                                    onChange={(val) => setSelectedBuilding(val)}
+                                >
+                                    <Option value="">ทุกอาคาร</Option>
+                                    {buildingOptions.map(([id, name]) => (
+                                        <Option key={id} value={id}>
+                                            {name}
+                                        </Option>
+                                    ))}
+                                </Select>
+
+                                <Select
+                                    allowClear
+                                    placeholder="ทุกชั้น"
+                                    className="flex-1 min-w-[120px]"
+                                    value={selectedFloor}
+                                    onChange={(val) => setSelectedFloor(val)}
+                                >
+                                    <Option value="">ทุกชั้น</Option>
+                                    {floorOptions.map((floor) => (
+                                        <Option key={floor} value={String(floor)}>
+                                            {`ชั้น ${floor}`}
+                                        </Option>
+                                    ))}
+                                </Select>
+
+                                <Input
+                                    allowClear
+                                    value={searchText}
+                                    onChange={(e) => setSearchText(e.target.value)}
+                                    placeholder="ค้นหาทุกคอลัมน์..."
+                                    prefix={<SearchOutlined />}
+                                    className="flex-1 min-w-[200px]"
+                                />
+                            </div>
+
+                            {/* Delete button */}
+                            {selectedRowKeys.length > 0 && (
+                                <Button
+                                    type="primary"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    onClick={handleDeleteSelected}
+                                    className="w-full lg:w-auto"
+                                >
+                                    ลบที่เลือก ({selectedRowKeys.length})
+                                </Button>
+                            )}
+                        </div>
+
+                        {/* Table */}
+                        <div className="w-full overflow-x-auto">
+                            <div>
+                                <Table
+                                    rowSelection={{
+                                        selectedRowKeys,
+                                        onChange: setSelectedRowKeys,
+                                    }}
+                                    columns={columns}
+                                    dataSource={filteredData}
+                                    rowKey="ID"
+                                    loading={loading}
+                                    pagination={{
+                                        pageSize: 5,
+                                        showSizeChanger: true,
+                                        pageSizeOptions: [5, 10, 20],
+                                        position: ["bottomCenter"],
+                                    }}
+                                    scroll={{ x: isTabletView ? 1000 : 1000 }}
+                                    className="w-full"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <AddRoomModal
+                    show={showAddModal}
+                    onClose={() => setShowAddModal(false)}
+                    onCreateSuccess={async () => {
+                        await fetchRooms();
+                        await fetchRoomNotifications();
+                        setReloadKey((prev) => prev + 1);
+                    }}
                 />
-            )}
-        </div>
+                {selectedRoom && (
+                    <EditRoomModal
+                        show={showEditModal}
+                        onClose={() => setShowEditModal(false)}
+                        onSaveSuccess={handleUpdateSuccess}
+                        initialData={selectedRoom}
+                    />
+                )}
+
+                {/* Delete confirm modal */}
+                <Modal
+                    title="ยืนยันการลบห้อง"
+                    open={showDeleteModal}
+                    onOk={confirmDeleteRooms}
+                    onCancel={() => setShowDeleteModal(false)}
+                    okText="ลบ"
+                    cancelText="ยกเลิก"
+                    centered
+                >
+                    <p>คุณต้องการลบห้องต่อไปนี้หรือไม่?</p>
+                    <ul className="list-disc ml-6 mt-2">
+                        {selectedRooms.map((room) => (
+                            <li key={room.ID}>{room.RoomName}</li>
+                        ))}
+                    </ul>
+                </Modal>
+            </div>
+        </>
     );
 };
 

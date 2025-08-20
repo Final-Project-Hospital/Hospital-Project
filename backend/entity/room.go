@@ -18,4 +18,6 @@ type Room struct {
 
 	HardwareID uint
 	Hardware   *Hardware `gorm:"foreignKey: HardwareID"`
+
+	RoomNotification []RoomNotification `gorm:"foreignKey: RoomID"`
 }

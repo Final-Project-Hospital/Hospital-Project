@@ -6,12 +6,37 @@ import (
 	"strings"
 	"encoding/base64"
 	"io/ioutil"
+
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
 	"github.com/gin-gonic/gin"
 )
+
+// helper: พยายามดึง requester ID จาก context (ลองได้หลาย key)
+func getRequesterID(c *gin.Context) (uint, bool) {
+	keys := []string{"employee_id", "EmployeeID", "user_id", "userID", "id", "ID", "sub"}
+	for _, k := range keys {
+		if v, ok := c.Get(k); ok {
+			switch t := v.(type) {
+			case uint:
+				return t, true
+			case int:
+				return uint(t), true
+			case int64:
+				return uint(t), true
+			case float64:
+				return uint(t), true
+			case string:
+				if id64, err := strconv.ParseUint(t, 10, 64); err == nil {
+					return uint(id64), true
+				}
+			}
+		}
+	}
+	return 0, false
+}
 
 func UpdateRole(c *gin.Context) {
 	id := c.Param("id")
@@ -27,13 +52,21 @@ func UpdateRole(c *gin.Context) {
 	roleName := strings.Title(strings.ToLower(body.Role))
 
 	validRoles := map[string]bool{
-		"Admin": true,
-		"Employee":  true,
-		"Guest": true,
+		"Admin":    true,
+		"Employee": true,
+		"Guest":    true,
 	}
 	if !validRoles[roleName] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid role"})
 		return
+	}
+
+	// ❗ กันเปลี่ยน role ของตัวเอง
+	if reqID, ok := getRequesterID(c); ok {
+		if uid, err := strconv.ParseUint(id, 10, 64); err == nil && uint(uid) == reqID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "You cannot change your own role"})
+			return
+		}
 	}
 
 	db := config.DB()
@@ -50,17 +83,13 @@ func UpdateRole(c *gin.Context) {
 		return
 	}
 
-	// ✅ อัปเดตโดยตรง
 	if err := db.Model(&employee).Update("RoleID", role.ID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update role"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Role updated successfully",
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "Role updated successfully"})
 }
-
 
 func GetEmployees(c *gin.Context) {
 	var employees []entity.Employee
@@ -104,21 +133,35 @@ func UpdateEmployeeInfo(c *gin.Context) {
 		return
 	}
 
+	// แปลง ID จากฟอร์ม
+	posID, _ := strconv.ParseUint(positionID[0], 10, 32)
+	roleIDVal, _ := strconv.ParseUint(roleID[0], 10, 32)
+
+	// ❗ กันเปลี่ยน role ตัวเองผ่านหน้าแก้ไข
+	if reqID, ok := getRequesterID(c); ok {
+		if uint64(reqID) == uint64(employee.ID) && uint(roleIDVal) != employee.RoleID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "You cannot change your own role"})
+			return
+		}
+	}
+
 	employee.FirstName = firstName[0]
 	employee.LastName = lastName[0]
 	employee.Email = email[0]
 	employee.Phone = phone[0]
-
-	// เปลี่ยน password ถ้ามีการกรอกใหม่
-	if len(password) > 0 && password[0] != "" {
-		employee.Password = password[0] // 🔐 คุณควรเข้ารหัสใน production
-	}
-
-	// แปลง ID
-	posID, _ := strconv.ParseUint(positionID[0], 10, 32)
-	roleIDVal, _ := strconv.ParseUint(roleID[0], 10, 32)
 	employee.PositionID = uint(posID)
+	// อนุญาตแก้ role ของ "คนอื่น" ได้ (เราบล็อกกรณีตัวเองไว้แล้ว)
 	employee.RoleID = uint(roleIDVal)
+
+	// เปลี่ยน password ถ้ามีการกรอกใหม่ (แนะนำให้ hash)
+	if len(password) > 0 && password[0] != "" {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(password[0]), bcrypt.DefaultCost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถเข้ารหัสรหัสผ่านได้"})
+			return
+		}
+		employee.Password = string(hashed)
+	}
 
 	// ถ้ามีรูปใหม่แนบ
 	file, err := c.FormFile("profile")
@@ -142,6 +185,14 @@ func UpdateEmployeeInfo(c *gin.Context) {
 // DeleteEmployee ลบพนักงาน (DELETE /api/employees/:id)
 func DeleteEmployee(c *gin.Context) {
 	id := c.Param("id")
+
+	// ❗ กันลบตัวเอง
+	if reqID, ok := getRequesterID(c); ok {
+		if uid, err := strconv.ParseUint(id, 10, 64); err == nil && uint(uid) == reqID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "You cannot delete your own account"})
+			return
+		}
+	}
 
 	db := config.DB()
 
@@ -194,7 +245,7 @@ func CreateEmployee(c *gin.Context) {
 		return
 	}
 
-	// ✅ อ่านรูปภาพและแปลงเป็น Base64
+	// ✅ อ่านรูปภาพและแปลงเป็น Base64 (หมายเหตุ: โปรดพิจารณาขนาด/ที่จัดเก็บใน production)
 	file, err := c.FormFile("profile")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ต้องแนบรูปโปรไฟล์"})
@@ -214,7 +265,7 @@ func CreateEmployee(c *gin.Context) {
 	}
 	contentType := file.Header.Get("Content-Type")
 	base64Image := "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(imageBytes)
-	
+
 	// ตรวจสอบความถูกต้องของตำแหน่ง และสิทธิ์
 	var position entity.Position
 	if err := db.First(&position, uint(positionID)).Error; err != nil {
@@ -228,14 +279,13 @@ func CreateEmployee(c *gin.Context) {
 		return
 	}
 
-	// สร้าง Employee
 	employee := entity.Employee{
 		FirstName:  firstName,
 		LastName:   lastName,
 		Email:      email,
-		Password:   string(hashedPassword), // ✅ เก็บ password แบบ hash
+		Password:   string(hashedPassword),
 		Phone:      phone,
-		Profile:    base64Image,            // ✅ เก็บรูปเป็น base64
+		Profile:    base64Image,
 		PositionID: uint(positionID),
 		RoleID:     uint(roleID),
 	}

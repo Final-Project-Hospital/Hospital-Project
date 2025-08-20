@@ -1,5 +1,5 @@
 import axios from "axios";
-import { RecycledcenterInterface, DeleteRecycledInterface } from "../../interface/Igarbage/IrecycledWaste";
+import { RecycledcenterInterface } from "../../interface/Igarbage/IrecycledWaste";
 import { apiUrl } from "../index"
 
 const getAuthHeader = () => {
@@ -130,27 +130,6 @@ export const UpdateOrCreateRecycled = async (payload: any) => {
   }
 };
 
-export const DeleteRecycled = async (id: number): Promise<DeleteRecycledInterface[] | null> => {
-  try {
-    const response = await axios.delete(`${apiUrl}/delete-recycled/${id}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-    });
-
-    if (response.status === 200) {
-      return response.data;
-    } else {
-      console.error("Unexpected status:", response.status);
-      return null;
-    }
-  } catch (error: any) {
-    console.error("Error deleting Recycled :", error.response?.data || error.message);
-    return null;
-  }
-};
-
 export const GetRecycledbyID = async (id: number): Promise<any | null> => {
   try {
     const response = await axios.get(`${apiUrl}/get-recycled/${id}`, {
@@ -191,6 +170,28 @@ export const DeleteAllRecycledRecordsByDate = async (
     }
   } catch (error: any) {
     console.error("Error deleting Recycled records by date:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const GetBeforeAfterRecycled = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-beforeafter-recycled`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating Recycled record:", error.response?.data || error.message);
     return null;
   }
 };
