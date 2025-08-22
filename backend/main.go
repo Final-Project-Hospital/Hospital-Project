@@ -468,6 +468,7 @@ func main() {
 		public.GET("/list-general", generalWaste.ListGeneral)
 		public.GET("/get-general/:id", generalWaste.GetGeneralbyID)
 		public.GET("/get-general-table", generalWaste.GetGeneralTABLE)
+		public.GET("/get-last-day-general", generalWaste.GetLastDayGeneral)
 		public.PATCH("/update-or-create-general/:d", generalWaste.UpdateOrCreateGeneral)
 		public.DELETE("/delete-general-day/:id", generalWaste.DeleteAllGeneralRecordsByDate)
 
@@ -477,6 +478,7 @@ func main() {
 		public.GET("/list-chemical", chemicalWaste.ListChemical)
 		public.GET("/get-chemical/:id", chemicalWaste.GetChemicalbyID)
 		public.GET("/get-chemical-table", chemicalWaste.GetChemicalTABLE)
+		public.GET("/get-last-day-chemical", chemicalWaste.GetLastDayChemical)
 		public.PATCH("/update-or-create-chemical/:d", chemicalWaste.UpdateOrCreateChemical)
 		public.DELETE("/delete-chemical-day/:id", chemicalWaste.DeleteAllChemicalRecordsByDate)
 

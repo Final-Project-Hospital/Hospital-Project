@@ -240,7 +240,10 @@ const THdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterTH
-        if (thRes) {
+        if (!thRes || !thRes.data || thRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After TH");
+        } else {
           setBeforeAfter(thRes.data);
         }
       } else {

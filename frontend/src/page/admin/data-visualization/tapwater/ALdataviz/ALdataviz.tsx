@@ -240,7 +240,10 @@ const ALdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterAL
-        if (alRes) {
+        if (!alRes || !alRes.data || alRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After AL");
+        } else {
           setBeforeAfter(alRes.data);
         }
       } else {

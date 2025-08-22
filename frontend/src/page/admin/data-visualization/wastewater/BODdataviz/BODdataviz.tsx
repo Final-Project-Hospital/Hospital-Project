@@ -270,7 +270,10 @@ const BODdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterBOD
-        if (bodRes) {
+        if (!bodRes || !bodRes.data || bodRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After BOD");
+        } else {
           setBeforeAfter(bodRes.data);
         }
       } else {
@@ -295,7 +298,7 @@ const BODdataviz: React.FC = () => {
       const response2 = await GetBODTABLE();
       if (!response2 || response2.length === 0) {
         setError("ไม่พบข้อมูล BOD ของตาราง");
-         setData([])//แก้ลบข้อมูลสุดท้ายแล้วตารางไม่รีเฟรช
+        setData([])//แก้ลบข้อมูลสุดท้ายแล้วตารางไม่รีเฟรช
         return;
       }
 

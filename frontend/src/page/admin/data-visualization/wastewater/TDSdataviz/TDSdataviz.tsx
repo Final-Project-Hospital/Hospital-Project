@@ -240,7 +240,10 @@ const TDSdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterTDS
-        if (tdsRes) {
+         if (!tdsRes || !tdsRes.data || tdsRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After TDS");
+        } else {
           setBeforeAfter(tdsRes.data);
         }
       } else {

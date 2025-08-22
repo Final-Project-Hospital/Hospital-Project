@@ -240,7 +240,10 @@ const TCBdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterTCB
-        if (tcbRes) {
+        if (!tcbRes || !tcbRes.data || tcbRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After TCB");
+        } else {
           setBeforeAfter(tcbRes.data);
         }
       } else {

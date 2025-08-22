@@ -246,42 +246,40 @@ func ListGeneral(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
 		return
 	}
-	var before entity.BeforeAfterTreatment
-	if err := db.Where("treatment_name = ?", "ก่อน").First(&before).Error; err != nil {
-		fmt.Println("Error fetching parameter:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
-		return
-	}
-
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
 	var firstgen []struct {
-		ID                     uint      `json:"ID"`
-		Date                   time.Time `json:"Date"`
-		Data                   float64   `json:"Data"`
-		Note                   string    `json:"Note"`
-		BeforeAfterTreatmentID uint      `json:"BeforeAfterTreatmentID"`
-		EnvironmentID          uint      `json:"EnvironmentID"`
-		ParameterID            uint      `json:"ParameterID"`
-		StandardID             uint      `json:"StandardID"`
-		UnitID                 uint      `json:"UnitID"`
-		EmployeeID             uint      `json:"EmployeeID"`
-		MinValue               float64   `json:"MinValue"`
-		MiddleValue            float64   `json:"MiddleValue"`
-		MaxValue               float64   `json:"MaxValue"`
-		UnitName               string
-		TreatmentName          string
-		StatusName             string
+		ID                  uint      `json:"ID"`
+		Date                time.Time `json:"Date"`
+		Quantity            uint      `json:"Quantity"`
+		Note                string    `json:"Note"`
+		Aadc                float64   `json:"Aadc"`
+		EnvironmentID       uint      `json:"EnvironmentID"`
+		ParameterID         uint      `json:"ParameterID"`
+		TargetID          uint      `json:"TargetID"`
+		UnitID              uint      `json:"UnitID"`
+		EmployeeID          uint      `json:"EmployeeID"`
+		MinTarget           float64   `json:"MinTarget"`
+		MiddleTarget        float64   `json:"MiddleTarget"`
+		MaxTarget           float64   `json:"MaxTarget"`
+		UnitName            string
+		StatusName          string
+		MonthlyGarbage      float64 `json:"MonthlyGarbage"`
+		AverageDailyGarbage float64 `json:"AverageDailyGarbage"`
 	}
+	subQuery := db.Model(&entity.Garbage{}).
+		Select("MAX(id)").
+		Where("parameter_id = ?", parameter.ID).
+		Group("DATE(date)")
 
 	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
-	result := db.Model(&entity.EnvironmentalRecord{}).
-		Select(`environmental_records.id, environmental_records.date,environmental_records.data,environmental_records.note,environmental_records.before_after_treatment_id,environmental_records.environment_id ,environmental_records.parameter_id 
-		,environmental_records.target_id ,environmental_records.unit_id ,environmental_records.employee_id,units.unit_name,before_after_treatments.treatment_name,targets.min_target,targets.middle_target,targets.max_target,statuses.status_name`).
-		Joins("inner join targets on environmental_records.target_id = targets.id").
-		Joins("inner join units on environmental_records.unit_id = units.id").
-		Joins("inner join before_after_treatments on environmental_records.before_after_treatment_id = before_after_treatments.id").
-		Joins("inner join statuses on environmental_records.status_id = statuses.id").
-		Where("environmental_records.parameter_id = ? ", parameter.ID).
+	result := db.Model(&entity.Garbage{}).
+		Select(`garbages.id, garbages.date,garbages.monthly_garbage,garbages.average_daily_garbage,garbages.quantity,garbages.note,garbages.aadc,garbages.environment_id ,garbages.parameter_id 
+		,garbages.target_id ,garbages.unit_id ,garbages.employee_id,units.unit_name,targets.min_target,targets.middle_target,targets.max_target,statuses.status_name`).
+		Joins("inner join targets on garbages.target_id = targets.id").
+		Joins("inner join units on garbages.unit_id = units.id").
+		Joins("inner join statuses on garbages.status_id = statuses.id").
+		Where("garbages.id IN (?)", subQuery).
+		Order("garbages.date DESC").
 		Find(&firstgen)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
@@ -555,4 +553,54 @@ func DeleteAllGeneralRecordsByDate(c *gin.Context) {
 		"message": "ลบข้อมูล General สำเร็จ",
 		"date":    dateKey,
 	})
+}
+
+func GetLastDayGeneral(c *gin.Context) {
+	db := config.DB()
+
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?", "ขยะทั่วไป").First(&parameter).Error; err != nil {
+		fmt.Println("Error fetching parameter:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+		return
+	}
+
+	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
+	var firstingen struct {
+		ID                  uint      `json:"ID"`
+		Date                time.Time `json:"Date"`
+		Quantity            uint      `json:"Quantity"`
+		AADC                float64   `json:"AADC"`
+		MonthlyGarbage      float64   `json:"MonthlyGarbage"`
+		AverageDailyGarbage float64   `json:"AverageDailyGarbage"`
+		TotalSale           float64   `json:"TotalSale"`
+		Note                string    `json:"Note"`
+		EnvironmentID       uint      `json:"EnvironmentID"`
+		ParameterID         uint      `json:"ParameterID"`
+		TargetID            uint      `json:"TargetID"`
+		UnitID              uint      `json:"UnitID"`
+		EmployeeID          uint      `json:"EmployeeID"`
+		MinTarget           float64   `json:"MinTarget"`
+		MiddleTarget        float64   `json:"MiddleTarget"`
+		MaxTarget           float64   `json:"MaxTarget"`
+		UnitName            string    `json:"UnitName"`
+	}
+
+	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
+	result := db.Model(&entity.Garbage{}).
+		Select(`garbages.id, garbages.date, garbages.quantity,garbages.aadc,garbages.monthly_garbage,garbages.average_daily_garbage,garbages.total_sale,garbages.note,garbages.environment_id,garbages.parameter_id,garbages.target_id,garbages.unit_id,garbages.employee_id,targets.min_target,targets.middle_target,targets.max_target,units.unit_name`).
+		Joins("inner join targets on garbages.target_id = targets.id").
+		Joins("inner join units on garbages.unit_id = units.id").
+		Where("parameter_id = ?", parameter.ID).
+		Order("garbages.date desc").
+		Scan(&firstingen)
+
+	// จัดการกรณีที่เกิดข้อผิดพลาด
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	// ส่งข้อมูลกลับในรูปแบบ JSON
+	c.JSON(http.StatusOK, firstingen)
 }

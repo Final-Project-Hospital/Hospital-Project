@@ -240,7 +240,10 @@ const FCBdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterFCB
-        if (fcbRes) {
+        if (!fcbRes || !fcbRes.data || fcbRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After FCB");
+        } else {
           setBeforeAfter(fcbRes.data);
         }
       } else {

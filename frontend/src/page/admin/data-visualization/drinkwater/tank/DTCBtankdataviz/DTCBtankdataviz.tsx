@@ -240,7 +240,10 @@ const DTCBtankdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterDTCBtank
-        if (dtcbRes) {
+        if (!dtcbRes || !dtcbRes.data || dtcbRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After DTCBtank");
+        } else {
           setBeforeAfter(dtcbRes.data);
         }
       } else {

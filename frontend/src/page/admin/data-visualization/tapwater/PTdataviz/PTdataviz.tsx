@@ -240,7 +240,10 @@ const PTdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterPT
-        if (ptRes) {
+        if (!ptRes || !ptRes.data || ptRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After PT");
+        } else {
           setBeforeAfter(ptRes.data);
         }
       } else {

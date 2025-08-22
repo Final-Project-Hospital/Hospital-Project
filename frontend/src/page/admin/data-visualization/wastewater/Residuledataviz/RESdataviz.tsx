@@ -240,7 +240,10 @@ const RESdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterRES
-        if (resRes) {
+        if (!resRes || !resRes.data || resRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After RES");
+        } else {
           setBeforeAfter(resRes.data);
         }
       } else {

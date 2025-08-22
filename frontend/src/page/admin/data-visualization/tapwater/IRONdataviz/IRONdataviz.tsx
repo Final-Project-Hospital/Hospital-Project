@@ -240,7 +240,10 @@ const IRONdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterIRON
-        if (ironRes) {
+        if (!ironRes || !ironRes.data || ironRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After IRON");
+        } else {
           setBeforeAfter(ironRes.data);
         }
       } else {

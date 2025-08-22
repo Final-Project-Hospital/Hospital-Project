@@ -242,7 +242,7 @@ const CODdataviz: React.FC = () => {
         // เซ็ตข้อมูลจาก GetBeforeAfterCOD
         if (!codRes || !codRes.data || codRes.data.length === 0) {
           setBeforeAfter(null); // ✅ ตรงกับ type
-          setError("ไม่พบข้อมูล Before/After FOG");
+          setError("ไม่พบข้อมูล Before/After COD");
         } else {
           setBeforeAfter(codRes.data);
         }

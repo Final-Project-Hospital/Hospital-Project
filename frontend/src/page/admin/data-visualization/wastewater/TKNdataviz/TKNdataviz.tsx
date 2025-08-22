@@ -240,7 +240,10 @@ const TKNdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterTKN
-        if (tknRes) {
+        if (!tknRes || !tknRes.data || tknRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After TKN");
+        } else {
           setBeforeAfter(tknRes.data);
         }
       } else {

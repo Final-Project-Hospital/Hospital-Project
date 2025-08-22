@@ -240,7 +240,10 @@ const DFCBtankdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterDFCBtank
-        if (dfcbRes) {
+        if (!dfcbRes || !dfcbRes.data || dfcbRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After DFCBtank");
+        } else {
           setBeforeAfter(dfcbRes.data);
         }
       } else {

@@ -240,7 +240,10 @@ const TCODdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterTCOD
-        if (tcodRes) {
+        if (!tcodRes || !tcodRes.data || tcodRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After TCOD");
+        } else {
           setBeforeAfter(tcodRes.data);
         }
       } else {

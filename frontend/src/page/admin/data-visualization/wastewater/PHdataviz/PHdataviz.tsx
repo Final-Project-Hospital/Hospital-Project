@@ -240,7 +240,10 @@ const PHdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterPH
-        if (phRes) {
+        if (!phRes || !phRes.data || phRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After PH");
+        } else {
           setBeforeAfter(phRes.data);
         }
       } else {

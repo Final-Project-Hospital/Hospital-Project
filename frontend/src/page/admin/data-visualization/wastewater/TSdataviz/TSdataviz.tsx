@@ -240,7 +240,10 @@ const TSdataviz: React.FC = () => {
                 setCompareData(compare);
                 setPercentChangeData(percentageChangeData);
                 // เซ็ตข้อมูลจาก GetBeforeAfterTS
-                if (tsRes) {
+                if (!tsRes || !tsRes.data || tsRes.data.length === 0) {
+                    setBeforeAfter(null); // ✅ ตรงกับ type
+                    setError("ไม่พบข้อมูล Before/After TS");
+                } else {
                     setBeforeAfter(tsRes.data);
                 }
             } else {

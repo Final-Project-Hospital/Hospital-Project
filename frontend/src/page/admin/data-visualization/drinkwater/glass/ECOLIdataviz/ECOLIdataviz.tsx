@@ -240,7 +240,10 @@ const ECOdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterECO
-        if (ecoRes) {
+        if (!ecoRes || !ecoRes.data || ecoRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After ECO");
+        } else {
           setBeforeAfter(ecoRes.data);
         }
       } else {

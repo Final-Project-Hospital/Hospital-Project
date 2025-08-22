@@ -240,7 +240,10 @@ const NTUdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterNTU
-        if (ntuRes) {
+        if (!ntuRes || !ntuRes.data || ntuRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After NTU");
+        } else {
           setBeforeAfter(ntuRes.data);
         }
       } else {

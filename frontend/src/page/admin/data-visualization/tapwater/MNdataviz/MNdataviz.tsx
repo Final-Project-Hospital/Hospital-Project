@@ -240,7 +240,10 @@ const MNdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterMN
-        if (mnRes) {
+        if (!mnRes || !mnRes.data || mnRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After MN");
+        } else {
           setBeforeAfter(mnRes.data);
         }
       } else {

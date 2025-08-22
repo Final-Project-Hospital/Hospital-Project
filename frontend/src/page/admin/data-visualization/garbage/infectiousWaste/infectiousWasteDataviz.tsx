@@ -27,7 +27,6 @@ import UpdateInfectiousCentralForm from "../../../data-management/garbage/infect
 import InfectiousCentralForm from "../../../data-management/garbage/infectiousWaste/infectiousWaste"
 import { ListStatus } from '../../../../../services/index';
 import { ListStatusInterface } from '../../../../../interface/IStatus';
-// import "./infectiousWaste.css"
 import Chart from "react-apexcharts";
 
 const normalizeString = (str: any) =>
@@ -489,7 +488,7 @@ const InfectiousWaste: React.FC = () => {
     ...seriesMonthlyGarbageQuantity[0].data,
     ...seriesMonthlyGarbageQuantity[1].data,
   ];
-  const pieOptions: ApexCharts.ApexOptions = {
+  const getPieOptions = (isQuantityChart = false): ApexCharts.ApexOptions => ({
     labels: monthlyDataLatestYear.map(d => d.month),
     dataLabels: {
       enabled: false,
@@ -509,15 +508,13 @@ const InfectiousWaste: React.FC = () => {
     },
     tooltip: {
       y: {
-        formatter: (val: number) => `${val.toLocaleString()} Kg`,
+        formatter: (val: number) => isQuantityChart ? `${val.toLocaleString()} คน` : `${val.toLocaleString()} Kg`,
       },
     },
     colors: [
-      "#a3faffff", "#fff4a3ff", "#a3ffb2ff", "#ffa3a3ff",
-      "#f9a3ffff", "#aba3ffff", "#26a69a", "#D10CE8",
-      "#FF9800", "#A569BD", "#CD6155", "#5DADE2"
+      "#a3faffff", "#fff4a3ff", "#a3ffb2ff", "#ffa3a3ff", "#f9a3ffff", "#aba3ffff", "#26a69a", "#D10CE8", "#FF9800", "#A569BD", "#CD6155", "#5DADE2"
     ],
-  };
+  });
   const pieSeries = monthlyDataLatestYear.map(d => d.value); monthlyQuantityLatestYear
   const pieSeriesQuantity = monthlyQuantityLatestYear.map(d => d.value);
 
@@ -959,7 +956,6 @@ const InfectiousWaste: React.FC = () => {
                   />
                 </div>
               </div>
-
               <div className="infectious-right-select-graph">
                 <Select
                   value={chartTypeCompareMonthlyGarbageQuantity}
@@ -1057,7 +1053,7 @@ const InfectiousWaste: React.FC = () => {
                     </div >
                     <div>
                       <Chart
-                        options={pieOptions}
+                        options={getPieOptions(false)}
                         series={pieSeries}
                         type="donut"
                         width={90}
@@ -1077,7 +1073,7 @@ const InfectiousWaste: React.FC = () => {
                     </div >
                     <div>
                       <Chart
-                        options={pieOptions}
+                        options={getPieOptions(true)}
                         series={pieSeriesQuantity}
                         type="donut"
                         width={90}

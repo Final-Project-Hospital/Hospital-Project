@@ -240,7 +240,10 @@ const SULdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterSUL
-        if (sulRes) {
+        if (!sulRes || !sulRes.data || sulRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After SUL");
+        } else {
           setBeforeAfter(sulRes.data);
         }
       } else {

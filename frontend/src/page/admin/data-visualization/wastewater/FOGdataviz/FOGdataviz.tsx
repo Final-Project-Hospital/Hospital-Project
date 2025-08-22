@@ -240,7 +240,10 @@ const FOGdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterFOG
-        if (fogRes) {
+        if (!fogRes || !fogRes.data || fogRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After FOG");
+        } else {
           setBeforeAfter(fogRes.data);
         }
       } else {

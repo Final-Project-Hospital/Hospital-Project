@@ -240,7 +240,10 @@ const NIdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterNI
-        if (niRes) {
+         if (!niRes || !niRes.data || niRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After NI");
+        } else {
           setBeforeAfter(niRes.data);
         }
       } else {
