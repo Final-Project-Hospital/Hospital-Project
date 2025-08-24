@@ -71,3 +71,62 @@
   margin-bottom: 8px;
   text-transform: uppercase;
 }
+
+/* ทำให้ Menu โปร่ง เพื่อให้ bg ของ sidebar ลดตาม width */
+.sidebar-container .ant-menu {
+  background-color: transparent !important;
+}
+
+/* หรือถ้าต้องการ bg สีเดียวกับ sidebar */
+.sidebar-container .ant-menu-light {
+  background-color: white !important;
+}
+
+.custom-submenu-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  user-select: none;
+}
+
+.custom-submenu-icon-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-submenu-arrow {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+.ant-menu-item, .ant-menu-submenu-title {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px;
+}
+
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px; /* กำหนดให้ width เท่ากันตลอด */
+  height: 24px;
+}
+
+.label {
+  transition: opacity 0.3s ease, width 0.3s ease;
+}
+/* Sidebar container */
+.sidebar {
+  position: relative;
+  overflow-x: hidden; /* ป้องกัน submenu ขยายเกิน */
+}
+
+/* Submenu dropdown */
+.ant-menu-sub.ant-menu-inline {
+  position: relative !important;
+  z-index: 1000;
+}

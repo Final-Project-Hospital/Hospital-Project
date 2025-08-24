@@ -586,7 +586,7 @@ export const links = [
             name: 'data-management/garbage',
             label: 'กลุ่มขยะ',
             icon: <FaTrash/>,
-            SubMenu: [
+            subMenu: [
               {}
             ]
           },

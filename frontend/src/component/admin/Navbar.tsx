@@ -10,8 +10,8 @@ import  Notification  from './report/Notification';
 import { useStateContext } from '../../contexts/ContextProvider';
 import { GetUserDataByUserID } from '../../services/httpLogin';
 import { useRefresh } from './RefreshContext';
-import Logo from '../../assets/SUTH Logo.png';
-import { Link } from 'react-router-dom';
+// import Logo from '../../assets/SUTH Logo.png';
+// import { Link } from 'react-router-dom';
 
 const NavButton = ({ title, customFunc, icon, color, dotColor }: any) => (
   <TooltipComponent content={title} position="BottomCenter">
@@ -101,13 +101,13 @@ const Navbar = () => {
 
   return (
     <div className="flex justify-between p-2 md:ml-6 md:mr-6 relative">
-          <div className="flex items-center">
+          {/* <div className="flex items-center">
             <Link 
               to= "/admin"
             >
               <img src={Logo} alt="Logo" className="h-10 w-auto" />
             </Link>
-          </div>
+          </div> */}
       {/* <NavButton
         title="Menu"
         customFunc={handleActiveMenu}
