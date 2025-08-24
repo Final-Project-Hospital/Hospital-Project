@@ -271,7 +271,7 @@ func SetupDatabase() {
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       formaldehydeStd.ID,
 			UnitHardwareID:           unitPPM.ID,
-			EmployeeID:               1,
+			EmployeeID:               3,
 		}
 		paramhardware2 := entity.HardwareParameter{
 			Parameter:                "Temperature",
@@ -283,7 +283,7 @@ func SetupDatabase() {
 			HardwareGraphID:          defaultGraph.ID,
 			StandardHardwareID:       temperatureStd.ID,
 			UnitHardwareID:           unitCelsius.ID,
-			EmployeeID:               1,
+			EmployeeID:               3,
 		}
 		paramhardware3 := entity.HardwareParameter{
 			Parameter:                "Humidity",

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -855,7 +856,87 @@ func CheckStandard(c *gin.Context) {
 	c.JSON(400, gin.H{"error": "invalid type"})
 }
 
-// ใช้ส่วนรวม  //กำลังจะทำ
-func GetAlertWater(c *gin.Context) {
+// ใช้ส่วนรวม
+type Alert struct {
+	Type string      `json:"type"` // "environmental" หรือ "garbage"
+	Data interface{} `json:"data"`
+}
 
+func GetAlertSoftware(c *gin.Context) {
+	db := config.DB()
+
+	var envRecords []entity.EnvironmentalRecord
+	var garbageRecords []entity.Garbage
+
+	// ดึง EnvironmentalRecord
+	if err := db.Preload("Status").
+		Preload("Unit").
+		Preload("Environment").
+		Preload("Parameter").
+		Preload("BeforeAfterTreatment").
+		Joins("JOIN statuses ON statuses.id = environmental_records.status_id").
+		Joins("JOIN before_after_treatments ON before_after_treatments.id = environmental_records.before_after_treatment_id").
+		Where("statuses.status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").
+		Where("before_after_treatments.treatment_name = ?", "หลัง").
+		Order("environmental_records.date DESC").
+		Find(&envRecords).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// ดึง Garbage
+	if err := db.Preload("Status").
+		Preload("Unit").
+		Preload("Environment").
+		Preload("Parameter").
+		Preload("Target").
+		Joins("JOIN statuses ON statuses.id = garbages.status_id"). // ต้องใช้ garbages ไม่ใช่ garbage
+		Where("statuses.status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").
+		Order("garbages.date DESC").
+		Find(&garbageRecords).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// รวมผลลัพธ์เป็น array เดียว
+	var alerts []Alert
+
+	for _, r := range envRecords {
+		alerts = append(alerts, Alert{
+			Type: "environmental",
+			Data: r,
+		})
+	}
+
+	for _, g := range garbageRecords {
+		alerts = append(alerts, Alert{
+			Type: "garbage",
+			Data: g,
+		})
+	}
+
+	// sort by date descending
+	sort.Slice(alerts, func(i, j int) bool {
+		var di, dj time.Time
+		switch a := alerts[i].Data.(type) {
+		case entity.EnvironmentalRecord:
+			di = a.Date
+		case entity.Garbage:
+			di = a.Date
+		}
+		switch a := alerts[j].Data.(type) {
+		case entity.EnvironmentalRecord:
+			dj = a.Date
+		case entity.Garbage:
+			dj = a.Date
+		}
+		return di.After(dj)
+	})
+
+	if len(alerts) == 0 {
+		c.JSON(http.StatusOK, gin.H{"message": "ไม่พบข้อมูลแจ้งเตือน"})
+		return
+	}
+
+	c.JSON(http.StatusOK, alerts)
 }
