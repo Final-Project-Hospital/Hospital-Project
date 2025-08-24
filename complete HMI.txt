@@ -1,0 +1,115 @@
+#include <Arduino.h>
+#include <ModbusRTU.h>
+
+// ------- RS485 <-> ESP32 wiring -------
+// ESP32 TXD2(17) -> DI
+// ESP32 RXD2(16) <- RO
+// ESP32 GPIO4    -> RE/DE (ผูก RE กับ DE เข้าด้วยกัน)
+// GND ↔ GND
+// RS485 bus A(D+) -> DB9 pin 9, B(D-) -> DB9 pin 8 (HMI COM1)
+
+#define PIN_DE_RE  4
+#define PIN_RXD2   16
+#define PIN_TXD2   17
+
+#define BAUDRATE   9600
+#define HMI_ID     1        // HMI Station/Slave ID
+
+// LW0..LW6 ใช้ทั้งหมด
+#define ADDR_LW0   0   // Formaldehyde raw
+#define ADDR_LW1   1   // Temp raw
+#define ADDR_LW2   2   // Humi raw
+// LW3 ว่าง
+#define ADDR_LW4   4   // Formaldehyde status
+#define ADDR_LW5   5   // Temp status
+#define ADDR_LW6   6   // Humi status
+
+ModbusRTU mb;
+bool busy = false;
+uint16_t regsAll[7];   // เก็บค่าที่จะส่ง LW0..LW6
+
+// Callback หลังเขียนเสร็จ
+bool cbWrite(Modbus::ResultCode rc, uint16_t, void*) {
+  busy = false;
+  return true;
+}
+
+void setup() {
+  Serial.begin(115200);
+  randomSeed(esp_random());
+
+  Serial2.begin(BAUDRATE, SERIAL_8N1, PIN_RXD2, PIN_TXD2);
+  mb.begin(&Serial2, PIN_DE_RE);   // คุมทิศทางด้วย DE/RE
+  mb.master();
+}
+
+void loop() {
+  mb.task();
+
+  static uint32_t last = 0;
+  if (!busy && millis() - last > 5000) {
+
+    // ==============================
+    // Formaldehyde raw (สุ่มค่า 0.010–0.070 ppm ×1000)
+    // ==============================
+    regsAll[0] = random(10, 71);   // ค่า int = 10..70
+    float f = regsAll[0] / 1000.0; // แปลงเป็น ppm สำหรับแสดงผล
+
+    // ✅ เช็กสถานะด้วย integer โดยตรง
+    if (regsAll[0] < 30) {
+      regsAll[4] = 0;   // ต่ำ
+    } else if (regsAll[0] <= 50) {
+      regsAll[4] = 1;   // ปกติ
+    } else {
+      regsAll[4] = 2;   // สูง
+    }
+
+    // ==============================
+    // Temperature raw (สุ่ม 15.00–40.00 °C ×100)
+    // ==============================
+    regsAll[1] = random(1500, 4001);  // ค่า int = 1500..4000
+    float t = regsAll[1] / 100.0;     // แปลงเป็น °C
+
+    if (regsAll[1] < 2500) {
+      regsAll[5] = 0;   // ต่ำ
+    } else if (regsAll[1] <= 3000) {
+      regsAll[5] = 1;   // ปกติ
+    } else {
+      regsAll[5] = 2;   // สูง
+    }
+
+    // ==============================
+    // Humidity raw (สุ่ม 20.00–80.00 % ×100)
+    // ==============================
+    regsAll[2] = random(2000, 8001);  // ค่า int = 2000..8000
+    float h = regsAll[2] / 100.0;     // แปลงเป็น %
+
+    if (regsAll[2] < 4000) {
+      regsAll[6] = 0;   // ต่ำ
+    } else if (regsAll[2] <= 6000) {
+      regsAll[6] = 1;   // ปกติ
+    } else {
+      regsAll[6] = 2;   // สูง
+    }
+
+    // ==============================
+    // ส่งค่า LW0–LW6 ทีเดียว
+    // ==============================
+    if (mb.writeHreg(HMI_ID, ADDR_LW0, regsAll, 7, cbWrite)) {
+      busy = true;
+      last = millis();
+      Serial.printf("Raw -> Form=%.3f ppm | Temp=%.2f °C | Humi=%.2f %%\n",
+                    f, t, h);
+
+      // ✅ แสดงสถานะเป็นข้อความแทนตัวเลข
+      const char* formStatus[] = {"ต่ำ", "ปกติ", "สูง"};
+      const char* tempStatus[] = {"ต่ำ", "ปกติ", "สูง"};
+      const char* humiStatus[] = {"ต่ำ", "ปกติ", "สูง"};
+
+      Serial.printf("Status -> Form=%s | Temp=%s | Humi=%s\n",
+                    formStatus[regsAll[4]],
+                    tempStatus[regsAll[5]],
+                    humiStatus[regsAll[6]]);
+    }
+  }
+}

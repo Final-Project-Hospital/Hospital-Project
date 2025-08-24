@@ -182,7 +182,7 @@ func main() {
 
 		public.GET("/check-units", tdscenter.CheckUnit)
 		public.GET("/check-standard", tdscenter.CheckStandard)
-		public.GET("/get-alert-water", tdscenter.GetAlertWater)
+		public.GET("/get-alert-software", tdscenter.GetAlertSoftware)
 
 		//TKN
 		public.POST("/create-tkn", tkncenter.CreateTKN)
