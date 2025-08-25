@@ -457,6 +457,7 @@ func main() {
 		public.GET("/list-hazardous", hazardousWaste.ListHazardous)
 		public.GET("/get-hazardous/:id", hazardousWaste.GetHazardousbyID)
 		public.GET("/get-hazardous-table", hazardousWaste.GetHazardousTABLE)
+		public.GET("/get-last-day-hazardous", hazardousWaste.GetLastDayHazardous)
 		public.PATCH("/update-or-create-hazardous/:d", hazardousWaste.UpdateOrCreateHazardous)
 		public.DELETE("/delete-hazardous-day/:id", hazardousWaste.DeleteAllHazardousRecordsByDate)
 		//ใช้ร่วมกัน
@@ -468,6 +469,7 @@ func main() {
 		public.GET("/list-general", generalWaste.ListGeneral)
 		public.GET("/get-general/:id", generalWaste.GetGeneralbyID)
 		public.GET("/get-general-table", generalWaste.GetGeneralTABLE)
+		public.GET("/get-last-day-general", generalWaste.GetLastDayGeneral)
 		public.PATCH("/update-or-create-general/:d", generalWaste.UpdateOrCreateGeneral)
 		public.DELETE("/delete-general-day/:id", generalWaste.DeleteAllGeneralRecordsByDate)
 
@@ -477,6 +479,7 @@ func main() {
 		public.GET("/list-chemical", chemicalWaste.ListChemical)
 		public.GET("/get-chemical/:id", chemicalWaste.GetChemicalbyID)
 		public.GET("/get-chemical-table", chemicalWaste.GetChemicalTABLE)
+		public.GET("/get-last-day-chemical", chemicalWaste.GetLastDayChemical)
 		public.PATCH("/update-or-create-chemical/:d", chemicalWaste.UpdateOrCreateChemical)
 		public.DELETE("/delete-chemical-day/:id", chemicalWaste.DeleteAllChemicalRecordsByDate)
 
@@ -496,6 +499,7 @@ func main() {
 		public.GET("/list-recycled", recycledWaste.ListRecycled)
 		public.GET("/get-recycled/:id", recycledWaste.GetRecycledbyID)
 		public.GET("/get-recycled-table", recycledWaste.GetRecycledTABLE)
+		public.GET("/get-last-day-recycled", recycledWaste.GetLastDayRecycled)
 		public.PATCH("/update-or-create-recycled/:d", recycledWaste.UpdateOrCreateRecycled)
 		public.DELETE("/delete-recycled-day/:id", recycledWaste.DeleteAllRecycledRecordsByDate)
 
@@ -601,8 +605,8 @@ func main() {
 		c.String(http.StatusOK, "API RUNNING... PORT: %s", PORT)
 	})
 
-	//r.Run("localhost:" + PORT)
-	r.Run("0.0.0.0:" + PORT)
+	r.Run("localhost:" + PORT)
+	// r.Run("0.0.0.0:" + PORT)
 
 }
 

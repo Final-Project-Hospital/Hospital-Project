@@ -130,7 +130,7 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
             }
 
             const payload = {
-                ID: values.id ?? 0,
+                ID: initialValues[0]?.ID ?? 0,
                 Date: combinedDateTime,
                 Quantity: values.quantity ?? 0,
                 AADC: values.aadc ?? 0,

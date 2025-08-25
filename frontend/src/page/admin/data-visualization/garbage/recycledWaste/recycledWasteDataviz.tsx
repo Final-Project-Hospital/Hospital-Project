@@ -1,23 +1,25 @@
 //ใช้ทั้งกราฟและตาราง
-import React, { useEffect, useState } from "react";
-import { Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
+import React, { useEffect, useRef, useState } from "react";
+import { Select, DatePicker, Modal, message, Tooltip } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { LeftOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import './recycledWasteDataviz.css';
 import dayjs, { Dayjs } from "dayjs";
-import { GetlistRecycled, GetfirstRecycled, GetBeforeAfterRecycled } from "../../../../../services/garbageServices/recycledWaste";
-import BeforeWater from "../../../../../assets/mineral.png"
-import AftereWater from "../../../../../assets/rain.png"
-import Efficiency from "../../../../../assets/productivity.png"
+import { GetlistRecycled, GetfirstRecycled, GetLastDayRecycled } from "../../../../../services/garbageServices/recycledWaste";
+import PhotoMonthlyGarbage from "../../../../../assets/waste/container.png"
+import PhotoDailyGarbage from "../../../../../assets/waste/garbage-bag.png"
+// import PhotoAADC from "../../../../../assets/waste/garbage-truck.png"
+import { listChemicalInterface } from "../../../../../interface/Igarbage/IchemicalWaste";
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { ColorPicker } from "antd";
 import type { Color } from "antd/es/color-picker";
-import { BarChart3, LineChart, Maximize2 } from "lucide-react";
+import { BarChart3, LineChart } from "lucide-react";
+import Chart from "react-apexcharts";
 
 //ใช้กับตาราง
 import Table, { ColumnsType } from "antd/es/table";
@@ -48,28 +50,31 @@ const Recycleddataviz: React.FC = () => {
   const [, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [filterMode, setFilterMode] = useState<"dateRange" | "month" | "year">("year");
-  const [BeforeAfter, setBeforeAfter] = useState<{ before: any; after: any } | null>(null);
+  const [lastDayRecycled, setlastDayRecycled] = useState<listChemicalInterface | null>(null);
 
   //ใช้กับกราฟ
-  const [chartTypeBefore, setChartTypeBefore] = useState<'bar' | 'line'>('line');
-  const [chartTypeAfter, setChartTypeAfter] = useState<'bar' | 'line'>('line');
-  const [chartTypeCompare, setChartTypeCompare] = useState<'bar' | 'line'>('line');
-  const [chartpercentChange, setpercentChange] = useState<'bar' | 'line'>('line');
-  const [compareData, setCompareData] = useState<{ date: string; before: number; after: number }[]>([]);
-  const [beforeData, setBeforeData] = useState<{ unit: string; date: string; data: number }[]>([]);
-  const [afterData, setAfterData] = useState<{ unit: string; date: string; data: number }[]>([]);
-  const [colorBefore, setColorBefore] = useState<string>("#2abdbf");
-  const [colorAfter, setColorAfter] = useState<string>("#1a4b57");
-  const [colorCompareBefore, setColorCompareBefore] = useState<string>("#2abdbf");
-  const [colorCompareAfter, setColorCompareAfter] = useState<string>("#1a4b57");
+  const [listdata, setListData] = useState<{ unit: string; date: string; avgValue: number }[]>([]);
+  const [TotalSaleData, setTotalSaleData] = useState<{ date: string; avgValue: number; unit: string }[]>([]);
+  const [compareMonthlyGarbageQuantity, setcompareMonthlyGarbageQuantity] = useState<{ date: string; monthlyGarbage: number; quantity: number; unit: string }[]>([]);
+  const [chartTypeData, setChartTypeData] = useState<'bar' | 'line'>('line');
+  const [chartTypeTotalSale, setChartTypeTotalSale] = useState<'bar' | 'line'>('line');
+  const [chartTypeCompareMonthlyGarbageQuantity, setChartTypeCompareMonthlyGarbageQuantity] = useState<'bar' | 'line'>('line');
+  const [colorGarbage, setColorGarbage] = useState<string>("#2abdbf");
+  const [colorAadc, setColorAadc] = useState<string>("#1a4b57");
+  const [colorCompareMonthlyGarbage, setColorCompareMonthlyGarbage] = useState<string>("#2abdbf");
+  const [colorCompareQuantity, setColorCompareQuantity] = useState<string>("#1a4b57");
+  const [totalMonthlyGarbage, setTotalMonthlyGarbage] = useState(0);
+  const [latestYear, setLatestYear] = useState<number | null>(null);
+  const [monthlyDataLatestYear, setMonthlyDataLatestYear] = useState<{ month: string; value: number }[]>([]);
+  const [middleTarget, setMiddleTarget] = useState<number | undefined>(undefined);
+  const [, setMinTarget] = useState<number | undefined>(undefined); //minTarget
+  const [maxTarget, setMaxTarget] = useState<number | undefined>(undefined);
   const [unit, setUnit] = useState<string>("-");
-  const [middlestandard, setMiddleStandard] = useState<number | undefined>(undefined);
-  const [minstandard, setMinStandard] = useState<number | undefined>(undefined);
-  const [maxstandard, setMaxStandard] = useState<number | undefined>(undefined);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalGraphType, setModalGraphType] = useState<"before" | "after" | "compare" | "percentChange" | null>(null);
-  const [percentChangeData, setPercentChangeData] = useState<{ date: string; percent: number }[]>([]);
-  const [colorPercentChange, setcolorPercentChange] = useState<string>("#FF6F61");
+  const [totalQuantity, setTotalQuantity] = useState<number>(0);
+  const [monthlyQuantityLatestYear, setMonthlyQuantityLatestYear] = useState<{ month: string; value: number }[]>([]);
+  const [totalTotalSale, setTotalSale] = useState<number>(0);
+  const [monthlyTotalSaleLatestYear, setMonthlyTotalSaleLatestYear] = useState<{ month: string; value: number }[]>([]);
+
 
   //ใช้กับตาราง
   const [search] = useState(""); //setSearch
@@ -90,52 +95,101 @@ const Recycleddataviz: React.FC = () => {
 
   //ใช้กับกราฟ ---โหลดสีจาก localStorage----
   useEffect(() => {
-    const storedColorBefore = localStorage.getItem('colorBefore');
-    const storedColorAfter = localStorage.getItem('colorAfter');
-    const storedColorCompareBefore = localStorage.getItem('colorCompareBefore');
-    const storedColorCompareAfter = localStorage.getItem('colorCompareAfter');
-    const storedcolorPercentChange = localStorage.getItem('colorPercentChange');
-    if (storedColorBefore) setColorBefore(storedColorBefore);
-    if (storedColorAfter) setColorAfter(storedColorAfter);
-    if (storedColorCompareBefore) setColorCompareBefore(storedColorCompareBefore);
-    if (storedColorCompareAfter) setColorCompareAfter(storedColorCompareAfter);
-    if (storedcolorPercentChange) setcolorPercentChange(storedcolorPercentChange);
+    const storedColorGarbage = localStorage.getItem('colorGarbage');
+    const storedColorAadc = localStorage.getItem('colorAadc');
+    const storedColorCompareMonthlyGarbage = localStorage.getItem('colorCompareMonthlyGarbage');
+    const storedColorCompareQuantity = localStorage.getItem('colorCompareQuantity');
+    if (storedColorGarbage) setColorGarbage(storedColorGarbage);
+    if (storedColorAadc) setColorAadc(storedColorAadc);
+    if (storedColorCompareMonthlyGarbage) setColorCompareMonthlyGarbage(storedColorCompareMonthlyGarbage);
+    if (storedColorCompareQuantity) setColorCompareQuantity(storedColorCompareQuantity);
   }, []);
 
   // ใช้กับกราฟ
-  const fetchData = async () => {
+  const fetchRecycledData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [lastrecyc, response, recycRes] = await Promise.all([
+      const [lastRecycled, response, lastDayRecycled] = await Promise.all([
         GetfirstRecycled(),
         GetlistRecycled(),
-        GetBeforeAfterRecycled(),
+        GetLastDayRecycled(),
       ]);
-
+      console.log(response.data)
+      // const response = await GetlistRecycled();
       if (response) {
-        const grouped: Record<string, { before: number[]; after: number[]; beforeUnit?: string; afterUnit?: string }> = {};
+        // กลุ่มข้อมูลตามวันที่
+        const grouped: Record<string, { value: number[]; TotalSale: number[]; quantity: number[]; unit: string }> = {};
+
         response.data.forEach((item: any) => {
           const key = filterMode === "year"
-            ? dayjs(item.Date).format("YYYY-MM")
-            : dayjs(item.Date).format("YYYY-MM-DD");
+            ? dayjs(item.Date).format("YYYY-MM")  // กลุ่มตามเดือน
+            : dayjs(item.Date).format("YYYY-MM-DD"); // กลุ่มตามวัน
 
-          if (!grouped[key]) grouped[key] = { before: [], after: [], beforeUnit: "", afterUnit: "" };
-
-          if (item.BeforeAfterTreatmentID === 1) {
-            grouped[key].before.push(item.Data);
-            grouped[key].beforeUnit = item.UnitName;
-          } else if (item.BeforeAfterTreatmentID === 2) {
-            grouped[key].after.push(item.Data);
-            grouped[key].afterUnit = item.UnitName;
-          }
+          if (!grouped[key]) grouped[key] = { value: [], TotalSale: [], quantity: [], unit: "" };
+          grouped[key].value.push(item.MonthlyGarbage);
+          grouped[key].TotalSale.push(item.TotalSale);
+          grouped[key].quantity.push(item.Quantity);
+          grouped[key].unit = item.UnitName;
         });
+        // หาผลรวม MonthlyGarbage ของปีล่าสุด
+        const allYears = response.data.map((item: any) =>
+          dayjs(item.Date).year()
+        );
+        const latestYear = Math.max(...allYears); // ปีล่าสุดจากข้อมูล
+        const latestYearThai = latestYear + 543;
+        const totalMonthlyGarbageLatestYear = response.data
+          .filter((item: any) => dayjs(item.Date).year() === latestYear)
+          .reduce(
+            (sum: number, item: any) => sum + (item.MonthlyGarbage || 0),
+            0
+          );
+        // หาผลรวม Quantity ของปีล่าสุด
+        const totalQuantityLatestYear = response.data
+          .filter((item: any) => dayjs(item.Date).year() === latestYear)
+          .reduce(
+            (sum: number, item: any) => sum + (item.Quantity || 0),
+            0
+          );
 
+        // รวมค่า TotalSale ของปีล่าสุด
+        const totalSaleLatestYear = response.data
+          .filter((item: any) => dayjs(item.Date).year() === latestYear)
+          .reduce((sum: number, item: any) => sum + (item.TotalSale || 0), 0);
+
+        // ดึงข้อมูลรายเดือนของปีล่าสุด และรวมค่าเดือนเดียวกัน
+        const monthlyDataLatestYearMap: Record<string, number> = {};
+        const monthlyQuantityLatestYearMap: Record<string, number> = {};
+        const monthlyTotalSaleLatestYearMap: Record<string, number> = {};
+
+        response.data
+          .filter((item: any) => dayjs(item.Date).year() === latestYear)
+          .forEach((item: any) => {
+            const month = dayjs(item.Date).format("MMM");
+
+            // MonthlyGarbage
+            if (!monthlyDataLatestYearMap[month]) monthlyDataLatestYearMap[month] = 0;
+            monthlyDataLatestYearMap[month] += item.MonthlyGarbage || 0;
+
+            // Quantity
+            if (!monthlyQuantityLatestYearMap[month]) monthlyQuantityLatestYearMap[month] = 0;
+            monthlyQuantityLatestYearMap[month] += item.Quantity || 0;
+
+            // TotalSale
+            if (!monthlyTotalSaleLatestYearMap[month]) monthlyTotalSaleLatestYearMap[month] = 0;
+            monthlyTotalSaleLatestYearMap[month] += item.TotalSale || 0;
+          });
+
+        // แปลงเป็น array สำหรับ ApexCharts
+        const monthlyDataLatestYear = Object.entries(monthlyDataLatestYearMap).map(([month, value]) => ({ month, value }));
+        const monthlyQuantityLatestYear = Object.entries(monthlyQuantityLatestYearMap).map(([month, value]) => ({ month, value }));
+        const monthlyTotalSaleLatestYear = Object.entries(monthlyTotalSaleLatestYearMap).map(([month, value]) => ({ month, value }));
+
+        // ฟังก์ชันสร้างช่วงวันที่ (ใช้ใน month/day mode)
         const createDateRange = (start: Dayjs, end: Dayjs): string[] => {
           const arr: string[] = [];
           let curr = start.startOf(filterMode === "year" ? 'month' : 'day');
           const last = end.endOf(filterMode === "year" ? 'month' : 'day');
-
           while (curr.isBefore(last) || curr.isSame(last)) {
             arr.push(curr.format(filterMode === "year" ? "YYYY-MM" : "YYYY-MM-DD"));
             curr = curr.add(1, filterMode === "year" ? 'month' : 'day');
@@ -143,108 +197,99 @@ const Recycleddataviz: React.FC = () => {
           return arr;
         };
 
-        //ออกเฉพาะวันที่มีข้อมูล
+        // เลือกช่วงวันที่
         let allDates: string[] = [];
-
         if (dateRange) {
           if (filterMode === "year") {
-            // กรองเดือนที่มีข้อมูลและอยู่ในช่วงปีที่เลือก
             const startYear = dateRange[0].year();
             const endYear = dateRange[1].year();
-
             allDates = Object.keys(grouped)
               .filter(monthStr => {
                 const year = dayjs(monthStr).year();
                 return year >= startYear && year <= endYear;
               })
               .sort();
-          } else if (filterMode === "month") {
-            // สร้างช่วงเดือนเต็มตามช่วง dateRange ที่เลือก (จะใช้ createDateRange)
-            allDates = createDateRange(dateRange[0], dateRange[1]);
           } else {
-            // กรองช่วงวัน (dateRange) ใช้ createDateRange
             allDates = createDateRange(dateRange[0], dateRange[1]);
           }
         } else {
-          // กรณีไม่ได้เลือก dateRange เอง
-          if (filterMode === "year") {
-            const monthsWithData = Object.keys(grouped).sort();
-            if (monthsWithData.length > 0) {
-              const latestMonth = dayjs(monthsWithData[monthsWithData.length - 1]);
+          // ถ้าไม่ได้เลือก dateRange เอง
+          const allDatesInData = Object.keys(grouped).sort();
+          if (allDatesInData.length > 0) {
+            if (filterMode === "year") {
+              const latestMonth = dayjs(allDatesInData[allDatesInData.length - 1]);
               const startLimit = latestMonth.subtract(3, "year").startOf("month");
-
-              allDates = monthsWithData.filter(monthStr => {
+              allDates = allDatesInData.filter(monthStr => {
                 const monthDate = dayjs(monthStr);
                 return monthDate.isSame(startLimit) || monthDate.isAfter(startLimit);
               });
+            } else if (filterMode === "month") {
+              const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
+              allDates = createDateRange(latestDate.startOf("month"), latestDate.endOf("month"));
             } else {
-              allDates = [];
-            }
-          } else if (filterMode === "month") {
-            const allDatesInData = Object.keys(grouped).sort();
-            if (allDatesInData.length > 0) {
               const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
-              const start = latestDate.startOf("month");
-              const end = latestDate.endOf("month");
-              allDates = createDateRange(start, end);
-            }
-          } else {
-            const allDatesInData = Object.keys(grouped).sort();
-            if (allDatesInData.length > 0) {
-              const latestDate = dayjs(allDatesInData[allDatesInData.length - 1]);
-              const start = latestDate.subtract(6, "day").startOf("day");
-              const end = latestDate.endOf("day");
-              allDates = createDateRange(start, end);
+              allDates = createDateRange(latestDate.subtract(6, "day").startOf("day"), latestDate.endOf("day"));
             }
           }
         }
+        const recycledArr: { date: string; avgValue: number; unit: string }[] = [];
+        const TotalSaleArr: { date: string; avgValue: number; unit: string }[] = [];
+        const compareArr: { date: string; monthlyGarbage: number; quantity: number; unit: string; }[] = [];
 
-        const before: { date: string; data: number; unit: string; }[] = [];
-        const after: { date: string; data: number; unit: string; }[] = [];
-        const compare: { date: string; before: number; after: number }[] = [];
 
         allDates.forEach(date => {
-          const values = grouped[date];
-          const avgBefore = values?.before.length
-            ? values.before.reduce((a, b) => a + b, 0) / values.before.length
-            : 0;
-          const avgAfter = values?.after.length
-            ? values.after.reduce((a, b) => a + b, 0) / values.after.length
-            : 0;
-          before.push({ date, data: avgBefore, unit: values?.beforeUnit || "" });
-          after.push({ date, data: avgAfter, unit: values?.afterUnit || "" });
-          compare.push({ date, before: avgBefore, after: avgAfter });
-        });
-        // console.log(lastrecyc.data)
-        if (lastrecyc.data.MiddleValue !== 0) {
-          setMiddleStandard(lastrecyc.data.MiddleValue);
-          setMaxStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
-          setMinStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
-        } else {
-          setMiddleStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
-          setMaxStandard(lastrecyc.data.MaxValue);
-          setMinStandard(lastrecyc.data.MinValue);
-        }
+          const values = grouped[date] || { value: [], TotalSale: [], quantity: [], unit: "" }; // ป้องกัน undefined
 
-        const percentageChangeData: { date: string; percent: number }[] = compare.map(item => {
-          const rawPercent = item.before !== 0
-            ? ((item.before - item.after) / item.before) * 100
+          // avg ขยะรีไซเคิล
+          const avgRecycled = values.value.length
+            ? values.value.reduce((a, b) => a + b, 0) / values.value.length
             : 0;
-          const percent = rawPercent < 0 ? 0 : rawPercent;
-          return { date: item.date, percent };
+          recycledArr.push({ date, avgValue: avgRecycled, unit: values.unit });
+
+          // avg TotalSale
+          const avgTotalSale = values.TotalSale.length
+            ? values.TotalSale.reduce((a, b) => a + b, 0) / values.TotalSale.length
+            : 0;
+          TotalSaleArr.push({ date, avgValue: avgTotalSale, /*unit: "TotalSale" */ unit: values.unit });
+
+          // avg Quantity
+          const avgQuantity = values.quantity.length
+            ? values.quantity.reduce((a, b) => a + b, 0) / values.quantity.length
+            : 0;
+
+          // ชุดเปรียบเทียบ MonthlyGarbage vs Quantity
+          compareArr.push({ date, monthlyGarbage: avgRecycled, quantity: avgQuantity, unit: values.unit, });
         });
-        console.log(response.data);
-        setUnit(lastrecyc.data.UnitName);
-        setBeforeData(before);
-        setAfterData(after);
-        setCompareData(compare);
-        setPercentChangeData(percentageChangeData);
-        // เซ็ตข้อมูลจาก GetBeforeAfterRecycled
-        if (recycRes) {
-          setBeforeAfter(recycRes.data);
+
+        if (lastRecycled.data.MiddleTarget !== 0) {
+          setMiddleTarget(lastRecycled.data.MiddleTarget);
+          setMaxTarget(0); //แก้ให้เส้นมาตรฐานอัพเดท
+          setMinTarget(0); //แก้ให้เส้นมาตรฐานอัพเดท
+        } else {
+          setMiddleTarget(0); //แก้ให้เส้นมาตรฐานอัพเดท
+          setMaxTarget(lastRecycled.data.MaxTarget);
+          setMinTarget(lastRecycled.data.MinTarget);
         }
+        setListData(recycledArr);
+        setTotalSaleData(TotalSaleArr);
+        setcompareMonthlyGarbageQuantity(compareArr);
+        setTotalMonthlyGarbage(totalMonthlyGarbageLatestYear);
+        setLatestYear(latestYearThai);
+        setMonthlyDataLatestYear(monthlyDataLatestYear);
+        setUnit(lastRecycled.data.UnitName);
+        setTotalQuantity(totalQuantityLatestYear);
+        setMonthlyQuantityLatestYear(monthlyQuantityLatestYear);
+        setTotalSale(totalSaleLatestYear);
+        setMonthlyTotalSaleLatestYear(monthlyTotalSaleLatestYear);
+        if (!lastDayRecycled || !lastDayRecycled.data || lastDayRecycled.data.length === 0) {
+          setlastDayRecycled(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After FOG");
+        } else {
+          setlastDayRecycled(lastDayRecycled.data);
+        }
+        console.log(lastDayRecycled.data)
       } else {
-        setError("ไม่พบข้อมูล Recycled");
+        setError("ไม่พบข้อมูลขยะรีไซเคิล");
       }
     } catch (err) {
       console.error("Error fetching Recycled data:", err);
@@ -254,10 +299,19 @@ const Recycleddataviz: React.FC = () => {
     }
   };
 
-  // เรียก fetchData เมื่อเปลี่ยน filterMode หรือ dateRange (เฉพาะกราฟ)
+  // โหลดใหม่เมื่อเปลี่ยน filter
   useEffect(() => {
-    fetchData();
+    fetchRecycledData();
   }, [dateRange, filterMode]);
+
+  const listdataRef = useRef(listdata);
+  const compareRef = useRef(compareMonthlyGarbageQuantity);
+  useEffect(() => {
+    listdataRef.current = listdata;
+  }, [listdata]);
+  useEffect(() => {
+    compareRef.current = compareMonthlyGarbageQuantity;
+  }, [compareMonthlyGarbageQuantity]);
 
   //ใช้กับตาราง
   const loadRecycledTable = async () => {
@@ -315,62 +369,32 @@ const Recycleddataviz: React.FC = () => {
     chartType: 'line' | 'bar',
     isYearMode = false,
     dataSeries: number[],
-    enableZoom = false, //ใช้บอกว่ากราฟนี้จะเปิดการซูมไหม
-    isPercentChart = false //ใช้บอกว่าคือกราฟประสิทธิภาพไหม
+    enableZoom = false,
+    isTotalsaleChart = false,
+    isDualAxis = false,
   ): ApexOptions => {
-    const categoriesFormatted = isYearMode
-      ? categories.map((month) => formatMonthLabel(month))
-      : categories;
+    // จัด format ตาม filterMode
+    const categoriesFormatted =
+      isYearMode
+        ? categories.map((month) => formatMonthLabel(month))
+        : categories;
 
     const maxValueInData = Math.max(...dataSeries);
-    const isStandardRange = minstandard !== undefined && maxstandard !== undefined && minstandard !== maxstandard;
+    // const isStandardRange = minTarget !== undefined && maxTarget !== undefined && minTarget !== maxTarget;
 
-    const standardCeil = middlestandard !== undefined && middlestandard !== 0 ? middlestandard : maxstandard ?? 0;
+    const standardCeil = middleTarget !== undefined && middleTarget !== 0 ? middleTarget : maxTarget ?? 0;
     const adjustedMax = Math.max(maxValueInData, standardCeil) * 1.1;
 
     return {
       chart: {
-        id: "recycled-chart",
-        toolbar: { show: true },
+        type: chartType,
         zoom: { enabled: enableZoom, type: 'x', autoScaleYaxis: true },
         fontFamily: "Prompt, 'Prompt', sans-serif",
-      },
-      annotations: {
-        yaxis: isPercentChart
-          ? []   //  ถ้าเป็นกราฟเปอร์เซ็นต์ จะไม่มีเส้นมาตรฐานเลย
-          : (isStandardRange
-            ? [
-              {
-                y: minstandard ?? 0,
-                borderWidth: 1.5,
-                strokeDashArray: 6,
-                borderColor: "rgba(255, 163, 24, 0.77)",
-                label: { text: `มาตรฐานต่ำสุด ${minstandard ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
-              },
-              {
-                y: maxstandard ?? 0,
-                borderWidth: 1.5,
-                strokeDashArray: 6,
-                borderColor: "#035303ff",
-                label: { text: `มาตรฐานสูงสุด ${maxstandard ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
-              },
-            ]
-            : middlestandard !== undefined && middlestandard !== 0
-              ? [
-                {
-                  y: middlestandard,
-                  borderColor: "#FF6F61",
-                  borderWidth: 1.5,
-                  strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middlestandard}`, style: { background: "#FF6F61", color: "#fff" } },
-                },
-              ]
-              : []
-          )
+        toolbar: { show: true },
       },
       xaxis: {
         categories: categoriesFormatted,
-        tickAmount: 6, // ให้แสดงประมาณ 6 จุดบนแกน X (ปรับได้ เช่น 4, 5)
+        tickAmount: 6,
         labels: {
           rotate: -45, // เอียงวันที่เล็กน้อยให้อ่านง่าย
           formatter: (value: string, _timestamp?: number) => {
@@ -386,94 +410,125 @@ const Recycleddataviz: React.FC = () => {
           enabled: false, // << ปิด tooltip ที่แกน X
         },
       },
-      yaxis: {
-        min: 0,
-        max: isPercentChart ? 100 : adjustedMax,
-        title: {
-          text: isPercentChart ? "เปอร์เซ็น ( % )" : (unit || "mg/L"),
+      yaxis: isDualAxis
+        ? [
+          {
+            title: { text: `ค่าขยะรีไซเคิล (${unit || ""})` },
+            min: 0,
+            max: adjustedMax,
+            labels: { formatter: (v: number) => `${(v / 1000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}k` },
+          },
+          {
+            opposite: true,
+            title: { text: "จำนวนคน (คน)" },
+            min: 0,
+            max: adjustedMax,
+            labels: { formatter: (v: number) => `${v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` },
+          },
+        ]
+        : {
+          min: 0,
+          max: adjustedMax,
+          title: {
+            text: isTotalsaleChart ? "ค่า (บาท)" : unit || "ค่า"
+          },
+          labels: {
+            formatter: (value: number) =>
+              isTotalsaleChart
+                ? `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`         // ใช้บาท, ไม่ย่อ k
+                : value >= 1000
+                  ? `${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}k` // ใช้ unit, ย่อ k
+                  : value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),               // ใช้ unit, ไม่ย่อ k
+          },
         },
-        labels: {
-          formatter: (value: number) => isPercentChart ? `${value.toFixed(2)}%` : value.toFixed(2)
-        },
+      dataLabels: {
+        enabled: false, // ถ้าเป็นกราฟ % ไม่ต้องโชว์ label บนจุด
       },
       tooltip: {
         y: {
           formatter: (val: number, opts) => {
             const seriesName = opts.w.config.series[opts.seriesIndex]?.name || '';
-            const seriesIndex = opts.seriesIndex;
             const dataPointIndex = opts.dataPointIndex;
 
-            console.log('seriesIndex:', seriesIndex, 'seriesName:', seriesName, 'val:', val);
-
-            if (isPercentChart) {
-              return `${val.toFixed(2)}%`;
+            // ค่าขยะรีไซเคิล
+            if (seriesName === "ค่าขยะรีไซเคิล" && listdataRef.current.length > dataPointIndex) {
+              const unit = listdataRef.current[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด';
+              if (unit === 'ไม่มีการตรวจวัด') return unit;
+              return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
             }
 
-            // กรณี beforeSeries หรือ compareSeries "ก่อนบำบัด"
-            if ((seriesName === "ก่อนบำบัด" || seriesName === "Recycled") && beforeData && beforeData.length > dataPointIndex) {
-              const unit = beforeData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดก่อนบำบัด';
-              if (unit === 'ไม่มีการตรวจวัดก่อนบำบัด') return unit;
-              return `${val.toFixed(2)} ${unit}`;
+            // ค่า TotalSale
+            if (seriesName === "ค่า TotalSale" && TotalSaleData && TotalSaleData.length > dataPointIndex) {
+              const unit = TotalSaleData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด';
+              if (unit === 'ไม่มีการตรวจวัด') return unit;
+              return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`;
             }
 
-            // กรณี afterSeries หรือ compareSeries "หลังบำบัด"
-            if ((seriesName === "หลังบำบัด" || seriesName === "Recycled") && afterData && afterData.length > dataPointIndex) {
-              const unit = afterData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดหลังบำบัด';
-              if (unit === 'ไม่มีการตรวจวัดหลังบำบัด') return unit;
-              return `${val.toFixed(2)} ${unit}`;
+            // MonthlyGarbage / Quantity
+            if (["ค่าขยะรีไซเคิล", "จำนวนคน"].includes(seriesName)
+              && compareRef.current.length > dataPointIndex) {
+              if (seriesName === "ค่าขยะรีไซเคิล") {
+                const unit = compareRef.current[dataPointIndex]?.unit;
+                return unit ? `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}` : 'ไม่มีการตรวจวัด';
+              } else if (seriesName === "จำนวนคน") {
+                const unit = compareRef.current[dataPointIndex]?.unit;
+                const quantity = compareRef.current[dataPointIndex]?.quantity;
+                return unit ? `${quantity.toLocaleString()} คน` : 'ไม่มีการตรวจวัด';
+              }
             }
 
-            // กรณีอื่น ๆ
-            return `${val.toFixed(2)}`;
+            // Default fallback
+            return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
           }
-
-        },
-      },
-      dataLabels: {
-        enabled: false,
+        }
       },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
-      markers: chartType === "line"
-        ? {
-          size: 4.5,
-          shape: ["circle", "triangle"],
-          hover: { sizeOffset: 3 },
-        }
-        : { size: 0 },
-
+      markers: chartType === "line" ? { size: 4.5, shape: ["circle", "triangle"], hover: { sizeOffset: 3 }, } : { size: 0 },
+      legend: { show: true, showForSingleSeries: true, position: 'bottom', horizontalAlign: 'center', },
     };
   };
-  const beforeSeries = [
-    { name: "ก่อนบำบัด", data: beforeData.map(item => item.data), color: colorBefore }
-  ];
-  const afterSeries = [
-    { name: "หลังบำบัด", data: afterData.map(item => item.data), color: colorAfter }
-  ];
-  const compareSeries = [
-    { name: "ก่อนบำบัด", data: compareData.map(item => item.before), color: colorCompareBefore },
-    { name: "หลังบำบัด", data: compareData.map(item => item.after), color: colorCompareAfter },
+
+  const series = [{ name: "ค่าขยะรีไซเคิล", data: listdata.map(item => item.avgValue), color: colorGarbage }];
+  const seriesTotalSale = [{ name: "ค่า TotalSale", data: TotalSaleData.map(item => item.avgValue), color: colorAadc }];
+  const seriesMonthlyGarbageQuantity = [
+    { name: "ค่าขยะรีไซเคิล", data: compareMonthlyGarbageQuantity.map(item => item.monthlyGarbage), color: colorCompareMonthlyGarbage, yAxis: 0, },
+    { name: "จำนวนคน", data: compareMonthlyGarbageQuantity.map(item => item.quantity), color: colorCompareQuantity, yAxis: 1, },
   ];
   const combinedCompareData = [
-    ...compareSeries[0].data,
-    ...compareSeries[1].data,
+    ...seriesMonthlyGarbageQuantity[0].data,
+    ...seriesMonthlyGarbageQuantity[1].data,
   ];
-  const percentChangeSeries = [
-    {
-      name: "เปอร์เซ็นต์การเปลี่ยนแปลง",
-      data: percentChangeData.map(item => item.percent),
-      color: colorPercentChange,
+
+  const getPieOptions = (isQuantityChart = false): ApexCharts.ApexOptions => ({
+    labels: monthlyDataLatestYear.map(d => d.month),
+    dataLabels: {
+      enabled: false,
+      dropShadow: {
+        enabled: false // ปิดเงา label
+      },
     },
-  ];
-  //ใช้กับกราฟ
-  const openModal = (type: "before" | "after" | "compare" | "percentChange") => {
-    setModalGraphType(type);
-    setModalVisible(true);
-  };
-  //ใช้กับกราฟ
-  const closeModal = () => {
-    setModalVisible(false);
-    setModalGraphType(null);
-  };
+    chart: {
+      type: "donut",
+      fontFamily: "Prompt, 'Prompt', sans-serif", // ใส่ font ทั้ง chart
+    },
+    legend: {
+      show: false, // ปิด legend
+    },
+    stroke: {
+      show: false, // ปิดขอบ
+    },
+    tooltip: {
+      y: {
+        formatter: (val: number) => isQuantityChart ? `${val.toLocaleString()} คน` : `${val.toLocaleString()} Kg`,
+      },
+    },
+    colors: [
+      "#a3faffff", "#fff4a3ff", "#a3ffb2ff", "#ffa3a3ff", "#f9a3ffff", "#aba3ffff", "#26a69a", "#D10CE8", "#FF9800", "#A569BD", "#CD6155", "#5DADE2"
+    ],
+  });
+  const pieSeries = monthlyDataLatestYear.map(d => d.value); monthlyQuantityLatestYear
+  const pieSeriesQuantity = monthlyQuantityLatestYear.map(d => d.value);
+  const pieSeriesTotalsale = monthlyTotalSaleLatestYear.map(d => d.value);
 
   //ใช้กับกราฟ --- ฟังก์ชันช่วยแปลงชื่อเดือนไทย ---
   const monthShortNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
@@ -519,28 +574,28 @@ const Recycleddataviz: React.FC = () => {
       dataIndex: 'quantity',
       key: 'quantity',
       width: 120,
-      render: (val: number | null) => val != null ? val : '-',
+      render: (val: number | null) => val != null ? val.toLocaleString() : '-',
     },
     {
       title: 'ปริมาณขยะต่อเดือน',
       dataIndex: 'monthly_garbage',
       key: 'monthly_garbage',
       width: 150,
-      render: (val: number | null) => val != null ? val.toFixed(2) : '-',
+      render: (val: number | null) => val != null ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
     },
     {
       title: 'ปริมาณขยะต่อวัน',
       dataIndex: 'average_daily_garbage',
       key: 'average_daily_garbage',
       width: 150,
-      render: (val: number | null) => val != null ? val.toFixed(2) : '-',
+      render: (val: number | null) => val != null ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
     },
     {
       title: 'ยอดขาย',
       dataIndex: 'total_sale',
       key: 'total_sale',
       width: 120,
-      render: (val: number | null) => val != null ? val.toFixed(2) : '-',
+      render: (val: number | null) => val != null ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
     },
     {
       title: 'หมายเหตุ',
@@ -652,7 +707,7 @@ const Recycleddataviz: React.FC = () => {
         try {
           await DeleteAllRecycledRecordsByDate(id);
           message.success("ลบข้อมูลสำเร็จ");
-          await fetchData();
+          await fetchRecycledData();
           await loadRecycledTable();
         } catch (error) {
           message.error("ลบข้อมูลไม่สำเร็จ");
@@ -680,85 +735,72 @@ const Recycleddataviz: React.FC = () => {
           <p>ขยะที่สามารถนำกลับมาใช้ใหม่ได้ เช่น กระดาษ พลาสติก แก้ว และโลหะ</p>
         </div>
         <div className="recycled-card">
-          <img src={BeforeWater} alt="Before Water" className="recycled-photo" />
+          <img src={PhotoMonthlyGarbage} alt="Quantity People" className="recycled-photo" />
           <div>
-            <h4>น้ำก่อนบำบัดล่าสุด</h4>
+            <h4>ขยะรีไซเคิลต่อเดือนล่าสุด</h4>
             <div className="recycled-main">
-              <span>{BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined ? (<><span className="recycled-value">{BeforeAfter.before.Data}</span>{" "}{BeforeAfter.before.UnitName || ""}</>) : "-"}</span>
-            </div>
-            {BeforeAfter ? (
-              <p>
-                มาตรฐาน{" "}
-                <span>
-                  {(BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== 0) || (BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0) || (BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0) || (BeforeAfter.before.UnitName && BeforeAfter.before.UnitName.trim() !== "")
-                    ? (BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== 0
-                      ? BeforeAfter.before.MiddleValue : `${(BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0 ? BeforeAfter.before.MinValue : "-")} - ${(BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0 ? BeforeAfter.before.MaxValue : "-")}`) : "-"
-                  }
-                </span>{" "}
-                {BeforeAfter.before.UnitName || ""}
-              </p>
-            ) : (
-              <p>Loading...</p>
-            )}
-          </div>
-          <img src={AftereWater} alt="After Water" className="recycled-photo" />
-          <div>
-            <h4>น้ำหลังบำบัดล่าสุด</h4>
-            <div className="recycled-main">
-              <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="recycled-value">{BeforeAfter.after.Data}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
-              <span className="recycled-change">
-                {(() => {
-                  if (BeforeAfter?.after.Data != null && BeforeAfter?.before.Data != null) {
-                    const diff = BeforeAfter.after.Data - BeforeAfter.before.Data;
-                    const arrowStyle = { fontWeight: 'bold', fontSize: '17px', marginLeft: 4 };
-                    return (<> {diff >= 0 ? '+' : ''}{diff.toFixed(2)}{diff > 0 && <span style={{ ...arrowStyle, color: '#14C18B' }}>↑</span>}{diff < 0 && <span style={{ ...arrowStyle, color: '#EE404C' }}>↓</span>}{diff === 0 && null}</>);
-                  } return '-';
-                })()}
+              <span>
+                {lastDayRecycled !== null ? (
+                  <>
+                    <span className="recycled-value">{lastDayRecycled.MonthlyGarbage.toLocaleString()}</span>{" "}
+                    {lastDayRecycled.UnitName || ""}
+                  </>
+                ) : (
+                  "-"
+                )}
               </span>
             </div>
-            {BeforeAfter ? (
+            <br />
+          </div>
+          <img src={PhotoDailyGarbage} alt="After Water" className="recycled-photo" />
+          <div>
+            <h4>ขยะรีไซเคิลต่อเดือนวันล่าสุด</h4>
+            <div className="recycled-main">
+              <span>
+                {lastDayRecycled !== null ? (
+                  <>
+                    <span className="recycled-value">{lastDayRecycled.AverageDailyGarbage.toLocaleString()}</span>{" "}
+                    {lastDayRecycled.UnitName || ""}
+                  </>
+                ) : (
+                  "-"
+                )}
+              </span>
+            </div>
+            <br />
+          </div>
+          {/* <img src={PhotoAADC} alt="Before Water" className="recycled-photo" /> */}
+          {/* <div>
+            <h4>ค่า AADC ล่าสุด</h4>
+            <div className="recycled-main">
+              <span>
+                {lastDayRecycled !== null ? (
+                  <>
+                    <span className="recycled-value">{lastDayRecycled.AADC}</span>{" "}
+                    {lastDayRecycled.UnitName || ""}
+                  </>
+                ) : (
+                  "-"
+                )}
+              </span>
+            </div>
+            {lastDayRecycled ? (
               <p>
                 มาตรฐาน{" "}
                 <span>
                   {
-                    (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== 0) || (BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0) || (BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0) || (BeforeAfter.after.UnitName && BeforeAfter.after.UnitName.trim() !== "")
-                      ? (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== 0
-                        ? BeforeAfter.after.MiddleValue : `${(BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0 ? BeforeAfter.after.MinValue : "-")} - ${(BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0 ? BeforeAfter.after.MaxValue : "-")}`)
+                    (lastDayRecycled.MiddleTarget !== null && lastDayRecycled.MiddleTarget !== 0) || (lastDayRecycled.MinTarget !== null && lastDayRecycled.MinTarget !== 0) || (lastDayRecycled.MaxTarget !== null && lastDayRecycled.MaxTarget !== 0) || (lastDayRecycled.UnitName && lastDayRecycled.UnitName.trim() !== "")
+                      ? (lastDayRecycled.MiddleTarget !== null && lastDayRecycled.MiddleTarget !== 0
+                        ? lastDayRecycled.MiddleTarget : `${(lastDayRecycled.MinTarget !== null && lastDayRecycled.MinTarget !== 0 ? lastDayRecycled.MinTarget : "-")} - ${(lastDayRecycled.MaxTarget !== null && lastDayRecycled.MaxTarget !== 0 ? lastDayRecycled.MaxTarget : "-")}`)
                       : "-"
                   }
                 </span>{" "}
-                {BeforeAfter.after.UnitName || ""}
+                {lastDayRecycled.UnitName || ""}
               </p>
             ) : (
               <p>Loading...</p>
             )}
-          </div>
-          <img src={Efficiency} alt="Before Water" className="recycled-photo" />
-          <div>
-            <h4>ประสิทธิภาพล่าสุด</h4>
-            <div className="recycled-main">
-              <span>
-                {BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined &&
-                  BeforeAfter.before.Data !== 0 &&
-                  BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined
-                  ? (
-                    <>
-                      <span className="recycled-value">
-                        {Math.max(
-                          0,
-                          ((BeforeAfter.before.Data - BeforeAfter.after.Data) / BeforeAfter.before.Data) * 100
-                        ).toFixed(2)}
-                      </span>{" "}
-                      %
-                    </>
-                  )
-                  : "-"
-                }
-              </span>
-
-            </div>
-            <br />
-          </div>
+          </div> */}
         </div>
       </div>
       <div style={{ padding: "20px", backgroundColor: "#F8F9FA" }}>
@@ -854,28 +896,26 @@ const Recycleddataviz: React.FC = () => {
           </div>
         </div>
         <div className="recycled-graph-container">
-          {/* ตารางน้ำก่อนบำบัดนะจ๊ะ */}
           <div className="recycled-graph-card">
             <div className="recycled-head-graph-card">
               <div className="recycled-width25">
-                <h2 className="recycled-head-graph-card-text">น้ำก่อนบำบัด</h2>
+                <h2 className="recycled-head-graph-card-text">ขยะรีไซเคิล</h2>
               </div>
               <div>
                 <ColorPicker
-                  value={colorBefore}
+                  value={colorGarbage}
                   onChange={(color: Color) => {
                     const hex = color.toHexString();
-                    setColorBefore(hex);
-                    localStorage.setItem('colorBefore', hex);
+                    setColorGarbage(hex);
+                    localStorage.setItem('colorGarbage', hex);
                   }}
                 />
-                <Button className="recycled-expand-chat" onClick={() => openModal("before")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="recycled-right-select-graph">
               <Select
-                value={chartTypeBefore}
-                onChange={val => setChartTypeBefore(val)}
+                value={chartTypeData}
+                onChange={val => setChartTypeData(val)}
                 style={{ marginBottom: 10 }}
               >
                 <Select.Option value="line">
@@ -893,98 +933,48 @@ const Recycleddataviz: React.FC = () => {
               </Select>
             </div>
             <ApexChart
-              key={chartTypeBefore}
+              key={chartTypeData}
               options={getChartOptions(
-                beforeData.map(item => item.date),
-                chartTypeBefore,
-                filterMode === "year",
-                beforeSeries[0]?.data || [] //  ส่ง data เพื่อใช้หาค่าสูงสุด
-              )}
-              series={beforeSeries}
-              type={chartTypeBefore}
-              height={350}
-            />
-          </div>
-
-          <div className="recycled-graph-card">
-            <div className="recycled-head-graph-card">
-              <div className="recycled-width25">
-                <h2 className="recycled-head-graph-card-text">น้ำหลังบำบัด</h2>
-              </div>
-              <div>
-                <ColorPicker
-                  value={colorAfter}
-                  onChange={(color: Color) => {
-                    const hex = color.toHexString();
-                    setColorAfter(hex);
-                    localStorage.setItem('colorAfter', hex);
-                  }}
-                />
-                <Button className="recycled-expand-chat" onClick={() => openModal("after")}><Maximize2 /></Button>
-              </div>
-            </div>
-            <div className="recycled-right-select-graph">
-              <Select
-                value={chartTypeAfter}
-                onChange={val => setChartTypeAfter(val)}
-                style={{ marginBottom: 10 }}
-              >
-                <Select.Option value="line">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <LineChart size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟเส้น</span>
-                  </div>
-                </Select.Option>
-                <Select.Option value="bar">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <BarChart3 size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟแท่ง</span>
-                  </div>
-                </Select.Option>
-              </Select>
-            </div>
-            <ApexChart
-              key={chartTypeAfter}
-              options={getChartOptions(
-                afterData.map(item => item.date),
-                chartTypeAfter,
-                filterMode === "year",
-                afterSeries[0]?.data || []
-              )}
-              series={afterSeries}
-              type={chartTypeAfter}
-              height={350}
+                listdata.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                chartTypeData,          // ประเภท chart
+                filterMode === "year",   // 'day' | 'month' | 'year'
+                series[0]?.data || [],
+                false,          // array ของตัวเลข
+                false,
+                false,             // isPercentChart (true/false)
+              )} series={series}
+              type={chartTypeData}
+              style={{ flex: 1 }}
             />
           </div>
           <div className="recycled-graph-card">
             <div className="recycled-head-graph-card">
               <div className="recycled-width40">
-                <h2 className="recycled-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
+                <h2 className="recycled-head-graph-card-text">ขยะรีไซเคิลต่อคนที่เข้าใช้บริการ</h2>
               </div>
               <div>
                 <ColorPicker
-                  value={colorCompareBefore}
+                  value={colorCompareMonthlyGarbage}
                   onChange={(color: Color) => {
                     const hex = color.toHexString();
-                    setColorCompareBefore(hex);
-                    localStorage.setItem('colorCompareBefore', hex);
+                    setColorCompareMonthlyGarbage(hex);
+                    localStorage.setItem('colorCompareMonthlyGarbage', hex);
                   }}
                 />
                 <ColorPicker
-                  value={colorCompareAfter}
+                  value={colorCompareQuantity}
                   onChange={(color: Color) => {
                     const hex = color.toHexString();
-                    setColorCompareAfter(hex);
-                    localStorage.setItem('colorCompareAfter', hex);
+                    setColorCompareQuantity(hex);
+                    localStorage.setItem('colorCompareQuantity', hex);
                   }}
                 />
-                <Button className="recycled-expand-chat" onClick={() => openModal("compare")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="recycled-right-select-graph">
               <Select
-                value={chartTypeCompare}
-                onChange={val => setChartTypeCompare(val)}
+                value={chartTypeCompareMonthlyGarbageQuantity}
+                onChange={val => setChartTypeCompareMonthlyGarbageQuantity(val)}
                 style={{ marginBottom: 10 }}
               >
                 <Select.Option value="line">
@@ -1002,38 +992,40 @@ const Recycleddataviz: React.FC = () => {
               </Select>
             </div>
             <ApexChart
-              key={chartTypeCompare}
+              key={chartTypeCompareMonthlyGarbageQuantity}
               options={getChartOptions(
-                compareData.map(item => item.date),
-                chartTypeCompare,
-                filterMode === "year",
-                combinedCompareData
-              )}
-              series={compareSeries}
-              type={chartTypeCompare}
-              height={350}
+                compareMonthlyGarbageQuantity.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                chartTypeCompareMonthlyGarbageQuantity,          // ประเภท chart
+                filterMode === "year",   // 'day' | 'month' | 'year'
+                combinedCompareData,
+                false,          // array ของตัวเลข
+                false,
+                true            // isPercentChart (true/false)
+              )} series={seriesMonthlyGarbageQuantity}
+              type={chartTypeCompareMonthlyGarbageQuantity}
+              style={{ flex: 1 }}
             />
           </div>
           <div className="recycled-graph-card">
             <div className="recycled-head-graph-card">
               <div className="recycled-width25">
-                <h2 className="recycled-head-graph-card-text" >ประสิทธิภาพ</h2>
+                <h2 className="recycled-head-graph-card-text">ยอดขาย</h2>
               </div>
               <div>
                 <ColorPicker
-                  value={colorPercentChange}
+                  value={colorGarbage}
                   onChange={(color: Color) => {
                     const hex = color.toHexString();
-                    setcolorPercentChange(hex);
-                    localStorage.setItem('colorPercentChange', hex);
+                    setColorGarbage(hex);
+                    localStorage.setItem('colorGarbage', hex);
                   }}
                 />
               </div>
             </div>
             <div className="recycled-right-select-graph">
               <Select
-                value={chartpercentChange}
-                onChange={val => setpercentChange(val)}
+                value={chartTypeTotalSale}
+                onChange={val => setChartTypeTotalSale(val)}
                 style={{ marginBottom: 10 }}
               >
                 <Select.Option value="line">
@@ -1051,18 +1043,80 @@ const Recycleddataviz: React.FC = () => {
               </Select>
             </div>
             <ApexChart
+              key={chartTypeTotalSale}
               options={getChartOptions(
-                percentChangeData.map(item => item.date),
-                "line",
-                filterMode === "year",
-                percentChangeSeries[0].data,
-                false,
-                true
-              )}
-              series={percentChangeSeries}
-              type={chartpercentChange}
-              height={350}
+                TotalSaleData.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                chartTypeTotalSale,          // ประเภท chart
+                filterMode === "year",   // 'day' | 'month' | 'year'
+                seriesTotalSale[0]?.data || [],
+                false,          // array ของตัวเลข
+                true,
+                false,           // isPercentChart (true/false)
+              )} series={seriesTotalSale}
+              type={chartTypeTotalSale}
             />
+          </div>
+          <div className="recycled-graph-for-total">
+            <div className="recycled-box">
+              <div className="recycled-box-title">จำนวนขยะรวมปี {latestYear}</div>
+              <div className="recycled-box-number">
+                <div>
+                  <div >
+                    {totalMonthlyGarbage.toLocaleString()} Kg
+                  </div >
+                  <div>
+                    <Chart
+                      options={getPieOptions(false)}
+                      series={pieSeries}
+                      type="donut"
+                      width={80}
+                      height={80}
+                    />
+                  </div>
+                </div>
+              </div>
+              <span className="recycled-box-date">Date per 29 June 2024</span>
+            </div>
+            <div className="recycled-box">
+              <div className="recycled-box-title">จำนวนคนที่เข้าใช้บริการโรงพยาบาลรวมปี {latestYear}</div>
+              <div className="recycled-box-number">
+                <div>
+                  <div >
+                    {totalQuantity.toLocaleString()} คน
+                  </div >
+                  <div>
+                    <Chart
+                      options={getPieOptions(true)}
+                      series={pieSeriesQuantity}
+                      type="donut"
+                      width={80}
+                      height={80}
+                    />
+                  </div>
+                </div>
+              </div>
+              <span className="recycled-box-date">Date per 29 June 2024</span>
+            </div>
+            <div className="recycled-box">
+              <div className="recycled-box-title">จำนวนยอดขายรวมปี {latestYear}</div>
+              <div className="recycled-box-number">
+                <div>
+                  <div >
+                    {totalTotalSale.toLocaleString()} บาท
+                  </div >
+                  <div>
+                    <Chart
+                      options={getPieOptions(false)}
+                      series={pieSeriesTotalsale}
+                      type="donut"
+                      width={80}
+                      height={80}
+                    />
+                  </div>
+                </div>
+              </div>
+              <span className="recycled-box-date">Date per 29 June 2024</span>
+            </div>
           </div>
         </div>
         <div className="recycled-header-vis">
@@ -1249,7 +1303,7 @@ const Recycleddataviz: React.FC = () => {
         >
           <RecycledCentralForm onCancel={handleAddModalCancel}
             onSuccess={async () => {
-              await fetchData();      // ✅ โหลดข้อมูลกราฟใหม่
+              await fetchRecycledData();      // ✅ โหลดข้อมูลกราฟใหม่
               await loadRecycledTable();   // ✅ โหลดข้อมูลตารางใหม่
             }}
           />
@@ -1272,157 +1326,13 @@ const Recycleddataviz: React.FC = () => {
                   setIsEditModalVisible(false);
                   setEditRecord(null);
                   await loadRecycledTable();
-                  await fetchData();
+                  await fetchRecycledData();
                 }, 500);
               }}
               onCancel={handleEditModalCancel}
             />
           )}
         </Modal>
-
-        <Modal
-          visible={modalVisible}
-          onCancel={closeModal}
-          footer={null}
-          className="recycled-custom-modal"
-          centered
-          destroyOnClose
-          maskClosable={true}
-        >
-          {modalGraphType === "before" && (
-            <div className="recycled-chat-modal" >
-              <div className="recycled-head-graph-card">
-                <div className="recycled-width25">
-                  <h2 className="recycled-head-graph-card-text">น้ำก่อนบำบัด</h2>
-                </div>
-              </div>
-              <div className="recycled-right-select-graph">
-                <Select
-                  value={chartTypeBefore}
-                  onChange={val => setChartTypeBefore(val)}
-                  style={{ marginBottom: 10 }}
-                >
-                  <Select.Option value="line">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <LineChart size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟเส้น</span>
-                    </div>
-                  </Select.Option>
-                  <Select.Option value="bar">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <BarChart3 size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟแท่ง</span>
-                    </div>
-                  </Select.Option>
-                </Select>
-              </div>
-              <div className="recycled-chart-containner">
-                <ApexChart
-                  key={chartTypeBefore}
-                  options={getChartOptions(
-                    beforeData.map(item => item.date),
-                    chartTypeBefore,
-                    filterMode === "year",
-                    beforeSeries[0]?.data || [], //  ส่ง data เพื่อใช้หาค่าสูงสุด
-                    true
-                  )}
-                  series={beforeSeries}
-                  type={chartTypeBefore}
-                  height="100%"
-                />
-              </div>
-            </div>
-          )}
-          {modalGraphType === "after" && (
-            <div className="recycled-chat-modal">
-              <div className="recycled-head-graph-card">
-                <div className="recycled-width25">
-                  <h2 className="recycled-head-graph-card-text">น้ำหลังบำบัด</h2>
-                </div>
-              </div>
-              <div className="recycled-right-select-graph">
-                <Select
-                  value={chartTypeAfter}
-                  onChange={val => setChartTypeAfter(val)}
-                  style={{ marginBottom: 10 }}
-                >
-                  <Select.Option value="line">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <LineChart size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟเส้น</span>
-                    </div>
-                  </Select.Option>
-                  <Select.Option value="bar">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <BarChart3 size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟแท่ง</span>
-                    </div>
-                  </Select.Option>
-                </Select>
-              </div>
-              <div className="recycled-chart-containner">
-                <ApexChart
-                  key={chartTypeAfter}
-                  options={getChartOptions(
-                    afterData.map(item => item.date),
-                    chartTypeAfter,
-                    filterMode === "year",
-                    afterSeries[0]?.data || [],
-                    true
-                  )}
-                  series={afterSeries}
-                  type={chartTypeAfter}
-                  height="100%"
-                />
-              </div>
-            </div>
-          )}
-          {modalGraphType === "compare" && (
-            <div className="recycled-chat-modal">
-              <div className="recycled-head-graph-card" >
-                <div className="recycled-width40">
-                  <h2 className="recycled-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
-                </div>
-              </div>
-              <div className="recycled-right-select-graph">
-                <Select
-                  value={chartTypeCompare}
-                  onChange={val => setChartTypeCompare(val)}
-                  style={{ marginBottom: 10 }}
-                >
-                  <Select.Option value="line">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <LineChart size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟเส้น</span>
-                    </div>
-                  </Select.Option>
-                  <Select.Option value="bar">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <BarChart3 size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟแท่ง</span>
-                    </div>
-                  </Select.Option>
-                </Select>
-              </div>
-              <div className="recycled-chart-containner">
-                <ApexChart
-                  key={chartTypeCompare}
-                  options={getChartOptions(
-                    compareData.map(item => item.date),
-                    chartTypeCompare,
-                    filterMode === "year",
-                    combinedCompareData,
-                    true
-                  )}
-                  series={compareSeries}
-                  type={chartTypeCompare}
-                  height="100%"
-                />
-              </div>
-            </div>
-          )}
-        </Modal>
-
       </div>
     </div>
   );
