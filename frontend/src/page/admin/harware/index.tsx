@@ -1,7 +1,6 @@
 // imports
 import React, { useEffect, useState, useRef } from 'react';
 import { FaHome, FaBuilding, FaSearch, FaLayerGroup } from 'react-icons/fa';
-import { Trash2 } from 'react-feather';
 import AddRoomModal from './data/room/create';
 import EditRoomModal from './data/room/edit';
 import Modal from '../harware/data/room/delete';
@@ -233,12 +232,12 @@ const Index: React.FC = () => {
                   return (
                     <RoomCard
                       key={room.ID ?? idx}
-                      name={room.RoomName || 'No Data'}
+                      name={room.RoomName || 'ไม่มีข้อมูล'}
                       floor={`Floor ${room.Floor ?? '-'}`}
-                      building={building.BuildingName || 'No Data'}
+                      building={building.BuildingName || 'ไม่มีข้อมูล'}
                       IconComponent={IconComp}
                       onUpdate={() => handleEditClick(room)}
-                      onDelete={() => handleDelete(room.ID!, room.RoomName || 'No Data')}
+                      onDelete={() => handleDelete(room.ID!, room.RoomName || 'ไม่มีข้อมูล')}
                       hardwareID={room.Hardware?.ID!}
                     />
                   );
@@ -264,24 +263,47 @@ const Index: React.FC = () => {
         <EditRoomModal show={showEditModal} onClose={() => setShowEditModal(false)} onSaveSuccess={handleUpdateSuccess} initialData={selectedRoom} />
       )}
       <Modal open={openConfirmModal} onClose={cancelDelete}>
-        <div className="text-center w-56 relative">
-          <Trash2 size={56} className="mx-auto text-red-500" />
-          <div className="mx-auto my-4 w-48">
-            <h3 className="text-lg font-black text-gray-800">ยืนยันการลบ</h3>
-            <h2 className="font-semibold text-gray-700">{selectedRoomName}</h2>
-            <p className="text-sm text-gray-500">คุณแน่ใจว่าต้องการลบรายการนี้ใช่หรือไม่?</p>
+        <div className="bg-white">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <h3 className="text-lg font-extrabold text-gray-900">ยืนยันการลบ</h3>
           </div>
-          {loadingDelete ? (
-            <div className="flex justify-center items-center my-3">
-              <span className="animate-spin border-4 border-teal-400 rounded-full border-t-transparent w-8 h-8 mr-2" />
-              <span className="text-teal-700">กำลังลบ...</span>
-            </div>
-          ) : (
-            <div className="flex gap-4">
-              <button className="btn btn-danger w-full" onClick={confirmDelete}>ลบ</button>
-              <button className="btn btn-light w-full" onClick={cancelDelete}>ยกเลิก</button>
-            </div>
-          )}
+
+          {/* Body */}
+          <div className="">
+            <p className="text-[15px] leading-6 text-gray-700">
+              คุณต้องการลบอาคาร{" "}
+              <span className="font-semibold text-red-500">
+                {selectedRoomName}
+              </span>{" "}
+              ใช่หรือไม่?
+            </p>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={cancelDelete}
+              className="inline-flex h-10 items-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-100"
+            >
+              ยกเลิก
+            </button>
+
+            <button
+              onClick={confirmDelete}
+              disabled={loadingDelete}
+              className="inline-flex h-10 items-center rounded-lg bg-red-500 px-5 text-sm font-semibold text-white hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-100 disabled:opacity-70"
+            >
+              {loadingDelete ? (
+                <>
+                  <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  กำลังลบ...
+                </>
+              ) : (
+                "ลบ"
+              )}
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

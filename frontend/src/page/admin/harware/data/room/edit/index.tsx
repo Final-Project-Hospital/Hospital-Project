@@ -131,12 +131,12 @@ const EditRoomModal: React.FC<Props> = ({
   // ✅ เพิ่ม (ทันทีใน state)
   const handleAddResponsible = () => {
     if (!newNotificationId) {
-      message.warning("กรุณาเลือกผู้รับผิดชอบก่อน");
+      message.warning("กรุณาเลือกผู้ได้รับการเเจ้งเตื่อนก่อน");
       return;
     }
     const exists = responsibles.some((r) => r.Notification?.ID === newNotificationId);
     if (exists) {
-      message.warning("มีผู้รับผิดชอบนี้อยู่แล้ว");
+      message.warning("มีผู้ผู้ได้รับการเเจ้งเตื่อนนี้อยู่แล้ว");
       return;
     }
 
@@ -191,7 +191,7 @@ const EditRoomModal: React.FC<Props> = ({
     }
 
     setLoading(false);
-    message.success("แก้ไขสำเร็จ");
+    message.success("แก้ไขข้อมูลห้องสำเร็จ");
     onSaveSuccess();
   };
 
@@ -325,7 +325,7 @@ const EditRoomModal: React.FC<Props> = ({
           )}
           <div className="flex gap-2 mt-4">
             <Select
-              placeholder="เลือกผู้รับผิดชอบ"
+              placeholder="เลือกผู้ที่ได้รับการเเจ้งเตื่อน"
               value={newNotificationId || undefined}
               onChange={(val) => setNewNotificationId(val)}
               className="w-full"
@@ -349,7 +349,11 @@ const EditRoomModal: React.FC<Props> = ({
             type="primary"
             loading={loading}
             onClick={handleSubmit}
-            className="bg-teal-600 hover:bg-teal-700"
+            style={{
+              background: "linear-gradient(to right, #14b8a6, #0d9488)",
+              borderColor: "#0d9488",
+              color: "#fff", 
+            }}
           >
             บันทึก
           </Button>

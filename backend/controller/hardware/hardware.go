@@ -596,7 +596,6 @@ func DeleteAllSensorDataParametersBySensorID(c *gin.Context) {
 }
 
 func CreateNoteBySensorDataParameterID(c *gin.Context) {
-	// ดึง ID จาก URL param
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -604,26 +603,29 @@ func CreateNoteBySensorDataParameterID(c *gin.Context) {
 		return
 	}
 
-	// รับ note จาก body
 	var requestBody struct {
-		Note string `json:"note" binding:"required"`
+		Note *string `json:"note" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&requestBody); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ข้อมูลไม่ถูกต้อง", "details": err.Error()})
 		return
 	}
 
-	// เชื่อมต่อ DB
 	db := config.DB()
 
-	// หา SensorDataParameter ตาม ID
 	var sdp entity.SensorDataParameter
 	if err := db.First(&sdp, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูล SensorDataParameter"})
 		return
 	}
 
-	sdp.Note = requestBody.Note
+	// ตั้งหมายเหตุ: ถ้า note == "" คือการล้างค่า
+	noteVal := ""
+	if requestBody.Note != nil {
+		noteVal = *requestBody.Note
+	}
+	sdp.Note = noteVal
+
 	if err := db.Save(&sdp).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปเดตหมายเหตุไม่สำเร็จ"})
 		return
@@ -687,4 +689,41 @@ func UpdateHardwareParameterColorByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, color)
+}
+
+type checkPasswordRequest struct {
+	Password string `json:"password" binding:"required"` 
+}
+
+func CheckPasswordByID(c *gin.Context) {
+	idStr := c.Param("id")
+	empID, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid employee id"})
+		return
+	}
+
+	// 2) bind body
+	var req checkPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil || req.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "password is required"})
+		return
+	}
+
+	// 3) ดึง Employee เฉพาะฟิลด์ password
+	db := config.DB()
+	var emp entity.Employee
+	if err := db.Select("id", "password").First(&emp, empID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
+		return
+	}
+
+	// 4) เปรียบเทียบรหัสผ่าน (plaintext vs hash ใน DB)
+	ok := config.CheckPasswordHash([]byte(req.Password), []byte(emp.Password))
+
+	// 5) ส่งผลลัพธ์
+	c.JSON(http.StatusOK, gin.H{
+		"employee_id": emp.ID,
+		"valid":       ok, // true = ตรง, false = ไม่ตรง
+	})
 }

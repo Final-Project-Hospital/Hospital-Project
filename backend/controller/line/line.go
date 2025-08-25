@@ -318,3 +318,58 @@ func UpdateLineMasterByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, &lineMaster)
 }
+
+
+// ✅ Create Notification
+func CreateNotification(c *gin.Context) {
+	var notification entity.Notification
+
+	// Bind JSON จาก request
+	if err := c.ShouldBindJSON(&notification); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	db := config.DB()
+	if err := db.Create(&notification).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, notification)
+}
+
+// ✅ Update Notification (PATCH)
+func UpdateNotificationByID(c *gin.Context) {
+	id := c.Param("id")
+	var input struct {
+		Name   string `json:"name"`
+		UserID string `json:"user_id"`
+	}
+
+	// Bind JSON เฉพาะ field ที่ต้องการอัปเดต
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	db := config.DB()
+	var notification entity.Notification
+
+	// หา record เดิม
+	if err := db.First(&notification, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Notification not found"})
+		return
+	}
+
+	// อัปเดตเฉพาะ Name, UserID
+	notification.Name = input.Name
+	notification.UserID = input.UserID
+
+	if err := db.Save(&notification).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, notification)
+}
