@@ -457,6 +457,7 @@ func main() {
 		public.GET("/list-hazardous", hazardousWaste.ListHazardous)
 		public.GET("/get-hazardous/:id", hazardousWaste.GetHazardousbyID)
 		public.GET("/get-hazardous-table", hazardousWaste.GetHazardousTABLE)
+		public.GET("/get-last-day-hazardous", hazardousWaste.GetLastDayHazardous)
 		public.PATCH("/update-or-create-hazardous/:d", hazardousWaste.UpdateOrCreateHazardous)
 		public.DELETE("/delete-hazardous-day/:id", hazardousWaste.DeleteAllHazardousRecordsByDate)
 		//ใช้ร่วมกัน
@@ -498,6 +499,7 @@ func main() {
 		public.GET("/list-recycled", recycledWaste.ListRecycled)
 		public.GET("/get-recycled/:id", recycledWaste.GetRecycledbyID)
 		public.GET("/get-recycled-table", recycledWaste.GetRecycledTABLE)
+		public.GET("/get-last-day-recycled", recycledWaste.GetLastDayRecycled)
 		public.PATCH("/update-or-create-recycled/:d", recycledWaste.UpdateOrCreateRecycled)
 		public.DELETE("/delete-recycled-day/:id", recycledWaste.DeleteAllRecycledRecordsByDate)
 

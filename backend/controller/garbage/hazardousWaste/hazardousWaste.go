@@ -184,33 +184,33 @@ func ListHazardous(c *gin.Context) {
 		return
 	}
 
-	type FirstRecy struct {
-		ID                  uint
-		Date                time.Time
-		Quantity            uint
-		AADC                float64
-		MonthlyGarbage      float64
-		AverageDailyGarbage float64
-		TotalSale           float64
-		Note                string
-		EnvironmentID       uint
-		ParameterID         uint
-		UnitID              uint
-		EmployeeID          uint
+	var firstHaz []struct {
+		ID                  uint      `json:"ID"`
+		Date                time.Time `json:"Date"`
+		Quantity            uint      `json:"Quantity"`
+		Note                string    `json:"Note"`
+		Aadc                float64   `json:"Aadc"`
+		EnvironmentID       uint      `json:"EnvironmentID"`
+		ParameterID         uint      `json:"ParameterID"`
+		TargetID            uint      `json:"TargetID"`
+		UnitID              uint      `json:"UnitID"`
+		EmployeeID          uint      `json:"EmployeeID"`
 		UnitName            string
-		StatusName          string
+		MonthlyGarbage      float64 `json:"MonthlyGarbage"`
+		AverageDailyGarbage float64 `json:"AverageDailyGarbage"`
 	}
+	subQuery := db.Model(&entity.Garbage{}).
+		Select("MAX(id)").
+		Where("parameter_id = ?", parameter.ID).
+		Group("DATE(date)")
 
-	var firstHaz []FirstRecy
-
+	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
 	result := db.Model(&entity.Garbage{}).
-		Select(`garbages.id, garbages.date, garbages.quantity, garbages.aadc, garbages.note, 
-		garbages.monthly_garbage, garbages.average_daily_garbage, garbages.total_sale,
-		garbages.parameter_id, garbages.unit_id, garbages.employee_id, 
-		units.unit_name, statuses.status_name`).
-		Joins("LEFT JOIN units ON garbages.unit_id = units.id").
-		Joins("LEFT JOIN statuses ON garbages.status_id = statuses.id").
-		Where("garbages.parameter_id = ?", parameter.ID).
+		Select(`garbages.id, garbages.date,garbages.monthly_garbage,garbages.average_daily_garbage,garbages.quantity,garbages.note,garbages.aadc,garbages.environment_id ,garbages.parameter_id 
+		,garbages.target_id ,garbages.unit_id ,garbages.employee_id,units.unit_name`).
+		Joins("inner join units on garbages.unit_id = units.id").
+		Where("garbages.id IN (?)", subQuery).
+		Order("garbages.date DESC").
 		Find(&firstHaz)
 
 	if result.Error != nil {
@@ -324,6 +324,13 @@ func UpdateOrCreateHazardous(c *gin.Context) {
 
 	db := config.DB()
 
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?", "ขยะอันตราย").First(&parameter).Error; err != nil {
+		fmt.Println("Error fetching parameter:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+		return
+	}
+
 	// ✅ จัดการ CustomUnit
 	if input.CustomUnit != nil && *input.CustomUnit != "" {
 		var unit entity.Unit
@@ -365,6 +372,7 @@ func UpdateOrCreateHazardous(c *gin.Context) {
 		// อัปเดต Unit ให้ record ของวันเดียวกัน
 		db.Model(&entity.Garbage{}).
 			Where("DATE(date) = ?", input.Date.Format("2006-01-02")).
+			Where("parameter_id = ?", parameter.ID).
 			Update("unit_id", input.UnitID)
 
 		c.JSON(http.StatusOK, gin.H{"message": "อัปเดตข้อมูลขยะอันตรายสำเร็จ", "data": existing})
@@ -378,6 +386,7 @@ func UpdateOrCreateHazardous(c *gin.Context) {
 		// อัปเดต Unit ให้ record ของวันเดียวกัน
 		db.Model(&entity.Garbage{}).
 			Where("DATE(date) = ?", input.Date.Format("2006-01-02")).
+			Where("parameter_id = ?", parameter.ID).
 			Update("unit_id", input.UnitID)
 
 		c.JSON(http.StatusOK, gin.H{"message": "สร้างข้อมูลขยะอันตรายสำเร็จ", "data": input})
@@ -481,4 +490,50 @@ func CheckTarget(c *gin.Context) {
 	}
 
 	c.JSON(400, gin.H{"error": "invalid type"})
+}
+
+func GetLastDayHazardous(c *gin.Context) {
+	db := config.DB()
+
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?", "ขยะอันตราย").First(&parameter).Error; err != nil {
+		fmt.Println("Error fetching parameter:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+		return
+	}
+
+	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
+	var firstHaz struct {
+		ID                  uint      `json:"ID"`
+		Date                time.Time `json:"Date"`
+		Quantity            uint      `json:"Quantity"`
+		AADC                float64   `json:"AADC"`
+		MonthlyGarbage      float64   `json:"MonthlyGarbage"`
+		AverageDailyGarbage float64   `json:"AverageDailyGarbage"`
+		TotalSale           float64   `json:"TotalSale"`
+		Note                string    `json:"Note"`
+		EnvironmentID       uint      `json:"EnvironmentID"`
+		ParameterID         uint      `json:"ParameterID"`
+		TargetID            uint      `json:"TargetID"`
+		UnitID              uint      `json:"UnitID"`
+		EmployeeID          uint      `json:"EmployeeID"`
+		UnitName            string    `json:"UnitName"`
+	}
+
+	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
+	result := db.Model(&entity.Garbage{}).
+		Select(`garbages.id, garbages.date, garbages.quantity,garbages.aadc,garbages.monthly_garbage,garbages.average_daily_garbage,garbages.total_sale,garbages.note,garbages.environment_id,garbages.parameter_id,garbages.target_id,garbages.unit_id,garbages.employee_id,units.unit_name`).
+		Joins("inner join units on garbages.unit_id = units.id").
+		Where("parameter_id = ?", parameter.ID).
+		Order("garbages.date desc").
+		Scan(&firstHaz)
+
+	// จัดการกรณีที่เกิดข้อผิดพลาด
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	// ส่งข้อมูลกลับในรูปแบบ JSON
+	c.JSON(http.StatusOK, firstHaz)
 }

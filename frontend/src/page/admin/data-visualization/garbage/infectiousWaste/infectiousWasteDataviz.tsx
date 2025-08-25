@@ -1,5 +1,5 @@
 //ใช้ทั้งกราฟและตาราง
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Select, DatePicker, Modal, message, Tooltip } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -285,6 +285,14 @@ const InfectiousWaste: React.FC = () => {
     fetchInfectiousData();
   }, [dateRange, filterMode]);
 
+  const listdataRef = useRef(listdata);
+  const aadcDataRef = useRef(aadcData);
+  const compareRef = useRef(compareMonthlyGarbageQuantity);
+
+  useEffect(() => { listdataRef.current = listdata; }, [listdata]);
+  useEffect(() => { aadcDataRef.current = aadcData; }, [aadcData]);
+  useEffect(() => { compareRef.current = compareMonthlyGarbageQuantity; }, [compareMonthlyGarbageQuantity]);
+
   //ใช้กับตาราง
   const loadInfectiousTable = async () => {
     try {
@@ -342,7 +350,8 @@ const InfectiousWaste: React.FC = () => {
     isYearMode = false,
     dataSeries: number[],
     enableZoom = false,
-    isPercentChart = false,
+    isAADCChart = false,
+    isDualAxis = false,
   ): ApexOptions => {
     // จัด format ตาม filterMode
     const categoriesFormatted =
@@ -364,7 +373,7 @@ const InfectiousWaste: React.FC = () => {
         toolbar: { show: true },
       },
       annotations: {
-        yaxis: isPercentChart
+        yaxis: isAADCChart
           ? []
           : (isStandardRange
             ? [
@@ -373,14 +382,14 @@ const InfectiousWaste: React.FC = () => {
                 borderWidth: 1.5,
                 strokeDashArray: 6,
                 borderColor: "rgba(255, 163, 24, 0.77)",
-                label: { text: `มาตรฐานต่ำสุด ${minTarget ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
+                label: { text: `มาตรฐานต่ำสุด ${minTarget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
               },
               {
                 y: maxTarget ?? 0,
                 borderWidth: 1.5,
                 strokeDashArray: 6,
                 borderColor: "#035303ff",
-                label: { text: `มาตรฐานสูงสุด ${maxTarget ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
+                label: { text: `มาตรฐานสูงสุด ${maxTarget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
               },
             ]
             : middleTarget !== undefined && middleTarget !== 0
@@ -390,7 +399,7 @@ const InfectiousWaste: React.FC = () => {
                   borderColor: "#FF6F61",
                   borderWidth: 2.5,
                   strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middleTarget}`, style: { background: "#FF6F61", color: "#fff" } },
+                  label: { text: `มาตรฐาน ${middleTarget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
                 },
               ]
               : []
@@ -415,22 +424,41 @@ const InfectiousWaste: React.FC = () => {
           enabled: false, // << ปิด tooltip ที่แกน X
         },
       },
-      yaxis: {
-        min: 0,
-        max: adjustedMax,
-        title: { text: (unit || "ค่า") },
-        labels: {
-          formatter: (value: number) => {
-            // ถ้าเกิน 1000 แสดงเป็น k
-            if (value >= 1000) {
-              return `${(value / 1000).toFixed(2)}k`;
-            } else {
-              return value.toFixed(2);
-            }
-
-          }
+      yaxis: isDualAxis
+        ? [
+          {
+            title: { text: `ค่าขยะติดเชื้อ (${unit || ""})` },
+            min: 0,
+            max: adjustedMax,
+            labels: { formatter: (v: number) => `${(v / 1000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}k` },
+          },
+          {
+            opposite: true,
+            title: { text: "จำนวนคน (คน)" },
+            min: 0,
+            max: adjustedMax,
+            labels: { formatter: (v: number) => `${v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` },
+          },
+        ]
+        : {
+          min: 0,
+          max: adjustedMax,
+          title: {
+            text: unit || "ค่า", // ไม่ต้องใช้ isPercentChart แล้ว
+          },
+          labels: {
+            formatter: (value: number) =>
+              value >= 1000
+                ? `${(value / 1000).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}k`
+                : value.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }),
+          },
         },
-      },
       dataLabels: {
         enabled: false, // ถ้าเป็นกราฟ % ไม่ต้องโชว์ label บนจุด
       },
@@ -440,35 +468,64 @@ const InfectiousWaste: React.FC = () => {
             const seriesName = opts.w.config.series[opts.seriesIndex]?.name || '';
             const dataPointIndex = opts.dataPointIndex;
 
+            // // ค่าขยะติดเชื้อ
+            // if (seriesName === "ค่าขยะติดเชื้อ" && listdata && listdata.length > dataPointIndex) {
+            //   const unit = listdata[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด';
+            //   if (unit === 'ไม่มีการตรวจวัด') return unit;
+            //   return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
+            // }
+
+            // // ค่า AADC
+            // if (seriesName === "ค่า AADC" && aadcData && aadcData.length > dataPointIndex) {
+            //   const unit = aadcData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด';
+            //   if (unit === 'ไม่มีการตรวจวัด') return unit;
+            //   return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
+            // }
+
+            // // MonthlyGarbage / Quantity
+            // if (["ค่าขยะติดเชื้อ", "จำนวนคน"].includes(seriesName)
+            //   && compareMonthlyGarbageQuantity
+            //   && compareMonthlyGarbageQuantity.length > dataPointIndex) {
+            //   if (seriesName === "ค่าขยะติดเชื้อ") {
+            //     const unit = compareMonthlyGarbageQuantity[dataPointIndex]?.unit;
+            //     return unit ? `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}` : 'ไม่มีการตรวจวัด';
+            //   } else if (seriesName === "จำนวนคน") {
+            //     const quantity = compareMonthlyGarbageQuantity[dataPointIndex]?.quantity;
+            //     return quantity ? `${quantity.toLocaleString()} คน` : 'ไม่มีการตรวจวัด';
+            //   }
+            // }
+
             // ค่าขยะติดเชื้อ
-            if (seriesName === "ค่าขยะติดเชื้อ" && listdata && listdata.length > dataPointIndex) {
-              const unit = listdata[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด';
+            if (seriesName === "ค่าขยะติดเชื้อ" && listdataRef.current.length > dataPointIndex) {
+              const unit = listdataRef.current[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด';
               if (unit === 'ไม่มีการตรวจวัด') return unit;
-              return `${val.toFixed(2)} ${unit}`;
+              return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
             }
 
             // ค่า AADC
-            if (seriesName === "ค่า AADC" && aadcData && aadcData.length > dataPointIndex) {
-              const unit = aadcData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด';
+            if (seriesName === "ค่า AADC" && aadcDataRef.current.length > dataPointIndex) {
+              const unit = aadcDataRef.current[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด';
               if (unit === 'ไม่มีการตรวจวัด') return unit;
-              return `${val.toFixed(2)} ${unit}`;
+              return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
             }
 
             // MonthlyGarbage / Quantity
             if (["ค่าขยะติดเชื้อ", "จำนวนคน"].includes(seriesName)
-              && compareMonthlyGarbageQuantity
-              && compareMonthlyGarbageQuantity.length > dataPointIndex) {
+              && compareRef.current.length > dataPointIndex) {
               if (seriesName === "ค่าขยะติดเชื้อ") {
-                const unit = compareMonthlyGarbageQuantity[dataPointIndex]?.unit;
-                return unit ? `${val.toFixed(2)} ${unit}` : 'ไม่มีการตรวจวัด';
+                const unit = compareRef.current[dataPointIndex]?.unit;
+                return unit
+                  ? `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`
+                  : 'ไม่มีการตรวจวัด';
               } else if (seriesName === "จำนวนคน") {
-                const quantity = compareMonthlyGarbageQuantity[dataPointIndex]?.quantity;
-                return quantity ? `${quantity} คน` : 'ไม่มีการตรวจวัด';
+                const unit = compareRef.current[dataPointIndex]?.unit;
+                const quantity = compareRef.current[dataPointIndex]?.quantity;
+                return unit ? `${quantity.toLocaleString()} คน` : 'ไม่มีการตรวจวัด';
               }
             }
 
             // Default fallback
-            return `${val.toFixed(2)}`;
+            return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
           }
         }
       },
@@ -561,28 +618,28 @@ const InfectiousWaste: React.FC = () => {
       dataIndex: 'quantity',
       key: 'quantity',
       width: 100,
-      render: (val: number | null) => val != null ? val : '-',
+      render: (val: number | null) => val != null ? val.toLocaleString() : '-',
     },
     {
       title: 'ปริมาณขยะต่อเดือน',
       dataIndex: 'monthly_garbage',
       key: 'monthly_garbage',
       width: 120,
-      render: (val: number | null) => val != null ? val.toFixed(2) : '-',
+      render: (val: number | null) => val != null ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
     },
     {
       title: 'ปริมาณขยะต่อวัน',
       dataIndex: 'average_daily_garbage',
       key: 'average_daily_garbage',
       width: 120,
-      render: (val: number | null) => val != null ? val.toFixed(2) : '-',
+      render: (val: number | null) => val != null ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
     },
     {
       title: 'ค่า AADC',
       dataIndex: 'aadc',
       key: 'aadc',
       width: 120,
-      render: (val: number | null) => val != null ? val.toFixed(2) : '-',
+      render: (val: number | null) => val != null ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
     },
     {
       title: 'ค่า Target',
@@ -590,8 +647,8 @@ const InfectiousWaste: React.FC = () => {
       width: 150,
       render: (_, r) =>
         r.min_target || r.max_target
-          ? `${r.min_target.toFixed(2)} - ${r.max_target.toFixed(2)}`
-          : r.target_value?.toFixed(2) ?? '-'
+          ? `${r.min_target.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - ${r.max_target.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+          : r.target_value?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '-'
     },
     {
       title: "สถานะ",
@@ -926,7 +983,8 @@ const InfectiousWaste: React.FC = () => {
                   filterMode === "year",   // 'day' | 'month' | 'year'
                   series[0]?.data || [],
                   false,          // array ของตัวเลข
-                  true            // isPercentChart (true/false)
+                  true,
+                  false,          // isPercentChart (true/false)
                 )} series={series}
                 type={chartTypeData}
                 style={{ flex: 1 }}
@@ -984,7 +1042,8 @@ const InfectiousWaste: React.FC = () => {
                   filterMode === "year",   // 'day' | 'month' | 'year'
                   combinedCompareData,
                   false,          // array ของตัวเลข
-                  true            // isPercentChart (true/false)
+                  true,
+                  true,           // isPercentChart (true/false)
                 )} series={seriesMonthlyGarbageQuantity}
                 type={chartTypeCompareMonthlyGarbageQuantity}
                 style={{ flex: 1 }}
@@ -1037,7 +1096,8 @@ const InfectiousWaste: React.FC = () => {
                   filterMode === "year",   // 'day' | 'month' | 'year'
                   seriesAADC[0]?.data || [],
                   false,          // array ของตัวเลข
-                  false            // isPercentChart (true/false)
+                  false,
+                  false,        // isPercentChart (true/false)
                 )} series={seriesAADC}
                 type={chartTypeAadc}
                 height="85%"

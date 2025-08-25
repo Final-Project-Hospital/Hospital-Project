@@ -255,7 +255,7 @@ func ListInfectious(c *gin.Context) {
 		Aadc                float64   `json:"Aadc"`
 		EnvironmentID       uint      `json:"EnvironmentID"`
 		ParameterID         uint      `json:"ParameterID"`
-		TargetID          uint      `json:"TargetID"`
+		TargetID            uint      `json:"TargetID"`
 		UnitID              uint      `json:"UnitID"`
 		EmployeeID          uint      `json:"EmployeeID"`
 		MinTarget           float64   `json:"MinTarget"`
@@ -426,47 +426,27 @@ func UpdateOrCreateInfectious(c *gin.Context) {
 		return
 	}
 
+	// Update Garbage
 	var garbage entity.Garbage
-	if input.ID != 0 {
-		// Update
-		if err := db.First(&garbage, input.ID).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูล Garbage"})
-			return
-		}
-		garbage.Date = input.Date
-		garbage.Quantity = input.Quantity
-		garbage.AADC = input.AADC
-		garbage.MonthlyGarbage = input.MonthlyGarbage
-		garbage.AverageDailyGarbage = input.AverageDailyGarbage
-		garbage.TotalSale = input.TotalSale
-		garbage.Note = input.Note
-		garbage.TargetID = targetID
-		garbage.UnitID = input.UnitID
-		garbage.EmployeeID = input.EmployeeID
+	if err := db.First(&garbage, input.ID).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูล Garbage"})
+		return
+	}
 
-		if err := db.Save(&garbage).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถอัปเดต Garbage"})
-			return
-		}
-	} else {
-		// Create
-		garbage = entity.Garbage{
-			Date:                input.Date,
-			Quantity:            input.Quantity,
-			AADC:                input.AADC,
-			MonthlyGarbage:      input.MonthlyGarbage,
-			AverageDailyGarbage: input.AverageDailyGarbage,
-			TotalSale:           input.TotalSale,
-			Note:                input.Note,
-			TargetID:            targetID,
-			UnitID:              input.UnitID,
-			EmployeeID:          input.EmployeeID,
-		}
+	garbage.Date = input.Date
+	garbage.Quantity = input.Quantity
+	garbage.AADC = input.AADC
+	garbage.MonthlyGarbage = input.MonthlyGarbage
+	garbage.AverageDailyGarbage = input.AverageDailyGarbage
+	garbage.TotalSale = input.TotalSale
+	garbage.Note = input.Note
+	garbage.TargetID = targetID
+	garbage.UnitID = input.UnitID
+	garbage.EmployeeID = input.EmployeeID
 
-		if err := db.Create(&garbage).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถสร้าง Garbage"})
-			return
-		}
+	if err := db.Save(&garbage).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถอัปเดต Garbage"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "สำเร็จ", "garbage": garbage})

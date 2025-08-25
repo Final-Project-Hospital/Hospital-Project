@@ -29,4 +29,5 @@ export interface listHazardousInterface {
   MiddleTarget: number;
   MaxTarget: number;
   UnitName: string;
+  AverageDailyGarbage: number;
 }

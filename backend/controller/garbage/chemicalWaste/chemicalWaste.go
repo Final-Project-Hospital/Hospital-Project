@@ -195,9 +195,9 @@ func ListChemical(c *gin.Context) {
 		TargetID            uint      `json:"TargetID"`
 		UnitID              uint      `json:"UnitID"`
 		EmployeeID          uint      `json:"EmployeeID"`
-		MinTarget           float64   `json:"MinTarget"`
-		MiddleTarget        float64   `json:"MiddleTarget"`
-		MaxTarget           float64   `json:"MaxTarget"`
+		// MinTarget           float64   `json:"MinTarget"`
+		// MiddleTarget        float64   `json:"MiddleTarget"`
+		// MaxTarget           float64   `json:"MaxTarget"`
 		UnitName            string
 		MonthlyGarbage      float64 `json:"MonthlyGarbage"`
 		AverageDailyGarbage float64 `json:"AverageDailyGarbage"`
@@ -210,8 +210,8 @@ func ListChemical(c *gin.Context) {
 	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
 	result := db.Model(&entity.Garbage{}).
 		Select(`garbages.id, garbages.date,garbages.monthly_garbage,garbages.average_daily_garbage,garbages.quantity,garbages.note,garbages.aadc,garbages.environment_id ,garbages.parameter_id 
-		,garbages.target_id ,garbages.unit_id ,garbages.employee_id,units.unit_name,targets.min_target,targets.middle_target,targets.max_target`).
-		Joins("inner join targets on garbages.target_id = targets.id").
+		,garbages.target_id ,garbages.unit_id ,garbages.employee_id,units.unit_name`).
+		// Joins("inner join targets on garbages.target_id = targets.id").
 		Joins("inner join units on garbages.unit_id = units.id").
 		// Joins("inner join statuses on garbages.status_id = statuses.id").
 		Where("garbages.id IN (?)", subQuery).
@@ -329,6 +329,13 @@ func UpdateOrCreateChemical(c *gin.Context) {
 
 	db := config.DB()
 
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?", "ขยะเคมีบำบัด").First(&parameter).Error; err != nil {
+		fmt.Println("Error fetching parameter:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+		return
+	}
+
 	// ✅ จัดการ CustomUnit
 	if input.CustomUnit != nil && *input.CustomUnit != "" {
 		var unit entity.Unit
@@ -370,6 +377,7 @@ func UpdateOrCreateChemical(c *gin.Context) {
 		// อัปเดต Unit ให้ record ของวันเดียวกัน
 		db.Model(&entity.Garbage{}).
 			Where("DATE(date) = ?", input.Date.Format("2006-01-02")).
+			Where("parameter_id = ?", parameter.ID).
 			Update("unit_id", input.UnitID)
 
 		c.JSON(http.StatusOK, gin.H{"message": "อัปเดตข้อมูลขยะเคมีบำบัดสำเร็จ", "data": existing})
@@ -383,6 +391,7 @@ func UpdateOrCreateChemical(c *gin.Context) {
 		// อัปเดต Unit ให้ record ของวันเดียวกัน
 		db.Model(&entity.Garbage{}).
 			Where("DATE(date) = ?", input.Date.Format("2006-01-02")).
+			Where("parameter_id = ?", parameter.ID).
 			Update("unit_id", input.UnitID)
 
 		c.JSON(http.StatusOK, gin.H{"message": "สร้างข้อมูลขยะเคมีบำบัดสำเร็จ", "data": input})
@@ -481,16 +490,16 @@ func GetLastDayChemical(c *gin.Context) {
 		TargetID            uint      `json:"TargetID"`
 		UnitID              uint      `json:"UnitID"`
 		EmployeeID          uint      `json:"EmployeeID"`
-		MinTarget           float64   `json:"MinTarget"`
-		MiddleTarget        float64   `json:"MiddleTarget"`
-		MaxTarget           float64   `json:"MaxTarget"`
+		// MinTarget           float64   `json:"MinTarget"`
+		// MiddleTarget        float64   `json:"MiddleTarget"`
+		// MaxTarget           float64   `json:"MaxTarget"`
 		UnitName            string    `json:"UnitName"`
 	}
 
 	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT
 	result := db.Model(&entity.Garbage{}).
-		Select(`garbages.id, garbages.date, garbages.quantity,garbages.aadc,garbages.monthly_garbage,garbages.average_daily_garbage,garbages.total_sale,garbages.note,garbages.environment_id,garbages.parameter_id,garbages.target_id,garbages.unit_id,garbages.employee_id,targets.min_target,targets.middle_target,targets.max_target,units.unit_name`).
-		Joins("inner join targets on garbages.target_id = targets.id").
+		Select(`garbages.id, garbages.date, garbages.quantity,garbages.aadc,garbages.monthly_garbage,garbages.average_daily_garbage,garbages.total_sale,garbages.note,garbages.environment_id,garbages.parameter_id,garbages.target_id,garbages.unit_id,garbages.employee_id,units.unit_name`).
+		// Joins("inner join targets on garbages.target_id = targets.id").
 		Joins("inner join units on garbages.unit_id = units.id").
 		Where("parameter_id = ?", parameter.ID).
 		Order("garbages.date desc").

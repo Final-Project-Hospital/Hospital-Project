@@ -29,4 +29,5 @@ export interface listChemicalInterface {
   MiddleTarget: number;
   MaxTarget: number;
   UnitName: string;
+  AverageDailyGarbage: number;
 }

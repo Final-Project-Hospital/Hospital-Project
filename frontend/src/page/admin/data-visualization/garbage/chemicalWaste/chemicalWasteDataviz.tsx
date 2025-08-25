@@ -1,24 +1,24 @@
 //ใช้ทั้งกราฟและตาราง
-import React, { useEffect, useState } from "react";
-import { Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
+import React, { useEffect, useRef, useState } from "react";
+import { Select, DatePicker, Modal, message, Tooltip } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { LeftOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import './chemicalWasteDataviz.css';
 import dayjs, { Dayjs } from "dayjs";
-import { GetlistChemical, GetfirstChemical,GetLastDayChemical } from "../../../../../services/garbageServices/chemicalWaste";
+import { GetlistChemical, GetfirstChemical, GetLastDayChemical } from "../../../../../services/garbageServices/chemicalWaste";
 import PhotoMonthlyGarbage from "../../../../../assets/waste/container.png"
 import PhotoDailyGarbage from "../../../../../assets/waste/garbage-bag.png"
-import PhotoAADC from "../../../../../assets/waste/garbage-truck.png"
-import { listInfectiousInterface } from "../../../../../interface/Igarbage/IinfectiousWaste";
+// import PhotoAADC from "../../../../../assets/waste/garbage-truck.png"
+import { listChemicalInterface } from "../../../../../interface/Igarbage/IchemicalWaste";
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { ColorPicker } from "antd";
 import type { Color } from "antd/es/color-picker";
-import { BarChart3, LineChart, Maximize2 } from "lucide-react";
+import { BarChart3, LineChart } from "lucide-react";
 
 //ใช้กับตาราง
 import Table, { ColumnsType } from "antd/es/table";
@@ -49,28 +49,28 @@ const ChemicalWaste: React.FC = () => {
   const [, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [filterMode, setFilterMode] = useState<"dateRange" | "month" | "year">("year");
-  const [lastDayChemical, setlastDayChemical] = useState<listInfectiousInterface | null>(null);
+  const [lastDayChemical, setlastDayChemical] = useState<listChemicalInterface | null>(null);
 
   //ใช้กับกราฟ
   const [listdata, setListData] = useState<{ unit: string; date: string; avgValue: number }[]>([]);
   const [aadcData, setAADCData] = useState<{ date: string; avgValue: number; unit: string }[]>([]);
   const [compareMonthlyGarbageQuantity, setcompareMonthlyGarbageQuantity] = useState<{ date: string; monthlyGarbage: number; quantity: number; unit: string }[]>([]);
   const [chartTypeData, setChartTypeData] = useState<'bar' | 'line'>('line');
-  const [chartTypeAadc, setChartTypeAadc] = useState<'bar' | 'line'>('line');
+  // const [chartTypeAadc, setChartTypeAadc] = useState<'bar' | 'line'>('line');
   const [chartTypeCompareMonthlyGarbageQuantity, setChartTypeCompareMonthlyGarbageQuantity] = useState<'bar' | 'line'>('line');
   const [colorGarbage, setColorGarbage] = useState<string>("#2abdbf");
-  const [colorAadc, setColorAadc] = useState<string>("#1a4b57");
+  const [, setColorAadc] = useState<string>("#1a4b57");//colorAadc
   const [colorCompareMonthlyGarbage, setColorCompareMonthlyGarbage] = useState<string>("#2abdbf");
   const [colorCompareQuantity, setColorCompareQuantity] = useState<string>("#1a4b57");
-  const [totalMonthlyGarbage, setTotalMonthlyGarbage] = useState(0);
-  const [latestYear, setLatestYear] = useState<number | null>(null);
-  const [monthlyDataLatestYear, setMonthlyDataLatestYear] = useState<{ month: string; value: number }[]>([]);
+  const [, setTotalMonthlyGarbage] = useState(0);//totalMonthlyGarbage
+  const [, setLatestYear] = useState<number | null>(null);//latestYear
+  const [, setMonthlyDataLatestYear] = useState<{ month: string; value: number }[]>([]);//monthlyDataLatestYear
   const [middleTarget, setMiddleTarget] = useState<number | undefined>(undefined);
   const [minTarget, setMinTarget] = useState<number | undefined>(undefined);
   const [maxTarget, setMaxTarget] = useState<number | undefined>(undefined);
   const [unit, setUnit] = useState<string>("-");
-  const [totalQuantity, setTotalQuantity] = useState<number>(0);
-  const [monthlyQuantityLatestYear, setMonthlyQuantityLatestYear] = useState<{ month: string; value: number }[]>([]);
+  const [, setTotalQuantity] = useState<number>(0);//totalQuantity
+  const [, setMonthlyQuantityLatestYear] = useState<{ month: string; value: number }[]>([]);//monthlyQuantityLatestYear
 
   //ใช้กับตาราง
   const [search] = useState(""); //setSearch
@@ -111,7 +111,6 @@ const ChemicalWaste: React.FC = () => {
         GetlistChemical(),
         GetLastDayChemical(),
       ]);
-              console.log(lastDayChemical.data)
       // const response = await GetlistChemical();
       if (response) {
         // กลุ่มข้อมูลตามวันที่
@@ -267,7 +266,7 @@ const ChemicalWaste: React.FC = () => {
         } else {
           setlastDayChemical(lastDayChemical.data);
         }
-        console.log(lastDayChemical.data)
+        // console.log(lastDayChemical.data)
       } else {
         setError("ไม่พบข้อมูลขยะเคมีบำบัด");
       }
@@ -283,6 +282,15 @@ const ChemicalWaste: React.FC = () => {
   useEffect(() => {
     fetchChemicalData();
   }, [dateRange, filterMode]);
+
+  const listdataRef = useRef(listdata);
+  const compareRef = useRef(compareMonthlyGarbageQuantity);
+  useEffect(() => {
+    listdataRef.current = listdata;
+  }, [listdata]);
+  useEffect(() => {
+    compareRef.current = compareMonthlyGarbageQuantity;
+  }, [compareMonthlyGarbageQuantity]);
 
   //ใช้กับตาราง
   const loadChemicalTable = async () => {
@@ -342,6 +350,7 @@ const ChemicalWaste: React.FC = () => {
     dataSeries: number[],
     enableZoom = false,
     isPercentChart = false,
+    isDualAxis = false,
   ): ApexOptions => {
     // จัด format ตาม filterMode
     const categoriesFormatted =
@@ -372,14 +381,14 @@ const ChemicalWaste: React.FC = () => {
                 borderWidth: 1.5,
                 strokeDashArray: 6,
                 borderColor: "rgba(255, 163, 24, 0.77)",
-                label: { text: `มาตรฐานต่ำสุด ${minTarget ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
+                label: { text: `มาตรฐานต่ำสุด ${minTarget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
               },
               {
                 y: maxTarget ?? 0,
                 borderWidth: 1.5,
                 strokeDashArray: 6,
                 borderColor: "#035303ff",
-                label: { text: `มาตรฐานสูงสุด ${maxTarget ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
+                label: { text: `มาตรฐานสูงสุด ${maxTarget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
               },
             ]
             : middleTarget !== undefined && middleTarget !== 0
@@ -389,7 +398,7 @@ const ChemicalWaste: React.FC = () => {
                   borderColor: "#FF6F61",
                   borderWidth: 2.5,
                   strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middleTarget}`, style: { background: "#FF6F61", color: "#fff" } },
+                  label: { text: `มาตรฐาน ${middleTarget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
                 },
               ]
               : []
@@ -414,22 +423,41 @@ const ChemicalWaste: React.FC = () => {
           enabled: false, // << ปิด tooltip ที่แกน X
         },
       },
-      yaxis: {
-        min: 0,
-        max: adjustedMax,
-        title: { text: (unit || "ค่า") },
-        labels: {
-          formatter: (value: number) => {
-            // ถ้าเกิน 1000 แสดงเป็น k
-            if (value >= 1000) {
-              return `${(value / 1000).toFixed(2)}k`;
-            } else {
-              return value.toFixed(2);
-            }
-
-          }
+      yaxis: isDualAxis
+        ? [
+          {
+            title: { text: `ค่าขยะเคมีบำบัด (${unit || ""})` },
+            min: 0,
+            max: adjustedMax,
+            labels: { formatter: (v: number) => `${(v / 1000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}k` },
+          },
+          {
+            opposite: true,
+            title: { text: "จำนวนคน (คน)" },
+            min: 0,
+            max: adjustedMax,
+            labels: { formatter: (v: number) => `${v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` },
+          },
+        ]
+        : {
+          min: 0,
+          max: adjustedMax,
+          title: {
+            text: unit || "ค่า", // ไม่ต้องใช้ isPercentChart แล้ว
+          },
+          labels: {
+            formatter: (value: number) =>
+              value >= 1000
+                ? `${(value / 1000).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}k`
+                : value.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }),
+          },
         },
-      },
       dataLabels: {
         enabled: false, // ถ้าเป็นกราฟ % ไม่ต้องโชว์ label บนจุด
       },
@@ -440,34 +468,33 @@ const ChemicalWaste: React.FC = () => {
             const dataPointIndex = opts.dataPointIndex;
 
             // ค่าขยะเคมีบำบัด
-            if (seriesName === "ค่าขยะเคมีบำบัด" && listdata && listdata.length > dataPointIndex) {
-              const unit = listdata[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด';
+            if (seriesName === "ค่าขยะเคมีบำบัด" && listdataRef.current.length > dataPointIndex) {
+              const unit = listdataRef.current[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด';
               if (unit === 'ไม่มีการตรวจวัด') return unit;
-              return `${val.toFixed(2)} ${unit}`;
+              return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
             }
 
             // ค่า AADC
             if (seriesName === "ค่า AADC" && aadcData && aadcData.length > dataPointIndex) {
               const unit = aadcData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด';
               if (unit === 'ไม่มีการตรวจวัด') return unit;
-              return `${val.toFixed(2)} ${unit}`;
+              return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
             }
-
             // MonthlyGarbage / Quantity
             if (["ค่าขยะเคมีบำบัด", "จำนวนคน"].includes(seriesName)
-              && compareMonthlyGarbageQuantity
-              && compareMonthlyGarbageQuantity.length > dataPointIndex) {
+              && compareRef.current.length > dataPointIndex) {
               if (seriesName === "ค่าขยะเคมีบำบัด") {
-                const unit = compareMonthlyGarbageQuantity[dataPointIndex]?.unit;
-                return unit ? `${val.toFixed(2)} ${unit}` : 'ไม่มีการตรวจวัด';
+                const unit = compareRef.current[dataPointIndex]?.unit;
+                return unit ? `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}` : 'ไม่มีการตรวจวัด';
               } else if (seriesName === "จำนวนคน") {
-                const quantity = compareMonthlyGarbageQuantity[dataPointIndex]?.quantity;
-                return quantity ? `${quantity} คน` : 'ไม่มีการตรวจวัด';
+                const unit = compareMonthlyGarbageQuantity[dataPointIndex]?.unit;
+                const quantity = compareRef.current[dataPointIndex]?.quantity;
+                return unit ? `${quantity.toLocaleString()} คน` : 'ไม่มีการตรวจวัด';
               }
             }
 
             // Default fallback
-            return `${val.toFixed(2)}`;
+            return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
           }
         }
       },
@@ -478,7 +505,7 @@ const ChemicalWaste: React.FC = () => {
   };
 
   const series = [{ name: "ค่าขยะเคมีบำบัด", data: listdata.map(item => item.avgValue), color: colorGarbage }];
-  const seriesAADC = [{ name: "ค่า AADC", data: aadcData.map(item => item.avgValue), color: colorAadc }];
+  // const seriesAADC = [{ name: "ค่า AADC", data: aadcData.map(item => item.avgValue), color: colorAadc }];
   const seriesMonthlyGarbageQuantity = [
     { name: "ค่าขยะเคมีบำบัด", data: compareMonthlyGarbageQuantity.map(item => item.monthlyGarbage), color: colorCompareMonthlyGarbage },
     { name: "จำนวนคน", data: compareMonthlyGarbageQuantity.map(item => item.quantity), color: colorCompareQuantity },
@@ -542,21 +569,21 @@ const ChemicalWaste: React.FC = () => {
       dataIndex: 'quantity',
       key: 'quantity',
       width: 120,
-      render: (val: number | null) => val != null ? val : '-',
+      render: (val: number | null) => val != null ? val.toLocaleString() : '-',
     },
     {
       title: 'ปริมาณขยะต่อเดือน',
       dataIndex: 'monthly_garbage',
       key: 'monthly_garbage',
       width: 150,
-      render: (val: number | null) => val != null ? val.toFixed(2) : '-',
+      render: (val: number | null) => val != null ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
     },
     {
       title: 'ปริมาณขยะต่อวัน',
       dataIndex: 'average_daily_garbage',
       key: 'average_daily_garbage',
       width: 150,
-      render: (val: number | null) => val != null ? val.toFixed(2) : '-',
+      render: (val: number | null) => val != null ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
     },
     {
       title: 'หมายเหตุ',
@@ -663,7 +690,7 @@ const ChemicalWaste: React.FC = () => {
       <div className="chemical-title-header">
         <div>
           <h1>Chemical Waste</h1>
-          <p>ขยะที่มีเชื้อโรคหรือปนเปื้อนสารชีวภาพอาจก่อให้เกิดการแพร่กระจายของโรคได้</p>
+          <p>ของเสียที่เกิดจากสารเคมีต่างๆไม่ว่าจะอยู่ในรูปของแข็ง ของเหลว หรือก๊าซ</p>
         </div>
         <div className="chemical-card">
           <img src={PhotoMonthlyGarbage} alt="Quantity People" className="chemical-photo" />
@@ -826,61 +853,62 @@ const ChemicalWaste: React.FC = () => {
             </div>
           </div>
         </div>
-         <div className="chemical-graph-container">
-        <div className="chemical-graph-card">
-          <div className="chemical-head-graph-card">
-            <div className="chemical-width25">
-              <h2 className="chemical-head-graph-card-text">น้ำหลังบำบัด</h2>
-            </div>
-            <div>
-              <ColorPicker
-                value={colorGarbage}
-                onChange={(color: Color) => {
-                  const hex = color.toHexString();
-                  setColorGarbage(hex);
-                  localStorage.setItem('colorGarbage', hex);
-                }}
-              />
-            </div>
-          </div>
-          <div className="chemical-right-select-graph">
-            <Select
-              value={chartTypeData}
-              onChange={val => setChartTypeData(val)}
-              style={{ marginBottom: 10 }}
-            >
-              <Select.Option value="line">
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <LineChart size={16} style={{ marginRight: 6 }} />
-                  <span>กราฟเส้น</span>
-                </div>
-              </Select.Option>
-              <Select.Option value="bar">
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <BarChart3 size={16} style={{ marginRight: 6 }} />
-                  <span>กราฟแท่ง</span>
-                </div>
-              </Select.Option>
-            </Select>
-          </div>
-          <ApexChart
-            key={chartTypeData}
-            options={getChartOptions(
-              listdata.map(item => item.date),      // array ของวันที่/เดือน/ปี
-              chartTypeData,          // ประเภท chart
-              filterMode === "year",   // 'day' | 'month' | 'year'
-              series[0]?.data || [],
-              false,          // array ของตัวเลข
-              true            // isPercentChart (true/false)
-            )} series={series}
-            type={chartTypeData}
-            style={{ flex: 1 }}
-          />
-        </div>
+        <div className="chemical-graph-container">
           <div className="chemical-graph-card">
             <div className="chemical-head-graph-card">
               <div className="chemical-width25">
-                <h2 className="chemical-head-graph-card-text">น้ำหลังบำบัด</h2>
+                <h2 className="chemical-head-graph-card-text">ขยะเคมีบำบัด</h2>
+              </div>
+              <div>
+                <ColorPicker
+                  value={colorGarbage}
+                  onChange={(color: Color) => {
+                    const hex = color.toHexString();
+                    setColorGarbage(hex);
+                    localStorage.setItem('colorGarbage', hex);
+                  }}
+                />
+              </div>
+            </div>
+            <div className="chemical-right-select-graph">
+              <Select
+                value={chartTypeData}
+                onChange={val => setChartTypeData(val)}
+                style={{ marginBottom: 10 }}
+              >
+                <Select.Option value="line">
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <LineChart size={16} style={{ marginRight: 6 }} />
+                    <span>กราฟเส้น</span>
+                  </div>
+                </Select.Option>
+                <Select.Option value="bar">
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <BarChart3 size={16} style={{ marginRight: 6 }} />
+                    <span>กราฟแท่ง</span>
+                  </div>
+                </Select.Option>
+              </Select>
+            </div>
+            <ApexChart
+              key={chartTypeData}
+              options={getChartOptions(
+                listdata.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                chartTypeData,          // ประเภท chart
+                filterMode === "year",   // 'day' | 'month' | 'year'
+                series[0]?.data || [],
+                false,          // array ของตัวเลข
+                true,
+                false,            // isPercentChart (true/false)
+              )} series={series}
+              type={chartTypeData}
+              style={{ flex: 1 }}
+            />
+          </div>
+          <div className="chemical-graph-card">
+            <div className="chemical-head-graph-card">
+              <div className="chemical-width50">
+                <h2 className="chemical-head-graph-card-text">ขยะเคมีบำบัดต่อคนที่เข้าใช้บริการ</h2>
               </div>
               <div>
                 <ColorPicker
@@ -929,125 +957,126 @@ const ChemicalWaste: React.FC = () => {
                 filterMode === "year",   // 'day' | 'month' | 'year'
                 combinedCompareData,
                 false,          // array ของตัวเลข
-                true            // isPercentChart (true/false)
+                true,
+                true,              // isPercentChart (true/false)
               )} series={seriesMonthlyGarbageQuantity}
               type={chartTypeCompareMonthlyGarbageQuantity}
               style={{ flex: 1 }}
             />
-                    </div>
           </div>
-          <div className="chemical-header-vis">
-            <h1 className="chemical-title-text-vis">ข้อมูล Chemical Waste</h1>
-            <div className="chemical-btn-container">
-              <button className="chemical-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
-            </div>
+        </div>
+        <div className="chemical-header-vis">
+          <h1 className="chemical-title-text-vis">ข้อมูล Chemical Waste</h1>
+          <div className="chemical-btn-container">
+            <button className="chemical-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
           </div>
-          <div className="chemical-select-date">
-            <div className="chemical-filter-status-and-efficiency">
-              <p>ประสิทธิภาพ</p>
+        </div>
+        <div className="chemical-select-date">
+          <div className="chemical-filter-status-and-efficiency">
+            <p>ประสิทธิภาพ</p>
+            <Select
+              allowClear
+              placeholder="เลือกประสิทธิภาพ"
+              value={efficiencyFilter}
+              onChange={(v) => setEfficiencyFilter(v || null)}
+              style={{ width: 200 }}
+              options={[
+                { label: "มากกว่า 50%", value: "gt" },
+                { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
+              ]}
+            />
+            <p>สถานะ</p>
+            <Select
+              allowClear
+              placeholder="เลือกสถานะ"
+              value={statusFilter}
+              onChange={(v) => setStatusFilter(v || null)}
+              style={{ width: 200 }}
+              options={statusOptions.map((item) => ({
+                label: item.StatusName,
+                value: item.StatusName,
+              }))}
+            />
+          </div>
+          <div className="chemical-filter-date">
+            <div >
               <Select
-                allowClear
-                placeholder="เลือกประสิทธิภาพ"
-                value={efficiencyFilter}
-                onChange={(v) => setEfficiencyFilter(v || null)}
-                style={{ width: 200 }}
+                value={tableFilterMode}
+                onChange={(val) => {
+                  setTableFilterMode(val);
+                  setTableDateRange(null);
+                }}
+                className="chemical-select-filter"
                 options={[
-                  { label: "มากกว่า 50%", value: "gt" },
-                  { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
+                  { label: "เลือกช่วงวัน", value: "dateRange" },
+                  { label: "เลือกเดือน", value: "month" },
+                  { label: "เลือกปี", value: "year" },
                 ]}
               />
-              <p>สถานะ</p>
-              <Select
-                allowClear
-                placeholder="เลือกสถานะ"
-                value={statusFilter}
-                onChange={(v) => setStatusFilter(v || null)}
-                style={{ width: 200 }}
-                options={statusOptions.map((item) => ({
-                  label: item.StatusName,
-                  value: item.StatusName,
-                }))}
-              />
             </div>
-            <div className="chemical-filter-date">
-              <div >
-                <Select
-                  value={tableFilterMode}
-                  onChange={(val) => {
-                    setTableFilterMode(val);
-                    setTableDateRange(null);
+            <div>
+              {tableFilterMode === "dateRange" && (
+                <RangePicker
+                  value={tableDateRange}
+                  onChange={(dates) => {
+                    if (dates && dates[0] && dates[1]) {
+                      setTableDateRange([dates[0], dates[1]]);
+                    } else {
+                      setTableDateRange(null);
+                    }
                   }}
-                  className="chemical-select-filter"
-                  options={[
-                    { label: "เลือกช่วงวัน", value: "dateRange" },
-                    { label: "เลือกเดือน", value: "month" },
-                    { label: "เลือกปี", value: "year" },
-                  ]}
+                  locale={th_TH}
+                  allowClear={true}
+                  format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
+                  style={{ width: 300 }}
+                  placeholder={["วันเริ่มต้น", "วันสิ้นสุด"]}
                 />
-              </div>
-              <div>
-                {tableFilterMode === "dateRange" && (
-                  <RangePicker
-                    value={tableDateRange}
-                    onChange={(dates) => {
-                      if (dates && dates[0] && dates[1]) {
-                        setTableDateRange([dates[0], dates[1]]);
-                      } else {
-                        setTableDateRange(null);
-                      }
-                    }}
-                    locale={th_TH}
-                    allowClear={true}
-                    format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
-                    style={{ width: 300 }}
-                    placeholder={["วันเริ่มต้น", "วันสิ้นสุด"]}
-                  />
-                )}
+              )}
 
-                {tableFilterMode === "month" && (
-                  <DatePicker
-                    picker="month"
-                    onChange={(date) => {
-                      if (date) {
-                        const start = date.startOf('month');
-                        const end = date.endOf('month');
-                        setTableDateRange([start, end]);
-                      } else {
-                        setTableDateRange(null);
-                      }
-                    }}
-                    locale={th_TH}
-                    placeholder="เลือกเดือน"
-                    style={{ width: 150 }}
-                    allowClear={true}
-                    value={tableDateRange ? tableDateRange[0] : null}
-                    format={(value) => value ? `${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
-                  />
-                )}
+              {tableFilterMode === "month" && (
+                <DatePicker
+                  picker="month"
+                  onChange={(date) => {
+                    if (date) {
+                      const start = date.startOf('month');
+                      const end = date.endOf('month');
+                      setTableDateRange([start, end]);
+                    } else {
+                      setTableDateRange(null);
+                    }
+                  }}
+                  locale={th_TH}
+                  placeholder="เลือกเดือน"
+                  style={{ width: 150 }}
+                  allowClear={true}
+                  value={tableDateRange ? tableDateRange[0] : null}
+                  format={(value) => value ? `${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
+                />
+              )}
 
-                {tableFilterMode === "year" && (
-                  <DatePicker.RangePicker
-                    picker="year"
-                    onChange={(dates) => {
-                      if (dates && dates[0] && dates[1]) {
-                        const start = dates[0].startOf('year');
-                        const end = dates[1].endOf('year');
-                        setTableDateRange([start, end]);
-                      } else {
-                        setTableDateRange(null);
-                      }
-                    }}
-                    locale={th_TH}
-                    placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
-                    style={{ width: 300 }}
-                    allowClear={true}
-                    value={tableDateRange}
-                    format={(value) => value ? `${value.year() + 543}` : ''}
-                  />
-                )}
-              </div>
+              {tableFilterMode === "year" && (
+                <DatePicker.RangePicker
+                  picker="year"
+                  onChange={(dates) => {
+                    if (dates && dates[0] && dates[1]) {
+                      const start = dates[0].startOf('year');
+                      const end = dates[1].endOf('year');
+                      setTableDateRange([start, end]);
+                    } else {
+                      setTableDateRange(null);
+                    }
+                  }}
+                  locale={th_TH}
+                  placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
+                  style={{ width: 300 }}
+                  allowClear={true}
+                  value={tableDateRange}
+                  format={(value) => value ? `${value.year() + 543}` : ''}
+                />
+              )}
             </div>
           </div>
+        </div>
         <br />
         <div className="chemical-table-data">
           <div className="chemical-width40">
