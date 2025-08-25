@@ -25,6 +25,7 @@
 // }
 
 // export default MainLayout;
+
 import { Outlet } from 'react-router-dom';
 import { useStateContext } from '../../contexts/ContextProvider';
 import { Navbar, Sidebar } from '../../component/admin';
@@ -43,8 +44,7 @@ const MainLayout = () => {
                     <Sidebar />
 
                     {/* Main Content */}
-                    <div className={`flex-1 min-h-screen transition-all duration-300 bg-main-bg dark:bg-main-dark-bg
-                        `}>
+                        <div className={`flex-1 min-h-screen transition-all duration-300 bg-main-bg dark:bg-main-dark-bg ml-[collapsed ? '80px' : '224px']`}>
                         {/* Navbar */}
                         <div className="fixed md:static w-full bg-main-bg dark:bg-main-dark-bg navbar">
                             <Navbar />

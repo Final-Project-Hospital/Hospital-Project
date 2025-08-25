@@ -587,7 +587,7 @@ export const links = [
             label: 'กลุ่มขยะ',
             icon: <FaTrash/>,
             subMenu: [
-              {}
+              {},
             ]
           },
         ],
