@@ -240,7 +240,10 @@ const FCBdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterFCB
-        if (fcbRes) {
+        if (!fcbRes || !fcbRes.data || fcbRes.data.length === 0) {
+          setBeforeAfter(null); // ✅ ตรงกับ type
+          setError("ไม่พบข้อมูล Before/After FCB");
+        } else {
           setBeforeAfter(fcbRes.data);
         }
       } else {
@@ -345,14 +348,14 @@ const FCBdataviz: React.FC = () => {
                 borderWidth: 1.5,
                 strokeDashArray: 6,
                 borderColor: "rgba(255, 163, 24, 0.77)",
-                label: { text: `มาตรฐานต่ำสุด ${minstandard ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
+                label: { text: `มาตรฐานต่ำสุด ${minstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
               },
               {
                 y: maxstandard ?? 0,
                 borderWidth: 1.5,
                 strokeDashArray: 6,
                 borderColor: "#035303ff",
-                label: { text: `มาตรฐานสูงสุด ${maxstandard ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
+                label: { text: `มาตรฐานสูงสุด ${maxstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
               },
             ]
             : middlestandard !== undefined && middlestandard !== 0
@@ -362,7 +365,7 @@ const FCBdataviz: React.FC = () => {
                   borderColor: "#FF6F61",
                   borderWidth: 1.5,
                   strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middlestandard}`, style: { background: "#FF6F61", color: "#fff" } },
+                  label: { text: `มาตรฐาน ${middlestandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
                 },
               ]
               : []
@@ -393,7 +396,7 @@ const FCBdataviz: React.FC = () => {
           text: isPercentChart ? "เปอร์เซ็น ( % )" : (unit || "mg/L"),
         },
         labels: {
-          formatter: (value: number) => isPercentChart ? `${value.toFixed(2)}%` : value.toFixed(2)
+          formatter: (value: number) => isPercentChart ? `${value.toFixed(2)}%` : value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
         },
       },
       tooltip: {
@@ -413,18 +416,18 @@ const FCBdataviz: React.FC = () => {
             if ((seriesName === "ก่อนบำบัด" || seriesName === "FCB") && beforeData && beforeData.length > dataPointIndex) {
               const unit = beforeData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดก่อนบำบัด';
               if (unit === 'ไม่มีการตรวจวัดก่อนบำบัด') return unit;
-              return `${val.toFixed(2)} ${unit}`;
+              return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
             }
 
             // กรณี afterSeries หรือ compareSeries "หลังบำบัด"
             if ((seriesName === "หลังบำบัด" || seriesName === "FCB") && afterData && afterData.length > dataPointIndex) {
               const unit = afterData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดหลังบำบัด';
               if (unit === 'ไม่มีการตรวจวัดหลังบำบัด') return unit;
-              return `${val.toFixed(2)} ${unit}`;
+              return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
             }
 
             // กรณีอื่น ๆ
-            return `${val.toFixed(2)}`;
+            return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
           }
 
         },
@@ -519,7 +522,7 @@ const FCBdataviz: React.FC = () => {
       dataIndex: 'before_value',
       key: 'before_value',
       width: 120,
-      render: (val: number | null) => val != null ? val.toFixed(2) : '-',
+      render: (val: number | null) => val != null ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
     },
     {
       title: 'ค่าหลังเข้าระบบบำบัด',
@@ -535,7 +538,7 @@ const FCBdataviz: React.FC = () => {
           if (afterValue < before) arrow = <span style={{ ...iconStyle, color: '#EE404C' }}> ↓</span>;
           else if (afterValue > before) arrow = <span style={{ ...iconStyle, color: '#14C18B' }}> ↑</span>;
         }
-        return <span>{afterValue.toFixed(2)}{arrow}</span>;
+        return <span>{afterValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{arrow}</span>;
       },
     },
     {
@@ -552,7 +555,18 @@ const FCBdataviz: React.FC = () => {
       dataIndex: 'standard_value',
       key: 'standard_value',
       width: 160,
-      render: (val: number) => val ?? '-',
+       render: (val: string | number | null | undefined) => {
+        if (!val) return '-';
+        // ถ้าเป็น string และมีขีด (-) ให้แยก
+        if (typeof val === 'string' && val.includes('-')) {
+          return val
+            .split('-')
+            .map(v => Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+            .join(' - ');
+        }
+        // ถ้าเป็นตัวเลขปกติ
+        return Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      },
     },
     {
       title: "สถานะ",
@@ -724,7 +738,7 @@ const FCBdataviz: React.FC = () => {
           <div>
             <h4>น้ำก่อนบำบัดล่าสุด</h4>
             <div className="fcb-main">
-              <span>{BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined ? (<><span className="fcb-value">{BeforeAfter.before.Data}</span>{" "}{BeforeAfter.before.UnitName || ""}</>) : "-"}</span>
+              <span>{BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined ? (<><span className="fcb-value">{BeforeAfter.before.Data.toLocaleString()}</span>{" "}{BeforeAfter.before.UnitName || ""}</>) : "-"}</span>
             </div>
             {BeforeAfter ? (
               <p>
@@ -732,7 +746,7 @@ const FCBdataviz: React.FC = () => {
                 <span>
                   {(BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== 0) || (BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0) || (BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0) || (BeforeAfter.before.UnitName && BeforeAfter.before.UnitName.trim() !== "")
                     ? (BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== 0
-                      ? BeforeAfter.before.MiddleValue : `${(BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0 ? BeforeAfter.before.MinValue : "-")} - ${(BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0 ? BeforeAfter.before.MaxValue : "-")}`) : "-"
+                      ? BeforeAfter.before.MiddleValue.toLocaleString() : `${(BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0 ? BeforeAfter.before.MinValue.toLocaleString() : "-")} - ${(BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0 ? BeforeAfter.before.MaxValue.toLocaleString() : "-")}`) : "-"
                   }
                 </span>{" "}
                 {BeforeAfter.before.UnitName || ""}
@@ -745,7 +759,7 @@ const FCBdataviz: React.FC = () => {
           <div>
             <h4>น้ำหลังบำบัดล่าสุด</h4>
             <div className="fcb-main">
-              <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="fcb-value">{BeforeAfter.after.Data}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
+              <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="fcb-value">{BeforeAfter.after.Data.toLocaleString()}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
               <span className="fcb-change">
                 {(() => {
                   if (BeforeAfter?.after.Data != null && BeforeAfter?.before.Data != null) {
@@ -763,7 +777,7 @@ const FCBdataviz: React.FC = () => {
                   {
                     (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== 0) || (BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0) || (BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0) || (BeforeAfter.after.UnitName && BeforeAfter.after.UnitName.trim() !== "")
                       ? (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== 0
-                        ? BeforeAfter.after.MiddleValue : `${(BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0 ? BeforeAfter.after.MinValue : "-")} - ${(BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0 ? BeforeAfter.after.MaxValue : "-")}`)
+                        ? BeforeAfter.after.MiddleValue.toLocaleString() : `${(BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0 ? BeforeAfter.after.MinValue.toLocaleString() : "-")} - ${(BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0 ? BeforeAfter.after.MaxValue.toLocaleString() : "-")}`)
                       : "-"
                   }
                 </span>{" "}

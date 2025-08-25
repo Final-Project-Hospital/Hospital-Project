@@ -15,7 +15,7 @@
 #define BAUDRATE   9600
 #define HMI_ID     1        // HMI Station/Slave ID
 
-// LW0..LW6 ใช้ทั้งหมด
+// LW0..LW7
 #define ADDR_LW0   0   // Formaldehyde raw
 #define ADDR_LW1   1   // Temp raw
 #define ADDR_LW2   2   // Humi raw
@@ -23,10 +23,15 @@
 #define ADDR_LW4   4   // Formaldehyde status
 #define ADDR_LW5   5   // Temp status
 #define ADDR_LW6   6   // Humi status
+#define ADDR_LW7   7   // Formaldehyde > 50 trigger
 
 ModbusRTU mb;
 bool busy = false;
-uint16_t regsAll[7];   // เก็บค่าที่จะส่ง LW0..LW6
+uint16_t regsAll[8];   // เก็บค่าที่จะส่ง LW0..LW7
+
+// จับเวลาการรีเซ็ต LW7
+bool lw7Triggered = false;
+uint32_t lastTrigger = 0;
 
 // Callback หลังเขียนเสร็จ
 bool cbWrite(Modbus::ResultCode rc, uint16_t, void*) {
@@ -47,7 +52,7 @@ void loop() {
   mb.task();
 
   static uint32_t last = 0;
-  if (!busy && millis() - last > 5000) {
+  if (!busy && millis() - last > 10000) {
 
     // ==============================
     // Formaldehyde raw (สุ่มค่า 0.010–0.070 ppm ×1000)
@@ -62,6 +67,10 @@ void loop() {
       regsAll[4] = 1;   // ปกติ
     } else {
       regsAll[4] = 2;   // สูง
+      // ✅ ถ้าเกิน 50 → Trigger LW7 = 1
+      regsAll[7] = 1;
+      lw7Triggered = true;
+      lastTrigger = millis();
     }
 
     // ==============================
@@ -93,13 +102,13 @@ void loop() {
     }
 
     // ==============================
-    // ส่งค่า LW0–LW6 ทีเดียว
+    // ส่งค่า LW0–LW7 ทีเดียว
     // ==============================
-    if (mb.writeHreg(HMI_ID, ADDR_LW0, regsAll, 7, cbWrite)) {
+    if (mb.writeHreg(HMI_ID, ADDR_LW0, regsAll, 8, cbWrite)) {
       busy = true;
       last = millis();
-      Serial.printf("Raw -> Form=%.3f ppm | Temp=%.2f °C | Humi=%.2f %%\n",
-                    f, t, h);
+      Serial.printf("Raw -> Form=%.3f ppm | Temp=%.2f °C | Humi=%.2f %% | LW7=%d\n",
+                    f, t, h, regsAll[7]);
 
       // ✅ แสดงสถานะเป็นข้อความแทนตัวเลข
       const char* formStatus[] = {"ต่ำ", "ปกติ", "สูง"};
@@ -110,6 +119,16 @@ void loop() {
                     formStatus[regsAll[4]],
                     tempStatus[regsAll[5]],
                     humiStatus[regsAll[6]]);
+    }
+  }
+
+  // ✅ ถ้า LW7 ถูก Trigger แล้ว → ผ่านไป 2 วินาทีให้ส่ง 0
+  if (lw7Triggered && millis() - lastTrigger >= 2000 && !busy) {
+    regsAll[7] = 0;
+    if (mb.writeHreg(HMI_ID, ADDR_LW7, regsAll[7], cbWrite)) {
+      busy = true;
+      lw7Triggered = false;
+      Serial.println("LW7 reset to 0");
     }
   }
 }

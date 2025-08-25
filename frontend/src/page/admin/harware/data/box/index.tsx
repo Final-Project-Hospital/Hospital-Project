@@ -12,6 +12,8 @@ import * as IoIcons from "react-icons/io5";
 import * as AiIcons from "react-icons/ai";
 import * as LuIcons from "react-icons/lu";
 import * as RiIcons from "react-icons/ri";
+import * as BiIcons from "react-icons/bi";
+import * as MdIcons from "react-icons/md";
 
 
 function getIconComponentByName(name: string): ReactNode {
@@ -22,6 +24,8 @@ function getIconComponentByName(name: string): ReactNode {
     ...AiIcons,
     ...LuIcons,
     ...RiIcons,
+    ...BiIcons,
+    ...MdIcons,
   };
   const IconComponent = allIcons[name as keyof typeof allIcons];
   return IconComponent ? <IconComponent className="text-4xl" /> : <GiIcons.GiChemicalDrop className="text-4xl" />;
@@ -191,7 +195,7 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
           <div className="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {loading ? (
               <div className="col-span-4 flex justify-center items-center min-h-[110px]">
-                <p>Loading data...</p>
+                <p>กำลังโหลดข้อมูล...</p>
               </div>
             ) : showParams.length > 0 ? (
               showParams.map((param) => {

@@ -1,7 +1,6 @@
 // (เหมือนเดิมส่วน import ทั้งหมด)
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { Spin } from "antd";
 import picture1 from "../../../../../assets/ESP32.png";
 import Boxsdata from "../box/index";
 import TableData from "../table/index";
@@ -17,7 +16,7 @@ import ColorMapping from "../chart/mapping/index";
 import Stacked from "../chart/stack/index";
 import EditParameterModal from "./edit";
 import EditStandardUnitModal from "../standard/index";
-import { useStateContext } from "../../../../../contexts/ContextProvider"; // 👈 เพิ่มบรรทัดนี้
+import { useStateContext } from "../../../../../contexts/ContextProvider"; 
 
 interface ParameterWithColor {
   parameter: string;
@@ -205,24 +204,25 @@ const Index = () => {
   return (
     <div className="space-y-8 relative">
       {loadingAll && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-          <Spin size="large" tip="Loading data..." />
-        </div>
+        <div></div>
       )}
 
       {/* Header */}
       <section className="w-full px-2 md:px-8 p-5 bg-white border border-gray-200 rounded-lg shadow-md mb-8 mt-16 md:mt-0 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center">
         <div className="text-center md:text-left">
           <h1 className="text-2xl md:text-4xl font-extrabold leading-tight mb-4">
-            สวัสดีตอนเช้า<br />
+            สวัสดี<br />
             <span className="inline-flex items-center gap-2 text-teal-700 justify-center md:justify-start">
-              วิศวกรรมสิ่งแวดล้อม
+              บุคคลากรของโรงพยาบาล
             </span>
           </h1>
+
           <p className="text-xs md:text-base text-gray-700 mb-6 max-w-xl mx-auto md:mx-0">
-            วิศวกรสิ่งแวดล้อมมีหน้าที่ตรวจสอบอุณหภูมิ ความชื้น และระดับฟอร์มาลดีไฮด์
-            เพื่อประเมินคุณภาพอากาศและรับรองความปลอดภัยต่อสุขภาพ!
+            งานด้านสิ่งแวดล้อมมุ่งสร้างสภาพแวดล้อมที่ปลอดภัยและยั่งยืน
+            ด้วยการออกแบบระบบติดตามและบริหารจัดการคุณภาพสิ่งแวดล้อมโดยรวม ทั้งการเก็บข้อมูลแบบเรียลไทม์
+            การวิเคราะห์แนวโน้ม เพื่อสนับสนุนการตัดสินใจและยกระดับคุณภาพชีวิตของทุกคน
           </p>
+
           <div className="mb-6 flex flex-col md:flex-row justify-center md:justify-start gap-3">
             <button
               className="bg-teal-600 hover:bg-teal-800 text-white font-bold py-2 px-5 rounded-xl shadow transition"
@@ -234,7 +234,7 @@ const Index = () => {
               className="bg-teal-600 hover:bg-teal-800 text-white font-bold py-2 px-5 rounded-xl shadow transition"
               onClick={() => setShowEditStandard(true)}
             >
-              แก้ไขข้อมูลสแตนดาร์ดและหน่วย
+              แก้ไขข้อมูลค่ามาตรฐานและอื่นๆ
             </button>
           </div>
         </div>
@@ -258,9 +258,8 @@ const Index = () => {
 
       {/* Table: ใช้ activeMenu เลือกความกว้าง */}
       <section
-        className={`px-2 md:px-8 bg-white p-4 rounded-lg shadow ${
-          activeMenu ? "w-full w-mid-800 w-mid-1400 w-mid-1600 w-mid-max" : "w-full"
-        }`}
+        className={`px-2 md:px-8 bg-white p-4 rounded-lg shadow ${activeMenu ? "w-full w-mid-800 w-mid-1400 w-mid-1600 w-mid-max" : "w-full"
+          }`}
       >
         <h2 className="text-lg font-semibold mb-4 text-gray-700">ตารางข้อมูล</h2>
         <TableData
@@ -332,7 +331,8 @@ const Index = () => {
       </section>
 
       {/* Average */}
-      <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
+      <section className="w-full px-2 md:px-8 bg-white  p-4 rounded-lg shadow">
+        <h2 className="text-lg font-semibold mb-4 text-gray-700">ข้อมูลเฉลี่ยของเซนเซอร์</h2>
         <Avergare
           key={`avg-${reloadAverage}`}
           hardwareID={hardwareID}

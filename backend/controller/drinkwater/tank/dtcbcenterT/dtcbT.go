@@ -720,6 +720,13 @@ func DeleteAllDTCBtankRecordsByDate(c *gin.Context) {
 func GetBeforeAfterDTCBtank(c *gin.Context) {
 	db := config.DB()
 
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?", "น้ำดื่ม").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
+
 	// หา parameter ของ DTCBtank
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?", "Total Coliform Bacteria of tank").First(&parameter).Error; err != nil {
@@ -786,7 +793,7 @@ func GetBeforeAfterDTCBtank(c *gin.Context) {
 				units.unit_name`).
 		Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
 		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
-		Where("parameter_id = ? AND before_after_treatment_id = ?", parameter.ID, Before.ID).
+		Where("parameter_id = ? AND before_after_treatment_id = ? AND environment_id = ?", parameter.ID, Before.ID,environment.ID).
 		Order("environmental_records.date DESC").
 		First(&latestBefore).Error
 
@@ -799,7 +806,7 @@ func GetBeforeAfterDTCBtank(c *gin.Context) {
 				units.unit_name`).
 		Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
 		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
-		Where("parameter_id = ? AND before_after_treatment_id = ?", parameter.ID, After.ID).
+		Where("parameter_id = ? AND before_after_treatment_id = ? AND environment_id = ?", parameter.ID, After.ID,environment.ID).
 		Order("environmental_records.date DESC").
 		First(&latestAfter).Error
 

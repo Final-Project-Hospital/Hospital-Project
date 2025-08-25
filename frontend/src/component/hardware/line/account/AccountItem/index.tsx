@@ -1,9 +1,31 @@
-import { Avatar, Badge, List, theme, Typography, message, Modal, Button } from "antd";
+// AccountItem.tsx
+import {
+  Avatar,
+  Badge,
+  List,
+  theme,
+  Typography,
+  message,
+  Modal,
+  Button,
+  Form,
+  Input
+} from "antd";
 import { NotificationInterface } from "../../../../../interface/INotification";
-import { UpdateAlertByNotificationID, DeleteNotificationByID } from "../../../../../services/hardware";
+import {
+  UpdateAlertByNotificationID,
+  DeleteNotificationByID,
+  UpdateNotificationByID
+} from "../../../../../services/hardware";
 import { useState } from "react";
 import { useNotificationContext } from "../../NotificationContext";
-import { DeleteOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+  EditOutlined,
+  UserOutlined
+} from "@ant-design/icons";
+import { useStateContext } from "../../../../../contexts/ContextProvider"; 
 
 const { useToken } = theme;
 
@@ -14,6 +36,14 @@ const AccountItem = ({ item }: { item: NotificationInterface }) => {
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
+  // ✅ State Modal Edit
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [form] = Form.useForm();
+  const [saving, setSaving] = useState(false);
+
+  // ✅ ใช้ reloadKey ส่วนกลาง
+  const { bumpReload } = useStateContext();
+
   // ✅ Toggle Alert
   const handleToggleAlert = async () => {
     try {
@@ -21,7 +51,8 @@ const AccountItem = ({ item }: { item: NotificationInterface }) => {
       const res = await UpdateAlertByNotificationID(item.ID, newAlert);
       if (res) {
         setAlert(res.Alert);
-        triggerReload(); // refresh list
+        triggerReload();
+        bumpReload(); // ✅ ให้กราฟ/ตารางที่พึ่งพา reloadKey รีเฟรชด้วย
         message.success(
           `อัปเดตสถานะเรียบร้อย: ${res.Alert ? "แจ้งเตือน" : "ไม่แจ้งเตือน"}`
         );
@@ -39,16 +70,50 @@ const AccountItem = ({ item }: { item: NotificationInterface }) => {
     try {
       const res = await DeleteNotificationByID(item.ID);
       if (res) {
-        message.success("ลบ Notification สำเร็จ");
-        triggerReload(); // refresh list
+        message.success("ลบ ข้อมูลผู้ได้รับการเเจ้งเตื่อน สำเร็จ");
+        triggerReload();
+        bumpReload(); // ✅ จุดสำคัญ: กระตุ้นรีโหลดให้ RoomAdminTable/MainLine
       } else {
-        message.error("ไม่สามารถลบ Notification ได้");
+        message.error("ไม่สามารถลบ ข้อมูลผู้ได้รับการเเจ้งเตื่อน ได้");
       }
     } catch (error) {
       console.error(error);
       message.error("เกิดข้อผิดพลาดในการลบ");
     } finally {
       setIsDeleteModalOpen(false);
+    }
+  };
+
+  // ✅ Edit Notification
+  const handleEdit = () => {
+    form.setFieldsValue({
+      Name: item.Name,
+      UserID: item.UserID,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      const values = await form.validateFields();
+      setSaving(true);
+      const res = await UpdateNotificationByID(item.ID, {
+        name: values.Name,        // 👈 ต้องส่งเป็น name
+        user_id: values.UserID,   // 👈 ต้องส่งเป็น user_id
+      });
+      if (res) {
+        message.success("อัปเดต ข้อมูลผู้ได้รับการเเจ้งเตื่อน สำเร็จ");
+        setIsEditModalOpen(false);
+        triggerReload();
+        bumpReload(); // ✅ อัปเดตแล้วก็รีโหลดได้เช่นกัน
+      } else {
+        message.error("ไม่สามารถอัปเดต ข้อมูลผู้ได้รับการเเจ้งเตื่อน ได้");
+      }
+    } catch (error) {
+      console.error(error);
+      message.error("เกิดข้อผิดพลาดในการอัปเดต");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -104,6 +169,18 @@ const AccountItem = ({ item }: { item: NotificationInterface }) => {
             />
           </div>
 
+          {/* Edit Button */}
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            size="small"
+            onClick={handleEdit}
+            style={{
+              backgroundColor: "#14b8a6",
+              borderColor: "#14b8a6",
+            }}
+          />
+
           {/* Delete Button */}
           <Button
             danger
@@ -120,7 +197,7 @@ const AccountItem = ({ item }: { item: NotificationInterface }) => {
         title={
           <div className="flex items-center gap-2">
             <ExclamationCircleOutlined style={{ color: "#faad14" }} />
-            <span>ยืนยันการลบ Notification</span>
+            <span>ยืนยันการลบ ผู้ได้รับการเเจ้งเตื่อน</span>
           </div>
         }
         open={isDeleteModalOpen}
@@ -135,6 +212,61 @@ const AccountItem = ({ item }: { item: NotificationInterface }) => {
           คุณแน่ใจหรือไม่ว่าต้องการลบ{" "}
           <b style={{ color: token.colorError }}>{item.Name || "ไม่มีชื่อ"}</b> ?
         </p>
+      </Modal>
+
+      {/* ✅ Modal แก้ไข Notification */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-teal-600 font-bold">
+            <EditOutlined /> แก้ไข ข้อมูลผู้ได้รับการเเจ้งเตื่อน
+          </div>
+        }
+        open={isEditModalOpen}
+        onCancel={() => setIsEditModalOpen(false)}
+        centered
+        width="500px"
+        footer={[
+          <Button key="cancel" onClick={() => setIsEditModalOpen(false)}>
+            ยกเลิก
+          </Button>,
+          <Button
+            key="save"
+            type="primary"
+            loading={saving}
+            onClick={handleSaveEdit}
+            style={{
+              background: "linear-gradient(to right, #14b8a6, #0d9488)",
+              borderColor: "#0d9488",
+            }}
+          >
+            บันทึก
+          </Button>,
+        ]}
+      >
+        <Form layout="vertical" form={form}>
+          <Form.Item
+            label={
+              <span className="flex items-center gap-1">
+                <EditOutlined /> ชื่อ-สกุล
+              </span>
+            }
+            name="Name"
+            rules={[{ required: true, message: "กรุณากรอก Name" }]}
+          >
+            <Input placeholder="ชื่อ Notification" />
+          </Form.Item>
+          <Form.Item
+            label={
+              <span className="flex items-center gap-1">
+                <UserOutlined /> UserID
+              </span>
+            }
+            name="UserID"
+            rules={[{ required: true, message: "กรุณากรอก UserID" }]}
+          >
+            <Input placeholder="UserID" />
+          </Form.Item>
+        </Form>
       </Modal>
     </>
   );
