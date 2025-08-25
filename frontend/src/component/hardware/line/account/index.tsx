@@ -1,4 +1,13 @@
-import { Card, List, Spin, Modal, Button, Input, message } from "antd";
+import { 
+  Card, 
+  List, 
+  Spin, 
+  Modal, 
+  Button, 
+  Input, 
+  message, 
+  Form 
+} from "antd";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import AccountItem from "./AccountItem";
@@ -8,24 +17,38 @@ import { useNotificationContext } from "../NotificationContext";
 import {
   GetLineMasterFirst,
   UpdateLineMasterByID,
+  CreateNotification
 } from "../../../../services/hardware";
-import { LineMasterInterface } from "../../../../interface/ILineMaster"; // ✅ interface
+import { LineMasterInterface } from "../../../../interface/ILineMaster";
 
-const { TextArea } = Input; // ✅ ใช้ TextArea ของ AntD
+// ✅ Icons
+import { 
+  PlusOutlined, 
+  BellOutlined, 
+  EditOutlined, 
+  UserOutlined, 
+  KeyOutlined 
+} from "@ant-design/icons";
+
+const { TextArea } = Input;
 
 const Account = () => {
   const { t } = useTranslation();
   const [notifications, setNotifications] = useState<NotificationInterface[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // ✅ state สำหรับ Modal Line Token
+  // ✅ Modal LINE Token
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [lineMaster, setLineMaster] = useState<LineMasterInterface | null>(null);
   const [loadingToken, setLoadingToken] = useState<boolean>(false);
-  const [newToken, setNewToken] = useState<string>(""); // ✅ สำหรับแก้ไข Token
+  const [newToken, setNewToken] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
 
-  const { reloadKey } = useNotificationContext(); // ✅ ใช้ reloadKey
+  // ✅ Modal Create Notification
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [form] = Form.useForm();
+
+  const { reloadKey, triggerReload } = useNotificationContext();
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -40,19 +63,19 @@ const Account = () => {
     fetchNotifications();
   }, [reloadKey]);
 
-  // ✅ ฟังก์ชันเปิด Modal และโหลด Token
+  // ✅ Show Token Modal
   const showLineToken = async () => {
     setIsModalOpen(true);
     setLoadingToken(true);
     const res = await GetLineMasterFirst();
     if (res) {
       setLineMaster(res);
-      setNewToken(res.Token); // ตั้งค่า token ใน textarea
+      setNewToken(res.Token);
     }
     setLoadingToken(false);
   };
 
-  // ✅ ฟังก์ชันบันทึกการแก้ไข Token
+  // ✅ Save Token
   const handleSaveToken = async () => {
     if (!lineMaster) return;
     setSaving(true);
@@ -60,11 +83,33 @@ const Account = () => {
     if (res) {
       setLineMaster(res);
       message.success("อัปเดต Token สำเร็จ");
-      setIsModalOpen(false); // ✅ ปิด Modal อัตโนมัติเมื่อบันทึกสำเร็จ
+      setIsModalOpen(false);
     } else {
       message.error("ไม่สามารถอัปเดต Token ได้");
     }
     setSaving(false);
+  };
+
+  // ✅ Create Notification
+  const handleCreateNotification = async () => {
+    try {
+      const values = await form.validateFields();
+      const res = await CreateNotification({
+        Name: values.Name,
+        UserID: values.UserID,
+        Alert: false,
+      });
+      if (res) {
+        message.success("สร้าง ข้อมูลผู้ได้รับการเเจ้งเตื่อน สำเร็จ");
+        setIsCreateModalOpen(false);
+        form.resetFields();
+        triggerReload(); // ✅ refresh list
+      } else {
+        message.error("ไม่สามารถสร้าง ข้อมูลผู้ได้รับการเเจ้งเตื่อน ได้");
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -73,9 +118,22 @@ const Account = () => {
         title={t("บัญชีทั้งหมด")}
         style={{ height: "100%" }}
         extra={
-          <Button type="link" onClick={showLineToken}>
-            LINE Token
-          </Button>
+          <>
+            <Button
+              style={{
+                background: "linear-gradient(to right, #14b8a6, #0d9488)",
+                color: "white",
+                border: "none",
+              }}
+              icon={<PlusOutlined />}
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              เพิ่มผู้เเจ้งเตือน
+            </Button>
+            <Button type="link" onClick={showLineToken}>
+              LINE Token
+            </Button>
+          </>
         }
         classNames={{ body: "p-0 pb-6", header: "border-0" }}
       >
@@ -96,9 +154,67 @@ const Account = () => {
         </div>
       </Card>
 
-      {/* ✅ Modal แสดงและแก้ไข Token */}
+      {/* ✅ Modal Create Notification */}
       <Modal
-        title={<span className="text-teal-600 font-bold text-lg">จัดการ LINE Token</span>}
+        title={
+          <span className="text-teal-600 font-bold text-lg flex items-center gap-2">
+            <BellOutlined /> สร้างผู้ได้รับการเเจ้งเตื่อน
+          </span>
+        }
+        open={isCreateModalOpen}
+        onCancel={() => setIsCreateModalOpen(false)}
+        centered
+        width="500px"
+        footer={[
+          <Button key="cancel" onClick={() => setIsCreateModalOpen(false)}>
+            ยกเลิก
+          </Button>,
+          <Button
+            key="create"
+            type="primary"
+            onClick={handleCreateNotification}
+            style={{
+              background: "linear-gradient(to right, #14b8a6, #0d9488)",
+              borderColor: "#0d9488",
+            }}
+          >
+            บันทึก
+          </Button>,
+        ]}
+      >
+        <Form layout="vertical" form={form}>
+          <Form.Item
+            label={
+              <span className="flex items-center gap-1">
+                <EditOutlined /> ชื่อ-สกุล
+              </span>
+            }
+            name="Name"
+            rules={[{ required: true, message: "กรุณากรอก Name" }]}
+          >
+            <Input placeholder="ชื่อ Notification" />
+          </Form.Item>
+          <Form.Item
+            label={
+              <span className="flex items-center gap-1">
+                <UserOutlined /> UserID
+              </span>
+            }
+            name="UserID"
+            rules={[{ required: true, message: "กรุณากรอก UserID" }]}
+          >
+            <Input placeholder="UserID" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* ✅ Modal LINE Token */}
+      <Modal
+        title={
+          <span className="text-teal-600 font-bold text-lg flex items-center gap-2">
+            <KeyOutlined /> จัดการ LINE Token
+          </span>
+        }
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         centered
@@ -128,15 +244,9 @@ const Account = () => {
           </div>
         ) : (
           <div className="space-y-1">
-            <p
-              style={{
-                background: "linear-gradient(to right, #14b8a6, #0d9488)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                fontWeight: "bold",
-              }}
-            >
-            </p>
+            <span className="flex items-center gap-1 font-semibold text-gray-700">
+              <EditOutlined /> Token
+            </span>
             <TextArea
               value={newToken}
               onChange={(e) => setNewToken(e.target.value)}
@@ -146,18 +256,6 @@ const Account = () => {
           </div>
         )}
       </Modal>
-
-      {/* ✅ Responsive CSS */}
-      <style>
-        {`
-          @media (max-width: 768px) {
-            .custom-line-token-modal .ant-modal {
-              width: 90% !important;
-              max-width: none !important;
-            }
-          }
-        `}
-      </style>
     </>
   );
 };

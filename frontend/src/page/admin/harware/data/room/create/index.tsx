@@ -150,11 +150,11 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
       for (const nid of selectedNotificationIDs) {
         await CreateRoomNotification({ room_id: res.ID, notification_id: nid });
       }
-      message.success("บันทึกสำเร็จ");
+      message.success("สร้างข้อมูลห้องสำเร็จ");
       onCreateSuccess();
       onClose();
     } else {
-      message.error("เกิดข้อผิดพลาดในการบันทึก");
+      message.error("เกิดข้อผิดพลาดในการสร้างข้อมูลห้อง");
     }
 
     setLoading(false);
@@ -188,9 +188,9 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
           <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-md border border-teal-600">
             {selectedIcon
               ? React.createElement(selectedIcon, {
-                  size: 40,
-                  className: "text-teal-600",
-                })
+                size: 40,
+                className: "text-teal-600",
+              })
               : null}
           </div>
         </div>
@@ -273,7 +273,7 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
           {/* ✅ เลือกผู้รับผิดชอบ */}
           <Select
             mode="multiple"
-            placeholder="เลือกผู้รับผิดชอบ"
+            placeholder="เลือกผู้ที่ได้รับการเเจ้งเตื่อน"
             value={selectedNotificationIDs}
             onChange={(val) => setSelectedNotificationIDs(val)}
             className="w-full col-span-2"
@@ -295,7 +295,11 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
             type="primary"
             loading={loading}
             onClick={handleSubmit}
-            className="bg-teal-600 hover:bg-teal-700"
+            style={{
+              background: "linear-gradient(to right, #14b8a6, #0d9488)",
+              borderColor: "#0d9488",
+              color: "#fff", 
+            }}
           >
             บันทึก
           </Button>

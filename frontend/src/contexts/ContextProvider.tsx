@@ -1,3 +1,4 @@
+// ContextProvider.tsx
 import React, { createContext, useContext, useState, ReactNode, ChangeEvent } from 'react';
 
 // Initial state type
@@ -26,9 +27,12 @@ interface StateContextType {
   setMode: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   setColor: (color: string) => void;
   handleClick: (clicked: keyof InitialState) => void;
+
+  // ✅ ใหม่: รีโหลดคีย์ส่วนกลาง
+  reloadKey: number;
+  bumpReload: () => void;
 }
 
-// Initial state value
 const initialState: InitialState = {
   chat: false,
   cart: false,
@@ -49,6 +53,10 @@ export const ContextProvider: React.FC<ContextProviderProps> = ({ children }) =>
   const [themeSettings, setThemeSettings] = useState<boolean>(false);
   const [activeMenu, setActiveMenu] = useState<boolean>(true);
   const [isClicked, setIsClicked] = useState<InitialState>(initialState);
+
+  // ✅ ใหม่: reloadKey ส่วนกลาง
+  const [reloadKey, setReloadKey] = useState<number>(0);
+  const bumpReload = () => setReloadKey(prev => prev + 1);
 
   const setMode = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setCurrentMode(e.target.value);
@@ -83,6 +91,8 @@ export const ContextProvider: React.FC<ContextProviderProps> = ({ children }) =>
         setColor,
         themeSettings,
         setThemeSettings,
+        reloadKey,
+        bumpReload,
       }}
     >
       {children}

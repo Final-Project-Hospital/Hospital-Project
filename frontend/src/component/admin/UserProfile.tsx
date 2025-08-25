@@ -20,15 +20,21 @@ const UserProfile = () => {
   const [loading, setLoading] = useState<boolean>(true);
 
   const handleLogout = () => {
+    localStorage.removeItem("emailuser");
+    localStorage.removeItem("employeeid");
+    localStorage.removeItem("firstnameuser");
     localStorage.removeItem("isLogin");
-    localStorage.removeItem("Role");
-    localStorage.clear();
+    localStorage.removeItem("lastnameuser");
+    localStorage.removeItem("positionuser");
+    localStorage.removeItem("roleName");
+    localStorage.removeItem("token");
+    localStorage.removeItem("token_type");
 
     message.success("ออกจากระบบ");
 
     setTimeout(() => {
       navigate("/login");
-    }, 3500);
+    }, 3000);
   };
 
   const userProfileData = [

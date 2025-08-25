@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { BlockTitle } from "../../../../../style/global/default";
 import { TopProductsWrap } from "./average_date";
 import {
   GetSensorDataByHardwareID,
@@ -145,12 +144,6 @@ const Average: React.FC<AveragedataProps> = ({ hardwareID, reloadKey, onLoaded }
 
   return (
     <TopProductsWrap>
-      <div className="block-head">
-        <BlockTitle className="block-title">
-          <h3>ข้อมูลเฉลี่ยของเซนเซอร์</h3>
-        </BlockTitle>
-      </div>
-
       <div className="tbl-products overflow-auto">
         <table className="w-full table-auto text-sm">
           <thead>

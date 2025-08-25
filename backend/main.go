@@ -517,6 +517,7 @@ func main() {
 		public.PATCH("/sensor-data-parameter/:id/note", hardware.CreateNoteBySensorDataParameterID)
 		public.PATCH("/hardware-parameters/:id/layout-display", hardware.UpdateLayoutDisplayByID)
 		public.PATCH("/update-hardware-parameter-color/:id", hardware.UpdateHardwareParameterColorByID)
+		public.POST("/employees/:id/check-password", hardware.CheckPasswordByID)
 
 
 		// Line + Webhook
@@ -530,6 +531,8 @@ func main() {
 		public.PUT("/room-notification/:room_id/notification", line.UpdateNotificationIDByRoomID)
 		public.GET("/line-master/first", line.GetLineMasterFirstID)
 		public.PUT("/line-master/:id", line.UpdateLineMasterByID)
+		public.POST("/create-notification", line.CreateNotification)          
+		public.PATCH("/update-notification/:id", line.UpdateNotificationByID) 
 
 		//report hardware
 		public.GET("/report-hardware", report.ListReportHardware)
@@ -598,8 +601,8 @@ func main() {
 		c.String(http.StatusOK, "API RUNNING... PORT: %s", PORT)
 	})
 
-	r.Run("localhost:" + PORT)
-	// r.Run("0.0.0.0:" + PORT)
+	//r.Run("localhost:" + PORT)
+	r.Run("0.0.0.0:" + PORT)
 
 }
 
