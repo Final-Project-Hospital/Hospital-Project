@@ -17,8 +17,8 @@ type EnvironmentalDataResponse struct {
 	Unit        string    `json:"unit"`
 	Treatment   string    `json:"treatment"`
 	Status      string    `json:"status"`
-	Environment string    `json:"environment"`   // เพิ่มชื่อสภาพแวดล้อม
-	EnvID       uint      `json:"environment_id"`// เพิ่ม id สภาพแวดล้อม
+	Environment string    `json:"environment"`
+	EnvID       uint      `json:"environment_id"`
 }
 
 type EfficiencyResponse struct {
@@ -33,6 +33,43 @@ type AlertResponse struct {
 	Average   float64 `json:"average"`
 	MaxValue  float64 `json:"max_value"`
 	Unit      string  `json:"unit"`
+}
+// IDs ของพารามิเตอร์ขยะ (ตามข้อมูลที่ให้มา)
+const (
+	ParamInfectious = 25 // ขยะติดเชื้อ
+	ParamGeneral    = 26 // ขยะทั่วไป
+	ParamRecycled   = 27 // ขยะรีไซเคิล
+	ParamHazardous  = 28 // ขยะอันตราย
+	ParamChemical   = 29 // ขยะเคมีบำบัด
+)
+
+type WasteMixTotals struct {
+	Chemical   float64 `json:"chemical"`
+	General    float64 `json:"general"`
+	Hazardous  float64 `json:"hazardous"`
+	Infectious float64 `json:"infectious"`
+	Recycled   float64 `json:"recycled"`
+}
+type WasteMixResponse struct {
+	Range struct {
+		Start string `json:"start"`
+		End   string `json:"end"`
+	} `json:"range"`
+	Unit   string         `json:"unit"`
+	Totals WasteMixTotals `json:"totals"`
+}
+
+type RevenuePoint struct {
+	Month string  `json:"month"` // YYYY-MM
+	Total float64 `json:"total"`
+}
+type RecycledRevenueResponse struct {
+	Range struct {
+		Start string `json:"start"`
+		End   string `json:"end"`
+	} `json:"range"`
+	Points     []RevenuePoint `json:"points"`
+	GrandTotal float64        `json:"grand_total"`
 }
 
 /* ------------------------- DATA (records) ------------------------- */
@@ -201,7 +238,6 @@ func GetEnvironmentalEfficiency(c *gin.Context) {
 		if p.Before == nil || p.After == nil || *p.Before == 0 {
 			continue
 		}
-		// ให้เป็น "เปอร์เซ็นต์" เลย (0-100)
 		eff := ((*p.Before - *p.After) / *p.Before) * 100.0
 		resp = append(resp, EfficiencyResponse{
 			Date:       p.Date,
@@ -291,40 +327,39 @@ func GetEnvironmentalAlerts(c *gin.Context) {
 
 /* ------------------------- META (+ standards) ------------------------- */
 
-// สำหรับส่งรายการ Environment -> Parameters (+ unit + มาตรฐานล่าสุดของพารามิเตอร์นั้น)
+// meta: รายการ Environment -> Parameters (+ unit + “มาตรฐานล่าสุด” ต่อ env-param)
 type MetaParam struct {
-	ID         uint     `json:"id"`
-	Name       string   `json:"name"`
-	Unit       string   `json:"unit"`
-	StdMin     *float64 `json:"std_min,omitempty"`
-	StdMiddle  *float64 `json:"std_middle,omitempty"`
-	StdMax     *float64 `json:"std_max,omitempty"`
+	ID        uint     `json:"id"`
+	Name      string   `json:"name"`
+	Unit      string   `json:"unit"`
+	StdMin    *float64 `json:"std_min,omitempty"`
+	StdMiddle *float64 `json:"std_middle,omitempty"`
+	StdMax    *float64 `json:"std_max,omitempty"`
 }
 
 type MetaEnvironment struct {
-	ID     uint       `json:"id"`
-	Name   string     `json:"name"`
-	Params []MetaParam`json:"params"`
+	ID     uint        `json:"id"`
+	Name   string      `json:"name"`
+	Params []MetaParam `json:"params"`
 }
 
 func GetEnvironmentalMeta(c *gin.Context) {
 	db := config.DB()
 
-	// ดึง "มาตรฐานล่าสุด" ต่อ (environment_id, parameter_id) โดยดูจากวันที่ล่าสุดใน environmental_records
+	// ใช้ standard_id จาก EnvironmentalRecord “ล่าสุด” ต่อ (environment_id, parameter_id)
 	type row struct {
-		EnvID      uint
-		EnvName    string
-		ParamID    uint
-		ParamName  string
-		UnitName   string
-		StdMin     *float64
-		StdMiddle  *float64
-		StdMax     *float64
+		EnvID     uint
+		EnvName   string
+		ParamID   uint
+		ParamName string
+		UnitName  string
+		StdMin    *float64
+		StdMiddle *float64
+		StdMax    *float64
 	}
 
 	var rows []row
 
-	// ใช้ raw SQL เพื่อความชัดเจน (รองรับ MySQL; หากใช้ Postgres ให้เปลี่ยน DATE_FORMAT เป็น TO_CHAR ตามเหมาะสม)
 	raw := `
 		WITH latest AS (
 			SELECT environment_id, parameter_id, MAX(date) AS max_date
@@ -336,7 +371,7 @@ func GetEnvironmentalMeta(c *gin.Context) {
 			env.environment_name  AS env_name,
 			p.id                  AS param_id,
 			p.parameter_name      AS param_name,
-			u.unit_name           AS unit_name,
+			COALESCE(u.unit_name, '') AS unit_name,
 			s.min_value           AS std_min,
 			s.middle_value        AS std_middle,
 			s.max_value           AS std_max
@@ -370,11 +405,156 @@ func GetEnvironmentalMeta(c *gin.Context) {
 		})
 	}
 
-	// flatten ออกไปเป็น slice
 	resp := make([]MetaEnvironment, 0, len(byEnv))
 	for _, v := range byEnv {
 		resp = append(resp, *v)
 	}
 
 	c.JSON(http.StatusOK, resp)
+}
+// ========================== WASTE MIX ==========================
+
+func GetWasteMix(c *gin.Context) {
+	db := config.DB()
+
+	start := c.Query("start") // YYYY-MM-DD
+	end := c.Query("end")     // YYYY-MM-DD
+	now := time.Now()
+
+	if start == "" {
+		start = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location()).Format("2006-01-02")
+	}
+	if end == "" {
+		end = time.Date(now.Year(), 12, 31, 23, 59, 59, 0, now.Location()).Format("2006-01-02")
+	}
+
+	q := `
+WITH latest_per_day AS (
+  SELECT g.*
+  FROM garbages g
+  JOIN (
+    SELECT MAX(id) AS id
+    FROM garbages
+    WHERE date::date BETWEEN ?::date AND ?::date
+      AND parameter_id IN (?, ?, ?, ?, ?)
+    GROUP BY date::date, parameter_id
+  ) t ON g.id = t.id
+)
+SELECT
+  COALESCE(SUM(CASE WHEN parameter_id = ? THEN monthly_garbage END), 0) AS chemical,
+  COALESCE(SUM(CASE WHEN parameter_id = ? THEN monthly_garbage END), 0) AS general,
+  COALESCE(SUM(CASE WHEN parameter_id = ? THEN monthly_garbage END), 0) AS hazardous,
+  COALESCE(SUM(CASE WHEN parameter_id = ? THEN monthly_garbage END), 0) AS infectious,
+  COALESCE(SUM(CASE WHEN parameter_id = ? THEN monthly_garbage END), 0) AS recycled
+FROM latest_per_day;
+`
+
+	var totals WasteMixTotals
+	if err := db.Raw(
+		q,
+		start, end,
+		ParamInfectious, ParamGeneral, ParamRecycled, ParamHazardous, ParamChemical,
+		ParamChemical, ParamGeneral, ParamHazardous, ParamInfectious, ParamRecycled,
+	).Scan(&totals).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp := WasteMixResponse{Totals: totals, Unit: "Kg"}
+	resp.Range.Start = start
+	resp.Range.End = end
+	c.JSON(http.StatusOK, resp)
+}
+
+// ========================== RECYCLED REVENUE ==========================
+
+func GetRecycledRevenue(c *gin.Context) {
+	db := config.DB()
+
+	start := c.Query("start")
+	end := c.Query("end")
+	now := time.Now()
+
+	if start == "" {
+		start = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location()).Format("2006-01-02")
+	}
+	if end == "" {
+		end = time.Date(now.Year(), 12, 31, 23, 59, 59, 0, now.Location()).Format("2006-01-02")
+	}
+
+	q := `
+WITH latest_recycled AS (
+  SELECT g.*
+  FROM garbages g
+  JOIN (
+    SELECT MAX(id) AS id
+    FROM garbages
+    WHERE date::date BETWEEN ?::date AND ?::date
+      AND parameter_id = ?
+    GROUP BY date::date, parameter_id
+  ) t ON g.id = t.id
+)
+SELECT
+  to_char(date_trunc('month', date), 'YYYY-MM') AS month,
+  SUM(total_sale) AS total
+FROM latest_recycled
+GROUP BY month
+ORDER BY month;
+`
+
+	var rows []RevenuePoint
+	if err := db.Raw(q, start, end, ParamRecycled).Scan(&rows).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var grand float64
+	for _, r := range rows {
+		grand += r.Total
+	}
+
+	resp := RecycledRevenueResponse{
+		Points:     rows,
+		GrandTotal: grand,
+	}
+	resp.Range.Start = start
+	resp.Range.End = end
+	c.JSON(http.StatusOK, resp)
+}
+func GetWasteMixByMonth(c *gin.Context) {
+	db := config.DB()
+
+	month := c.Query("month") // ตัวอย่าง "2025-03"
+	if month == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "month (YYYY-MM) is required"})
+		return
+	}
+
+	// NOTE: parameter_id 25..29 ตรงกับ 5 ประเภทขยะของระบบ
+	// ใช้ to_char(g.date,'YYYY-MM') เพื่อเลือกตามเดือน
+	const sql = `
+		SELECT p.parameter_name AS parameter,
+		       COALESCE(SUM(g.monthly_garbage), 0) AS total,
+		       'kg' AS unit
+		  FROM garbages g
+		  JOIN parameters p ON p.id = g.parameter_id
+		 WHERE to_char(g.date,'YYYY-MM') = ?
+		   AND g.parameter_id IN (25,26,27,28,29)
+		 GROUP BY p.parameter_name
+		 ORDER BY p.parameter_name;
+	`
+
+	type item struct {
+		Parameter string  `json:"parameter"`
+		Total     float64 `json:"total"`
+		Unit      string  `json:"unit"`
+	}
+	var rows []item
+
+	if err := db.Raw(sql, month).Scan(&rows).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, rows)
 }
