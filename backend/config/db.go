@@ -73,6 +73,7 @@ func SetupDatabase() {
 	db.FirstOrCreate(&Drinkwater, &entity.Environment{EnvironmentName: "น้ำดื่ม"})
 	db.FirstOrCreate(&Tapwater, &entity.Environment{EnvironmentName: "น้ำประปา"})
 	db.FirstOrCreate(&Garbage, &entity.Environment{EnvironmentName: "ขยะ"})
+
 	// Standard
 	ranges := []struct {
 		min float32
@@ -95,7 +96,7 @@ func SetupDatabase() {
 		})
 	}
 	// จำลองข้อมูลแบบ "ค่าเดี่ยว"
-	middles := []float32{20.0, 30.0, 35.0, 500.0}
+	middles := []float32{20.0, 30.0, 35.0, 500.0, 1000.00}
 
 	for _, m := range middles {
 		standard := entity.Standard{
@@ -121,9 +122,11 @@ func SetupDatabase() {
 	Unit := entity.Unit{UnitName: "mg/L"}
 	Unit2 := entity.Unit{UnitName: "ไม่มีหน่วย"}
 	Unit3 := entity.Unit{UnitName: "Kg"}
+	Unit4 := entity.Unit{UnitName: "MPN/100 ml"}
 	db.FirstOrCreate(&Unit, &entity.Unit{UnitName: "mg/L"})
 	db.FirstOrCreate(&Unit2, &entity.Unit{UnitName: "ไม่มีหน่วย"})
 	db.FirstOrCreate(&Unit3, &entity.Unit{UnitName: "Kg"})
+	db.FirstOrCreate(&Unit4, &entity.Unit{UnitName: "MPN/100 ml"})
 
 	//BeforeAfter
 	Before := entity.BeforeAfterTreatment{TreatmentName: "ก่อน"}
@@ -526,6 +529,7 @@ func SetupDatabase() {
 	FogParameter := entity.Parameter{ParameterName: "Fat Oil and Grease"}
 	db.FirstOrCreate(&FogParameter, &entity.Parameter{ParameterName: "Fat Oil and Grease"})
 
+	// wastewater
 	// BOD
 	beforeValues := []float64{2, 2, 4.4, 39, 47, 12, 11, 12, 29, 2, 3.1, 4.4, 14, 2, 3.8, 2, 2.6, 2, 2, 2, 4, 2, 19, 14, 15, 9, 2, 3.1, 4.4, 14, 2, 3.8, 2, 2.6, 2, 2, 2, 1.8, 1.4, 1.1, 1, 9, 2, 3.1, 2, 3.8, 2, 2.6, 2, 2, 2, 2, 3.1, 2, 9, 2, 3.1, 4.4}
 	afterValues := []float64{2.4, 2, 2.2, 5.6, 2.7, 5.5, 2, 2, 2, 2, 19, 9.2, 44, 11, 18, 46, 5.2, 6.2, 5, 6.1, 4, 2, 19, 14, 15, 9, 2, 19, 9.2, 44, 11, 18, 46, 5.2, 6.2, 5, 6.1, 10.9, 10.1, 9.3, 8.5, 9, 2, 19, 11, 18, 46, 5.2, 6.2, 5, 6.1, 2, 19, 11, 9, 2, 19, 9.2}
@@ -1099,6 +1103,171 @@ func SetupDatabase() {
 		})
 	}
 	fmt.Println("Insert TKN seed data done!")
+
+	// COD
+	// beforeValuesCOD := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesCOD := []float64{
+		64, 90, 32, 45, 39, 40, 33, 38, 59, 63,
+		60, 79, 51, 58, 40, 38, 44, 40,
+	}
+	datesCOD := []string{
+		"2023-07-01", "2023-08-01", "2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesCOD); i++ {
+		date, err := time.Parse("2006-01-02", datesCOD[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeCOD uint
+		// if beforeValuesCOD[i] <= 35.00 {
+		// 	statusIDBeforeCOD = status2.ID
+		// } else {
+		// 	statusIDBeforeCOD = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesCOD[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Wastewater.ID,
+		// 	ParameterID:            param7.ID,
+		// 	StandardID:             5,   //ในสมุดไม่มี
+		// 	UnitID:                 Unit.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeCOD,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Wastewater.ID,
+		// 	ParameterID:            param7.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterCOD uint
+		if afterValuesCOD[i] <= 35.00 {
+			statusIDAfterCOD = status2.ID
+		} else {
+			statusIDAfterCOD = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesCOD[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param7.ID,
+			StandardID:             5,	//ในสมุดไม่มี
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterCOD,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param7.ID,
+		})
+	}
+	fmt.Println("Insert COD seed data done!")
+
+	// FCB
+	// beforeValuesCOD := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesFCB := []float64{
+		1.8, 4.5, 140, 4.5,
+		2, 7.8, 0, 13, 8, 8, 0, 4.5,
+		0, 0, 0, 0, 0, 0, 0, 23,
+		0, 0, 0, 0, 2, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+	}
+	datesFCB := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesFCB); i++ {
+		date, err := time.Parse("2006-01-02", datesFCB[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeFCB uint
+		// if beforeValuesFCB[i] <= 35.00 {
+		// 	statusIDBeforeFCB = status2.ID
+		// } else {
+		// 	statusIDBeforeFCB = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesFCB[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Wastewater.ID,
+		// 	ParameterID:            param8.ID,
+		// 	StandardID:             7,
+		// 	UnitID:                 Unit4.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeFCB,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Wastewater.ID,
+		// 	ParameterID:            param8.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterFCB uint
+		if afterValuesFCB[i] <= 1000.00 {
+			statusIDAfterFCB = status2.ID
+		} else {
+			statusIDAfterFCB = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesFCB[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param8.ID,
+			StandardID:             7,
+			UnitID:                 Unit4.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterFCB,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param8.ID,
+		})
+	}
+	fmt.Println("Insert FCB seed data done!")
+
 
 	// Garbages
 	// recycledWaste
