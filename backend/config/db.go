@@ -264,6 +264,8 @@ func SetupDatabase() {
 		paramhardware1 := entity.HardwareParameter{
 			Parameter:                "Formaldehyde",
 			Icon:                     "GiChemicalDrop",
+			Index:                    1,
+			Right: true,
 			GroupDisplay:             false,
 			LayoutDisplay:            false,
 			Alert:                    false,
@@ -276,6 +278,8 @@ func SetupDatabase() {
 		paramhardware2 := entity.HardwareParameter{
 			Parameter:                "Temperature",
 			Icon:                     "GiChemicalDrop",
+			Index:                    2,
+			Right: true,
 			GroupDisplay:             false,
 			LayoutDisplay:            false,
 			Alert:                    false,
@@ -288,6 +292,8 @@ func SetupDatabase() {
 		paramhardware3 := entity.HardwareParameter{
 			Parameter:                "Humidity",
 			Icon:                     "GiChemicalDrop",
+			Index:                    3,
+			Right: true,
 			GroupDisplay:             false,
 			LayoutDisplay:            false,
 			Alert:                    false,
