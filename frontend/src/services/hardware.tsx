@@ -310,12 +310,12 @@ export const DeleteAllSensorDataParametersBySensorDataID = async (
 };
 export const CreateNoteBySensorDataParameterID = async (
   id: number,
-  note: string
+  note: string | null | undefined
 ): Promise<boolean> => {
   try {
     const response = await axios.patch(
       `${apiUrl}/sensor-data-parameter/${id}/note`,
-      { note },
+      { note: note ?? "" }, 
       {
         headers: {
           "Content-Type": "application/json",
@@ -323,13 +323,8 @@ export const CreateNoteBySensorDataParameterID = async (
         },
       }
     );
-
-    if (response.status === 200) {
-      return true;
-    } else {
-      console.error("Unexpected status:", response.status);
-      return false;
-    }
+    
+    return response.status >= 200 && response.status < 300;
   } catch (error) {
     console.error("Error creating note:", error);
     return false;
@@ -636,30 +631,58 @@ export const ListReportHardware = async (): Promise<SensorDataParameterInterface
   }
 };
 
-export interface UpdateGroupDisplayInput {
-  group_display: boolean;
+export interface UpdateGroupAndIndexInput {
+  group_display?: boolean;
+  index?: number;     
+  right?: boolean;    
 }
+
+type UpdateGroupDisplayResponse = { message: string; hardware_param: any };
 
 export const UpdateGroupDisplay = async (
   id: number,
-  data: UpdateGroupDisplayInput
-): Promise<{ message: string; hardware_param: any } | null> => {
+  data: UpdateGroupAndIndexInput
+): Promise<UpdateGroupDisplayResponse | null> => {
   try {
-    const response = await axios.put(`${apiUrl}/hardware-parameter/${id}/group-display`, data, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-    });
+    const payload: Record<string, any> = {};
 
-    if (response.status === 200) {
-      return response.data;
-    } else {
-      console.error("Unexpected status:", response.status);
-      return null;
+    // ส่ง false ได้ด้วยการเช็ค !== undefined
+    if (data.group_display !== undefined) {
+      payload.group_display = data.group_display;
     }
+
+    if (data.index !== undefined) {
+      if (typeof data.index !== "number" || data.index < 1) {
+        throw new Error("index must be >= 1");
+      }
+      payload.index = data.index;
+    }
+
+    if (data.right !== undefined) {
+      payload.right = data.right;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      throw new Error("No fields to update (group_display or index or right required)");
+    }
+
+    const res = await axios.put(
+      `${apiUrl}/hardware-parameter/${id}/group-display`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    return res.status === 200 ? (res.data as UpdateGroupDisplayResponse) : null;
   } catch (error: any) {
-    console.error("Error updating group_display:", error.response?.data || error.message);
+    console.error(
+      "Error updating group_display/index/right:",
+      error?.response?.data || error?.message || error
+    );
     return null;
   }
 };
@@ -974,4 +997,94 @@ export const UpdateHardwareParameterColorByID = async (
     console.error("Error updating hardware parameter color:", error);
     return null;
   }
+};
+
+// ✅ Create Notification
+export const CreateNotification = async (
+  data: Partial<NotificationInterface>
+): Promise<NotificationInterface | null> => {
+  try {
+    const response = await axios.post(`${apiUrl}/create-notification`, data, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 201) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating notification:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+// ✅ Update Notification By ID (PATCH)
+export const UpdateNotificationByID = async (
+  id: number,
+  data: { name: string; user_id: string }   // 👈 ใช้ key เล็กให้ตรง backend
+): Promise<NotificationInterface | null> => {
+  try {
+    const response = await axios.patch(`${apiUrl}/update-notification/${id}`, data, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error updating notification:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export interface CheckPasswordResponse {
+  employee_id: number;
+  valid: boolean;
+}
+
+export const CheckPasswordByID = async (
+  employeeId: number,
+  password: string
+): Promise<CheckPasswordResponse | null> => {
+  try {
+    const response = await axios.post(
+      `${apiUrl}/employees/${employeeId}/check-password`,
+      { password },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      return response.data as CheckPasswordResponse;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error checking employee password:", error);
+    return null;
+  }
+};
+
+export const IsEmployeePasswordValid = async (
+  employeeId: number,
+  password: string
+): Promise<boolean> => {
+  const res = await CheckPasswordByID(employeeId, password);
+  return !!res?.valid;
 };

@@ -29,4 +29,5 @@ export interface listGeneralInterface {
   MiddleTarget: number;
   MaxTarget: number;
   UnitName: string;
+  AverageDailyGarbage: number;
 }

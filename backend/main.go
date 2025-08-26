@@ -457,6 +457,7 @@ func main() {
 		public.GET("/list-hazardous", hazardousWaste.ListHazardous)
 		public.GET("/get-hazardous/:id", hazardousWaste.GetHazardousbyID)
 		public.GET("/get-hazardous-table", hazardousWaste.GetHazardousTABLE)
+		public.GET("/get-last-day-hazardous", hazardousWaste.GetLastDayHazardous)
 		public.PATCH("/update-or-create-hazardous/:d", hazardousWaste.UpdateOrCreateHazardous)
 		public.DELETE("/delete-hazardous-day/:id", hazardousWaste.DeleteAllHazardousRecordsByDate)
 		//ใช้ร่วมกัน
@@ -468,6 +469,7 @@ func main() {
 		public.GET("/list-general", generalWaste.ListGeneral)
 		public.GET("/get-general/:id", generalWaste.GetGeneralbyID)
 		public.GET("/get-general-table", generalWaste.GetGeneralTABLE)
+		public.GET("/get-last-day-general", generalWaste.GetLastDayGeneral)
 		public.PATCH("/update-or-create-general/:d", generalWaste.UpdateOrCreateGeneral)
 		public.DELETE("/delete-general-day/:id", generalWaste.DeleteAllGeneralRecordsByDate)
 
@@ -477,6 +479,7 @@ func main() {
 		public.GET("/list-chemical", chemicalWaste.ListChemical)
 		public.GET("/get-chemical/:id", chemicalWaste.GetChemicalbyID)
 		public.GET("/get-chemical-table", chemicalWaste.GetChemicalTABLE)
+		public.GET("/get-last-day-chemical", chemicalWaste.GetLastDayChemical)
 		public.PATCH("/update-or-create-chemical/:d", chemicalWaste.UpdateOrCreateChemical)
 		public.DELETE("/delete-chemical-day/:id", chemicalWaste.DeleteAllChemicalRecordsByDate)
 
@@ -496,6 +499,7 @@ func main() {
 		public.GET("/list-recycled", recycledWaste.ListRecycled)
 		public.GET("/get-recycled/:id", recycledWaste.GetRecycledbyID)
 		public.GET("/get-recycled-table", recycledWaste.GetRecycledTABLE)
+		public.GET("/get-last-day-recycled", recycledWaste.GetLastDayRecycled)
 		public.PATCH("/update-or-create-recycled/:d", recycledWaste.UpdateOrCreateRecycled)
 		public.DELETE("/delete-recycled-day/:id", recycledWaste.DeleteAllRecycledRecordsByDate)
 
@@ -517,6 +521,7 @@ func main() {
 		public.PATCH("/sensor-data-parameter/:id/note", hardware.CreateNoteBySensorDataParameterID)
 		public.PATCH("/hardware-parameters/:id/layout-display", hardware.UpdateLayoutDisplayByID)
 		public.PATCH("/update-hardware-parameter-color/:id", hardware.UpdateHardwareParameterColorByID)
+		public.POST("/employees/:id/check-password", hardware.CheckPasswordByID)
 
 
 		// Line + Webhook
@@ -530,6 +535,8 @@ func main() {
 		public.PUT("/room-notification/:room_id/notification", line.UpdateNotificationIDByRoomID)
 		public.GET("/line-master/first", line.GetLineMasterFirstID)
 		public.PUT("/line-master/:id", line.UpdateLineMasterByID)
+		public.POST("/create-notification", line.CreateNotification)          
+		public.PATCH("/update-notification/:id", line.UpdateNotificationByID) 
 
 		//report hardware
 		public.GET("/report-hardware", report.ListReportHardware)

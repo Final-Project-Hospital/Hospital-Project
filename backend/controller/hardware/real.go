@@ -312,7 +312,7 @@ func safeInt(i int) string {
 type WebhookPayload struct {
 	Events []struct {
 		ReplyToken string `json:"replyToken"`
-		Message struct {
+		Message    struct {
 			Type string `json:"type"`
 			Text string `json:"text"`
 		} `json:"message"`
@@ -329,63 +329,81 @@ func WebhookNotification(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
 	if len(payload.Events) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no events found"})
 		return
 	}
 
 	event := payload.Events[0]
-	text := event.Message.Text
-	userID := event.Source.UserID
-	replyToken := event.ReplyToken
+	replyToken := strings.TrimSpace(event.ReplyToken)
+	userID := strings.TrimSpace(event.Source.UserID)
+
+	// รองรับเฉพาะข้อความ
+	var text string
+	if strings.EqualFold(event.Message.Type, "text") {
+		text = strings.TrimSpace(event.Message.Text)
+	}
 
 	db := config.DB()
 	var existing entity.Notification
 
-	// ถ้ามี User อยู่แล้ว
+	// ===== ถ้ามี User อยู่แล้ว =====
 	if err := db.Where("user_id = ?", userID).First(&existing).Error; err == nil {
-		// ===== กรณี "ยกเลิกการใช้งาน" =====
+		// กรณีขอยกเลิกการใช้บริการ
 		if text == "ยกเลิกการใช้บริการ" {
 			if existing.Alert {
-				// เปลี่ยน Alert เป็น false
 				existing.Alert = false
 				if err := db.Save(&existing).Error; err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 					return
 				}
-
-				// ตอบกลับว่า "ยกเลิกแล้ว"
-				cancelMessage := "ท่านได้ทำการยกเลิกการใช้งานบริการแจ้งเตือนสำเร็จ ❌\nถ้าต้องการใช้บริการอีกครั้ง กรุณาติดต่อผู้ดูแลระบบ\nขอบคุณครับ 🙏"
-				if err := replyToLINE(replyToken, cancelMessage); err != nil {
-					log.Printf("Error replying to LINE: %v", err)
-				}
+				// ✅ ผู้ใช้เก่า/มี Alert อยู่ → ตอบกลับแจ้งยกเลิกสำเร็จ
+				_ = replyToLINE(replyToken, "ท่านได้ทำการยกเลิกการใช้งานบริการแจ้งเตือนสำเร็จ ❌\nถ้าต้องการใช้บริการอีกครั้ง กรุณาติดต่อผู้ดูแลระบบ\nขอบคุณครับ 🙏")
 				c.JSON(http.StatusOK, gin.H{"message": "alert cancelled"})
 				return
 			}
-
-			// ถ้า Alert เป็น false อยู่แล้ว → เงียบ
+			// Alert เป็น false อยู่แล้ว
 			c.JSON(http.StatusOK, gin.H{"message": "no action needed"})
 			return
 		}
 
-		// ถ้ามีข้อมูลแล้ว และไม่ใช่ "ยกเลิกการใช้งาน" → เมินเฉย
+		// ถ้าผู้ใช้เดิมส่งชื่อว่างมา → ไม่อัปเดต ไม่ตอบกลับ
+		if text == "" {
+			c.JSON(http.StatusOK, gin.H{"message": "ignored: empty name for existing user"})
+			return
+		}
+
+		// ผู้ใช้เดิมและไม่ใช่ยกเลิก → ไม่เปลี่ยนแปลง (ไม่จำเป็นต้องตอบกลับ)
 		c.JSON(http.StatusOK, gin.H{"message": "user already registered, no changes"})
 		return
 	}
 
-	// ถ้า user ยังไม่เคยลงทะเบียน → ลงทะเบียนใหม่
+	// ===== ผู้ใช้ยังไม่เคยลงทะเบียน =====
+	// เงื่อนไขใหม่: ต้องมีทั้ง Name (text) ไม่ว่าง และมี UserID
+	if userID == "" || text == "" {
+		// ❗ ไม่บันทึก และ "ไม่ตอบกลับ"
+		c.JSON(http.StatusOK, gin.H{"message": "ignored: missing userId or empty name"})
+		return
+	}
+
+	// ถ้าผู้ใช้ใหม่ส่ง "ยกเลิกการใช้บริการ" มาก่อนลงทะเบียน → ไม่ทำอะไร ไม่ตอบกลับ
+	if text == "ยกเลิกการใช้บริการ" {
+		c.JSON(http.StatusOK, gin.H{"message": "ignored: cancel from non-registered user"})
+		return
+	}
+
+	// บันทึกผู้ใช้ใหม่
 	notification := entity.Notification{
 		Name:   text,
 		UserID: userID,
-		Alert:  false,
+		Alert:  false, // รอแอดมินเปิดใช้งาน
 	}
-
 	if err := db.Create(&notification).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	// ตอบกลับเฉพาะกรณีสร้างสำเร็จเท่านั้น
 	replyMessage := fmt.Sprintf("คุณ %s ได้ทำการลงทะเบียนการใช้งานระบบการแจ้งเตือนสำเร็จ กรุณารอการยืนยันจากผู้ดูแลระบบ ขอบคุณครับ 🙏", text)
 	if err := replyToLINE(replyToken, replyMessage); err != nil {
 		log.Printf("Error replying to LINE: %v", err)
@@ -394,6 +412,7 @@ func WebhookNotification(c *gin.Context) {
 	c.JSON(http.StatusOK, notification)
 }
 
+// ============= LINE Reply Helper =============
 
 func replyToLINE(replyToken, message string) error {
 	url := "https://api.line.me/v2/bot/message/reply"
@@ -401,19 +420,15 @@ func replyToLINE(replyToken, message string) error {
 	body := map[string]interface{}{
 		"replyToken": replyToken,
 		"messages": []map[string]string{
-			{
-				"type": "text",
-				"text": message,
-			},
+			{"type": "text", "text": message},
 		},
 	}
-
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
 
-	token, err := getLineToken()
+	token, err := getLineToken() // <-- ฟังก์ชันของคุณเอง
 	if err != nil {
 		return fmt.Errorf("cannot get LINE token from DB: %w", err)
 	}
@@ -436,6 +451,5 @@ func replyToLINE(replyToken, message string) error {
 		b, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("LINE API response status: %d, body: %s", resp.StatusCode, string(b))
 	}
-
 	return nil
 }

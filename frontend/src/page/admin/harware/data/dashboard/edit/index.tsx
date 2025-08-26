@@ -10,13 +10,15 @@ import {
   Switch,
   Tooltip,
   Tag,
+  Select,
+  Popover,
 } from "antd";
 import {
   UpdateHardwareParameterByID,
   ListHardwareParameterByHardwareID,
-  UpdateGroupDisplay,
+  UpdateGroupDisplay,             // ✅ ใช้ตัวนี้ยิง group_display + index + right พร้อมกัน
   UpdateLayoutDisplay,
-  UpdateHardwareParameterColorByID, // ✅ ใช้ service นี้ในการอัปเดตสี (code)
+  UpdateHardwareParameterColorByID,
 } from "../../../../../../services/hardware";
 import { ColorPicker } from "antd";
 import LineChartingImg from "../../../../../../assets/chart/LineCharting.png";
@@ -34,13 +36,11 @@ interface EditParameterModalProps {
 
 type SlotMode = "single" | "split";
 
-// โครงสร้างของ cell ใน layout
 type CellGraph = {
   graphTypeId: number | null; // 1..4
-  graphInstanceUid?: string | null; // uid ของ instance
+  graphInstanceUid?: string | null;
   paramIds: number[];
 };
-
 type Slot = { mode: SlotMode; graphs: (CellGraph | null)[] };
 
 type ParamRow = {
@@ -48,9 +48,11 @@ type ParamRow = {
   Parameter: string;
   GroupDisplay: boolean;
   LayoutDisplay: boolean;
-  HardwareGraphID?: number; // 1..4
-  HardwareParameterColorID?: number; // ✅ ใช้เพื่อชี้ไปยัง record สีเดิมที่ผูกอยู่
-  HardwareParameterColorCode?: string; // ✅ เก็บ code ของสีเพื่อแก้ด้วย ColorPicker
+  HardwareGraphID?: number;            // 1..4
+  HardwareParameterColorID?: number;
+  HardwareParameterColorCode?: string;
+  Index?: number;                      // ✅ index ปัจจุบันจาก backend
+  Right?: boolean;                     // ✅ right ปัจจุบันจาก backend (ถ้ามี)
 };
 
 // ประเภทกราฟ
@@ -64,14 +66,25 @@ const graphTypes = [
 const deepClone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 const STORAGE_KEY = (hardwareID: number) => `hw-layout-v2-${hardwareID}`;
 
-// instance ของกราฟ
-type GraphInstance = {
-  uid: string;
-  graphTypeId: number; // 1..4
-  name: string; // เช่น "Area #2"
-};
-
+type GraphInstance = { uid: string; graphTypeId: number; name: string };
 const uid = () => Math.random().toString(36).slice(2, 9);
+
+// ✅ hook ตรวจขนาดหน้าจอ
+const useViewportFlags = () => {
+  const get = () => {
+    const w = typeof window !== "undefined" ? window.innerWidth : 1440;
+    const isMobile = w < 768;
+    const isTablet = w >= 768 && w <= 1280;
+    return { isMobile, isTablet, isCompact: isMobile || isTablet, width: w };
+  };
+  const [state, setState] = useState(get());
+  useEffect(() => {
+    const onResize = () => setState(get());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return state;
+};
 
 const EditParameterModal: React.FC<EditParameterModalProps> = ({
   open,
@@ -79,6 +92,8 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   hardwareID,
   onSuccess,
 }) => {
+  const { isMobile, isTablet, isCompact } = useViewportFlags();
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formValues, setFormValues] = useState<ParamRow[]>([]);
@@ -87,7 +102,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     Number(localStorage.getItem("employeeid")) || 0
   );
 
-  // ---- Drag state
+  // ---- Drag state (Desktop เท่านั้น)
   const [draggedParamId, setDraggedParamId] = useState<number | null>(null);
   const [draggedGraphInstance, setDraggedGraphInstance] = useState<{
     uid: string;
@@ -98,12 +113,15 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
 
   // ---- Layout
   const [slots, setSlots] = useState<Slot[]>([{ mode: "single", graphs: [null] }]);
-  // ใช้ตรวจว่ามีการแก้ layout/instances เพื่อเปิดปุ่ม "บันทึกทั้งหมด"
   const [layoutDirty, setLayoutDirty] = useState(false);
 
-  // ---- Graph Instances
+  // ---- Graph Instances (Desktop)
   const [instances, setInstances] = useState<GraphInstance[]>([]);
   const [addingTypeId, setAddingTypeId] = useState<number>(1);
+
+  // ---- Compact Color Editor (Mobile/iPad)
+  const [colorEditPid, setColorEditPid] = useState<number | null>(null);
+  const [colorTemp, setColorTemp] = useState<string>("#000000");
 
   // ---------- helpers ----------
   const graphMeta = (typeId: number | null | undefined) =>
@@ -124,10 +142,9 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   const getParamColorCode = (id: number): string | undefined =>
     formValues.find((x) => x.ID === id)?.HardwareParameterColorCode;
 
-  // Layout เริ่มต้น
   const buildInitialSlots = (): Slot[] => [{ mode: "single", graphs: [null] }];
 
-  // ---------- utilities: per-graph constraints ----------
+  // ---------- per-graph constraints ----------
   const hasOtherCellWithTwoOrMore = (
     graphTypeId: number,
     except?: { slotIdx: number; subIdx: number }
@@ -146,7 +163,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     return false;
   };
 
-  // ---------- localStorage: load/save layout & instances ----------
+  // ---------- localStorage ----------
   const loadLayoutFromStorage = (rows: ParamRow[]) => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY(hardwareID));
@@ -207,7 +224,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   const saveLayoutToStorage = (value: { slots: Slot[]; instances: GraphInstance[] }) => {
     try {
       localStorage.setItem(STORAGE_KEY(hardwareID), JSON.stringify(value));
-    } catch { }
+    } catch {}
   };
 
   useEffect(() => {
@@ -225,6 +242,8 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
           HardwareGraphID: p.HardwareGraph?.ID,
           HardwareParameterColorID: p.HardwareParameterColor?.ID,
           HardwareParameterColorCode: p.HardwareParameterColor?.Code,
+          Index: p.Index,                 // ✅ รับ index จาก backend
+          Right: p.Right,                 // ✅ รับ right จาก backend ถ้ามี
         }));
         setFormValues(rows);
         setInitialValues(deepClone(rows));
@@ -238,12 +257,12 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
           setInstances([]);
         }
 
-        setLayoutDirty(false); // reset สถานะ dirty หลังโหลด
+        setLayoutDirty(false);
       })
       .finally(() => setLoading(false));
   }, [open, hardwareID]);
 
-  // ---------- ตรวจจับการแก้ไข (formValues) ----------
+  // ---------- ตรวจจับการแก้ไข ----------
   const hasUnsavedChanges = useMemo(() => {
     if (initialValues.length !== formValues.length) return true;
     const byId = new Map(initialValues.map((p) => [p.ID, p]));
@@ -254,7 +273,8 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         old.GroupDisplay !== cur.GroupDisplay ||
         old.LayoutDisplay !== cur.LayoutDisplay ||
         old.HardwareGraphID !== cur.HardwareGraphID ||
-        old.HardwareParameterColorCode !== cur.HardwareParameterColorCode // ✅ เทียบ code (ไม่ใช่ id)
+        old.HardwareParameterColorCode !== cur.HardwareParameterColorCode
+        // Note: Index/Right เปลี่ยนจากเลย์เอาต์ → พึ่ง layoutDirty
       ) {
         return true;
       }
@@ -267,7 +287,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     [hasUnsavedChanges, layoutDirty]
   );
 
-  // ---------- Graph Instances ----------
+  // ---------- Graph Instances (Desktop) ----------
   const addGraphInstance = () => {
     const meta = graphMeta(addingTypeId);
     if (!meta) return;
@@ -298,7 +318,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     setLayoutDirty(true);
   };
 
-  // ---------- drag param ----------
+  // ---------- drag param (Desktop) ----------
   const handleParamDragStart = (paramId: number) => {
     setDraggedParamId(paramId);
     setDraggedGraphInstance(null);
@@ -307,7 +327,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     setDraggedParamId(null);
   };
 
-  // ---------- drag graph instance ----------
+  // ---------- drag graph instance (Desktop) ----------
   const handleGraphInstanceDragStart = (inst: GraphInstance) => {
     setDraggedGraphInstance({ uid: inst.uid, graphTypeId: inst.graphTypeId });
     setDraggedParamId(null);
@@ -317,7 +337,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     setDragOverSlot(null);
   };
 
-  // ---------- layout drop handlers ----------
+  // ---------- layout drop handlers (Desktop) ----------
   const handleDragOverSlot = (
     slotIndex: number,
     subIndex: number | null,
@@ -351,7 +371,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     const idx = subIndex ?? 0;
     const curCell = slots[slotIndex].graphs[idx];
 
-    // ✅ 1) ลาก "graph instance" → เปลี่ยนกราฟโดยคงพารามิเตอร์เดิมไว้
+    // 1) ลากกราฟ (instance)
     if (draggedGraphInstance) {
       const { uid: instUid, graphTypeId } = draggedGraphInstance;
       const existingParamIds = curCell?.paramIds ?? [];
@@ -362,7 +382,6 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         paramIds: cg.paramIds ?? [],
       }));
 
-      // อัปเดต HardwareGraphID ให้กับทุกพารามิเตอร์ใน cell นี้
       existingParamIds.forEach((pid) => {
         const old = formValues.find((x) => x.ID === pid);
         if (old?.HardwareGraphID !== graphTypeId) {
@@ -377,7 +396,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       return;
     }
 
-    // 2) ลาก "parameter"
+    // 2) ลากพารามิเตอร์
     if (draggedParamId != null) {
       const paramId = draggedParamId;
       const target = formValues.find((x) => x.ID === paramId);
@@ -390,7 +409,6 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       const existingTypeId = curCell?.graphTypeId ?? null;
       const graphTypeToUse = existingTypeId ?? (target.HardwareGraphID ?? 1);
 
-      // กฎจำกัด: cell อื่นของกราฟเดียวกันที่มี ≥2 พารามิเตอร์ได้เพียง 1 จุด
       const currentSet = new Set([...(curCell?.paramIds ?? [])]);
       currentSet.add(paramId);
       const willBeCount = currentSet.size;
@@ -437,7 +455,6 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     setLayoutDirty(true);
   };
 
-  // ลบพารามิเตอร์ทั้งหมดใน slot หนึ่ง ๆ และอัปเดต LayoutDisplay = false
   const clearParamsInSlot = (slotIndex: number) => {
     const slot = slots[slotIndex];
     if (!slot) return;
@@ -446,7 +463,6 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     allParamIds.forEach((pid) => handleChange(pid, "LayoutDisplay", false));
   };
 
-  // เมื่อกด Split/Merge → ลบพารามิเตอร์ใน slot นั้นออกให้หมด
   const toggleSplitAt = (slotIndex: number) => {
     const slot = slots[slotIndex];
     if (!slot) return;
@@ -469,7 +485,6 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     setLayoutDirty(true);
   };
 
-  // เอา parameter ออกจาก cell
   const removeParamFromCell = (
     slotIndex: number,
     subIndex: number | null,
@@ -489,7 +504,6 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       return next;
     });
 
-    // อัปเดต LayoutDisplay ถ้า parameter ไม่ถูกใช้ที่อื่น
     const stillUsedSomewhere = slots.some((sl, si) =>
       sl.graphs.some((cg, ci) => {
         if (!cg) return false;
@@ -510,7 +524,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     setLayoutDirty(true);
   };
 
-  // ---------- รายการพารามิเตอร์: ซ่อนตัวที่ถูกใช้ใน layout ----------
+  // ---------- รายการพารามิเตอร์ที่ยังไม่ถูกใช้ใน layout (Desktop) ----------
   const usedParamIds = useMemo(() => {
     const s = new Set<number>();
     slots.forEach((sl) =>
@@ -544,10 +558,178 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     );
   }, [slots]);
 
+  // ---------- Compact helpers ----------
+  const allParamOptions = useMemo(
+    () =>
+      formValues.map((p) => ({
+        rawId: p.ID,
+        value: p.ID,
+        label: (
+          <div className="flex items-center gap-2">
+            <span
+              style={{
+                display: "inline-block",
+                width: 10,
+                height: 10,
+                borderRadius: 999,
+                background: p.HardwareParameterColorCode || "#8b8b8b",
+                border: "1px solid #d1d5db",
+              }}
+            />
+            <span className="truncate">{p.Parameter}</span>
+          </div>
+        ),
+      })),
+    [formValues]
+  );
+
+  const getParamOptionsForCell = (slotIdx: number, subIdx: number | null) => {
+    const currentCell = slots[slotIdx].graphs[subIdx ?? 0];
+    const currentSet = new Set(currentCell?.paramIds ?? []);
+    const usedElsewhere = new Set<number>();
+    slots.forEach((sl, si) =>
+      sl.graphs.forEach((cg, ci) => {
+        if (!cg) return;
+        const isSameCell = si === slotIdx && (sl.mode === "single" ? 0 : ci) === (subIdx ?? 0);
+        if (isSameCell) return;
+        cg.paramIds.forEach((id) => usedElsewhere.add(id));
+      })
+    );
+    return allParamOptions
+      .filter((opt) => !usedElsewhere.has(opt.rawId) || currentSet.has(opt.rawId))
+      .map(({ value, label }) => ({ value, label }));
+  };
+
+  const handleCompactGraphTypeChange = (
+    slotIdx: number,
+    subIdx: number | null,
+    newType: number | null
+  ) => {
+    setCell(slotIdx, subIdx, (cg) => {
+      let nextIds = cg.paramIds ?? [];
+      if (newType && nextIds.length >= 2) {
+        const violate = hasOtherCellWithTwoOrMore(newType, {
+          slotIdx,
+          subIdx: subIdx ?? 0,
+        });
+        if (violate) {
+          message.warning(
+            `กราฟ "${graphMeta(newType)?.name}" มีจุดอื่นที่มี ≥ 2 พารามิเตอร์แล้ว — จะคงไว้เพียง 1 พารามิเตอร์ในช่องนี้`
+          );
+          nextIds = nextIds.slice(0, 1);
+        }
+      }
+      return {
+        ...cg,
+        graphTypeId: newType,
+        paramIds: nextIds,
+      };
+    });
+
+    const curCell = slots[slotIdx].graphs[subIdx ?? 0];
+    const ids = curCell?.paramIds ?? [];
+    ids.forEach((pid) => {
+      const old = formValues.find((x) => x.ID === pid);
+      if ((old && old.HardwareGraphID !== newType) || (old && newType === null)) {
+        handleChange(pid, "HardwareGraphID", newType ?? undefined);
+      }
+    });
+  };
+
+  const handleCompactParamChange = (
+    slotIdx: number,
+    subIdx: number | null,
+    newIds: number[]
+  ) => {
+    const cell = slots[slotIdx].graphs[subIdx ?? 0];
+    const typeId = cell?.graphTypeId ?? 1;
+
+    if (newIds.length >= 2) {
+      const violate = hasOtherCellWithTwoOrMore(typeId, {
+        slotIdx,
+        subIdx: subIdx ?? 0,
+      });
+      if (violate) {
+        message.warning(
+          `กราฟ "${graphMeta(typeId)?.name}" มีจุดอื่นที่มี ≥ 2 พารามิเตอร์แล้ว — ช่องนี้เลือกได้เพียง 1 พารามิเตอร์`
+        );
+        newIds = newIds.slice(0, 1);
+      }
+    }
+
+    setCell(slotIdx, subIdx, (cg) => ({
+      ...cg,
+      graphTypeId: cg.graphTypeId ?? typeId,
+      paramIds: Array.from(new Set(newIds)),
+    }));
+
+    const wantLayout = slots[slotIdx].mode === "split";
+    const prevIds = cell?.paramIds ?? [];
+    const removed = prevIds.filter((id) => !newIds.includes(id));
+    const added = newIds.filter((id) => !prevIds.includes(id));
+
+    added.forEach((pid) => {
+      const old = formValues.find((x) => x.ID === pid);
+      if (!old) return;
+      if (old.HardwareGraphID !== typeId) {
+        handleChange(pid, "HardwareGraphID", typeId);
+      }
+      if (wantLayout && !old.LayoutDisplay) {
+        handleChange(pid, "LayoutDisplay", true);
+      }
+    });
+
+    removed.forEach((pid) => {
+      const usedElsewhere = slots.some((sl, si) =>
+        sl.graphs.some((cg, ci) => {
+          if (!cg) return false;
+          if (si === slotIdx && (sl.mode === "single" ? 0 : ci) === (subIdx ?? 0))
+            return false;
+          return cg.paramIds.includes(pid);
+        })
+      );
+      if (!usedElsewhere) {
+        handleChange(pid, "LayoutDisplay", false);
+      }
+    });
+  };
+
   // ---------- save ----------
   const handleSave = async () => {
     setSaving(true);
     try {
+      // 1) คำนวณ index และ right จากเลย์เอาต์:
+      //    - index ของแต่ละพารามิเตอร์ = หมายเลขแถว (slotIdx + 1)
+      //    - แถวเดี่ยว: right = true
+      //    - แถวแบบซ้าย/ขวา: ซ้าย -> right=false, ขวา -> right=true
+      const indexByParamId = new Map<number, number>();
+      const rightByParamId = new Map<number, boolean>();
+
+      slots.forEach((slot, slotIdx) => {
+        const rowIndex = slotIdx + 1;
+
+        if (slot.mode === "single") {
+          const cg = slot.graphs[0];
+          if (cg) {
+            cg.paramIds.forEach((pid) => {
+              indexByParamId.set(pid, rowIndex);
+              rightByParamId.set(pid, true); // ✅ แถวเดี่ยว → right=true
+            });
+          }
+        } else {
+          // split: ซ้าย=0 → right=false, ขวา=1 → right=true
+          slot.graphs.forEach((cg, subIdx) => {
+            if (!cg) return;
+            const isRight = subIdx === 1;
+            cg.paramIds.forEach((pid) => {
+              indexByParamId.set(pid, rowIndex);
+              rightByParamId.set(pid, isRight);
+            });
+          });
+        }
+      });
+
+      // 2) เตรียม flag พารามิเตอร์ที่อยู่ใน split layout → LayoutDisplay = true
       const selectedParamIds = new Set<number>();
       slots.forEach((slot) => {
         if (slot.mode !== "split") return;
@@ -556,15 +738,15 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
           cg.paramIds.forEach((pid) => selectedParamIds.add(pid));
         });
       });
-
       const willLayoutTrue = new Set(selectedParamIds);
+
       const initialMap = new Map(initialValues.map((p) => [p.ID, p]));
       const updates: Promise<any>[] = [];
 
       formValues.forEach((cur) => {
         const old = initialMap.get(cur.ID);
 
-        // อัปเดตประเภทกราฟที่ผูกกับพารามิเตอร์ (ถ้าเปลี่ยน)
+        // (a) Graph type per parameter
         if (!old || old.HardwareGraphID !== cur.HardwareGraphID) {
           updates.push(
             UpdateHardwareParameterByID(cur.ID, {
@@ -573,7 +755,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
           );
         }
 
-        // ✅ อัปเดตสี: ถ้า code เปลี่ยน และมี HardwareParameterColorID
+        // (b) Color per parameter
         if (
           (!old || old.HardwareParameterColorCode !== cur.HardwareParameterColorCode) &&
           cur.HardwareParameterColorID
@@ -587,12 +769,32 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
           );
         }
 
-        // GroupDisplay (auto ตามจำนวนพารามิเตอร์ใน cell)
-        if (!old || old.GroupDisplay !== cur.GroupDisplay) {
-          updates.push(UpdateGroupDisplay(cur.ID, { group_display: cur.GroupDisplay }));
+        // (c) GroupDisplay + Index + Right (ใช้ endpoint เดียว)
+        const desiredIndex = indexByParamId.get(cur.ID); // undefined = ไม่ถูกวางในเลย์เอาต์
+        const desiredRight = rightByParamId.get(cur.ID); // undefined = ไม่ถูกวางในเลย์เอาต์
+
+        const groupChanged = !old || old.GroupDisplay !== cur.GroupDisplay;
+        const indexChanged =
+          typeof desiredIndex === "number" && (!old || old.Index !== desiredIndex);
+        const rightChanged =
+          typeof desiredRight === "boolean" && (!old || old.Right !== desiredRight);
+
+        if (groupChanged || indexChanged || rightChanged) {
+          const payload: { group_display?: boolean; index?: number; right?: boolean } = {};
+          if (groupChanged) payload.group_display = cur.GroupDisplay;
+          if (indexChanged && typeof desiredIndex === "number") payload.index = desiredIndex;
+          if (rightChanged && typeof desiredRight === "boolean") payload.right = desiredRight;
+
+          // หมายเหตุ: หากต้องการ "ส่ง right เสมอเมื่ออยู่ในเลย์เอาต์"
+          // สามารถใช้:
+          // if (typeof desiredRight === "boolean") payload.right = desiredRight;
+
+          if (Object.keys(payload).length > 0) {
+            updates.push(UpdateGroupDisplay(cur.ID, payload));
+          }
         }
 
-        // LayoutDisplay (true เฉพาะที่อยู่ใน split layout)
+        // (d) LayoutDisplay (true เฉพาะที่อยู่ใน split layout)
         const desiredLayout = willLayoutTrue.has(cur.ID);
         if (!old || old.LayoutDisplay !== desiredLayout) {
           updates.push(UpdateLayoutDisplay(cur.ID, { layout_display: desiredLayout }));
@@ -601,11 +803,16 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
 
       await Promise.all(updates);
 
-      // บันทึก layout/instances ลง localStorage
+      // 3) บันทึก layout/instances ลง localStorage
       saveLayoutToStorage({ slots, instances });
 
-      // sync ค่าเริ่มต้นใหม่ และปิด flag dirty
-      setInitialValues(deepClone(formValues));
+      // 4) sync ค่าเริ่มต้นใหม่ และปิด flag dirty
+      const nextInitial = deepClone(formValues).map((p) => ({
+        ...p,
+        Index: indexByParamId.get(p.ID) ?? p.Index,
+        Right: rightByParamId.get(p.ID) ?? p.Right,
+      }));
+      setInitialValues(nextInitial);
       setLayoutDirty(false);
 
       message.success("บันทึกสำเร็จ");
@@ -625,7 +832,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       onCancel={onClose}
       footer={null}
       width="min(96vw, 1400px)"
-      style={{ top: 12 }}
+      style={{ top: 9 }}
       bodyStyle={{
         padding: 0,
         maxHeight: "calc(100dvh - 96px)",
@@ -650,230 +857,215 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         </div>
       ) : (
         <div className="px-3 sm:px-5 md:px-7 pb-6 pt-0 w-full">
-          <div className="grid gap-6 xl:[grid-template-columns:1.35fr_1fr]">
-            {/* ซ้าย: รายการกราฟ + พารามิเตอร์ */}
-            <div className="order-2 xl:order-1 space-y-6">
-              {/* เพิ่มกราฟ */}
-              <div className="bg-white rounded-xl shadow border border-gray-100 px-4 py-3">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="font-semibold text-gray-800">เพิ่มกราฟ</span>
-                  <Button
-                    size="small"
-                    onClick={() => setAddingTypeId(1)}
-                    className={addingTypeId === 1 ? "border-blue-500" : ""}
-                  >
-                    Line
-                  </Button>
-                  <Button
-                    size="small"
-                    onClick={() => setAddingTypeId(2)}
-                    className={addingTypeId === 2 ? "border-blue-500" : ""}
-                  >
-                    Area
-                  </Button>
-                  <Button
-                    size="small"
-                    onClick={() => setAddingTypeId(3)}
-                    className={addingTypeId === 3 ? "border-blue-500" : ""}
-                  >
-                    Mapping
-                  </Button>
-                  <Button
-                    size="small"
-                    onClick={() => setAddingTypeId(4)}
-                    className={addingTypeId === 4 ? "border-blue-500" : ""}
-                  >
-                    Stacked
-                  </Button>
-                  <Button size="small" type="primary" onClick={addGraphInstance}>
-                    + เพิ่มกราฟ
-                  </Button>
-                </div>
-                {instances.length === 0 ? (
-                  <div className="text-gray-500 text-sm mt-3">
-                    ยังไม่มีกล่องกราฟ (กดปุ่ม “+ เพิ่มกราฟ” เพื่อสร้าง)
+          <div
+            className={
+              isCompact
+                ? "grid gap-6 grid-cols-1"
+                : "grid gap-6 xl:[grid-template-columns:1.35fr_1fr]"
+            }
+          >
+            {/* ซ้าย: รายการกราฟ + พารามิเตอร์ (Desktop) */}
+            {!isCompact && (
+              <div className="order-2 xl:order-1 space-y-6">
+                {/* เพิ่มกราฟ */}
+                <div className="bg-white rounded-xl shadow border border-gray-100 px-4 py-3">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="font-semibold text-gray-800">เพิ่มกราฟ</span>
+                    <Button
+                      size="small"
+                      onClick={() => setAddingTypeId(1)}
+                      className={addingTypeId === 1 ? "border-blue-500" : ""}
+                    >
+                      Line
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => setAddingTypeId(2)}
+                      className={addingTypeId === 2 ? "border-blue-500" : ""}
+                    >
+                      Area
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => setAddingTypeId(3)}
+                      className={addingTypeId === 3 ? "border-blue-500" : ""}
+                    >
+                      Mapping
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => setAddingTypeId(4)}
+                      className={addingTypeId === 4 ? "border-blue-500" : ""}
+                    >
+                      Stacked
+                    </Button>
+                    <Button size="small" type="primary" onClick={addGraphInstance}>
+                      + เพิ่มกราฟ
+                    </Button>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                    {instances.map((inst) => {
-                      const meta = graphMeta(inst.graphTypeId)!;
-                      return (
-                        <div
-                          key={inst.uid}
-                          className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2"
-                          draggable
-                          onDragStart={() => handleGraphInstanceDragStart(inst)}
-                          onDragEnd={handleGraphInstanceDragEnd}
-                          title="ลากกล่องกราฟนี้ไปวางที่เลย์เอาต์"
-                        >
-                          <Image
-                            src={meta?.img}
-                            alt={meta?.name}
-                            preview={false}
-                            style={{
-                              width: 52,
-                              height: 52,
-                              objectFit: "contain",
-                              borderRadius: 10,
-                              border: "1px solid #eee",
-                            }}
-                          />
-                          <div className="min-w-0">
-                            <div className="font-semibold text-sm text-gray-800 truncate max-w-[140px] sm:max-w-[180px]">
-                              {inst.name}
-                            </div>
-                            <div className="text-xs text-gray-500 truncate max-w-[140px] sm:max-w-[180px]">
-                              {meta?.name}
-                            </div>
-                          </div>
-                          <Tag className="ml-auto text-[11px] hidden sm:inline-block" color="blue">
-                            ลากไปที่เลย์เอาต์
-                          </Tag>
-                          {/* ลบได้เลย ไม่ต้องยืนยัน */}
-                          <Button size="small" danger onClick={() => removeGraphInstance(inst.uid)}>
-                            ลบ
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* พารามิเตอร์ */}
-              <div className="bg-white rounded-xl shadow border border-gray-100 px-4 py-3">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="font-semibold text-gray-800">พารามิเตอร์</span>
-                </div>
-
-                {visibleParams.length === 0 ? (
-                  <div className="text-gray-500 text-sm">ทุกพารามิเตอร์ถูกใช้อยู่ในเลย์เอาต์แล้ว</div>
-                ) : (
-                  <div
-                    className={`flex flex-col gap-2 ${visibleParams.length > 7 ? "max-h-[60vh] overflow-y-auto pr-1" : ""
-                      }`}
-                  >
-                    {visibleParams.map((rowParam) => (
-                      <div
-                        key={rowParam.ID}
-                        className="inline-flex items-center bg-gray-50 rounded-lg px-3 py-2 cursor-mmove border border-gray-200 w-full hover:bg-gray-100 transition"
-                        style={{ minHeight: 44, gap: 10, justifyContent: "space-between" }}
-                        draggable
-                        onDragStart={() => handleParamDragStart(rowParam.ID)}
-                        onDragEnd={handleParamDragEnd}
-                        title="ลากพารามิเตอร์ไปวางที่เลย์เอาต์"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          {/* สีพารามิเตอร์ */}
-                          <span
-                            style={{
-                              display: "inline-block",
-                              width: 10,
-                              height: 10,
-                              borderRadius: 999,
-                              background: rowParam.HardwareParameterColorCode || "#8b8b8b",
-                              border: "1px solid #d1d5db",
-                            }}
-                          />
-                          <span
-                            className="font-medium text-gray-700"
-                            style={{
-                              fontSize: 13.5,
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              maxWidth: 220,
-                            }}
-                            title={rowParam.Parameter}
+                  {instances.length === 0 ? (
+                    <div className="text-gray-500 text-sm mt-3">
+                      ยังไม่มีกล่องกราฟ (กดปุ่ม “+ เพิ่มกราฟ” เพื่อสร้าง)
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                      {instances.map((inst) => {
+                        const meta = graphMeta(inst.graphTypeId)!;
+                        return (
+                          <div
+                            key={inst.uid}
+                            className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2"
+                            draggable
+                            onDragStart={() => handleGraphInstanceDragStart(inst)}
+                            onDragEnd={handleGraphInstanceDragEnd}
+                            title="ลากกล่องกราฟนี้ไปวางที่เลย์เอาต์"
                           >
-                            {rowParam.Parameter}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          {/* ✅ ColorPicker แทน Select รายการสี */}
-                          <Form.Item style={{ marginBottom: 0 }}>
-                            <ColorPicker
-                              value={rowParam.HardwareParameterColorCode || "#000000"}
-                              onChange={(c) => {
-                                const hex = c.toHexString();
-                                handleChange(rowParam.ID, "HardwareParameterColorCode", hex);
+                            <Image
+                              src={meta?.img}
+                              alt={meta?.name}
+                              preview={false}
+                              style={{
+                                width: 52,
+                                height: 52,
+                                objectFit: "contain",
+                                borderRadius: 10,
+                                border: "1px solid #eee",
                               }}
-                              presets={[
-                                {
-                                  label: "แนะนำ",
-                                  colors: [
-                                    "#1B3F71",
-                                    "#2563eb",
-                                    "#22c55e",
-                                    "#eab308",
-                                    "#ef4444",
-                                    "#9333ea",
-                                    "#0ea5e9",
-                                    "#64748b",
-                                  ],
-                                },
-                              ]}
                             />
-                          </Form.Item>
+                            <div className="min-w-0">
+                              <div className="font-semibold text-sm text-gray-800 truncate max-w-[140px] sm:max-w-[180px]">
+                                {inst.name}
+                              </div>
+                              <div className="text-xs text-gray-500 truncate max-w-[140px] sm:max-w-[180px]">
+                                {meta?.name}
+                              </div>
+                            </div>
+                            <Tag className="ml-auto text-[11px] hidden sm:inline-block" color="blue">
+                              ลากไปที่เลย์เอาต์
+                            </Tag>
+                            <Button size="small" danger onClick={() => removeGraphInstance(inst.uid)}>
+                              ลบ
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
 
-                          <Tooltip
-                            title="ตั้งค่าเป็น 'รวมกลุ่ม' อัตโนมัติเมื่อมี ≥ 2 พารามิเตอร์ในช่องเดียวกัน"
-                            placement="top"
-                          >
-                            <Switch
-                              size="small"
-                              checked={rowParam.GroupDisplay}
-                              disabled
-                              checkedChildren="G"
-                              unCheckedChildren="G"
-                            />
-                          </Tooltip>
-                          <Tooltip
-                            title="การแสดงในเลย์เอาต์ (เดี่ยว=ปิด, แบ่งสอง=เปิด)"
-                            placement="top"
-                          >
-                            <Switch
-                              size="small"
-                              checked={rowParam.LayoutDisplay}
-                              onChange={(checked) =>
-                                handleChange(rowParam.ID, "LayoutDisplay", checked)
-                              }
-                              checkedChildren="L"
-                              unCheckedChildren="L"
-                            />
-                          </Tooltip>
-                        </div>
-                      </div>
-                    ))}
+                {/* พารามิเตอร์ */}
+                <div className="bg-white rounded-xl shadow border border-gray-100 px-4 py-3">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="font-semibold text-gray-800">พารามิเตอร์</span>
                   </div>
-                )}
+
+                  {visibleParams.length === 0 ? (
+                    <div className="text-gray-500 text-sm">ทุกพารามิเตอร์ถูกใช้อยู่ในเลย์เอาต์แล้ว</div>
+                  ) : (
+                    <div
+                      className={`flex flex-col gap-2 ${
+                        visibleParams.length > 7 ? "max-h-[60vh] overflow-y-auto pr-1" : ""
+                      }`}
+                    >
+                      {visibleParams.map((rowParam) => (
+                        <div
+                          key={rowParam.ID}
+                          className="inline-flex items-center bg-gray-50 rounded-lg px-3 py-2 cursor-move border border-gray-200 w-full hover:bg-gray-100 transition"
+                          style={{ minHeight: 44, gap: 10, justifyContent: "space-between" }}
+                          draggable
+                          onDragStart={() => handleParamDragStart(rowParam.ID)}
+                          onDragEnd={handleParamDragEnd}
+                          title="ลากพารามิเตอร์ไปวางที่เลย์เอาต์"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span
+                              style={{
+                                display: "inline-block",
+                                width: 10,
+                                height: 10,
+                                borderRadius: 999,
+                                background: rowParam.HardwareParameterColorCode || "#8b8b8b",
+                                border: "1px solid #d1d5db",
+                              }}
+                            />
+                            <span
+                              className="font-medium text-gray-700"
+                              style={{
+                                fontSize: 13.5,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                maxWidth: 220,
+                              }}
+                              title={rowParam.Parameter}
+                            >
+                              {rowParam.Parameter}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <Form.Item style={{ marginBottom: 0 }}>
+                              <ColorPicker
+                                value={rowParam.HardwareParameterColorCode || "#000000"}
+                                onChange={(c) => {
+                                  const hex = c.toHexString();
+                                  handleChange(rowParam.ID, "HardwareParameterColorCode", hex);
+                                }}
+                                presets={[
+                                  {
+                                    label: "แนะนำ",
+                                    colors: [
+                                      "#1B3F71",
+                                      "#2563eb",
+                                      "#22c55e",
+                                      "#eab308",
+                                      "#ef4444",
+                                      "#9333ea",
+                                      "#0ea5e9",
+                                      "#64748b",
+                                    ],
+                                  },
+                                ]}
+                              />
+                            </Form.Item>
+
+                            <Tooltip title="ตั้งค่าเป็น 'รวมกลุ่ม' อัตโนมัติเมื่อมี ≥ 2 พารามิเตอร์ในช่องเดียวกัน" placement="top">
+                              <Switch size="small" checked={rowParam.GroupDisplay} disabled checkedChildren="G" unCheckedChildren="G" />
+                            </Tooltip>
+                            <Tooltip title="การแสดงในเลย์เอาต์ (เดี่ยว=ปิด, แบ่งสอง=เปิด)" placement="top">
+                              <Switch
+                                size="small"
+                                checked={rowParam.LayoutDisplay}
+                                onChange={(checked) => handleChange(rowParam.ID, "LayoutDisplay", checked)}
+                                checkedChildren="L"
+                                unCheckedChildren="L"
+                              />
+                            </Tooltip>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* ขวา: พื้นที่เลย์เอาต์ */}
-            <div className="order-1 xl:order-2 space-y-5">
+            <div className={isCompact ? "order-1 space-y-5" : "order-1 xl:order-2 space-y-5"}>
               <div className="bg-white rounded-xl shadow border border-gray-100 px-4 sm:px-5 py-4">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-[16px] md:text-[17px] font-semibold text-gray-800">
-                      พื้นที่เลย์เอาต์
-                    </span>
+                    <span className="text-[16px] md:text-[17px] font-semibold text-gray-800">พื้นที่เลย์เอาต์</span>
                     <Tag className="rounded-md text-[11px]">
-                      แถวเดี่ยว: {slots.filter((s) => s.mode === "single").length}/
-                      {Math.max(1, formValues.length)}
+                      แถวเดี่ยว: {slots.filter((s) => s.mode === "single").length}/{Math.max(1, formValues.length)}
                     </Tag>
-                    {canSave && (
+                    {(canSave || isCompact) && (
                       <Tag color="orange" className="rounded-md text-[11px]">
-                        มีการเปลี่ยนแปลง
+                        {isCompact ? "โหมดแก้ไขบนมือถือ/แท็บเล็ต" : "มีการเปลี่ยนแปลง"}
                       </Tag>
                     )}
                   </div>
-                  <Button
-                    size="small"
-                    onClick={addSingleSlot}
-                    disabled={slots.length >= Math.max(1, formValues.length)}
-                  >
+                  <Button size="small" onClick={addSingleSlot} disabled={slots.length >= Math.max(1, formValues.length)}>
                     + เพิ่มแถวเดี่ยว
                   </Button>
                 </div>
@@ -883,10 +1075,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                     const isSplit = slot.mode === "split";
                     const subCount = isSplit ? 2 : 1;
                     return (
-                      <div
-                        key={slotIdx}
-                        className="rounded-lg border border-gray-200 p-3 bg-gradient-to-b from-white to-gray-50"
-                      >
+                      <div key={slotIdx} className="rounded-lg border border-gray-200 p-3 bg-gradient-to-b from-white to-gray-50">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold">แถว {slotIdx + 1}</span>
@@ -898,22 +1087,13 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                             <Button size="small" onClick={() => toggleSplitAt(slotIdx)}>
                               {isSplit ? "รวมเป็นเดี่ยว" : "แบ่ง 2 ช่อง"}
                             </Button>
-                            {/* ลบได้เลย ไม่ต้องยืนยัน */}
-                            <Button
-                              size="small"
-                              danger
-                              onClick={() => deleteSlot(slotIdx)}
-                              disabled={slots.length <= 1}
-                            >
+                            <Button size="small" danger onClick={() => deleteSlot(slotIdx)} disabled={slots.length <= 1}>
                               ลบแถว
                             </Button>
                           </div>
                         </div>
 
-                        <div
-                          className={`grid gap-3 ${isSplit ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
-                            }`}
-                        >
+                        <div className={`grid gap-3 ${isSplit ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
                           {Array.from({ length: subCount }).map((_, subIdx) => {
                             const cell = slot.graphs[subIdx ?? 0];
                             const meta = graphMeta(cell?.graphTypeId ?? null);
@@ -925,25 +1105,20 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                             return (
                               <div
                                 key={subIdx}
-                                className={`relative rounded-xl border p-3 min-h-[140px] transition ${isOver ? "border-teal-400 bg-teal-50" : "border-gray-300 bg-gray-50"
-                                  }`}
-                                onDragOver={(e) =>
-                                  handleDragOverSlot(slotIdx, isSplit ? subIdx : null, e)
+                                className={`relative rounded-xl border p-3 min-h-[160px] transition ${
+                                  isOver ? "border-teal-400 bg-teal-50" : "border-gray-300 bg-gray-50"
+                                }`}
+                                onDragOver={
+                                  !isCompact ? (e) => handleDragOverSlot(slotIdx, isSplit ? subIdx : null, e) : undefined
                                 }
-                                onDrop={() =>
-                                  handleDropOnSlot(slotIdx, isSplit ? subIdx : null)
-                                }
+                                onDrop={!isCompact ? () => handleDropOnSlot(slotIdx, isSplit ? subIdx : null) : undefined}
                                 title={isSplit ? (subIdx === 0 ? "ช่องซ้าย" : "ขวา") : "ช่องเดี่ยว"}
                               >
-                                {/* ส่วนหัวของ cell */}
+                                {/* Header cell */}
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2 min-w-0">
                                     {isSplit && (
-                                      <Tag
-                                        className="text-[11px]"
-                                        color="geekblue"
-                                        style={{ borderRadius: 6 }}
-                                      >
+                                      <Tag className="text-[11px]" color="geekblue" style={{ borderRadius: 6 }}>
                                         {subIdx === 0 ? "ซ้าย" : "ขวา"}
                                       </Tag>
                                     )}
@@ -953,12 +1128,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                                           src={meta?.img}
                                           alt={meta?.name}
                                           preview={false}
-                                          style={{
-                                            width: 40,
-                                            height: 40,
-                                            objectFit: "contain",
-                                            borderRadius: 8,
-                                          }}
+                                          style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 8 }}
                                         />
                                         <div className="min-w-0">
                                           <div className="text-sm font-semibold truncate max-w-[180px] sm:max-w-[240px]">
@@ -973,50 +1143,148 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                                       </>
                                     ) : (
                                       <div className="text-gray-500 text-sm">
-                                        ลากกราฟหรือพารามิเตอร์มาวางที่นี่
+                                        {isCompact ? "เลือกกราฟและพารามิเตอร์ด้านล่าง" : "ลากกราฟหรือพารามิเตอร์มาวางที่นี่"}
                                       </div>
                                     )}
                                   </div>
                                 </div>
 
+                                {/* Compact controls */}
+                                {isCompact && (
+                                  <div className="space-y-2 mb-2">
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-xs text-gray-600">ประเภทกราฟ</span>
+                                      <Select
+                                        size="middle"
+                                        placeholder="เลือกประเภทกราฟ"
+                                        value={cell?.graphTypeId ?? undefined}
+                                        onChange={(val) =>
+                                          handleCompactGraphTypeChange(slotIdx, isSplit ? subIdx : null, val)
+                                        }
+                                        options={graphTypes.map((g) => ({ value: g.id, label: g.name }))}
+                                        className="w-full"
+                                        allowClear
+                                      />
+                                    </div>
+
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-xs text-gray-600">พารามิเตอร์ในช่องนี้</span>
+                                      <Select
+                                        mode="multiple"
+                                        size="middle"
+                                        placeholder="เลือกพารามิเตอร์"
+                                        value={cell?.paramIds ?? []}
+                                        onChange={(newIds) =>
+                                          handleCompactParamChange(slotIdx, isSplit ? subIdx : null, newIds as number[])
+                                        }
+                                        options={getParamOptionsForCell(slotIdx, isSplit ? subIdx : null)}
+                                        className="w-full"
+                                        maxTagCount="responsive"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
                                 {/* รายการพารามิเตอร์ใน cell */}
                                 {cell?.graphTypeId && (
-                                  <div className="flex flex-wrap gap-2">
+                                  <div className="flex flex-wrap items-center gap-2">
                                     {cell.paramIds.length === 0 ? (
                                       <span className="text-xs text-gray-500">
-                                        ลากพารามิเตอร์มาวางที่นี่…
+                                        {isCompact ? "ยังไม่เลือกพารามิเตอร์…" : "ลากพารามิเตอร์มาวางที่นี่…"}
                                       </span>
                                     ) : (
                                       cell.paramIds.map((pid) => {
                                         const color = getParamColorCode(pid);
-                                        return (
-                                          <Tag
-                                            key={pid}
-                                            closable
-                                            onClose={(e) => {
-                                              e.preventDefault();
-                                              removeParamFromCell(
-                                                slotIdx,
-                                                isSplit ? subIdx : null,
-                                                pid
-                                              );
+                                        const param = formValues.find((p) => p.ID === pid);
+
+                                        const desktopColorNode = (
+                                          <ColorPicker
+                                            value={param?.HardwareParameterColorCode || "#000000"}
+                                            onChange={(c) => {
+                                              const hex = c.toHexString();
+                                              handleChange(pid, "HardwareParameterColorCode", hex);
                                             }}
-                                            className="px-2 py-1"
-                                          >
-                                            <span
-                                              style={{
-                                                display: "inline-block",
-                                                width: 8,
-                                                height: 8,
-                                                borderRadius: 999,
-                                                background: color || "#8b8b8b",
-                                                marginRight: 6,
-                                                border: "1px solid #d1d5db",
-                                                verticalAlign: "middle",
+                                            presets={[
+                                              {
+                                                label: "แนะนำ",
+                                                colors: [
+                                                  "#1B3F71",
+                                                  "#2563eb",
+                                                  "#22c55e",
+                                                  "#eab308",
+                                                  "#ef4444",
+                                                  "#9333ea",
+                                                  "#0ea5e9",
+                                                  "#64748b",
+                                                ],
+                                              },
+                                            ]}
+                                          />
+                                        );
+
+                                        return (
+                                          <div key={pid} className="flex items-center">
+                                            <Tag
+                                              closable
+                                              onClose={(e) => {
+                                                e.preventDefault();
+                                                removeParamFromCell(slotIdx, isSplit ? subIdx : null, pid);
                                               }}
-                                            />
-                                            {getParamName(pid)}
-                                          </Tag>
+                                              className="px-2 py-1"
+                                            >
+                                              {isCompact ? (
+                                                <span
+                                                  onClick={() => {
+                                                    setColorTemp(color || "#000000");
+                                                    setColorEditPid(pid);
+                                                  }}
+                                                  style={{
+                                                    display: "inline-block",
+                                                    width: 10,
+                                                    height: 10,
+                                                    borderRadius: 999,
+                                                    background: color || "#8b8b8b",
+                                                    marginRight: 6,
+                                                    border: "1px solid #d1d5db",
+                                                    verticalAlign: "middle",
+                                                    cursor: "pointer",
+                                                  }}
+                                                  title="แตะเพื่อเปลี่ยนสี"
+                                                />
+                                              ) : (
+                                                <Popover content={desktopColorNode} trigger="click" overlayInnerStyle={{ padding: 8 }}>
+                                                  <span
+                                                    style={{
+                                                      display: "inline-block",
+                                                      width: 10,
+                                                      height: 10,
+                                                      borderRadius: 999,
+                                                      background: color || "#8b8b8b",
+                                                      marginRight: 6,
+                                                      border: "1px solid #d1d5db",
+                                                      verticalAlign: "middle",
+                                                      cursor: "pointer",
+                                                    }}
+                                                    title="คลิกเพื่อเปลี่ยนสี"
+                                                  />
+                                                </Popover>
+                                              )}
+                                              {getParamName(pid)}
+                                            </Tag>
+
+                                            {isCompact && (
+                                              <Button
+                                                size="small"
+                                                style={{ marginLeft: 4 }}
+                                                onClick={() => {
+                                                  setColorTemp(color || "#000000");
+                                                  setColorEditPid(pid);
+                                                }}
+                                              >
+                                                เปลี่ยนสี
+                                              </Button>
+                                            )}
+                                          </div>
                                         );
                                       })
                                     )}
@@ -1032,11 +1300,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-4">
-                  <Button
-                    onClick={onClose}
-                    size="small"
-                    className="rounded-md font-semibold px-4 h-[34px] text-[14px] border"
-                  >
+                  <Button onClick={onClose} size="small" className="rounded-md font-semibold px-4 h-[34px] text-[14px] border">
                     ยกเลิก
                   </Button>
                   <Button
@@ -1056,14 +1320,68 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         </div>
       )}
 
+      {/* ✅ Compact Color Editor Modal (Mobile/iPad) */}
+      <Modal
+        open={isCompact && colorEditPid !== null}
+        onCancel={() => setColorEditPid(null)}
+        onOk={() => {
+          if (colorEditPid != null) {
+            handleChange(colorEditPid, "HardwareParameterColorCode", colorTemp);
+          }
+          setColorEditPid(null);
+        }}
+        okText="บันทึก"
+        cancelText="ยกเลิก"
+        title="เลือกสีพารามิเตอร์"
+        destroyOnClose
+      >
+        <div className="flex items-center gap-3">
+          <div
+            style={{
+              width: 16,
+              height: 16,
+              borderRadius: 999,
+              background: colorTemp,
+              border: "1px solid #d1d5db",
+            }}
+          />
+          <ColorPicker
+            value={colorTemp}
+            onChange={(c) => setColorTemp(c.toHexString())}
+            presets={[
+              {
+                label: "แนะนำ",
+                colors: [
+                  "#1B3F71",
+                  "#2563eb",
+                  "#22c55e",
+                  "#eab308",
+                  "#ef4444",
+                  "#9333ea",
+                  "#0ea5e9",
+                  "#64748b",
+                ],
+              },
+            ]}
+          />
+        </div>
+      </Modal>
+
       {/* สไตล์เสริมเฉพาะคอมโพเนนต์นี้ */}
       <style>{`
-        /* มือถือ: ขยับโมดัลลงมาอีกหน่อย และคง padding ด้านข้าง */
         @media (max-width: 640px) {
           .ant-modal-root .ant-modal {
             padding: 0 8px;
-            top: 56px !important; /* ดันลงมาจากขอบบน */
+            top: 56px !important;
           }
+        }
+        @media (min-width: 768px) and (max-width: 1280px) {
+          .ant-modal-root .ant-modal {
+            top: 40px !important;
+          }
+        }
+        .paddings .ant-select {
+          max-width: 100%;
         }
       `}</style>
     </Modal>

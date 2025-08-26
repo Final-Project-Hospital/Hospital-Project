@@ -1,3 +1,4 @@
+// 📄 EditStandardUnitModal.tsx
 import React, { useEffect, useState } from "react";
 import { Modal, Form, Input, message, Spin, Select, Tooltip, Checkbox } from "antd";
 import {
@@ -17,6 +18,27 @@ import type { IconType } from "react-icons";
 
 const { Option } = Select;
 
+/* ------------------------------ Types ------------------------------ */
+interface StandardHardware {
+  ID?: number;
+  MinValueStandard?: number;
+  MaxValueStandard?: number;
+}
+
+interface UnitHardware {
+  ID?: number;
+  Unit?: string;
+}
+
+type ParamItem = {
+  ID: number;
+  Parameter: string;
+  Icon?: string;
+  Alert?: boolean;
+  StandardHardware?: StandardHardware;
+  UnitHardware?: UnitHardware;
+};
+
 interface EditStandardUnitModalProps {
   open: boolean;
   onClose: () => void;
@@ -26,32 +48,29 @@ interface EditStandardUnitModalProps {
 
 type IconOption = { name: string; label: string; component: IconType };
 
-// ✅ รายการไอคอน
+/* ------------------------- Icon options (uniform) ------------------------- */
 const iconOptions: IconOption[] = [
-  { name: "FaMicroscope", label: "กล้องจุลทรรศน์", component: FaIcons.FaMicroscope },
   { name: "FaTemperatureHigh", label: "อุณหภูมิสูง", component: FaIcons.FaTemperatureHigh },
   { name: "FaTint", label: "หยดน้ำ", component: FaIcons.FaTint },
   { name: "FaThermometerHalf", label: "เทอร์โมมิเตอร์", component: FaIcons.FaThermometerHalf },
   { name: "GiChemicalDrop", label: "สารเคมี", component: GiIcons.GiChemicalDrop },
   { name: "GiFireBottle", label: "ขวดไฟ", component: GiIcons.GiFireBottle },
   { name: "GiGasMask", label: "หน้ากากกันแก๊ส", component: GiIcons.GiGasMask },
-  { name: "GiWaterDrop", label: "หยดน้ำบริสุทธิ์", component: GiIcons.GiWaterDrop },
   { name: "BiTestTube", label: "หลอดทดลอง", component: BiIcons.BiTestTube },
   { name: "GiRoundBottomFlask", label: "ขวดฟลาสก์", component: GiIcons.GiRoundBottomFlask },
   { name: "AiOutlineDotChart", label: "กราฟจุด", component: AiIcons.AiOutlineDotChart },
-  { name: "MdScience", label: "วิทยาศาสตร์", component: MdIcons.MdScience },
-  { name: "MdWaterDrop", label: "หยดน้ำ", component: MdIcons.MdWaterDrop },
+  { name: "MdScience", label: "ขวดรูปชมพู", component: MdIcons.MdScience },
   { name: "MdOutlineWbSunny", label: "แสงแดด", component: MdIcons.MdOutlineWbSunny },
   { name: "MdAir", label: "อากาศ", component: MdIcons.MdAir },
 ];
 
-// แปลงเป็น map
+// 🔁 map สำหรับชื่อ -> component
 const iconMap: Record<string, IconType> = iconOptions.reduce((acc, cur) => {
   acc[cur.name] = cur.component;
   return acc;
 }, {} as Record<string, IconType>);
 
-// ---------- UI helper ----------
+/* --------------------------- UI Small Helpers --------------------------- */
 const SectionHeader: React.FC<{ title: string; hint?: string }> = ({ title, hint }) => (
   <div className="flex items-center justify-between mb-4">
     <div className="text-[1.05rem] font-semibold text-teal-700">{title}</div>
@@ -59,6 +78,26 @@ const SectionHeader: React.FC<{ title: string; hint?: string }> = ({ title, hint
   </div>
 );
 
+// ให้ไอคอน “เท่ากันทุกตัว”
+const IconBadge: React.FC<{
+  icon?: IconType;
+  size?: number;
+  className?: string;
+  ring?: boolean;
+}> = ({ icon: Icon, size = 36, className = "", ring = true }) => (
+  <div
+    className={[
+      "w-24 h-24 rounded-full bg-white flex items-center justify-center",
+      "shadow-md",
+      ring ? "border border-teal-500" : "",
+      className,
+    ].join(" ")}
+  >
+    {Icon ? <Icon size={size} className="text-teal-600 block" /> : null}
+  </div>
+);
+
+// input ตัวเลข required + เป็นเลขเท่านั้น
 const NumberItem: React.FC<{
   name: string;
   placeholder: string;
@@ -88,19 +127,17 @@ const NumberItem: React.FC<{
   </Form.Item>
 );
 
-// ✅ คอมโพเนนต์ย่อย ParamRow
-const ParamRow: React.FC<{
-  form: any;
-  param: any;
-}> = ({ form, param }) => {
+/* ------------------------------ Param Row ------------------------------ */
+const ParamRow: React.FC<{ form: any; param: ParamItem }> = ({ form, param }) => {
   const fieldIcon = `icon_${param.ID}`;
   const fieldAlert = `alert_${param.ID}`;
-  const iconName = Form.useWatch(fieldIcon, form) as string | undefined;//@ts-ignore
-  const alertValue = Form.useWatch(fieldAlert, form) as boolean | undefined;
-  const IconPreview = iconMap[iconName || "FaMicroscope"];
 
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const iconName = Form.useWatch(fieldIcon, form) as string | undefined;
+  const IconPreview = iconMap[iconName || "BiTestTube"]; // ✅ fallback ที่มีอยู่จริง
 
+  const [isMobile, setIsMobile] = useState<boolean>(
+    typeof window !== "undefined" ? window.innerWidth <= 768 : false
+  );
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", handleResize);
@@ -121,16 +158,14 @@ const ParamRow: React.FC<{
         {/* LEFT: Icon Preview */}
         <div className="xl:col-span-2 lg:col-span-3 flex lg:block items-center justify-center">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-md border border-teal-500">
-              {IconPreview ? <IconPreview size={42} className="text-teal-600" /> : null}
-            </div>
+            <IconBadge icon={IconPreview} />
             <div className="text-xs text-gray-500">ไอคอนปัจจุบัน</div>
           </div>
         </div>
 
         {/* RIGHT: Form */}
         <div className="xl:col-span-10 lg:col-span-9">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
             {/* Min */}
             <div className="md:col-span-3">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -173,7 +208,7 @@ const ParamRow: React.FC<{
               <div className="text-[11px] text-gray-400 mt-1">หน่วยแสดงผลของพารามิเตอร์นี้</div>
             </div>
 
-            {/* Icon Select */}
+            {/* Icon Select — ขยายให้กว้างขึ้นมาก */}
             <div className="md:col-span-2">
               <div className="flex items-center gap-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -190,19 +225,22 @@ const ParamRow: React.FC<{
               >
                 <Select
                   className="w-full"
+                  size="large"
                   showSearch
                   optionLabelProp="label"
                   filterOption={filterOption}
                   placeholder="เลือกไอคอน"
-                  dropdownStyle={{ padding: 6 }}
+                  dropdownMatchSelectWidth={480}
+                  dropdownStyle={{ padding: 8 }}
+                  listHeight={400}
                 >
                   {iconOptions.map(({ name, label, component: Icon }) => (
                     <Option key={name} value={name} label={label}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-white border border-teal-600 flex items-center justify-center shadow">
-                          <Icon size={18} className="text-teal-600" />
+                      <div className="flex items-center gap-3 py-1.5">
+                        <div className="w-12 h-12 rounded-full bg-white border border-teal-600 flex items-center justify-center shadow">
+                          <Icon size={28} className="text-teal-600 block" />
                         </div>
-                        <span className="text-gray-800 text-sm">{label}</span>
+                        <span className="text-gray-800 text-base">{label}</span>
                       </div>
                     </Option>
                   ))}
@@ -223,6 +261,7 @@ const ParamRow: React.FC<{
   );
 };
 
+/* ------------------------------ Main Modal ------------------------------ */
 const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
   open,
   onClose,
@@ -231,21 +270,32 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [params, setParams] = useState<any[]>([]);
-    const [employeeid, setEmployeeid] = useState<number>(
-    Number(localStorage.getItem("employeeid")) || 0
+  const [params, setParams] = useState<ParamItem[]>([]);
+  const [employeeid, setEmployeeid] = useState<number>(
+    Number(typeof window !== "undefined" ? localStorage.getItem("employeeid") : 0) || 0
   );
 
+  // ✅ ตรวจจับว่าขนาดจอเป็น "โทรศัพท์" หรือไม่ (<= 640px)
+  const [isPhone, setIsPhone] = useState(false);
   useEffect(() => {
-    setEmployeeid(Number(localStorage.getItem("employeeid")));
-    if (!open || !hardwareID) return;
-    setLoading(true);
+    const check = () => setIsPhone(typeof window !== "undefined" && window.innerWidth <= 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
+  useEffect(() => {
+    setEmployeeid(Number(localStorage.getItem("employeeid")) || 0);
+    if (!open || !hardwareID) return;
+
+    setLoading(true);
     ListHardwareParameterByHardwareID(hardwareID)
-      .then((data) => {
+      .then((value) => {
+        const data = (value ?? []) as unknown as ParamItem[];
         if (!Array.isArray(data)) throw new Error("Invalid parameter list");
         setParams(data);
 
+        // ตั้งค่าเริ่มต้นของฟอร์ม
         const initialValues: Record<string, any> = {};
         data.forEach((param) => {
           const maxStd = param.StandardHardware?.MaxValueStandard;
@@ -256,7 +306,7 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
           initialValues[`min_standard_${param.ID}`] =
             typeof minStd === "number" ? minStd : "";
           initialValues[`unit_${param.ID}`] = param?.UnitHardware?.Unit ?? "";
-          initialValues[`icon_${param.ID}`] = param?.Icon || "FaMicroscope";
+          initialValues[`icon_${param.ID}`] = param?.Icon || "BiTestTube";
           initialValues[`alert_${param.ID}`] = !!param?.Alert;
         });
 
@@ -314,7 +364,7 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
           }
 
           // ✅ อัปเดต Icon + Alert
-          tasks.push(UpdateIconByHardwareParameterID(param.ID, icon, alert));
+          tasks.push(UpdateIconByHardwareParameterID(param.ID, icon, !!alert));
 
           await Promise.all(tasks);
         })
@@ -336,17 +386,21 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
       open={open}
       onCancel={onClose}
       footer={null}
-      style={{ top: 50 }}
+      centered
+      maskClosable={false}
       width={"min(1280px, 96vw)"}
       closable={false}
-      className="rounded-xl"
+      className="rounded-x paddings"
+      style={isPhone ? { marginTop: 80 } : undefined}  // ✅ marginTop 80 เฉพาะโทรศัพท์
+      bodyStyle={{ padding: 0 }}
     >
       {/* Header */}
       <div className="bg-teal-600 text-white text-[1.15rem] font-semibold text-center py-3 rounded-t-xl tracking-wide">
         แก้ไขค่า Standard (Min/Max), หน่วย, ไอคอน และการแจ้งเตือน
       </div>
 
-      <div className="px-4 sm:px-6 pt-4 pb-2 max-h-[80vh] overflow-y-auto bg-white">
+      {/* Body */}
+      <div className="px-4 sm:px-6 pt-4 pb-2 max-h-[80vh] overflow-y-auto bg-white rounded-b-xl">
         <Spin spinning={loading}>
           <Form layout="vertical" form={form} scrollToFirstError>
             {params.map((param) => (
@@ -365,6 +419,10 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
           </button>
           <button
             onClick={handleSave}
+            style={{
+              background: "linear-gradient(to right, #14b8a6, #0d9488)",
+              borderColor: "#0d9488",
+            }}
             className="px-4 py-2 text-sm rounded-md text-white bg-teal-600 hover:bg-teal-700 transition"
           >
             บันทึก

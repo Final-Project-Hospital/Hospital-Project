@@ -11,6 +11,10 @@ import {
   ClearOutlined,
   CheckCircleFilled,
   CloseCircleFilled,
+  KeyOutlined,
+  ExclamationCircleOutlined,
+  CloseOutlined,
+  LoadingOutlined,
 } from "@ant-design/icons";
 import { CSVLink } from "react-csv";
 import dayjs from "dayjs";
@@ -23,9 +27,12 @@ import {
   CreateNoteBySensorDataParameterID,
   DeleteSensorDataParametersByIds,
   DeleteAllSensorDataParametersBySensorDataID,
+  IsEmployeePasswordValid,
 } from "../../../../../services/hardware";
 import type { ColumnsType } from "antd/es/table";
+import { FileTextOutlined } from "@ant-design/icons";
 
+const { TextArea } = Input;
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 
@@ -89,6 +96,9 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
   const [loading, setLoading] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [pageSize, setPageSize] = useState(10);
+  const [employeeid, setEmployeeid] = useState<number>(
+    Number(localStorage.getItem("employeeid")) || 1
+  );
 
   // ✅ การเลือกแถว + Modal ลบ (bulk)
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -106,6 +116,10 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
   // ✅ เก็บ SensorDataID ทั้งหมดของ Hardware นี้ (ไม่ซ้ำ)
   const [allSensorDataIDs, setAllSensorDataIDs] = useState<number[]>([]);
 
+  // ✅ รหัสผ่านสำหรับยืนยันการลบทั้งหมด (employeeId = 1)
+  const [clearAllPassword, setClearAllPassword] = useState<string>("");
+  const [checkingPassword, setCheckingPassword] = useState<boolean>(false);
+
   const currentYear = new Date().getFullYear();
   const defaultStart = new Date(currentYear, 0, 1);
   const defaultEnd = new Date(currentYear, 11, 31);
@@ -113,6 +127,9 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
 
   /** ✅ ฟิลเตอร์ช่วงค่าหลายตัว */
   const [rangeFilters, setRangeFilters] = useState<RangeFilter[]>([]);
+
+  /** ✅ แถวที่กำลังเคลียร์หมายเหตุ (โชว์ไอคอนโหลด) */
+  const [clearingNoteKey, setClearingNoteKey] = useState<string | null>(null);
 
   // ✅ โหลดข้อมูล
   const fetchData = async () => {
@@ -243,8 +260,8 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
   };
 
   useEffect(() => {
+    setEmployeeid(Number(localStorage.getItem("employeeid")));
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hardwareID]);
 
   const handleClearQuery = () => {
@@ -334,7 +351,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
       setSavingNote(true);
 
       // 1) อัปเดต UI ทันที (optimistic) ทั้ง filteredData และ tableData
-      const updatedFiltered = [...filteredData];//@ts-ignore
+      const updatedFiltered = [...filteredData]; //@ts-ignore
       const rowKey = updatedFiltered[noteRowIndex].__key;
       const rowDate = updatedFiltered[noteRowIndex].วันที่;
       const rowTime = updatedFiltered[noteRowIndex].เวลา;
@@ -362,7 +379,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
         const fail = results.length - success;
 
         if (success > 0 && fail === 0) {
-          message.success(`บันทึกหมายเหตุสำเร็จ (${success}/${results.length})`);
+          message.success(`บันทึกหมายเหตุสำเร็จ`);
         } else if (success > 0 && fail > 0) {
           message.warning(`บันทึกหมายเหตุสำเร็จบางส่วน: สำเร็จ ${success}, ล้มเหลว ${fail}`);
         } else {
@@ -432,11 +449,34 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
       message.info("ไม่มีข้อมูลให้ลบ");
       return;
     }
+    setClearAllPassword("");
     setShowClearAllModal(true);
   };
 
-  // ✅ ยืนยันลบทั้งหมดของตารางนี้
+  // ✅ ยืนยันลบทั้งหมดของตารางนี้ (ตรวจรหัสผ่านก่อน)
   const confirmClearAll = async () => {
+    if (!clearAllPassword.trim()) {
+      message.warning("กรุณากรอกรหัสผ่านเพื่อยืนยัน");
+      return;
+    }
+
+    // 1) ตรวจรหัสผ่านพนักงาน (ID = 1)
+    try {
+      setCheckingPassword(true);
+      const isValid = await IsEmployeePasswordValid(employeeid, clearAllPassword);
+      setCheckingPassword(false);
+
+      if (!isValid) {
+        message.warning("รหัสผ่านไม่ถูกต้อง");
+        return;
+      }
+    } catch (e) {
+      setCheckingPassword(false);
+      message.error("ตรวจสอบรหัสผ่านไม่สำเร็จ");
+      return;
+    }
+
+    // 2) ถ้ารหัสถูก → ลบข้อมูลทั้งหมด
     try {
       setLoading(true);
       const tasks = allSensorDataIDs.map((sid) => DeleteAllSensorDataParametersBySensorDataID(sid));
@@ -446,7 +486,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
       const fail = settled.length - success;
 
       if (success > 0 && fail === 0) {
-        message.success(`ลบข้อมูลทั้งหมดสำเร็จ (${success} ชุด SensorData)`);
+        message.success(`ลบข้อมูลทั้งหมดสำเร็จ`);
       } else if (success > 0 && fail > 0) {
         message.warning(`ลบบางส่วนสำเร็จ: สำเร็จ ${success}, ล้มเหลว ${fail}`);
       } else {
@@ -460,6 +500,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     } finally {
       setLoading(false);
       setShowClearAllModal(false);
+      setClearAllPassword("");
     }
   };
 
@@ -508,7 +549,49 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     return <span>-</span>;
   };
 
-  /** ✅ Columns: ใส่ “มาตรฐาน” และ “สถานะ” ถัดจากทุกคอลัมน์พารามิเตอร์ */
+  /** ✅ เคลียร์หมายเหตุของแถว (ตั้ง Note = "" ให้ทุก ID ในแถวนั้น) */
+  const handleClearNote = async (row: any) => {
+    const ids: number[] = Array.isArray(row?.__ids) ? row.__ids : [];
+    if (!ids.length) {
+      message.warning("ไม่พบ SensorDataParameterID ในแถวนี้");
+      return;
+    }
+
+    try {
+      setClearingNoteKey(row.__key);
+
+      // Optimistic update: ล้างใน UI ก่อน
+      setFilteredData((prev) =>
+        prev.map((r) => (r.__key === row.__key ? { ...r, หมายเหตุ: "" } : r))
+      );
+      setTableData((prev) =>
+        prev.map((r) =>
+          r.วันที่ === row.วันที่ && r.เวลา === row.เวลา ? { ...r, หมายเหตุ: "" } : r
+        )
+      );
+
+      const results = await Promise.allSettled(
+        ids.map((id) => CreateNoteBySensorDataParameterID(id, ""))
+      );
+      const success = results.filter((r) => r.status === "fulfilled" && (r as any).value).length;
+      const fail = results.length - success;
+      console.log({ results, success, fail });
+      if (success > 0 && fail === 0) {
+        message.success("ลบหมายเหตุแล้ว");
+      } else if (success > 0 && fail > 0) {
+        message.warning(`ลบบางส่วนสำเร็จ: สำเร็จ ${success}, ล้มเหลว ${fail}`);
+      } else {
+        message.error("ลบหมายเหตุไม่สำเร็จ");
+      }
+
+      await fetchData();
+    } catch (e) {
+      message.error("เกิดข้อผิดพลาดระหว่างลบหมายเหตุ");
+    } finally {
+      setClearingNoteKey(null);
+    }
+  };
+
   // ตั้งความกว้างให้เหมาะกับอุปกรณ์
   const minColWidth = isMobile ? 110 : isTablet ? 130 : 160;
   const stdColWidth = isMobile ? 100 : isTablet ? 120 : 140;
@@ -543,7 +626,35 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
             key: col,
             width: minColWidth,
             ellipsis: true,
-            render: (val: any) => (col === "หมายเหตุ" ? val || "-" : val),
+            render: (val: any, row: any) => {
+              if (col !== "หมายเหตุ") return val || "-";
+
+              const noteText = typeof val === "string" ? val.trim() : "";
+              if (!noteText) return <span>-</span>;
+
+              const isClearing = clearingNoteKey === row.__key;
+
+              return (
+                <div className="group relative pr-6">
+                  <span className="text-gray-700">{noteText}</span>
+                  <button
+                    type="button"
+                    aria-label="ลบหมายเหตุ"
+                    title="ลบหมายเหตุ"
+                    disabled={isClearing}
+                    onClick={() => handleClearNote(row)}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                    style={{ cursor: isClearing ? "not-allowed" : "pointer" }}
+                  >
+                    {isClearing ? (
+                      <LoadingOutlined style={{ fontSize: 14, color: "#9ca3af" }} />
+                    ) : (
+                      <CloseOutlined style={{ fontSize: 12, color: "#9ca3af" }} />
+                    )}
+                  </button>
+                </div>
+              );
+            },
           };
           return [baseCol];
         }
@@ -819,8 +930,8 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
                 {["วันที่", "เวลา", "หมายเหตุ"].includes(col)
                   ? col
                   : paramUnits[col]
-                  ? `${col} (${paramUnits[col]})`
-                  : col}
+                    ? `${col} (${paramUnits[col]})`
+                    : col}
               </span>
             </Checkbox>
           ))}
@@ -923,13 +1034,13 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {rangeFilters.length === 0 ? (
-              <div className="text-gray-600 text-sm">ยังไม่มีเงื่อนไขช่วงค่า กด “เพิ่มช่วงค่า” เพื่อเริ่มต้น</div>
-            ) : (
-              rangeFilters.map((rf) => <RangeFilterRow key={rf.id} rf={rf} />)
-            )}
-          </div>
+        <div className="flex flex-col gap-3">
+          {rangeFilters.length === 0 ? (
+            <div className="text-gray-600 text-sm">ยังไม่มีเงื่อนไขช่วงค่า กด “เพิ่มช่วงค่า” เพื่อเริ่มต้น</div>
+          ) : (
+            rangeFilters.map((rf) => <RangeFilterRow key={rf.id} rf={rf} />)
+          )}
+        </div>
         </div>
 
         {/* Table */}
@@ -988,95 +1099,141 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
 
       {/* Modal เพิ่ม/แก้ไขหมายเหตุ */}
       <Modal
+        title={
+          <span className="text-teal-600 font-bold text-lg flex items-center gap-2">
+            <FileTextOutlined /> {modalTitle || "จัดการหมายเหตุ"}
+          </span>
+        }
         open={showNoteModal}
         onCancel={() => setShowNoteModal(false)}
-        onOk={saveNote}
-        okText="บันทึก"
-        cancelText="ยกเลิก"
         centered
-        confirmLoading={savingNote}
-        title={modalTitle}
+        width="600px"
+        footer={[
+          <Button key="cancel" onClick={() => setShowNoteModal(false)}>
+            ยกเลิก
+          </Button>,
+          <Button
+            key="save"
+            type="primary"
+            loading={savingNote}
+            onClick={saveNote}
+            style={{
+              background: "linear-gradient(to right, #14b8a6, #0d9488)",
+              borderColor: "#0d9488",
+              color: "#fff",
+            }}
+          >
+            บันทึก
+          </Button>,
+        ]}
+        className="custom-note-modal"
       >
-        <Input.TextArea
-          rows={4}
-          value={noteInput}
-          onChange={(e) => setNoteInput(e.target.value)}
-          placeholder="กรอกหมายเหตุที่นี่..."
-        />
+        <div className="space-y-2">
+          <span className="flex items-center gap-1 font-semibold text-gray-700">
+            <EditOutlined /> หมายเหตุ
+          </span>
+          <TextArea
+            rows={4}
+            value={noteInput}
+            onChange={(e) => setNoteInput(e.target.value)}
+            placeholder="กรอกหมายเหตุที่นี่..."
+            style={{
+              borderColor: "#14b8a6",
+              borderRadius: 8,
+              resize: "none",
+            }}
+          />
+        </div>
       </Modal>
 
       {/* Modal ยืนยันลบที่เลือก */}
       <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <ExclamationCircleOutlined style={{ color: "#faad14" }} />
+            <span>ยืนยันการลบข้อมูลเซนเซอร์</span> 
+          </div>
+        }
         open={showDeleteModal}
         onCancel={() => setShowDeleteModal(false)}
-        footer={null}
+        onOk={confirmBulkDelete}
         centered
-        title={null}
-        bodyStyle={{ padding: 0 }}
+        okText="ลบ"
+        cancelText="ยกเลิก"
+        okButtonProps={{ danger: true }}
+        confirmLoading={loading}
       >
-        <div className="rounded-lg p-6 bg-white">
-          <div className="flex flex-col items-center text-center">
-            <div className="bg-red-100 p-3 rounded-full mb-3 shadow-sm">
-              <DeleteOutlined className="text-red-500 text-2xl" />
-            </div>
-            <h2 className="text-lg text-red-600 font-medium">ยืนยันการลบข้อมูลที่เลือก</h2>
-            <p className="text-sm text-gray-700 mt-1 mb-3">
-              คุณแน่ใจหรือไม่ว่าต้องการลบทั้งหมด{" "}
-              <span className="text-red-500">{selectedRowKeys.length}</span> แถว?
-            </p>
+        <p>
+          คุณต้องการลบแถวข้อมูลทั้งหมด{" "}
+          <span className="font-semibold text-red-500">
+            {selectedRowKeys.length}
+          </span>{" "}
+          ข้อมูล ใช่หรือไม่?
+        </p>
 
-            <ul className="bg-gray-50 border border-gray-200 rounded-md max-h-40 overflow-y-auto px-4 py-2 text-left w-full text-sm text-gray-700 list-disc list-inside">
-              {filteredData
-                .filter((r) => selectedRowKeys.includes(r.__key))
-                .map((r) => (
-                  <li key={r.__key}>{`${r.วันที่} ${r.เวลา}`}</li>
-                ))}
-            </ul>
+        <ul className="list-disc list-inside text-gray-700 mt-3 max-h-40 overflow-y-auto">
+          {filteredData
+            .filter((r) => selectedRowKeys.includes(r.__key))
+            .map((r) => (
+              <li key={r.__key}>{`${r.วันที่} ${r.เวลา}`}</li>
+            ))}
+        </ul>
 
-            <p className="text-xs text-gray-500 mt-3">การลบนี้ไม่สามารถย้อนกลับได้</p>
-          </div>
-
-          <div className="mt-6 flex justify-center gap-4">
-            <Button onClick={() => setShowDeleteModal(false)} className="rounded-md">
-              ยกเลิก
-            </Button>
-            <Button
-              type="primary"
-              danger
-              onClick={confirmBulkDelete}
-              className="bg-red-400 hover:bg-red-500 text-white font-semibold rounded-md border-none"
-              disabled={loading}
-            >
-              ลบ
-            </Button>
-          </div>
-        </div>
+        <p className="text-xs text-gray-500 mt-3">
+          ลบเเล้วไม่สามารถย้อนกลับได้
+        </p>
       </Modal>
 
-      {/* Modal ยืนยัน Clear Data ทั้งตาราง */}
+      {/* Modal ยืนยัน Clear Data ทั้งตาราง (เพิ่มตรวจรหัสผ่าน) */}
       <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <ExclamationCircleOutlined style={{ color: "#faad14" }} />
+            <span>ยืนยันการลบข้อมูลเซนเซอร์</span>
+          </div>
+        }
         open={showClearAllModal}
-        onCancel={() => setShowClearAllModal(false)}
-        centered
+        onCancel={() => {
+          setShowClearAllModal(false);
+          setClearAllPassword("");
+        }}
         onOk={confirmClearAll}
-        okText="Clear Data"
+        centered
+        okText="ลบ"
         cancelText="ยกเลิก"
-        confirmLoading={loading}
-        title="ยืนยันการลบข้อมูลทั้งหมดของตารางนี้"
+        okButtonProps={{
+          danger: true,
+          disabled: !clearAllPassword.trim(),
+        }}
+        confirmLoading={loading || checkingPassword}
       >
-        <div className="text-sm text-gray-700">
-          {allSensorDataIDs.length > 0 ? (
-            <>
-              คุณต้องการลบ <b>SensorDataParameter ทั้งหมด</b> ของ Hardware นี้หรือไม่?
-              <div className="mt-2">
-                จะทำการลบสำหรับ <b>{allSensorDataIDs.length}</b> รายการ SensorData ที่เกี่ยวข้อง
-              </div>
-              <div className="mt-2 text-xs text-red-500">การลบนี้ไม่สามารถย้อนกลับได้</div>
-            </>
-          ) : (
-            "ไม่พบ SensorData สำหรับลบ"
-          )}
-        </div>
+        {allSensorDataIDs.length > 0 ? (
+          <div>
+            <p className="mb-3">
+              คุณต้องการลบ{" "}
+              <span className="font-semibold text-red-500">ข้อมูลทั้งหมด</span>{" "}
+              ของเซนเซอร์ภายในห้องนี้ใช่หรือไม่?
+            </p>
+
+            <div className="mb-2 text-xs text-gray-500">
+              * เพื่อความปลอดภัย กรุณากรอกรหัสผ่านพนักงานเพื่อยืนยัน
+            </div>
+
+            <Input.Password
+              prefix={<KeyOutlined />}
+              placeholder="กรอกรหัสผ่านเพื่อยืนยัน"
+              value={clearAllPassword}
+              onChange={(e) => setClearAllPassword(e.target.value)}
+              onPressEnter={confirmClearAll}
+            />
+
+            <p className="text-xs text-gray-500 mt-3">
+              ลบแล้วไม่สามารถย้อนกลับได้
+            </p>
+          </div>
+        ) : (
+          <p>ไม่พบข้อมูลสำหรับลบ</p>
+        )}
       </Modal>
     </div>
   );

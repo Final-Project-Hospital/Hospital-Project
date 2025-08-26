@@ -1,7 +1,6 @@
 // (เหมือนเดิมส่วน import ทั้งหมด)
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { Spin } from "antd";
 import picture1 from "../../../../../assets/ESP32.png";
 import Boxsdata from "../box/index";
 import TableData from "../table/index";
@@ -17,7 +16,7 @@ import ColorMapping from "../chart/mapping/index";
 import Stacked from "../chart/stack/index";
 import EditParameterModal from "./edit";
 import EditStandardUnitModal from "../standard/index";
-import { useStateContext } from "../../../../../contexts/ContextProvider"; // 👈 เพิ่มบรรทัดนี้
+import { useStateContext } from "../../../../../contexts/ContextProvider";
 
 interface ParameterWithColor {
   parameter: string;
@@ -30,15 +29,31 @@ interface HardwareParameterResponse {
   graph_id: number;
   graph: string;
   color: string;
-  group_display: boolean; // group
-  layout_display: boolean; // layout
+  index: number;            // ✅ ลำดับแถว 1..n
+  right: boolean;           // ✅ ใช้เฉพาะเมื่อ layout_display = true
+  group_display: boolean;   // รวมกราฟ
+  layout_display: boolean;  // true=แบ่งซ้าย/ขวา, false=เต็มแถว
 }
 
 type UniqueGraphItem = {
   ID: number; // ใช้ graph_id หรือ id ตามเคส
   Graph: string;
   ParametersWithColor: ParameterWithColor[];
-  fullSpan?: boolean; // true = เต็มแถว, false/undefined = ครึ่งแถว
+  fullSpan?: boolean; // true = เต็มแถว
+};
+
+// ✅ บล็อกกราฟหลังคำนวณซ้าย/ขวาแล้ว
+type GraphBlock = UniqueGraphItem & {
+  rowIndex: number;                 // มาจาก index
+  side?: "left" | "right";          // มีเมื่อ layout_display = true
+};
+
+// ✅ โครงสร้างแถว
+type RowBlocks = {
+  index: number;
+  fullSpan?: GraphBlock;            // ถ้ามีจะใช้เต็มแถว
+  left?: GraphBlock;                // บล็อกฝั่งซ้าย
+  right?: GraphBlock;               // บล็อกฝั่งขวา
 };
 
 const Index = () => {
@@ -47,7 +62,8 @@ const Index = () => {
 
   const { activeMenu } = useStateContext();
 
-  const [uniqueGraphs, setUniqueGraphs] = useState<UniqueGraphItem[]>([]);
+  // เปลี่ยนจาก uniqueGraphs เป็น "rows" เพื่อจัดวางตามแถว + ซ้าย/ขวา
+  const [rows, setRows] = useState<RowBlocks[]>([]);
   const [showEdit, setShowEdit] = useState(false);
   const [showEditStandard, setShowEditStandard] = useState(false);
 
@@ -70,7 +86,7 @@ const Index = () => {
 
   const fetchSensorDataAndParameters = useCallback(async () => {
     if (!hardwareID) {
-      setUniqueGraphs([]);
+      setRows([]);
       return;
     }
 
@@ -78,7 +94,7 @@ const Index = () => {
     const allParamIDsFromSensorData: number[] = [];
     const sensorDataList = await GetSensorDataByHardwareID(hardwareID);
     if (!sensorDataList || sensorDataList.length === 0) {
-      setUniqueGraphs([]);
+      setRows([]);
       return;
     }
 
@@ -95,76 +111,144 @@ const Index = () => {
     // 2) ดึงรายการ HardwareParameter ทั้งหมดของ hardware นี้
     const response = await ListHardwareParameterIDsByHardwareID(hardwareID);
     if (!response?.parameters || !Array.isArray(response.parameters)) {
-      setUniqueGraphs([]);
+      setRows([]);
       return;
     }
 
     // 3) คัดเฉพาะพารามิเตอร์ที่ "มีข้อมูลจริง"
-    const validParams: HardwareParameterResponse[] = (response.parameters as HardwareParameterResponse[]).filter(
+    const rawParams: HardwareParameterResponse[] = (response.parameters as HardwareParameterResponse[]).filter(
       (p) => allParamIDsFromSensorData.includes(p.id)
     );
 
-    // 4) จัดกลุ่มตาม graph_id เพื่อพิจารณา "รวมกราฟ" หรือ "เดี่ยว"
-    //    - รวมกราฟ: มีพารามิเตอร์ที่ group_display=true >= 2 ตัว ใน graph_id เดียวกัน
-    //    - เดี่ยว: นอกเหนือจากนั้น
+    // ✅ 3.1) เรียงลำดับพารามิเตอร์ตาม index (1..n) ก่อนเสมอ
+    const sortedParamsByIndex = [...rawParams].sort((a, b) => {
+      const ai = Number.isFinite(a.index) ? a.index : Number.MAX_SAFE_INTEGER;
+      const bi = Number.isFinite(b.index) ? b.index : Number.MAX_SAFE_INTEGER;
+      if (ai !== bi) return ai - bi;
+      return a.id - b.id; // กันชน
+    });
+
+    // 4) จัดกลุ่มตาม graph_id แล้วแตกเป็น "บล็อกกราฟ" ที่รู้ตำแหน่งแถว (index) และซ้าย/ขวา (จาก right)
+    //    - กราฟรวม (group_display=true >=2): 1 block ต่อกราฟ → rowIndex = min(index) ในกลุ่ม
+    //      * ถ้ามีใคร layout_display=false => fullSpan=true
+    //      * ถ้า fullSpan=false => side ตัดสินด้วย "เสียงข้างมาก" ของ right (เท่ากันให้เป็น left)
+    //    - เดี่ยว: 1 block ต่อพารามิเตอร์ → rowIndex = index, fullSpan = !layout_display, side = right? "right":"left"
     const byGraphId = new Map<number, HardwareParameterResponse[]>();
-    for (const p of validParams) {
+    for (const p of sortedParamsByIndex) {
       if (!byGraphId.has(p.graph_id)) byGraphId.set(p.graph_id, []);
       byGraphId.get(p.graph_id)!.push(p);
     }
 
-    const results: UniqueGraphItem[] = [];
+    const blocks: GraphBlock[] = [];
 
-    for (const [graphId, paramsOfGraph] of byGraphId.entries()) {
-      // แยกตาม group_display
-      const groupTrue = paramsOfGraph.filter((p) => p.group_display === true);
+    for (const [graphId, paramsOfGraphRaw] of byGraphId.entries()) {
+      const graphName = paramsOfGraphRaw[0]?.graph || "Unknown";
+
+      // เรียงภายในกราฟตาม index ด้วย
+      const paramsOfGraph = [...paramsOfGraphRaw].sort((a, b) => {
+        const ai = Number.isFinite(a.index) ? a.index : Number.MAX_SAFE_INTEGER;
+        const bi = Number.isFinite(b.index) ? b.index : Number.MAX_SAFE_INTEGER;
+        if (ai !== bi) return ai - bi;
+        return a.id - b.id;
+      });
+
+      const groupTrue  = paramsOfGraph.filter((p) => p.group_display === true);
       const groupFalse = paramsOfGraph.filter((p) => p.group_display === false);
 
-      const graphName = paramsOfGraph[0]?.graph || "Unknown";
-
-      // ====== เคส "รวมกราฟ" (มากกว่า 1 parameter และ group = true) ======
+      // ====== เคส "รวมกราฟ" (>=2) ======
       if (groupTrue.length >= 2) {
-        // ตัดสิน layout สำหรับกราฟรวม:
-        // ถ้ามีสักตัว layout=false ⇒ เต็มแถว, มิฉะนั้น ⇒ ครึ่งแถว
         const anyLayoutFalse = groupTrue.some((p) => p.layout_display === false);
-        const groupedItem: UniqueGraphItem = {
+        const orderedParamsInGroup = [...groupTrue].sort((a, b) => {
+          const ai = Number.isFinite(a.index) ? a.index : Number.MAX_SAFE_INTEGER;
+          const bi = Number.isFinite(b.index) ? b.index : Number.MAX_SAFE_INTEGER;
+          if (ai !== bi) return ai - bi;
+          return a.id - b.id;
+        });
+        const rowIndex = Math.min(...orderedParamsInGroup.map((p) => p.index ?? Number.MAX_SAFE_INTEGER));
+
+        // side: ถ้าไม่ fullSpan ให้ใช้เสียงข้างมากของ right
+        let side: "left" | "right" | undefined;
+        if (!anyLayoutFalse) {
+          const rightVotes = orderedParamsInGroup.filter((p) => p.right === true).length;
+          const leftVotes  = orderedParamsInGroup.length - rightVotes;
+          side = rightVotes > leftVotes ? "right" : "left"; // เสมอ → ซ้าย
+        }
+
+        blocks.push({
           ID: graphId,
           Graph: graphName,
-          ParametersWithColor: groupTrue.map((p) => ({ parameter: p.parameter, color: p.color })),
+          ParametersWithColor: orderedParamsInGroup.map((p) => ({
+            parameter: p.parameter,
+            color: p.color,
+          })),
           fullSpan: anyLayoutFalse ? true : false,
-        };
-        results.push(groupedItem);
-
-        // หมายเหตุ: groupFalse ใน graph เดียวกันยังคงพิจารณาเป็น "เดี่ยว" ต่อไปด้านล่าง
+          rowIndex,
+          side,
+        });
       }
 
-      // ====== เคส "เดี่ยว" ======
-      // 1) เดี่ยวจาก group=false
+      // ====== เดี่ยวจาก group=false ======
       for (const p of groupFalse) {
-        const isFull = p.layout_display === false; // layout=false ⇒ เต็มแถว / layout=true ⇒ ครึ่งแถว
-        results.push({
+        const rowIndex = Number.isFinite(p.index) ? p.index : Number.MAX_SAFE_INTEGER;
+        const isFull = p.layout_display === false;
+        const side: "left" | "right" | undefined = isFull ? undefined : (p.right ? "right" : "left");
+
+        blocks.push({
           ID: p.id,
           Graph: p.graph || "Unknown",
           ParametersWithColor: [{ parameter: p.parameter, color: p.color }],
           fullSpan: isFull,
+          rowIndex,
+          side,
         });
       }
 
-      // 2) เดี่ยวจาก group=true แต่มีแค่ตัวเดียว (ไม่ได้เข้าเงื่อนไขรวม)
+      // ====== เดี่ยวจาก group=true แต่มีแค่ 1 ======
       if (groupTrue.length === 1) {
         const p = groupTrue[0];
+        const rowIndex = Number.isFinite(p.index) ? p.index : Number.MAX_SAFE_INTEGER;
         const isFull = p.layout_display === false;
-        results.push({
+        const side: "left" | "right" | undefined = isFull ? undefined : (p.right ? "right" : "left");
+
+        blocks.push({
           ID: p.id,
           Graph: p.graph || "Unknown",
           ParametersWithColor: [{ parameter: p.parameter, color: p.color }],
           fullSpan: isFull,
+          rowIndex,
+          side,
         });
       }
-      // ถ้า groupTrue.length === 0 ⇒ ไม่มีตัว group=true ในกราฟนี้ ก็จบ (เคสถูกครอบคลุมโดย groupFalse แล้ว)
     }
 
-    setUniqueGraphs(results);
+    // 5) รวมเป็น "แถว" โดยดู rowIndex แล้ววางซ้าย/ขวา
+    const rowsMap = new Map<number, RowBlocks>();
+    const putToRow = (blk: GraphBlock) => {
+      const idx = blk.rowIndex;
+      const r = rowsMap.get(idx) || { index: idx };
+      if (blk.fullSpan) {
+        // เต็มแถว: เคลียร์ซ้าย/ขวาทิ้ง และตั้ง fullSpan
+        r.fullSpan = blk;
+        r.left = undefined;
+        r.right = undefined;
+      } else {
+        if (!r.fullSpan) {
+          if (blk.side === "right") {
+            if (!r.right) r.right = blk;
+            else if (!r.left) r.left = blk; // fallback กันข้อมูลชนกัน
+          } else {
+            if (!r.left) r.left = blk;
+            else if (!r.right) r.right = blk; // fallback
+          }
+        }
+      }
+      rowsMap.set(idx, r);
+    };
+
+    blocks.forEach(putToRow);
+
+    const rowsArray = Array.from(rowsMap.values()).sort((a, b) => a.index - b.index);
+    setRows(rowsArray);
     setReloadCharts((prev) => prev + 1);
   }, [hardwareID]);
 
@@ -202,27 +286,56 @@ const Index = () => {
   const onTableLoaded = () => setTableLoaded(true);
   const onAverageLoaded = () => setAverageLoaded(true);
 
+  // ===== Render helpers =====
+  const renderChartBlock = (blk?: GraphBlock | UniqueGraphItem | null) => {
+    if (!blk) return <div />;
+
+    const parameters = blk.ParametersWithColor.map((p) => p.parameter);
+    const colors = blk.ParametersWithColor.map((p) => p.color);
+
+    const commonProps = {
+      hardwareID,
+      parameters,
+      colors,
+      timeRangeType: "day" as const,
+      selectedRange: [defaultStart, defaultEnd] as [Date, Date],
+      reloadKey: reloadCharts,
+    };
+
+    switch (blk.Graph) {
+      case "Line":
+        return <LineChart {...commonProps} />;
+      case "Area":
+        return <Area {...commonProps} />;
+      case "Mapping":
+        return <ColorMapping {...commonProps} />;
+      case "Stacked":
+        return <Stacked {...commonProps} />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="space-y-8 relative">
-      {loadingAll && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-          <Spin size="large" tip="Loading data..." />
-        </div>
-      )}
+      {loadingAll && <div></div>}
 
       {/* Header */}
       <section className="w-full px-2 md:px-8 p-5 bg-white border border-gray-200 rounded-lg shadow-md mb-8 mt-16 md:mt-0 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center">
         <div className="text-center md:text-left">
           <h1 className="text-2xl md:text-4xl font-extrabold leading-tight mb-4">
-            สวัสดีตอนเช้า<br />
+            สวัสดี<br />
             <span className="inline-flex items-center gap-2 text-teal-700 justify-center md:justify-start">
-              วิศวกรรมสิ่งแวดล้อม
+              บุคคลากรของโรงพยาบาล
             </span>
           </h1>
+
           <p className="text-xs md:text-base text-gray-700 mb-6 max-w-xl mx-auto md:mx-0">
-            วิศวกรสิ่งแวดล้อมมีหน้าที่ตรวจสอบอุณหภูมิ ความชื้น และระดับฟอร์มาลดีไฮด์
-            เพื่อประเมินคุณภาพอากาศและรับรองความปลอดภัยต่อสุขภาพ!
+            งานด้านสิ่งแวดล้อมมุ่งสร้างสภาพแวดล้อมที่ปลอดภัยและยั่งยืน
+            ด้วยการออกแบบระบบติดตามและบริหารจัดการคุณภาพสิ่งแวดล้อมโดยรวม ทั้งการเก็บข้อมูลแบบเรียลไทม์
+            การวิเคราะห์แนวโน้ม เพื่อสนับสนุนการตัดสินใจและยกระดับคุณภาพชีวิตของทุกคน
           </p>
+
           <div className="mb-6 flex flex-col md:flex-row justify-center md:justify-start gap-3">
             <button
               className="bg-teal-600 hover:bg-teal-800 text-white font-bold py-2 px-5 rounded-xl shadow transition"
@@ -234,7 +347,7 @@ const Index = () => {
               className="bg-teal-600 hover:bg-teal-800 text-white font-bold py-2 px-5 rounded-xl shadow transition"
               onClick={() => setShowEditStandard(true)}
             >
-              แก้ไขข้อมูลสแตนดาร์ดและหน่วย
+              แก้ไขข้อมูลค่ามาตรฐานและอื่นๆ
             </button>
           </div>
         </div>
@@ -276,54 +389,38 @@ const Index = () => {
       <section className="w-full px-2 md:px-8 bg-white p-6 rounded-lg shadow space-y-4">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">กราฟเเสดงค่าของเเต่ละตัวเเปร</h2>
 
-        {uniqueGraphs.length === 0 ? (
+        {rows.length === 0 ? (
           <div className="text-center text-gray-500 font-semibold">ไม่พบข้อมูล</div>
         ) : (
-          <div
-            className={
-              uniqueGraphs.length === 1
-                ? "grid grid-cols-1 gap-6"
-                : "grid grid-cols-1 md:grid-cols-2 gap-6 md:[grid-auto-flow:dense]"
-            }
-          >
-            {uniqueGraphs.map((g, index) => {
-              if (!g.ParametersWithColor?.length) return null;
+          <div className="flex flex-col gap-6">
+            {rows.map((row, ri) => {
+              // ถ้ามี fullSpan ให้แสดงเต็มแถว
+              if (row.fullSpan) {
+                return (
+                  <div key={`row-${row.index}-${ri}`} className="grid grid-cols-1 gap-6">
+                    <div className="p-3 bg-gray-50 rounded shadow">
+                      {renderChartBlock(row.fullSpan)}
+                    </div>
+                  </div>
+                );
+              }
 
-              const parameters = g.ParametersWithColor.map((p) => p.parameter);
-              const colors = g.ParametersWithColor.map((p) => p.color);
-
-              const commonProps = {
-                hardwareID,
-                parameters,
-                colors,
-                timeRangeType: "day" as const,
-                selectedRange: [defaultStart, defaultEnd] as [Date, Date],
-                reloadKey: reloadCharts,
-              };
-
-              const ChartComponent = (() => {
-                switch (g.Graph) {
-                  case "Line":
-                    return <LineChart {...commonProps} />;
-                  case "Area":
-                    return <Area {...commonProps} />;
-                  case "Mapping":
-                    return <ColorMapping {...commonProps} />;
-                  case "Stacked":
-                    return <Stacked {...commonProps} />;
-                  default:
-                    return null;
-                }
-              })();
-
-              const spanClass = g.fullSpan ? "md:col-span-2" : "";
-
+              // ไม่มี fullSpan → ใช้ 2 คอลัมน์ (ซ้าย/ขวา)
+              // ถ้าบางฝั่งไม่มี ให้เว้นช่องว่างไว้เพื่อคงตำแหน่ง
               return (
                 <div
-                  key={`${g.ID}-${index}-${reloadCharts}`}
-                  className={`p-3 bg-gray-50 rounded shadow ${spanClass}`}
+                  key={`row-${row.index}-${ri}`}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-6 md:[grid-auto-flow:dense]"
                 >
-                  {ChartComponent}
+                  {/* left */}
+                  <div className="p-3 bg-gray-50 rounded shadow min-h-[60px]">
+                    {row.left ? renderChartBlock(row.left) : <div />}
+                  </div>
+
+                  {/* right */}
+                  <div className="p-3 bg-gray-50 rounded shadow min-h-[60px]">
+                    {row.right ? renderChartBlock(row.right) : <div />}
+                  </div>
                 </div>
               );
             })}
@@ -332,7 +429,8 @@ const Index = () => {
       </section>
 
       {/* Average */}
-      <section className="w-full px-2 md:px-8 bg-white p-4 rounded-lg shadow">
+      <section className="w-full px-2 md:px-8 bg-white  p-4 rounded-lg shadow">
+        <h2 className="text-lg font-semibold mb-4 text-gray-700">ข้อมูลเฉลี่ยของเซนเซอร์</h2>
         <Avergare
           key={`avg-${reloadAverage}`}
           hardwareID={hardwareID}

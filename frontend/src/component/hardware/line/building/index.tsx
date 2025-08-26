@@ -8,7 +8,7 @@ import {
   UpdateBuildingByID,
 } from "../../../../services/hardware";
 import { BuildingInterface } from "../../../../interface/IBuilding";
-import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { EditOutlined, DeleteOutlined, PlusOutlined, ExclamationCircleOutlined, ApartmentOutlined, HomeOutlined } from "@ant-design/icons";
 import { FaBuilding } from "react-icons/fa";
 import { useNotificationContext } from "../../line/NotificationContext"; // ✅ ใช้ context
 
@@ -153,7 +153,7 @@ const BuildingALL = () => {
 
   return (
     <Card
-      style={{height: "100%"}}
+      style={{ height: "100%" }}
       title={
         <span className="flex items-center gap-2 text-teal-600 font-semibold">
           <FaBuilding /> {t("อาคารทั้งหมด")}
@@ -163,7 +163,11 @@ const BuildingALL = () => {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          style={{ backgroundColor: "teal", borderColor: "teal" }}
+          style={{
+            background: "linear-gradient(to right, #14b8a6, #0d9488)",
+            color: "white",
+            border: "none",
+          }}
           onClick={() => setIsModalOpen(true)}
         >
           เพิ่มข้อมูลอาคาร
@@ -186,15 +190,27 @@ const BuildingALL = () => {
 
       {/* Modal เพิ่มอาคาร */}
       <Modal
-        title="เพิ่มข้อมูลอาคาร"
+        title={
+          <span className="text-teal-600 font-bold text-lg flex items-center gap-2">
+            <ApartmentOutlined  /> เพิ่มข้อมูลอาคาร
+          </span>
+        }
         open={isModalOpen}
         onOk={handleCreateBuilding}
         onCancel={() => setIsModalOpen(false)}
         centered
         okText="บันทึก"
         cancelText="ยกเลิก"
-        okButtonProps={{ style: { backgroundColor: "teal", borderColor: "teal" } }}
+        okButtonProps={{
+          style: {
+            background: "linear-gradient(to right, #14b8a6, #0d9488)",
+            borderColor: "#0d9488",
+          },
+        }}
       >
+        <div className="flex items-center gap-1 mb-2">
+          <HomeOutlined /> ชื่ออาคาร
+        </div>
         <Input
           placeholder="กรอกชื่ออาคาร"
           value={newBuildingName}
@@ -204,7 +220,12 @@ const BuildingALL = () => {
 
       {/* Modal ลบ */}
       <Modal
-        title="ยืนยันการลบ"
+        title={
+          <div className="flex items-center gap-2">
+            <ExclamationCircleOutlined style={{ color: "#faad14" }} />
+            <span>ยืนยันการลบข้อมูลอาคาร</span>
+          </div>
+        }
         open={deleteModalVisible}
         onOk={handleDeleteBuilding}
         onCancel={() => setDeleteModalVisible(false)}
@@ -224,15 +245,27 @@ const BuildingALL = () => {
 
       {/* Modal แก้ไข */}
       <Modal
-        title="แก้ไขข้อมูลอาคาร"
+        title={
+          <span className="text-teal-600 font-bold text-lg flex items-center gap-2">
+            <EditOutlined  /> แก้ไขข้อมูลอาคาร
+          </span>
+        }
         open={editModalVisible}
         onOk={handleEditBuilding}
         onCancel={() => setEditModalVisible(false)}
         centered
         okText="บันทึก"
         cancelText="ยกเลิก"
-        okButtonProps={{ style: { backgroundColor: "teal", borderColor: "teal" } }}
+        okButtonProps={{
+          style: {
+            background: "linear-gradient(to right, #14b8a6, #0d9488)",
+            borderColor: "#0d9488",
+          },
+        }}
       >
+        <div className="flex items-center gap-1 mb-2">
+          <HomeOutlined /> ชื่ออาคาร
+        </div>
         <Input
           placeholder="แก้ไขชื่ออาคาร"
           value={editName}

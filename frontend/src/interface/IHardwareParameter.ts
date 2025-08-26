@@ -6,6 +6,8 @@ import { UnitHardwareInterface } from "./IUnitHardware";
 export interface HardwareParameterInterface {
     ID?: number;
     Parameter?: string;
+    Index?: number;
+    Right?: boolean;
     Icon?:string;
     Alert?:boolean;
     GroupDisplay?:boolean;

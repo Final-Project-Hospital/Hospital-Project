@@ -590,7 +590,7 @@
 .infectious-box-number {
   margin-bottom: auto;
   /* ดันลงล่าง */
-  font-size: 30px;
+  font-size: 25px;
   font-weight: bold;
   line-height: 1;
   letter-spacing: 1px;
@@ -599,9 +599,19 @@
 
 .infectious-box-number>div {
   display: flex;
-  gap: 20px;
+  gap: 25px;
   align-items: flex-end;
   /* ดันลูกไปชิดล่าง */
+}
+.infectious-box-number > div > div:first-child {
+  max-width: auto;      /* กำหนดความกว้างสูงสุดให้ตัวเลข */
+  white-space: normal;   /* อนุญาตให้ wrap */
+  word-break: break-word; /* ตัดเลขยาวลงบรรทัดใหม่ */
+  flex-shrink: 1;        /* ให้ตัวเลขย่อก่อน chart */
+}
+
+.infectious-box-number > div > div:last-child {
+  flex-shrink: 0;        /* chart ไม่ย่อ ไม่ถูก wrap */
 }
 
 .infectious-box-number .apexcharts-canvas {
