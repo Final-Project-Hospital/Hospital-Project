@@ -6,11 +6,13 @@ import (
 
 type HardwareParameter struct {
 	gorm.Model
-	Parameter string
-	Icon      string `gorm:"type:text"`
-	GroupDisplay bool
+	Parameter     string
+	Icon          string `gorm:"type:text"`
+	Index         uint
+	Right        bool
+	GroupDisplay  bool
 	LayoutDisplay bool
-	Alert bool
+	Alert         bool
 
 	StandardHardwareID uint
 	StandardHardware   *StandardHardware `gorm:"foreignKey: StandardHardwareID"`
