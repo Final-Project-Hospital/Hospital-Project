@@ -75,6 +75,8 @@ const UpdateChemicalCentralForm: React.FC<UpdateChemicalCentralFormProps> = ({
             const isOther = values.unit === "other";
             const unitID = isOther ? null : values.unit;
             const customUnitValue = isOther ? values.customUnit : null;
+            console.log(values.date)
+            console.log(combinedDateTime)
 
             const payload = {
                 ID: initialValues[0]?.ID ?? null,
@@ -92,6 +94,8 @@ const UpdateChemicalCentralForm: React.FC<UpdateChemicalCentralFormProps> = ({
                 ParameterID: initialValues[0]?.ParameterID,
                 BeforeAfterTreatmentID: values.beforeAfterTreatmentID,
             };
+ console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+            console.log(payload);
 
             await UpdateOrCreateChemical(payload);
 

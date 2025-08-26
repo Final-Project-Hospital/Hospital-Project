@@ -195,3 +195,25 @@ export const GetBeforeAfterRecycled = async (
     return null;
   }
 };
+
+export const GetLastDayRecycled = async (
+): Promise<any | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/get-last-day-recycled`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (response.status === 200) {
+      return response;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error creating Infectious record:", error.response?.data || error.message);
+    return null;
+  }
+};

@@ -129,7 +129,7 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
             }
 
             const payload = {
-                ID: values.id ?? 0,
+                ID: initialValues[0]?.ID ?? 0,
                 Date: combinedDateTime,
                 Quantity: values.quantity ?? 0,
                 AADC: values.aadc ?? 0,
@@ -143,6 +143,8 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
                 CustomTarget: targetPayload,
                 CustomUnit: isOther ? values.customUnit : "",
             };
+            console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+            console.log(payload);
 
             await UpdateOrCreateGeneral(payload);
 

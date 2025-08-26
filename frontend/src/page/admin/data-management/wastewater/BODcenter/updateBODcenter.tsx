@@ -10,7 +10,6 @@ import {
 } from '../../../../../services/index';
 import { CheckUnit, CheckStandard } from '../../../../../services/tdsService';
 import { UpdateOrCreateBOD, DeleteBOD } from '../../../../../services/bodService';
-
 import { ListBeforeAfterTreatmentInterface } from '../../../../../interface/IBeforeAfterTreatment';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';
 import { ListUnitInterface } from '../../../../../interface/IUnit';
@@ -247,7 +246,7 @@ const UpdateBODCentralForm: React.FC<UpdateBODCentralFormProps> = ({
                 }
             }
 
-            messageApi.success("บันทึกข้อมูลสำเร็จ");
+            messageApi.success("แก้ไขข้อมูลสำเร็จ");
             if (onSuccess) onSuccess();
         } catch (error: any) {
             console.error("Error updating BOD:", error?.response?.data || error);
