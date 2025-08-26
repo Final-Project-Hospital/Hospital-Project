@@ -29,12 +29,12 @@ const EnvironmentBlock = () => {
   const [centers, setCenters] = useState([
     { name: 'Al Center', standard: '-', image: al, path: 'datavizAL' },
     { name: 'Fe Center', standard: '-', image: ir, path: 'datavizIR' },
-    { name: 'Mn Center', standard: '30', image: mn, path: 'datavizMN' },
+    { name: 'Mn Center', standard: '-', image: mn, path: 'datavizMN' },
     { name: 'Nitrate Center', standard: '-', image: ni, path: 'datavizNI' },
-    { name: 'NTU Center', standard: '20', image: ntu, path: 'datavizNTU' },
-    { name: 'PT Center', standard: '35', image: pt, path: 'datavizPT' },
+    { name: 'NTU Center', standard: '-', image: ntu, path: 'datavizNTU' },
+    { name: 'PT Center', standard: '-', image: pt, path: 'datavizPT' },
     { name: 'COD Center', standard: '-', image: tcod, path: 'datavizTCOD' },
-    { name: 'TH Center', standard: '30', image: th, path: 'datavizTH' },
+    { name: 'TH Center', standard: '-', image: th, path: 'datavizTH' },
     { name: 'TCB Center', standard: '-', image: ttcb, path: 'datavizTTCB' },
 
   ]);
