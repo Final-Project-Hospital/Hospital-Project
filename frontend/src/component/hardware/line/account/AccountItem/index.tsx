@@ -152,7 +152,6 @@ const AccountItem = ({ item }: { item: NotificationInterface }) => {
             >
               <span
                 style={{ color: token.colorLink }}
-                className="cursor-pointer"
               >
                 UserID: {item.UserID || "N/A"}
               </span>
