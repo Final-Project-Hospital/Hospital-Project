@@ -2,6 +2,7 @@
 .container-xl {
   max-width: 1280px;
   margin: 0 auto;
+  padding: 0 16px; /* เพิ่ม padding ด้านข้าง สำหรับมือถือ */
 }
 
 .dashboard-title-header {
@@ -34,6 +35,9 @@
 }
 
 .dashboard-controls-row {
+  display: flex;
+  flex-wrap: wrap; /* ให้ control row ยืดหยุ่น */
+  gap: 12px;
   align-items: end;
 }
 
@@ -66,6 +70,7 @@
 
 .dashboard-head-graph-card {
   display: flex;
+  flex-wrap: wrap; /* ให้ responsive */
   justify-content: space-between;
   align-items: center;
   gap: 12px;
@@ -83,6 +88,7 @@
 
 .dashboard-head-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
@@ -111,6 +117,12 @@
 }
 
 /* ===== Responsive ===== */
+@media (max-width: 1024px) {
+  .dashboard-graph-card {
+    min-height: 400px;
+  }
+}
+
 @media (max-width: 768px) {
   .dashboard-title-header h1 {
     font-size: 1.4rem;
@@ -122,5 +134,26 @@
   }
   .dashboard-graph-card {
     min-height: 350px;
+  }
+  .dashboard-controls-row {
+    flex-direction: column; /* stack controls */
+    align-items: stretch;
+  }
+  .dashboard-head-graph-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-title-header {
+    padding: 16px 16px;
+  }
+  .dashboard-graph-card {
+    min-height: 300px;
+  }
+  .dashboard-alert-item {
+    min-width: 180px;
   }
 }

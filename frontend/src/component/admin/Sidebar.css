@@ -1,22 +1,28 @@
+/* icon + label ของ Menu.Item ที่ selected */
+.ant-menu-item-selected .ant-menu-item-icon,
+.ant-menu-item-selected a {
+  color: rgb(0, 0, 0) !important; /* หรือสีที่ต้องการ */
+}
+
+/* icon + label ของ SubMenu ที่ selected */
+.ant-menu-submenu-selected > .ant-menu-submenu-title .ant-menu-item-icon,
+.ant-menu-submenu-selected > .ant-menu-submenu-title span {
+  color: rgb(0, 0, 0) !important; /* same color */
+}
+
 .ant-menu-item a,
 .ant-menu-submenu-title,
 .ant-menu-title-content {
   color: #5D5D5D !important;
 }
 
-/* สีพื้นหลังและตัวอักษร + ไอคอน เมื่อเมนูถูกเลือก */
 .ant-menu-item-selected a,
 .ant-menu-submenu-selected > .ant-menu-submenu-title {
-  color: white !important;
+  color: #000000 !important;
 }
 
-/*.ant-menu-item-selected svg,
-.ant-menu-submenu-selected > .ant-menu-submenu-title svg {
-  color: white !important;
-}*/
-
 .ant-menu-item-selected {
-  background-color: #2ABDBF !important;
+  background-color: #85e9e4 !important;
   border-radius: 8px;
 }
 
@@ -25,14 +31,12 @@
   border-radius: 8px;
 }
 
-/* ===== Hover Background ===== */
 .ant-menu-item:hover,
 .ant-menu-submenu-title:hover {
   background-color: #A1EFF090 !important;
   border-radius: 8px;
 }
 
-/* Custom trigger: layout เมนูย่อย */
 .custom-submenu-title {
   display: flex;
   align-items: center;
@@ -61,7 +65,6 @@
   vertical-align: middle;
 }
 
-/* -------- ขนาด section title -------- */
 .sidebar-section-title {
   font-size: 13px;
   font-weight: 500;
@@ -71,3 +74,66 @@
   margin-bottom: 8px;
   text-transform: uppercase;
 }
+
+.sidebar-container .ant-menu {
+  background-color: transparent !important;
+}
+
+.sidebar-container .ant-menu-light {
+  background-color: white !important;
+}
+
+.custom-submenu-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  user-select: none;
+}
+
+.custom-submenu-icon-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-submenu-arrow {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+.ant-menu-item, .ant-menu-submenu-title {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px;
+}
+
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.label {
+  transition: opacity 0.3s ease, width 0.3s ease;
+}
+
+.sidebar {
+  position: relative;
+  overflow-x: hidden;
+}
+
+.ant-menu-sub.ant-menu-inline {
+  position: relative !important;
+  z-index: 1000;
+}
+.cursor-pointer {
+  background: #ffffff;
+  color: #2abdbf;
+  font-size: 22px;
+}
+
+

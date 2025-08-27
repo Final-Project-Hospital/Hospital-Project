@@ -1,50 +1,234 @@
-import React, { useState, useEffect } from 'react';
-import { Menu } from 'antd';
-import { FiChevronDown } from 'react-icons/fi';
-import { Link, useLocation } from 'react-router-dom';
-import { MdOutlineCancel } from 'react-icons/md';
-import { TooltipComponent } from '@syncfusion/ej2-react-popups';
-import Logo from '../../assets/SUTH Logo.png';
-import { links } from '../../data/dummy';
-import { useStateContext } from '../../contexts/ContextProvider';
-import './Sidebar.css'; // ✅ import CSS ที่แยกไฟล์
+// import React, { useState, useEffect } from 'react';
+// import { Menu } from 'antd';
+// import { FiChevronDown } from 'react-icons/fi';
+// import { AiOutlineMenu } from 'react-icons/ai';
+// import { Link, useLocation } from 'react-router-dom';
+// import Logo from '../../assets/SUTH Logo.png';
+// import { links } from '../../data/dummy';
+// import './Sidebar.css';
+
+// const { SubMenu, Item } = Menu;
+
+// export interface MenuItem {
+//   name: string;
+//   label?: string;
+//   icon?: React.ReactNode;
+//   path?: string;
+//   subMenu?: MenuItem[];
+//   children?: MenuItem[];
+// }
+
+// const Sidebar: React.FC = () => {
+//   const location = useLocation();
+//   const [activeMenu, setActiveMenu] = useState(true);
+//   const [openKeys, setOpenKeys] = useState<string[]>([]);
+//   const [currentColor] = useState('#03C9D7');
+
+//   const handleCloseSideBar = () => {
+//     if (window.innerWidth <= 900) setActiveMenu(false);
+//   };
+
+//   const findOpenKeys = (menus: MenuItem[], path: string): string[] => {
+//     for (const item of menus) {
+//       if (item.subMenu?.some((sub) => path.startsWith(sub.path || `/admin/${sub.name}`))) return [item.name];
+//       if (item.subMenu) {
+//         const deeper = findOpenKeys(item.subMenu, path);
+//         if (deeper.length) return [item.name, ...deeper];
+//       }
+//       if (item.children?.some((sub) => path.startsWith(sub.path || `/admin/${sub.name}`))) return [item.name];
+//       if (item.children) {
+//         const deeper = findOpenKeys(item.children, path);
+//         if (deeper.length) return [item.name, ...deeper];
+//       }
+//     }
+//     return [];
+//   };
+
+//   useEffect(() => {
+//     const keys = links.flatMap((section) => findOpenKeys(section.links, location.pathname));
+//     setOpenKeys(keys);
+//   }, [location.pathname]);
+
+//   const onOpenChange = (keys: string[]) => setOpenKeys(keys);
+//   const renderMenu = (menu: MenuItem[]) =>
+//     menu.map((item) => {
+//       const hasSubMenu = item.subMenu && item.subMenu.length > 0;
+//       const isOpen = openKeys.includes(item.name);
+
+//       if (hasSubMenu) {
+//         if (!activeMenu) {
+//           return <Item key={item.name} icon={item.icon} />;
+//         }
+
+//         const title = (
+//           <div className="custom-submenu-title" style={{ color: isOpen ? currentColor : undefined }}>
+//             <div className="custom-submenu-icon-text">
+//               {item.icon}
+//               <span>{item.label}</span>
+//             </div>
+//             <FiChevronDown
+//               className="custom-submenu-arrow"
+//               style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+//             />
+//           </div>
+//         );
+
+//         return (
+//           <SubMenu key={item.name} title={title} expandIcon={() => null}>
+//             {renderMenu(item.subMenu!)}
+//           </SubMenu>
+//         );
+//       } else {
+//         const isSelected = location.pathname === (item.path || `/admin/${item.name}`);
+//         return (
+//           <Item
+//             key={item.path || `/admin/${item.name}`}
+//             icon={item.icon}
+//             onClick={handleCloseSideBar}
+//             className={isSelected ? 'custom-selected' : ''}
+//             style={{ color: isSelected ? currentColor : undefined}}
+//           >
+//             {activeMenu && (
+//               <Link to={item.path || `/admin/${item.name}`}>
+//                 <span className="capitalize">{item.label || item.name}</span>
+//               </Link>
+//             )}
+//           </Item>
+//         );
+//       }
+//   });
+//   return (
+//     <div
+//       className={`sidebar ml-2 h-auto overflow-auto pb-10 transition-all duration-300`}
+//       style={{ width: activeMenu ? '14rem' : '5rem' }}
+//     >
+//       <div className="flex justify-between items-center mt-4 mr-2">
+//         <Link to="/admin">
+//         {activeMenu && (
+//               <img
+//                 src={Logo}
+//                 alt="Logo"
+//                 className="h-12 w-auto transition-all duration-300"
+//               />
+//             )}
+//         </Link>
+//         <AiOutlineMenu
+//           color={currentColor}
+//           size={28}
+//           className="cursor-pointer"
+//           onClick={() => setActiveMenu(!activeMenu)}
+//         />
+//       </div>
+
+//       <div className="mt-10">
+//         {links.map((section) => (
+//           <div key={section.title || 'section'}>
+//             {activeMenu && section.title && (
+//               <p className="sidebar-section-title">{section.title}</p>
+//             )}
+//             <Menu
+//               mode="inline"
+//               theme="light"
+//               selectedKeys={[location.pathname]}
+//               openKeys={openKeys}
+//               onOpenChange={onOpenChange}
+//               style={{ border: 'none', backgroundColor: 'transparent' }}
+//             >
+//               {renderMenu(section.links)}
+//             </Menu>
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default Sidebar;
+
+
+// import { Layout } from "antd";
+// import "./Sidebar.css";
+// import { Link } from "react-router-dom";
+// import Logo from "../../assets/SUTH Logo.png";
+// import MenuList from "./MenuList";
+// import { AiOutlineLeft, AiOutlineRight } from "react-icons/ai";
+// import React, { useState } from "react";
+
+// const { Sider } = Layout;
+
+// interface SidebarProps {
+//   collapsed: boolean;
+//   setCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+// }
+
+// const Sidebar: React.FC<SidebarProps> = () => {
+//   const [collapsed, setCollapsed] = useState(false);
+
+//   return (
+//     <Layout>
+//       <Sider
+//         theme="light"
+//         className="sidebar"
+//         collapsed={collapsed}
+//         collapsedWidth={80}
+//       >
+        
+//         <div className="flex justify-between items-center p-4">
+//           <Link to="/admin">
+//             {!collapsed && (
+//               <img src={Logo} alt="Logo" className="h-12 w-auto transition-all" />
+//             )}
+//           </Link>
+//           <div
+//             className="cursor-pointer"
+//             onClick={() => setCollapsed(!collapsed)}>
+//               {collapsed ? (
+//             <AiOutlineRight size={22} />
+//             ) : (
+//               <AiOutlineLeft size={22} />
+//             )}
+//           </div>
+//         </div>
+//         <MenuList collapsed={collapsed} />
+//       </Sider>
+//     </Layout>
+//   );
+// };
+
+// export default Sidebar;
+
+
+// Sidebar.tsx
+import React, { useState, useEffect } from "react";
+import { Menu, Tooltip } from "antd";
+import { Link, useLocation } from "react-router-dom";
+import { AiOutlineLeft, AiOutlineRight } from "react-icons/ai";
+import Logo from "../../assets/SUTH Logo.png";
+import { links } from "../../data/dummy";
+import './Sidebar.css'
 
 const { SubMenu, Item } = Menu;
 
-interface MenuItem {
-  name: string;
-  label?: string;
-  icon?: React.ReactNode;
-  path?: string;
-  subMenu?: MenuItem[];
-  children?: MenuItem[];
+interface SidebarProps {
+  // ส่ง collapsed ออกไป MainLayout ถ้าต้องการ
+  collapsed?: boolean;
+  setCollapsed?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const Sidebar = () => {
-  const { currentColor, activeMenu, setActiveMenu, screenSize } = useStateContext();
+const Sidebar: React.FC<SidebarProps> = ({ collapsed: collapsedProp, setCollapsed: setCollapsedProp }) => {
   const location = useLocation();
+  const [collapsed, setCollapsed] = useState(false);
   const [openKeys, setOpenKeys] = useState<string[]>([]);
 
-  const handleCloseSideBar = () => {
-    if (activeMenu !== undefined && screenSize !== undefined && screenSize <= 900) {
-      setActiveMenu(false);
-    }
-  };
+  const activeCollapsed = collapsedProp ?? collapsed;
+  const setActiveCollapsed = setCollapsedProp ?? setCollapsed;
 
-  const findOpenKeys = (menus: MenuItem[], path: string): string[] => {
+  // หา openKeys ตาม path ปัจจุบัน
+  const findOpenKeys = (menus: any[], path: string): string[] => {
     for (const item of menus) {
+      if (item.subMenu?.some((sub: any) => path.startsWith(sub.path || `/admin/${sub.name}`))) return [item.name];
       if (item.subMenu) {
-        if (item.subMenu.some((sub) => path.startsWith(sub.path || `/admin/${sub.name}`))) {
-          return [item.name];
-        }
         const deeper = findOpenKeys(item.subMenu, path);
-        if (deeper.length) return [item.name, ...deeper];
-      }
-      if (item.children) {
-        if (item.children.some((sub) => path.startsWith(sub.path || `/admin/${sub.name}`))) {
-          return [item.name];
-        }
-        const deeper = findOpenKeys(item.children, path);
         if (deeper.length) return [item.name, ...deeper];
       }
     }
@@ -52,115 +236,76 @@ const Sidebar = () => {
   };
 
   useEffect(() => {
-    const keys = findOpenKeys(links.flatMap(section => section.links), location.pathname);
+    const keys = links.flatMap((section) => findOpenKeys(section.links, location.pathname));
     setOpenKeys(keys);
   }, [location.pathname]);
 
-  const onOpenChange = (keys: string[]) => {
-    setOpenKeys(keys);
-  };
+  const onOpenChange = (keys: string[]) => setOpenKeys(keys);
 
-  const renderMenu = (menu: MenuItem[]) => {
-    return menu.map((item) => {
-      const hasSubMenu = item.subMenu && item.subMenu.length > 0;
-      const hasChildren = item.children && item.children.length > 0;
-      const isOpen = openKeys.includes(item.name);
-
-      if (hasSubMenu || hasChildren) {
-        const title = (
-          <div
-            className="custom-submenu-title"
-            style={{ color: isOpen ? currentColor : undefined }}
-          >
-            <div className="custom-submenu-icon-text">
-              {item.icon}
-              <span>{item.label}</span>
-            </div>
-            <FiChevronDown
-              className="custom-submenu-arrow"
-              style={{
-                transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-              }}
-            />
-          </div>
-        );
-
+  const renderMenu = (menu: any[]) =>
+    menu.map((item) => {
+      if (item.subMenu && item.subMenu.length > 0) {
         return (
-          <SubMenu key={item.name} title={title} expandIcon={() => null}>
-            {item.subMenu && renderMenu(item.subMenu)}
-            {item.children && renderMenu(item.children)}
+          <SubMenu key={item.name} icon={item.icon} title={item.label}>
+            {renderMenu(item.subMenu)}
           </SubMenu>
         );
       } else {
-        const isSelected = location.pathname === (item.path || `/admin/${item.name}`);
+        const itemKey = item.path || `/admin/${item.name}`;
         return (
-          <Item
-            key={item.path || `/admin/${item.name}`}
-            icon={item.icon}
-            onClick={handleCloseSideBar}
-            className={isSelected ? 'custom-selected' : ''}
-            style={{
-              color: isSelected ? currentColor : undefined,
-            }}
-          >
-            <Link to={item.path || `/admin/${item.name}`}>
-              <span className="capitalize">{item.label || item.name}</span>
-            </Link>
+          <Item key={itemKey} icon={item.icon}>
+            {activeCollapsed ? (
+              <Tooltip placement="right" title={item.label}>
+                <Link to={itemKey}>{item.icon}</Link>
+              </Tooltip>
+            ) : (
+              <Link to={itemKey}>{item.label}</Link>
+            )}
           </Item>
         );
       }
     });
-  };
 
   return (
-    <div className="ml-2 h-screen md:overflow-hidden overflow-auto md:hover:overflow-auto pb-10">
-      {activeMenu && (
-        <>
-          <div className="flex justify-between items-center">
-            <Link
-              to="/admin"
-              onClick={handleCloseSideBar}
-              className="items-center gap-3 ml-14 mt-6 flex text-xl font-extrabold tracking-tight dark:text-white text-slate-900"
-            >
-              <span>
-                <img src={Logo} alt="logo" width={155} />
-              </span>
-            </Link>
-            <TooltipComponent content="Menu" position="BottomCenter">
-              <button
-                type="button"
-                onClick={() => setActiveMenu(!activeMenu)}
-                style={{ color: currentColor }}
-                className="text-xl rounded-full p-3 hover:bg-light-gray mt-4 block md:hidden"
-              >
-                <MdOutlineCancel />
-              </button>
-            </TooltipComponent>
-          </div>
+    <div
+      className={`bg-white dark:bg-gray-800 shadow-md transition-all duration-300 flex flex-col
+      ${activeCollapsed ? "w-20" : "w-56"}`}
+    >
+      {/* Logo + Toggle */}
+      <div className="flex items-center justify-between p-4">
+        {!activeCollapsed && (
+          <Link to="/admin">
+            <img src={Logo} alt="Logo" className="h-12 w-auto transition-all" />
+          </Link>
+        )}
+        <div
+          className="cursor-pointer p-1 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+          onClick={() => setActiveCollapsed(!activeCollapsed)}
+        >
+          {activeCollapsed ? <AiOutlineRight size={22} /> : <AiOutlineLeft size={22} />}
+        </div>
+      </div>
 
-          <div className="mt-10">
-            {links.map((section) => (
-              <div key={section.title || 'section'}>
-                {section.title && (
-                  <p className="sidebar-section-title">
-                    {section.title}
-                  </p>
-                )}
-                <Menu
-                  mode="inline"
-                  theme="light"
-                  selectedKeys={[location.pathname]}
-                  openKeys={openKeys}
-                  onOpenChange={onOpenChange}
-                  style={{ border: 'none' }}
-                >
-                  {renderMenu(section.links)}
-                </Menu>
-              </div>
-            ))}
+      {/* Menu */}
+      <div className="flex-1 overflow-auto mt-4">
+        {links.map((section) => (
+          <div key={section.title || "section"}>
+            {!activeCollapsed && section.title && (
+              <p className="px-4 py-2 text-gray-500 uppercase text-xs">{section.title}</p>
+            )}
+            <Menu
+              mode="inline"
+              theme="light"
+              selectedKeys={[location.pathname]}
+              openKeys={activeCollapsed ? [] : openKeys}
+              onOpenChange={onOpenChange}
+              style={{ border: "none", backgroundColor: "transparent" }}
+            >
+              {renderMenu(section.links)}
+            </Menu>
           </div>
-        </>
-      )}
+        ))}
+      </div>
     </div>
   );
 };
