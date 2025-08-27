@@ -580,6 +580,10 @@
   margin-top: 4px;
   opacity: 0.95;
 }
+.apexcharts-legend.apexcharts-align-right {
+  align-items: flex-start !important; /* บังคับ legend ชิดบน */
+}
+
 
 /* Responsive for tablets (max-width: 1024px) */
 @media (max-width: 1025px) {
