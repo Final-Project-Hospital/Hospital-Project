@@ -65,13 +65,13 @@ const GeneralWaste: React.FC = () => {
   const [colorCompareQuantity, setColorCompareQuantity] = useState<string>("#1a4b57");
   const [totalMonthlyGarbage, setTotalMonthlyGarbage] = useState(0);
   const [latestYear, setLatestYear] = useState<number | null>(null);
-  const [monthlyDataLatestYear, setMonthlyDataLatestYear] = useState<{ month: string; value: number }[]>([]);
+  const [monthlyDataLatestYear, setMonthlyDataLatestYear] = useState<{ month: string; value: number; unit: string }[]>([]);
   const [middleTarget, setMiddleTarget] = useState<number | undefined>(undefined);
   const [minTarget, setMinTarget] = useState<number | undefined>(undefined);
   const [maxTarget, setMaxTarget] = useState<number | undefined>(undefined);
   const [unit, setUnit] = useState<string>("-");
   const [totalQuantity, setTotalQuantity] = useState<number>(0);
-  const [monthlyQuantityLatestYear, setMonthlyQuantityLatestYear] = useState<{ month: string; value: number }[]>([]);
+  const [monthlyQuantityLatestYear, setMonthlyQuantityLatestYear] = useState<{ month: string; value: number; unit: string }[]>([]);
 
   //ใช้กับตาราง
   const [search] = useState(""); //setSearch
@@ -150,23 +150,28 @@ const GeneralWaste: React.FC = () => {
           );
 
         // ดึงข้อมูลรายเดือนของปีล่าสุด และรวมค่าเดือนเดียวกัน
-        const monthlyDataLatestYearMap: Record<string, number> = {};
-        const monthlyQuantityLatestYearMap: Record<string, number> = {};
+        const monthlyDataLatestYearMap: Record<string, { value: number; unit: string }> = {};
+        const monthlyQuantityLatestYearMap: Record<string, { value: number; unit: string }> = {};
 
         response.data
           .filter((item: any) => dayjs(item.Date).year() === latestYear)
           .forEach((item: any) => {
             const month = dayjs(item.Date).format("MMM"); // ชื่อเดือน Jan, Feb,...
-            if (!monthlyDataLatestYearMap[month]) monthlyDataLatestYearMap[month] = 0;
-            monthlyDataLatestYearMap[month] += item.MonthlyGarbage || 0; // รวมค่าเดือนเดียวกัน
-            // รวม Quantity
-            if (!monthlyQuantityLatestYearMap[month]) monthlyQuantityLatestYearMap[month] = 0;
-            monthlyQuantityLatestYearMap[month] += item.Quantity || 0;
+            // MonthlyGarbage
+            if (!monthlyDataLatestYearMap[month]) {
+              monthlyDataLatestYearMap[month] = { value: 0, unit: item.UnitName };
+            }
+            monthlyDataLatestYearMap[month].value += item.MonthlyGarbage || 0;
+            // Quantity (fix unit = "คน")
+            if (!monthlyQuantityLatestYearMap[month]) {
+              monthlyQuantityLatestYearMap[month] = { value: 0, unit: "คน" };
+            }
+            monthlyQuantityLatestYearMap[month].value += item.Quantity || 0;
           });
 
-        // แปลงเป็น array สำหรับ ApexCharts
-        const monthlyDataLatestYear = Object.entries(monthlyDataLatestYearMap).map(([month, value]) => ({ month, value }));
-        const monthlyQuantityLatestYear = Object.entries(monthlyQuantityLatestYearMap).map(([month, value]) => ({ month, value }));
+        // แปลงเป็น array
+        const monthlyDataLatestYear = Object.entries(monthlyDataLatestYearMap).map(([month, { value, unit }]) => ({ month, value, unit }));
+        const monthlyQuantityLatestYear = Object.entries(monthlyQuantityLatestYearMap).map(([month, { value, unit }]) => ({ month, value, unit }));
 
         // ฟังก์ชันสร้างช่วงวันที่ (ใช้ใน month/day mode)
         const createDateRange = (start: Dayjs, end: Dayjs): string[] => {
@@ -535,7 +540,16 @@ const GeneralWaste: React.FC = () => {
     },
     tooltip: {
       y: {
-        formatter: (val: number) => isQuantityChart ? `${val.toLocaleString()} คน` : `${val.toLocaleString()} Kg`,
+        formatter: (val: number, opts) => {
+          const index = opts.dataPointIndex;
+
+          if (isQuantityChart) {
+            const unit = monthlyQuantityLatestYear[index]?.unit || "";
+            return `${val.toLocaleString()} ${unit}`;
+          }
+          const unit = monthlyDataLatestYear[index]?.unit || "";
+          return `${val.toLocaleString()} ${unit}`;
+        },
       },
     },
     colors: [
