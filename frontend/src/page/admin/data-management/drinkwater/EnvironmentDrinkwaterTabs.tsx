@@ -18,7 +18,7 @@ const EnvironmentLayout: React.FC = () => {
 
   return (
     <div>
-      <div className="w-tabs-header">
+      <div className="w-tabs-header mt-16 md:mt-0">
         <div>
           <h1>น้ำดื่ม</h1>
           <p>
