@@ -1,7 +1,7 @@
 // components/employees/EmployeeCreateModal.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Modal, Form, Input, Row, Col, Select, message } from "antd";
-import { CameraOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import { CameraOutlined, UserAddOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { PositionInterface } from "../../interface/IPosition";
 
@@ -47,138 +47,78 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
     setUploadFile(file);
   };
 
-  const roleLabelById = (id?: number) => {
-    const map: Record<number, string> = { 1: "Admin", 2: "Employee", 3: "Guest" };
-    return id ? map[id] ?? String(id) : "-";
-  };
-  const positionLabelById = (id?: number) => {
-    if (!id && id !== 0) return "-";
-    const p = positions.find((x) => (x as any).ID === id);
-    return p?.Position ?? String(id);
-  };
-
-  // มีการกรอกข้อมูลหรืออัปโหลดรูปหรือยัง? (กันปิดแบบ unsaved)
-  const hasUnsavedChanges = () => {
-    const v = form.getFieldsValue();
-    const anyFilled = Object.values(v).some((val) => val !== undefined && val !== null && String(val) !== "");
-    return anyFilled || !!uploadFile;
-  };
-
-  // เด้งยืนยันเมื่อจะปิด (X, ยกเลิก, Esc)
+  // ยกเลิก: ปิดทันที ไม่ต้องมีโมดัลยืนยัน
   const handleCancel = () => {
-    if (!hasUnsavedChanges()) {
-      onClose();
-      return;
-    }
-    Modal.confirm({
-      title: "ยังไม่ได้บันทึก",
-      icon: <ExclamationCircleOutlined />,
-      content: "คุณมีการกรอกข้อมูลที่ยังไม่ได้สร้างบัญชี ต้องการปิดหน้าต่างนี้หรือไม่?",
-      okText: "ปิดโดยไม่บันทึก",
-      cancelText: "กลับไปกรอกต่อ",
-      okButtonProps: { danger: true },
-      onOk: () => {
-        onClose();
-        setTimeout(() => {
-          form.resetFields();
-          setUploadFile(undefined);
-        }, 0);
-      },
-    });
+    onClose();
+    setTimeout(() => {
+      form.resetFields();
+      setUploadFile(undefined);
+    }, 0);
   };
 
+  // กดสมัครบัญชี: ส่งข้อมูลทันที (ไม่มี Modal ยืนยัน)
   const handleCreate = async () => {
     try {
       const values = await form.validateFields();
       const token = localStorage.getItem("token");
-      if (!token) return message.error("กรุณาเข้าสู่ระบบก่อน");
+      if (!token) {
+        message.error("กรุณาเข้าสู่ระบบก่อน");
+        return;
+      }
 
-      // ——— กล่องยืนยันก่อนสร้าง: แสดงสรุปข้อมูล + แสดงรูปโปรไฟล์เป็นภาพ ———
-      const ConfirmView = (
-        <div>
-          <div className="mb-2">โปรดตรวจสอบข้อมูลก่อนสร้างบัญชี:</div>
+      const formData = new FormData();
+      Object.entries(values).forEach(([k, v]) => formData.append(k, String(v)));
+      if (uploadFile) formData.append("profile", uploadFile);
 
-          <ul style={{ paddingLeft: 18, margin: 0 }}>
-            <li style={{ marginBottom: 6 }}><b>ชื่อ–นามสกุล:</b> {values.firstName} {values.lastName}</li>
-            <li style={{ marginBottom: 6 }}><b>อีเมล:</b> {values.email}</li>
-            <li style={{ marginBottom: 6 }}><b>รหัสผ่าน:</b> จะถูกตั้งค่า (ไม่แสดงค่า)</li>
-            <li style={{ marginBottom: 6 }}><b>เบอร์โทร:</b> {values.phone}</li>
-            <li style={{ marginBottom: 6 }}><b>ตำแหน่ง:</b> {positionLabelById(Number(values.positionID))}</li>
-            <li style={{ marginBottom: 6 }}><b>สิทธิ์:</b> {roleLabelById(Number(values.roleID))}</li>
-          </ul>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
-            <b style={{ minWidth: 90 }}>รูปโปรไฟล์:</b>
-            {uploadFile ? (
-              <img
-                src={previewUrl}
-                alt={uploadFile.name}
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  border: "1px solid #f0f0f0",
-                }}
-              />
-            ) : (
-              <span>—</span>
-            )}
-          </div>
-        </div>
-      );
-
-      Modal.confirm({
-        title: "ยืนยันการสร้างบัญชี",
-        icon: <ExclamationCircleOutlined />,
-        content: ConfirmView,
-        okText: "สร้าง",
-        cancelText: "ยกเลิก",
-        onOk: async () => {
-          try {
-            const formData = new FormData();
-            Object.entries(values).forEach(([k, v]) => {
-              formData.append(k, String(v));
-            });
-            if (uploadFile) formData.append("profile", uploadFile);
-
-            setLoading(true);
-            await axios.post("/api/employees", formData, {
-              headers: {
-                "Content-Type": "multipart/form-data",
-                Authorization: `Bearer ${token}`,
-              },
-            });
-
-            message.success("สร้างบัญชีสำเร็จ");
-            form.resetFields();
-            setUploadFile(undefined);
-            onSuccess();
-            onClose();
-          } catch (err: any) {
-            const msg = err?.response?.data?.error || "สร้างบัญชีไม่สำเร็จ";
-            message.error(msg);
-          } finally {
-            setLoading(false);
-          }
+      setLoading(true);
+      await axios.post("/api/employees", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
         },
       });
-    } catch {
-      // validate ไม่ผ่าน – ให้ฟอร์มแสดง error เอง
+
+      message.success("สร้างบัญชีสำเร็จ");
+      form.resetFields();
+      setUploadFile(undefined);
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      if (err?.errorFields) return; // validate ไม่ผ่าน ให้ฟอร์มโชว์เอง
+      const msg = err?.response?.data?.error || "สร้างบัญชีไม่สำเร็จ";
+      message.error(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // ชื่อเรื่อง (Title) ไล่สี teal + ไอคอน
+  const TitleNode = (
+    <div className="flex items-center gap-2">
+      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-teal-500/10">
+        <UserAddOutlined className="text-teal-600" />
+      </span>
+      <span className="bg-gradient-to-r from-teal-600 to-cyan-400 bg-clip-text text-transparent font-semibold">
+        สร้างบัญชีผู้ใช้งาน
+      </span>
+    </div>
+  );
+
   return (
     <Modal
-      title="สร้างบัญชีพนักงาน"
+      title={TitleNode}
       open={open}
       onCancel={handleCancel}
       onOk={handleCreate}
-      okText="สร้าง"
+      okText="สมัครบัญชี"
       cancelText="ยกเลิก"
       confirmLoading={loading}
       destroyOnClose
       keyboard
+      okButtonProps={{
+        className:
+          "bg-gradient-to-r from-teal-600 to-cyan-500 text-white hover:from-teal-700 hover:to-cyan-600 border-0 px-5 rounded-md shadow",
+      }}
     >
       {/* อัปโหลดโปรไฟล์แบบวงกลม (Tailwind-only) */}
       <div className="w-full flex items-center justify-center my-6">
@@ -236,7 +176,7 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
                 <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center">
                   <CameraOutlined className="text-lg text-teal-600" />
                 </div>
-                <span className="text-xs mt-2 text-teal-600">อัปโหลด</span>
+                <span className="text-xs mt-2 text-teal-600">อัปโหลดรูป</span>
               </div>
             )}
           </label>
@@ -255,6 +195,7 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
       </div>
 
       <Form layout="vertical" form={form}>
+        {/* ชื่อ + นามสกุล (แถวเดียว) */}
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item name="firstName" label="ชื่อ" rules={[{ required: true }]}>
@@ -268,28 +209,41 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
           </Col>
         </Row>
 
-        <Form.Item name="email" label="อีเมล" rules={[{ required: true }]}>
-          <Input />
-        </Form.Item>
+        {/* อีเมล + รหัสผ่าน (แถวเดียว) */}
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item name="email" label="อีเมล" rules={[{ required: true, type: "email" }]}>
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="password" label="รหัสผ่าน" rules={[{ required: true }]}>
+              <Input.Password />
+            </Form.Item>
+          </Col>
+        </Row>
 
-        <Form.Item name="password" label="รหัสผ่าน" rules={[{ required: true }]}>
-          <Input.Password />
-        </Form.Item>
+        {/* เบอร์โทร + ตำแหน่ง (แถวเดียว) */}
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item name="phone" label="เบอร์โทร" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="positionID" label="ตำแหน่ง" rules={[{ required: true }]}>
+              <Select placeholder="เลือกตำแหน่ง">
+                {positions.map((p) => (
+                  <Option key={p.ID} value={p.ID}>
+                    {p.Position}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
 
-        <Form.Item name="phone" label="เบอร์โทร" rules={[{ required: true }]}>
-          <Input />
-        </Form.Item>
-
-        <Form.Item name="positionID" label="ตำแหน่ง" rules={[{ required: true }]}>
-          <Select placeholder="เลือกตำแหน่ง">
-            {positions.map((p) => (
-              <Option key={p.ID} value={p.ID}>
-                {p.Position}
-              </Option>
-            ))}
-          </Select>
-        </Form.Item>
-
+        {/* สิทธิ์ */}
         <Form.Item name="roleID" label="สิทธิ์" rules={[{ required: true }]}>
           <Select
             options={[

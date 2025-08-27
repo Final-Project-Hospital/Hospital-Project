@@ -1,7 +1,7 @@
 // components/employees/EmployeeEditModal.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Form, Input, message, Row, Col, Select } from "antd";
-import { CameraOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import { CameraOutlined, FormOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { EmployeeInterface } from "../../interface/IEmployee";
 import { PositionInterface } from "../../interface/IPosition";
@@ -11,7 +11,7 @@ type Props = {
   onClose: () => void;
   onSuccess: () => void;
   employee: EmployeeInterface | null;
-  positions: PositionInterface[];
+  positions: PositionInterface[]; // ✅ เพิ่มให้ถูกต้อง
   /** ซ่อนการเปลี่ยนสิทธิ์และห้ามลบบัญชีตัวเองให้ส่งมาจากหน้า UserManagement */
   isSelf?: boolean;
 };
@@ -30,14 +30,21 @@ const EmployeeEditModal: React.FC<Props> = ({
   const [uploadFile, setUploadFile] = useState<File | undefined>();
   const [loading, setLoading] = useState(false);
 
-  // เก็บค่าเริ่มต้นไว้เทียบ (ใช้ ref เพื่อไม่ทำให้ re-render)
+  // เก็บค่าเริ่มต้นไว้เทียบ (ถ้าต้องการในอนาคต)
   const initialValuesRef = useRef<Record<string, any> | null>(null);
 
   // URL สำหรับแสดงรูปตัวอย่าง (ไฟล์ใหม่ > รูปเดิม)
   const previewUrl = useMemo(() => {
     if (uploadFile) return URL.createObjectURL(uploadFile);
-    return employee?.Profile || "";
+    return (employee as any)?.Profile || (employee as any)?.profile || "";
   }, [uploadFile, employee]);
+
+  // เคลียร์ Object URL เมื่อไฟล์เปลี่ยน/คอมโพเนนต์ unmount
+  useEffect(() => {
+    return () => {
+      if (uploadFile) URL.revokeObjectURL(previewUrl);
+    };
+  }, [uploadFile, previewUrl]);
 
   useEffect(() => {
     if (!open || !employee) return;
@@ -54,16 +61,8 @@ const EmployeeEditModal: React.FC<Props> = ({
 
     form.setFieldsValue(init);
     initialValuesRef.current = init;
-
-    // เคลียร์ไฟล์ใหม่ทุกครั้งที่เปิด modal/เปลี่ยนพนักงาน
     setUploadFile(undefined);
-
-    // cleanup object URL เมื่อปิด/เปลี่ยนไฟล์
-    return () => {
-      if (uploadFile) URL.revokeObjectURL(previewUrl);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, employee]);
+  }, [open, employee, form]);
 
   const handleFileChange = (file?: File) => {
     if (!file) {
@@ -89,206 +88,98 @@ const EmployeeEditModal: React.FC<Props> = ({
       id ?? -1
     ] || "-";
 
-  const positionLabelById = (id?: number) => {
-    if (!id && id !== 0) return "-";
-    const p = positions.find((x) => (x as any).ID === id);
-    return p?.Position ?? String(id);
-  };
-
-  const equalish = (a: any, b: any) => String(a ?? "") === String(b ?? "");
-
-  // ตรวจว่ามีการแก้ไขหรือไม่ (ใช้สำหรับกันปิดโดยไม่ได้บันทึก)
-  const hasUnsavedChanges = () => {
-    const init = initialValuesRef.current || {};
-    const cur = form.getFieldsValue();
-    const keys = Object.keys(init);
-    for (const k of keys) {
-      if (!equalish(cur[k], init[k])) return true;
-    }
-    if (cur.password && String(cur.password).length > 0) return true; // ใส่รหัสผ่านใหม่
-    if (uploadFile) return true; // เปลี่ยนรูป
-    return false;
-  };
-
-  // เด้งยืนยันเมื่อจะปิด (X, ยกเลิก, Esc)
+  // ยกเลิก: ปิดทันที (เหมือน Create — ไม่มี modal ถาม)
   const handleCancel = () => {
-    if (!hasUnsavedChanges()) {
-      onClose();
-      return;
-    }
-    Modal.confirm({
-      title: "ยังไม่ได้บันทึก",
-      icon: <ExclamationCircleOutlined />,
-      content: "คุณมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก ต้องการปิดหน้าต่างนี้หรือไม่?",
-      okText: "ปิดโดยไม่บันทึก",
-      cancelText: "กลับไปแก้ต่อ",
-      okButtonProps: { danger: true },
-      onOk: () => onClose(),
-    });
+    onClose();
+    setTimeout(() => {
+      form.resetFields();
+      setUploadFile(undefined);
+    }, 0);
   };
 
-  // เด้งยืนยันก่อนบันทึก + สรุป diff ที่เปลี่ยน
+  // บันทึก: ส่งข้อมูลทันที (ไม่มี modal diff/ยืนยัน)
   const handleSubmit = async () => {
     if (!employee?.ID) return;
     try {
       const values = await form.validateFields();
-
-      // === สร้าง diff ===
-      const changes: Array<{ key: string; label: string; oldVal: string; newVal: string }> = [];
-      const pushIfChanged = (
-        key: string,
-        label: string,
-        oldV: any,
-        newV: any,
-        fmt?: (v: any) => string
-      ) => {
-        const f = (v: any) => (fmt ? fmt(v) : (v ?? "") + "");
-        if (f(oldV) !== f(newV)) changes.push({ key, label, oldVal: f(oldV) || "-", newVal: f(newV) || "-" });
-      };
-
-      pushIfChanged("firstName", "ชื่อ", employee.FirstName, values.firstName);
-      pushIfChanged("lastName", "นามสกุล", employee.LastName, values.lastName);
-      pushIfChanged("email", "อีเมล", employee.Email, values.email);
-      pushIfChanged("phone", "เบอร์โทร", employee.Phone, values.phone);
-      pushIfChanged(
-        "positionID",
-        "ตำแหน่ง",
-        employee.Position?.ID,
-        values.positionID,
-        (v) => positionLabelById(Number(v))
-      );
-
-      if (!isSelf) {
-        pushIfChanged(
-          "roleID",
-          "สิทธิ์",
-          employee.Role?.ID,
-          values.roleID,
-          (v) => roleLabelById(Number(v))
-        );
-      }
-
-      if (values.password && String(values.password).length > 0) {
-        changes.push({
-          key: "password",
-          label: "รหัสผ่าน",
-          oldVal: "—",
-          newVal: "จะถูกเปลี่ยน (ไม่แสดงค่า)",
-        });
-      }
-      if (uploadFile) {
-        changes.push({
-          key: "profile",
-          label: "รูปโปรไฟล์",
-          oldVal: employee.Profile ? "มีรูปเดิม" : "—",
-          newVal: `อัปโหลดใหม่: ${uploadFile.name}`,
-        });
-      }
-
-      if (changes.length === 0) {
-        Modal.info({
-          title: "ไม่มีการเปลี่ยนแปลง",
-          content: "คุณยังไม่ได้แก้ไขข้อมูลใด ๆ",
-          okText: "ตกลง",
-        });
+      const token = localStorage.getItem("token");
+      if (!token) {
+        message.error("กรุณาเข้าสู่ระบบก่อน");
         return;
       }
 
-      const DiffView = (
-        <div>
-          <div className="mb-2">โปรดตรวจสอบความเปลี่ยนแปลงก่อนบันทึก:</div>
-          <ul style={{ paddingLeft: 18, margin: 0 }}>
-            {changes.map((c) => (
-              <li key={c.key} style={{ marginBottom: 6, lineHeight: 1.4 }}>
-                <b>{c.label}:</b>{" "}
-                <span style={{ color: "#8c8c8c" }}>{c.oldVal}</span> {" → "}
-                <span style={{ color: "#389e0d" }}>{c.newVal}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      );
+      const formData = new FormData();
+      formData.append("firstName", String(values.firstName));
+      formData.append("lastName", String(values.lastName));
+      formData.append("email", String(values.email));
+      formData.append("phone", String(values.phone));
 
-      Modal.confirm({
-        title: "ยืนยันการแก้ไข",
-        icon: <ExclamationCircleOutlined />,
-        content: DiffView,
-        okText: "บันทึก",
-        cancelText: "ยกเลิก",
-        onOk: async () => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) return message.error("กรุณาเข้าสู่ระบบก่อน");
-
-    const formData = new FormData();
-
-    // ค่าพื้นฐาน
-    formData.append("firstName", String(values.firstName));
-    formData.append("lastName",  String(values.lastName));
-    formData.append("email",     String(values.email));
-    formData.append("phone",     String(values.phone));
-
-    // positionID (ต้องมีจากฟอร์ม)
-    if (values.positionID !== undefined && values.positionID !== null)
-      formData.append("positionID", String(values.positionID));
-
-    // password (optional)
-    if (values.password) formData.append("password", String(values.password));
-
-    // *** จุดสำคัญ: roleID ***
-    if (isSelf) {
-      // ซ่อน select อยู่ → จะไม่ได้อยู่ใน values
-      // ให้ใช้ role เดิมของตัวเองส่งกลับไป
-      const currentRoleId = employee?.Role?.ID;
-      if (currentRoleId != null) {
-        formData.append("roleID", String(currentRoleId));
+      if (values.positionID !== undefined && values.positionID !== null) {
+        formData.append("positionID", String(values.positionID));
       }
-      // (ถ้าอยากให้ backend ยอมไม่ส่ง roleID ได้ ก็แก้ที่ controller ตามที่อธิบายก่อนหน้า)
-    } else {
-      // แก้ข้อมูลคนอื่น ต้องส่ง roleID จากฟอร์ม
-      formData.append("roleID", String(values.roleID));
-    }
 
-    // รูปโปรไฟล์ (optional)
-    if (uploadFile) formData.append("profile", uploadFile);
+      // รหัสผ่านใหม่ (ถ้ามี)
+      if (values.password) {
+        formData.append("password", String(values.password));
+      }
 
-    setLoading(true);
-    await axios.put(`/api/employees/${employee!.ID}`, formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // ปล่อยให้ browser เซ็ต Content-Type และ boundary เองจะปลอดภัยกว่า:
-        // "Content-Type": "multipart/form-data",
-      },
-    });
+      // roleID: ถ้าแก้ไขบัญชีตัวเอง ให้ส่ง role เดิมกลับไป
+      if (isSelf) {
+        const currentRoleId = employee?.Role?.ID;
+        if (currentRoleId != null) formData.append("roleID", String(currentRoleId));
+      } else {
+        formData.append("roleID", String(values.roleID));
+      }
 
-    message.success("แก้ไขข้อมูลสำเร็จ");
-    onSuccess();
-    onClose();
-  } catch (err: any) {
-    const msg = err?.response?.data?.error || "แก้ไขข้อมูลไม่สำเร็จ";
-    message.error(msg);
-  } finally {
-    setLoading(false);
-  }
-},
+      // รูปโปรไฟล์ (ถ้ามี)
+      if (uploadFile) formData.append("profile", uploadFile);
+
+      setLoading(true);
+      await axios.put(`/api/employees/${employee.ID}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-    } catch {
-      // validate ไม่ผ่าน — ฟอร์มจะโชว์ error เอง
+
+      message.success("แก้ไขข้อมูลสำเร็จ");
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      if (err?.errorFields) return; // validate ไม่ผ่าน ให้ฟอร์มแสดงเอง
+      const msg = err?.response?.data?.error || "แก้ไขข้อมูลไม่สำเร็จ";
+      message.error(msg);
+    } finally {
+      setLoading(false);
     }
   };
+
+  // Title ไล่สี teal + ไอคอน (สไตล์เดียวกับ Create)
+  const TitleNode = (
+    <div className="flex items-center gap-2">
+      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-teal-500/10">
+        <FormOutlined className="text-teal-600" />
+      </span>
+      <span className="bg-gradient-to-r from-teal-600 to-cyan-400 bg-clip-text text-transparent font-semibold">
+        แก้ไขข้อมูลผู้ใช้งาน
+      </span>
+    </div>
+  );
 
   return (
     <Modal
       open={open}
       onCancel={handleCancel}
-      title="แก้ไขข้อมูลพนักงาน"
+      title={TitleNode}
       okText="บันทึก"
       cancelText="ยกเลิก"
       onOk={handleSubmit}
       confirmLoading={loading}
       destroyOnClose
       keyboard
-      maskClosable={false}  // กันคลิกฉากหลังแล้วปิด
+      okButtonProps={{
+        className:
+          "bg-gradient-to-r from-teal-600 to-cyan-500 text-white hover:from-teal-700 hover:to-cyan-600 border-0 px-5 rounded-md shadow",
+      }}
     >
       {/* อัปโหลดโปรไฟล์แบบวงกลม (Tailwind-only) */}
       <div className="w-full flex items-center justify-center my-6">
@@ -361,6 +252,7 @@ const EmployeeEditModal: React.FC<Props> = ({
       </div>
 
       <Form layout="vertical" form={form}>
+        {/* ชื่อ + นามสกุล (แถวเดียว) */}
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item name="firstName" label="ชื่อ" rules={[{ required: true }]}>
@@ -374,27 +266,39 @@ const EmployeeEditModal: React.FC<Props> = ({
           </Col>
         </Row>
 
-        <Form.Item name="email" label="อีเมล" rules={[{ required: true }]}>
-          <Input placeholder="email@example.com" />
-        </Form.Item>
+        {/* อีเมล + รหัสผ่านใหม่ (แถวเดียว) */}
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item name="email" label="อีเมล" rules={[{ required: true, type: "email" }]}>
+              <Input placeholder="email@example.com" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="password" label="รหัสผ่านใหม่ (ถ้าต้องการเปลี่ยน)">
+              <Input.Password placeholder="********" />
+            </Form.Item>
+          </Col>
+        </Row>
 
-        <Form.Item name="password" label="รหัสผ่านใหม่ (ถ้าต้องการเปลี่ยน)">
-          <Input.Password placeholder="********" />
-        </Form.Item>
-
-        <Form.Item name="phone" label="เบอร์โทร" rules={[{ required: true }]}>
-          <Input placeholder="0xxxxxxxxx" />
-        </Form.Item>
-
-        <Form.Item name="positionID" label="ตำแหน่ง" rules={[{ required: true }]}>
-          <Select placeholder="เลือกตำแหน่ง">
-            {positions.map((p) => (
-              <Option key={p.ID} value={p.ID}>
-                {p.Position}
-              </Option>
-            ))}
-          </Select>
-        </Form.Item>
+        {/* เบอร์โทร + ตำแหน่ง (แถวเดียว) */}
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item name="phone" label="เบอร์โทร" rules={[{ required: true }]}>
+              <Input placeholder="0xxxxxxxxx" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="positionID" label="ตำแหน่ง" rules={[{ required: true }]}>
+              <Select placeholder="เลือกตำแหน่ง" showSearch optionFilterProp="children">
+                {positions.map((p) => (
+                  <Option key={p.ID} value={p.ID}>
+                    {p.Position}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
 
         {/* สิทธิ์: ซ่อน select หากเป็นบัญชีตัวเอง */}
         {isSelf ? (

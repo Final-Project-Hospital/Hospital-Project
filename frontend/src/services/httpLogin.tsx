@@ -1,6 +1,7 @@
 import axios from "axios";
 import { LoginInterface } from "../interface/Login"
 import { UsersInterface } from "../interface/IUser";
+import { EmployeeInterface } from "../interface/IEmployee";
 import {apiUrl} from "./index"
 
 export interface SignupInput {
@@ -108,6 +109,27 @@ export const UpdateEmployeeByID = async (
     }
   } catch (error) {
     console.error("Error updating employee:", error);
+    return null;
+  }
+};
+
+export const ListEmployees = async (): Promise<EmployeeInterface[] | null> => {
+  try {
+    const res = await axios.get(`${apiUrl}/api/employees`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+    });
+
+    if (res.status === 200) {
+      return res.data as EmployeeInterface[];
+    } else {
+      console.error("Unexpected status:", res.status);
+      return null;
+    }
+  } catch (error: any) {
+    console.error("Error fetching employees:", error?.response?.data || error?.message);
     return null;
   }
 };
