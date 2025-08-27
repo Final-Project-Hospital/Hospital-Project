@@ -65,15 +65,15 @@ const Recycleddataviz: React.FC = () => {
   const [colorCompareQuantity, setColorCompareQuantity] = useState<string>("#1a4b57");
   const [totalMonthlyGarbage, setTotalMonthlyGarbage] = useState(0);
   const [latestYear, setLatestYear] = useState<number | null>(null);
-  const [monthlyDataLatestYear, setMonthlyDataLatestYear] = useState<{ month: string; value: number }[]>([]);
+  const [monthlyDataLatestYear, setMonthlyDataLatestYear] = useState<{ month: string; value: number; unit: string }[]>([]);
   const [middleTarget, setMiddleTarget] = useState<number | undefined>(undefined);
   const [, setMinTarget] = useState<number | undefined>(undefined); //minTarget
   const [maxTarget, setMaxTarget] = useState<number | undefined>(undefined);
   const [unit, setUnit] = useState<string>("-");
   const [totalQuantity, setTotalQuantity] = useState<number>(0);
-  const [monthlyQuantityLatestYear, setMonthlyQuantityLatestYear] = useState<{ month: string; value: number }[]>([]);
+  const [monthlyQuantityLatestYear, setMonthlyQuantityLatestYear] = useState<{ month: string; value: number; unit: string }[]>([]);
   const [totalTotalSale, setTotalSale] = useState<number>(0);
-  const [monthlyTotalSaleLatestYear, setMonthlyTotalSaleLatestYear] = useState<{ month: string; value: number }[]>([]);
+  const [monthlyTotalSaleLatestYear, setMonthlyTotalSaleLatestYear] = useState<{ month: string; value: number; unit: string }[]>([]);
 
 
   //ใช้กับตาราง
@@ -158,9 +158,10 @@ const Recycleddataviz: React.FC = () => {
           .reduce((sum: number, item: any) => sum + (item.TotalSale || 0), 0);
 
         // ดึงข้อมูลรายเดือนของปีล่าสุด และรวมค่าเดือนเดียวกัน
-        const monthlyDataLatestYearMap: Record<string, number> = {};
-        const monthlyQuantityLatestYearMap: Record<string, number> = {};
-        const monthlyTotalSaleLatestYearMap: Record<string, number> = {};
+        // ใช้ object ที่เก็บ { value, unit }
+        const monthlyDataLatestYearMap: Record<string, { value: number; unit: string }> = {};
+        const monthlyQuantityLatestYearMap: Record<string, { value: number; unit: string }> = {};
+        const monthlyTotalSaleLatestYearMap: Record<string, { value: number; unit: string }> = {};
 
         response.data
           .filter((item: any) => dayjs(item.Date).year() === latestYear)
@@ -168,22 +169,36 @@ const Recycleddataviz: React.FC = () => {
             const month = dayjs(item.Date).format("MMM");
 
             // MonthlyGarbage
-            if (!monthlyDataLatestYearMap[month]) monthlyDataLatestYearMap[month] = 0;
-            monthlyDataLatestYearMap[month] += item.MonthlyGarbage || 0;
+            if (!monthlyDataLatestYearMap[month]) {
+              monthlyDataLatestYearMap[month] = { value: 0, unit: item.UnitName };
+            }
+            monthlyDataLatestYearMap[month].value += item.MonthlyGarbage || 0;
 
-            // Quantity
-            if (!monthlyQuantityLatestYearMap[month]) monthlyQuantityLatestYearMap[month] = 0;
-            monthlyQuantityLatestYearMap[month] += item.Quantity || 0;
+            // Quantity (fix unit = "คน")
+            if (!monthlyQuantityLatestYearMap[month]) {
+              monthlyQuantityLatestYearMap[month] = { value: 0, unit: "คน" };
+            }
+            monthlyQuantityLatestYearMap[month].value += item.Quantity || 0;
 
-            // TotalSale
-            if (!monthlyTotalSaleLatestYearMap[month]) monthlyTotalSaleLatestYearMap[month] = 0;
-            monthlyTotalSaleLatestYearMap[month] += item.TotalSale || 0;
+            // TotalSale (fix unit = "บาท")
+            if (!monthlyTotalSaleLatestYearMap[month]) {
+              monthlyTotalSaleLatestYearMap[month] = { value: 0, unit: "บาท" };
+            }
+            monthlyTotalSaleLatestYearMap[month].value += item.TotalSale || 0;
           });
 
-        // แปลงเป็น array สำหรับ ApexCharts
-        const monthlyDataLatestYear = Object.entries(monthlyDataLatestYearMap).map(([month, value]) => ({ month, value }));
-        const monthlyQuantityLatestYear = Object.entries(monthlyQuantityLatestYearMap).map(([month, value]) => ({ month, value }));
-        const monthlyTotalSaleLatestYear = Object.entries(monthlyTotalSaleLatestYearMap).map(([month, value]) => ({ month, value }));
+        // แปลงเป็น array
+        const monthlyDataLatestYear = Object.entries(monthlyDataLatestYearMap).map(
+          ([month, { value, unit }]) => ({ month, value, unit })
+        );
+
+        const monthlyQuantityLatestYear = Object.entries(monthlyQuantityLatestYearMap).map(
+          ([month, { value, unit }]) => ({ month, value, unit })
+        );
+
+        const monthlyTotalSaleLatestYear = Object.entries(monthlyTotalSaleLatestYearMap).map(
+          ([month, { value, unit }]) => ({ month, value, unit })
+        );
 
         // ฟังก์ชันสร้างช่วงวันที่ (ใช้ใน month/day mode)
         const createDateRange = (start: Dayjs, end: Dayjs): string[] => {
@@ -270,6 +285,8 @@ const Recycleddataviz: React.FC = () => {
           setMaxTarget(lastRecycled.data.MaxTarget);
           setMinTarget(lastRecycled.data.MinTarget);
         }
+        console.log("monthlyDataLatestYear")
+        console.log(monthlyDataLatestYear)
         setListData(recycledArr);
         setTotalSaleData(TotalSaleArr);
         setcompareMonthlyGarbageQuantity(compareArr);
@@ -499,7 +516,7 @@ const Recycleddataviz: React.FC = () => {
     ...seriesMonthlyGarbageQuantity[1].data,
   ];
 
-  const getPieOptions = (isQuantityChart = false): ApexCharts.ApexOptions => ({
+  const getPieOptions = (isQuantityChart = false, isTotalSaleChart = false): ApexCharts.ApexOptions => ({
     labels: monthlyDataLatestYear.map(d => d.month),
     dataLabels: {
       enabled: false,
@@ -512,14 +529,38 @@ const Recycleddataviz: React.FC = () => {
       fontFamily: "Prompt, 'Prompt', sans-serif", // ใส่ font ทั้ง chart
     },
     legend: {
-      show: false, // ปิด legend
+      position: "right",
+      horizontalAlign: "left",
+      offsetY: -23,  // ปรับค่าลบเพื่อดันขึ้น (ลองปรับจนเสมอ donut)
+      markers: {
+        size: 5,
+      },
+      itemMargin: {
+        horizontal: 8,
+        vertical: 4,
+      },
+      fontSize: "10px",
     },
+
     stroke: {
       show: false, // ปิดขอบ
     },
     tooltip: {
       y: {
-        formatter: (val: number) => isQuantityChart ? `${val.toLocaleString()} คน` : `${val.toLocaleString()} Kg`,
+        formatter: (val: number, opts) => {
+          const index = opts.dataPointIndex;
+
+          if (isQuantityChart) {
+            const unit = monthlyQuantityLatestYear[index]?.unit || "";
+            return `${val.toLocaleString()} ${unit}`;
+          }
+          if (isTotalSaleChart) {
+            const unit = monthlyTotalSaleLatestYear[index]?.unit || "";
+            return `${val.toLocaleString()} ${unit}`;
+          }
+          const unit = monthlyDataLatestYear[index]?.unit || "";
+          return `${val.toLocaleString()} ${unit}`;
+        },
       },
     },
     colors: [
@@ -1066,11 +1107,11 @@ const Recycleddataviz: React.FC = () => {
                   </div >
                   <div>
                     <Chart
-                      options={getPieOptions(false)}
+                      options={getPieOptions(false, false)}
                       series={pieSeries}
                       type="donut"
-                      width={80}
-                      height={80}
+                      width={180}
+                      height={180}
                     />
                   </div>
                 </div>
@@ -1086,11 +1127,11 @@ const Recycleddataviz: React.FC = () => {
                   </div >
                   <div>
                     <Chart
-                      options={getPieOptions(true)}
+                      options={getPieOptions(true, false)}
                       series={pieSeriesQuantity}
                       type="donut"
-                      width={80}
-                      height={80}
+                      width={180}
+                      height={180}
                     />
                   </div>
                 </div>
@@ -1106,11 +1147,11 @@ const Recycleddataviz: React.FC = () => {
                   </div >
                   <div>
                     <Chart
-                      options={getPieOptions(false)}
+                      options={getPieOptions(false, true)}
                       series={pieSeriesTotalsale}
                       type="donut"
-                      width={80}
-                      height={80}
+                      width={180}
+                      height={180}
                     />
                   </div>
                 </div>
