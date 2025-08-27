@@ -631,30 +631,58 @@ export const ListReportHardware = async (): Promise<SensorDataParameterInterface
   }
 };
 
-export interface UpdateGroupDisplayInput {
-  group_display: boolean;
+export interface UpdateGroupAndIndexInput {
+  group_display?: boolean;
+  index?: number;     
+  right?: boolean;    
 }
+
+type UpdateGroupDisplayResponse = { message: string; hardware_param: any };
 
 export const UpdateGroupDisplay = async (
   id: number,
-  data: UpdateGroupDisplayInput
-): Promise<{ message: string; hardware_param: any } | null> => {
+  data: UpdateGroupAndIndexInput
+): Promise<UpdateGroupDisplayResponse | null> => {
   try {
-    const response = await axios.put(`${apiUrl}/hardware-parameter/${id}/group-display`, data, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-    });
+    const payload: Record<string, any> = {};
 
-    if (response.status === 200) {
-      return response.data;
-    } else {
-      console.error("Unexpected status:", response.status);
-      return null;
+    // ส่ง false ได้ด้วยการเช็ค !== undefined
+    if (data.group_display !== undefined) {
+      payload.group_display = data.group_display;
     }
+
+    if (data.index !== undefined) {
+      if (typeof data.index !== "number" || data.index < 1) {
+        throw new Error("index must be >= 1");
+      }
+      payload.index = data.index;
+    }
+
+    if (data.right !== undefined) {
+      payload.right = data.right;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      throw new Error("No fields to update (group_display or index or right required)");
+    }
+
+    const res = await axios.put(
+      `${apiUrl}/hardware-parameter/${id}/group-display`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    return res.status === 200 ? (res.data as UpdateGroupDisplayResponse) : null;
   } catch (error: any) {
-    console.error("Error updating group_display:", error.response?.data || error.message);
+    console.error(
+      "Error updating group_display/index/right:",
+      error?.response?.data || error?.message || error
+    );
     return null;
   }
 };

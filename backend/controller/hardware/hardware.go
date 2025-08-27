@@ -281,8 +281,8 @@ func UpdateUnitHardwareByID(c *gin.Context) {
 
 	// 5) ตอบกลับ
 	c.JSON(http.StatusOK, gin.H{
-		"unit":          unit,
-		"updated_rows":  rowsAffected, // จำนวน HardwareParameter ที่ถูกอัปเดต employee_id
+		"unit":         unit,
+		"updated_rows": rowsAffected, // จำนวน HardwareParameter ที่ถูกอัปเดต employee_id
 	})
 }
 
@@ -334,6 +334,8 @@ type ParamWithGraphResponse struct {
 	StandardMin   float64 `json:"standard_min"`   // StandardHardware.StandardMin
 	Icon          string  `json:"icon"`           // HardwareParameter.Icon
 	Alert         bool    `json:"alert"`          // HardwareParameter.Alert
+	Index         uint    `json:"index"`          // HardwareParameter.Index
+	Right         bool    `json:"right"`          // HardwareParameter.Right
 	GroupDisplay  bool    `json:"group_display"`  // ✅ เพิ่มฟิลด์นี้
 	LayoutDisplay bool    `json:"layout_display"` // ✅ เพิ่มฟิลด์นี้
 }
@@ -400,6 +402,8 @@ func GetHardwareParametersWithGraph(c *gin.Context) {
 			Alert:         p.Alert,
 			GroupDisplay:  p.GroupDisplay, // ✅ ส่งค่าออกไปด้วย
 			LayoutDisplay: p.LayoutDisplay,
+			Index:         p.Index,
+			Right:         p.Right,
 		})
 	}
 
@@ -453,10 +457,14 @@ func UpdateIconByHardwareParameterID(c *gin.Context) {
 	})
 }
 
-type UpdateGroupDisplayInput struct {
-	GroupDisplay bool `json:"group_display"`
+// ✅ ใช้ pointer เพื่อแยก "ไม่ส่งฟิลด์นี้มา" ออกจาก "ส่งค่า false/0"
+type UpdateGroupAndIndexInput struct {
+	GroupDisplay *bool `json:"group_display"` // optional
+	Index        *uint `json:"index"`         // optional, ต้องการ 1..n
+	Right        *bool `json:"right"`         // optional, true=ขวา, false=ซ้าย (ใช้เมื่อ layout_display=true)
 }
 
+// ✅ อัปเดตให้รองรับ GroupDisplay, Index และ Right (partial update)
 func UpdateGroupDisplayByID(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 64)
@@ -465,28 +473,62 @@ func UpdateGroupDisplayByID(c *gin.Context) {
 		return
 	}
 
-	var input UpdateGroupDisplayInput
+	var input UpdateGroupAndIndexInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON input"})
 		return
 	}
 
+	// อย่างน้อยต้องมีฟิลด์ใดฟิลด์หนึ่ง
+	if input.GroupDisplay == nil && input.Index == nil && input.Right == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No fields to update (group_display or index or right required)"})
+		return
+	}
+
+	// ถ้าส่ง index มา ให้ตรวจค่าขั้นต่ำเป็น 1
+	if input.Index != nil && *input.Index == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "index must be >= 1"})
+		return
+	}
+
 	db := config.DB()
+
 	var parameter entity.HardwareParameter
 	if err := db.First(&parameter, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "HardwareParameter not found"})
 		return
 	}
 
-	parameter.GroupDisplay = input.GroupDisplay
+	// Partial update เฉพาะฟิลด์ที่ส่งมา
+	updates := map[string]interface{}{}
 
-	if err := db.Save(&parameter).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update GroupDisplay"})
+	if input.GroupDisplay != nil {
+		updates["group_display"] = *input.GroupDisplay
+	}
+	if input.Index != nil {
+		updates["index"] = *input.Index
+	}
+	if input.Right != nil {
+		updates["right"] = *input.Right
+	}
+
+	if len(updates) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No valid fields to update"})
+		return
+	}
+
+	if err := db.Model(&parameter).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update fields"})
+		return
+	}
+
+	if err := db.First(&parameter, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reload updated record"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":        "GroupDisplay updated successfully",
+		"message":        "Updated successfully",
 		"hardware_param": parameter,
 	})
 }
@@ -692,7 +734,7 @@ func UpdateHardwareParameterColorByID(c *gin.Context) {
 }
 
 type checkPasswordRequest struct {
-	Password string `json:"password" binding:"required"` 
+	Password string `json:"password" binding:"required"`
 }
 
 func CheckPasswordByID(c *gin.Context) {

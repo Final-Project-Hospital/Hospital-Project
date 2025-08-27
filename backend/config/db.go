@@ -73,6 +73,7 @@ func SetupDatabase() {
 	db.FirstOrCreate(&Drinkwater, &entity.Environment{EnvironmentName: "น้ำดื่ม"})
 	db.FirstOrCreate(&Tapwater, &entity.Environment{EnvironmentName: "น้ำประปา"})
 	db.FirstOrCreate(&Garbage, &entity.Environment{EnvironmentName: "ขยะ"})
+
 	// Standard
 	ranges := []struct {
 		min float32
@@ -95,7 +96,7 @@ func SetupDatabase() {
 		})
 	}
 	// จำลองข้อมูลแบบ "ค่าเดี่ยว"
-	middles := []float32{20.0, 30.0, 35.0, 500.0}
+	middles := []float32{20.00, 30.00, 35.00, 500.00, 1000.00, 1.00, 5000.00, 0.20, 0.30, 0.10, 50.00, 15.00, 300.00, 0.01, 1.10} //มันสร้าง 0.00 ไม่ได้ (id 16 ใช้เป็น 0.01 อยู่)
 
 	for _, m := range middles {
 		standard := entity.Standard{
@@ -121,9 +122,15 @@ func SetupDatabase() {
 	Unit := entity.Unit{UnitName: "mg/L"}
 	Unit2 := entity.Unit{UnitName: "ไม่มีหน่วย"}
 	Unit3 := entity.Unit{UnitName: "Kg"}
+	Unit4 := entity.Unit{UnitName: "MPN/100 ml"}
+	Unit5 := entity.Unit{UnitName: "NTU"}
+	Unit6 := entity.Unit{UnitName: "Pt/Co"}
 	db.FirstOrCreate(&Unit, &entity.Unit{UnitName: "mg/L"})
 	db.FirstOrCreate(&Unit2, &entity.Unit{UnitName: "ไม่มีหน่วย"})
 	db.FirstOrCreate(&Unit3, &entity.Unit{UnitName: "Kg"})
+	db.FirstOrCreate(&Unit4, &entity.Unit{UnitName: "MPN/100 ml"})
+	db.FirstOrCreate(&Unit5, &entity.Unit{UnitName: "NTU"})
+	db.FirstOrCreate(&Unit6, &entity.Unit{UnitName: "Pt/Co"})
 
 	//BeforeAfter
 	Before := entity.BeforeAfterTreatment{TreatmentName: "ก่อน"}
@@ -264,6 +271,8 @@ func SetupDatabase() {
 		paramhardware1 := entity.HardwareParameter{
 			Parameter:                "Formaldehyde",
 			Icon:                     "GiChemicalDrop",
+			Index:                    1,
+			Right:                    true,
 			GroupDisplay:             false,
 			LayoutDisplay:            false,
 			Alert:                    false,
@@ -276,6 +285,8 @@ func SetupDatabase() {
 		paramhardware2 := entity.HardwareParameter{
 			Parameter:                "Temperature",
 			Icon:                     "GiChemicalDrop",
+			Index:                    2,
+			Right:                    true,
 			GroupDisplay:             false,
 			LayoutDisplay:            false,
 			Alert:                    false,
@@ -288,6 +299,8 @@ func SetupDatabase() {
 		paramhardware3 := entity.HardwareParameter{
 			Parameter:                "Humidity",
 			Icon:                     "GiChemicalDrop",
+			Index:                    3,
+			Right:                    true,
 			GroupDisplay:             false,
 			LayoutDisplay:            false,
 			Alert:                    false,
@@ -526,6 +539,7 @@ func SetupDatabase() {
 	FogParameter := entity.Parameter{ParameterName: "Fat Oil and Grease"}
 	db.FirstOrCreate(&FogParameter, &entity.Parameter{ParameterName: "Fat Oil and Grease"})
 
+	// --- Wastewater ---
 	// BOD
 	beforeValues := []float64{2, 2, 4.4, 39, 47, 12, 11, 12, 29, 2, 3.1, 4.4, 14, 2, 3.8, 2, 2.6, 2, 2, 2, 4, 2, 19, 14, 15, 9, 2, 3.1, 4.4, 14, 2, 3.8, 2, 2.6, 2, 2, 2, 1.8, 1.4, 1.1, 1, 9, 2, 3.1, 2, 3.8, 2, 2.6, 2, 2, 2, 2, 3.1, 2, 9, 2, 3.1, 4.4}
 	afterValues := []float64{2.4, 2, 2.2, 5.6, 2.7, 5.5, 2, 2, 2, 2, 19, 9.2, 44, 11, 18, 46, 5.2, 6.2, 5, 6.1, 4, 2, 19, 14, 15, 9, 2, 19, 9.2, 44, 11, 18, 46, 5.2, 6.2, 5, 6.1, 10.9, 10.1, 9.3, 8.5, 9, 2, 19, 11, 18, 46, 5.2, 6.2, 5, 6.1, 2, 19, 11, 9, 2, 19, 9.2}
@@ -594,7 +608,6 @@ func SetupDatabase() {
 			ParameterID:            BodParameter.ID,
 		})
 	}
-	fmt.Println("Insert BOD seed data done!")
 
 	// PH
 	beforeValuesPH := []float64{
@@ -682,7 +695,6 @@ func SetupDatabase() {
 			ParameterID:            param3.ID,
 		})
 	}
-	fmt.Println("Insert PH seed data done with status calculation!")
 
 	// TDS
 	beforeValuesTDS := []float64{
@@ -772,7 +784,7 @@ func SetupDatabase() {
 			ParameterID:            param4.ID,
 		})
 	}
-	fmt.Println("Insert TDS seed data done!")
+
 	target1 := entity.Target{
 		MaxTarget:    0,
 		MiddleTarget: 0.7,
@@ -917,7 +929,6 @@ func SetupDatabase() {
 			ParameterID:            param2.ID,
 		})
 	}
-	fmt.Println("Insert TS seed data done!")
 
 	// FOG
 	beforeValuesFOG := []float64{
@@ -1007,7 +1018,6 @@ func SetupDatabase() {
 			ParameterID:            param6.ID,
 		})
 	}
-	fmt.Println("Insert FOG seed data done!")
 
 	// TKN
 	beforeValuesTKN := []float64{
@@ -1098,7 +1108,1674 @@ func SetupDatabase() {
 			ParameterID:            param1.ID,
 		})
 	}
-	fmt.Println("Insert TKN seed data done!")
+
+	// COD
+	// beforeValuesCOD := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesCOD := []float64{
+		64, 90, 32, 45, 39, 40, 33, 38, 59, 63,
+		60, 79, 51, 58, 40, 38, 44, 40,
+	}
+	datesCOD := []string{
+		"2023-07-01", "2023-08-01", "2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesCOD); i++ {
+		date, err := time.Parse("2006-01-02", datesCOD[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeCOD uint
+		// if beforeValuesCOD[i] <= 35.00 {
+		// 	statusIDBeforeCOD = status2.ID
+		// } else {
+		// 	statusIDBeforeCOD = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesCOD[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Wastewater.ID,
+		// 	ParameterID:            param7.ID,
+		// 	StandardID:             5,   //ในสมุดไม่มี
+		// 	UnitID:                 Unit.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeCOD,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Wastewater.ID,
+		// 	ParameterID:            param7.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterCOD uint
+		if afterValuesCOD[i] <= 35.00 {
+			statusIDAfterCOD = status2.ID
+		} else {
+			statusIDAfterCOD = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesCOD[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param7.ID,
+			StandardID:             5, //ในสมุดไม่มี
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterCOD,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param7.ID,
+		})
+	}
+
+	// FCB
+	// beforeValuesFCB := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesFCB := []float64{
+		1.8, 4.5, 140, 4.5,
+		2, 7.8, 0, 13, 8, 8, 0, 4.5,
+		0, 0, 0, 0, 0, 0, 0, 23,
+		0, 0, 0, 0, 2, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+	}
+	datesFCB := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesFCB); i++ {
+		date, err := time.Parse("2006-01-02", datesFCB[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeFCB uint
+		// if beforeValuesFCB[i] <= 35.00 {
+		// 	statusIDBeforeFCB = status2.ID
+		// } else {
+		// 	statusIDBeforeFCB = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesFCB[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Wastewater.ID,
+		// 	ParameterID:            param8.ID,
+		// 	StandardID:             7,
+		// 	UnitID:                 Unit4.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeFCB,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Wastewater.ID,
+		// 	ParameterID:            param8.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterFCB uint
+		if afterValuesFCB[i] <= 1000.00 {
+			statusIDAfterFCB = status2.ID
+		} else {
+			statusIDAfterFCB = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesFCB[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param8.ID,
+			StandardID:             7,
+			UnitID:                 Unit4.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterFCB,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param8.ID,
+		})
+	}
+
+	// Residule
+	// beforeValuesRES := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesRES := []float64{
+		0.04, 0.07, 0.02, 0.02, 0.03, 0.03, 0.15, 0.08, 0.05, 0.02, 0.05, 0.12,
+	}
+	datesRES := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01", "2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+	}
+	for i := 0; i < len(afterValuesRES); i++ {
+		date, err := time.Parse("2006-01-02", datesRES[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeRES uint
+		// if beforeValuesRES[i] <= 35.00 {
+		// 	statusIDBeforeRES = status2.ID
+		// } else {
+		// 	statusIDBeforeRES = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesRES[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Wastewater.ID,
+		// 	ParameterID:            param9.ID,
+		// 	StandardID:             7,
+		// 	UnitID:                 Unit.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeRES,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Wastewater.ID,
+		// 	ParameterID:            param9.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterRES uint
+		if afterValuesRES[i] <= 1.00 {
+			statusIDAfterRES = status2.ID
+		} else {
+			statusIDAfterRES = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesRES[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param9.ID,
+			StandardID:             8,
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterRES,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param9.ID,
+		})
+	}
+
+	// Sulfide
+	// beforeValuesSUL := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesSUL := []float64{
+		0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+	}
+	datesSUL := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesSUL); i++ {
+		date, err := time.Parse("2006-01-02", datesSUL[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeSUL uint
+		// if beforeValuesSUL[i] <= 1.00 {
+		// 	statusIDBeforeSUL = status2.ID
+		// } else {
+		// 	statusIDBeforeSUL = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesSUL[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Wastewater.ID,
+		// 	ParameterID:            param10.ID,
+		// 	StandardID:             8,
+		// 	UnitID:                 Unit.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeSUL,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Wastewater.ID,
+		// 	ParameterID:            param10.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterSUL uint
+		if afterValuesSUL[i] <= 1.00 {
+			statusIDAfterSUL = status2.ID
+		} else {
+			statusIDAfterSUL = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesSUL[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param10.ID,
+			StandardID:             8,
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterSUL,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param10.ID,
+		})
+	}
+
+	// TCB
+	// beforeValuesTCB := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesTCB := []float64{
+		21.00, 33.00, 140.00, 240.00,
+		70.00, 23.00, 130.00, 2400.00, 3500.00, 2400.00, 0, 2400.00,
+		0, 0, 0, 0, 0, 0, 0, 1600.00,
+		0, 0, 0, 0, 920.00, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+	}
+	datesTCB := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesTCB); i++ {
+		date, err := time.Parse("2006-01-02", datesTCB[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeTCB uint
+		// if beforeValuesTCB[i] <= 35.00 {
+		// 	statusIDBeforeTCB = status2.ID
+		// } else {
+		// 	statusIDBeforeTCB = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesTCB[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Wastewater.ID,
+		// 	ParameterID:            param11.ID,
+		// 	StandardID:             9,
+		// 	UnitID:                 Unit4.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeTCB,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Wastewater.ID,
+		// 	ParameterID:            param11.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterTCB uint
+		if afterValuesTCB[i] <= 5000.00 {
+			statusIDAfterTCB = status2.ID
+		} else {
+			statusIDAfterTCB = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesTCB[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param11.ID,
+			StandardID:             9,
+			UnitID:                 Unit4.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterTCB,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Wastewater.ID,
+			ParameterID:            param11.ID,
+		})
+	}
+
+	// --- Tapwater ---
+	// Al
+	// beforeValuesAL := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesAL := []float64{
+		0, 0, 0, 0,
+		0, 0, 0, 0, 0.20, 0, 0, 0,
+		0, 0.10, 0, 0, 0, 0, 0, 0.10,
+		0, 0, 0.20, 0, 0, 0, 0, 0,
+		0, 0, 0, 0.10, 0, 0, 0, 0.10,
+	}
+	datesAL := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesAL); i++ {
+		date, err := time.Parse("2006-01-02", datesAL[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeAL uint
+		// if beforeValuesAL[i] <= 0.20 {
+		// 	statusIDBeforeAL = status2.ID
+		// } else {
+		// 	statusIDBeforeAL = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesAL[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param17.ID,
+		// 	StandardID:             10,
+		// 	UnitID:                 Unit.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeAL,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param17.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterAL uint
+		if afterValuesAL[i] <= 0.20 {
+			statusIDAfterAL = status2.ID
+		} else {
+			statusIDAfterAL = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesAL[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param17.ID,
+			StandardID:             10,
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterAL,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param17.ID,
+		})
+	}
+
+	// Fe
+	// beforeValuesFE := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesFE := []float64{
+		0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+	}
+	datesFE := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesFE); i++ {
+		date, err := time.Parse("2006-01-02", datesFE[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeFE uint
+		// if beforeValuesFE[i] <= 0.30 {
+		// 	statusIDBeforeFE = status2.ID
+		// } else {
+		// 	statusIDBeforeFE = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesFE[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param18.ID,
+		// 	StandardID:             11,
+		// 	UnitID:                 Unit.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeFE,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param18.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterFE uint
+		if afterValuesFE[i] <= 0.30 {
+			statusIDAfterFE = status2.ID
+		} else {
+			statusIDAfterFE = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesFE[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param18.ID,
+			StandardID:             11,
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterFE,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param18.ID,
+		})
+	}
+
+	// Mn
+	// beforeValuesMN := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesMN := []float64{
+		0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+	}
+	datesMN := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesMN); i++ {
+		date, err := time.Parse("2006-01-02", datesMN[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeMN uint
+		// if beforeValuesMN[i] <= 0.30 {
+		// 	statusIDBeforeMN = status2.ID
+		// } else {
+		// 	statusIDBeforeMN = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesMN[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param19.ID,
+		// 	StandardID:             12,
+		// 	UnitID:                 Unit.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeMN,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param19.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterMN uint
+		if afterValuesMN[i] <= 0.30 {
+			statusIDAfterMN = status2.ID
+		} else {
+			statusIDAfterMN = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesMN[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param19.ID,
+			StandardID:             12,
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterMN,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param19.ID,
+		})
+	}
+
+	// Nitrate
+	// beforeValuesNI := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesNI := []float64{
+		2.50, 2.30, 3.50, 1.40,
+		0.10, 2.00, 1.90, 2.00, 1.90, 2.00, 2.50, 1.90,
+		1.90, 2.00, 3.80, 3.20, 2.40, 3.20, 7.00, 1.80,
+		19.0, 2.20, 4.30, 2.10, 3.00, 3.00, 4.20, 2.20,
+		2.70, 2.30, 2.70, 2.10, 2.20, 3.00, 2.80, 6.40,
+	}
+	datesNI := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesNI); i++ {
+		date, err := time.Parse("2006-01-02", datesNI[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeNI uint
+		// if beforeValuesNI[i] <= 50.00 {
+		// 	statusIDBeforeNI = status2.ID
+		// } else {
+		// 	statusIDBeforeNI = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesNI[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param16.ID,
+		// 	StandardID:             13,
+		// 	UnitID:                 Unit.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeNI,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param16.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterNI uint
+		if afterValuesNI[i] <= 50.00 {
+			statusIDAfterNI = status2.ID
+		} else {
+			statusIDAfterNI = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesNI[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param16.ID,
+			StandardID:             13,
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterNI,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param16.ID,
+		})
+	}
+
+	// NTU
+	// beforeValuesNTU := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesNTU := []float64{
+		0.60, 0.50, 0.80, 0.50,
+		0.80, 0.60, 0.30, 0.70, 0.70, 0.70, 0.60, 0.70,
+		0.50, 1.00, 0.60, 0.70, 0.70, 0.70, 0.40, 0.40,
+		1.40, 0.50, 0.40, 0.40, 0.20, 0.30, 0.20, 0.30,
+		0.70, 0.50, 0.40, 0.50, 0.40, 0.40, 0.40, 0.40,
+	}
+	datesNTU := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesNTU); i++ {
+		date, err := time.Parse("2006-01-02", datesNTU[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeNTU uint
+		// if beforeValuesNTU[i] <= 1.00 {
+		// 	statusIDBeforeNTU = status2.ID
+		// } else {
+		// 	statusIDBeforeNTU = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesNTU[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param20.ID,
+		// 	StandardID:             8,
+		// 	UnitID:                 Unit5.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeNTU,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            para20.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterNTU uint
+		if afterValuesNTU[i] <= 1.00 {
+			statusIDAfterNTU = status2.ID
+		} else {
+			statusIDAfterNTU = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesNTU[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param20.ID,
+			StandardID:             8,
+			UnitID:                 Unit5.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterNTU,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param20.ID,
+		})
+	}
+
+	// PT
+	// beforeValuesPT := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesPT := []float64{
+		0, 0, 7.00, 0,
+		0, 0, 4.00, 0, 0, 0, 1.00, 0,
+		1.00, 0, 0, 0, 0, 1.00, 0, 0,
+		0, 0, 0, 0, 2.00, 1.00, 0, 2.00,
+		1.00, 0, 0, 4.00, 0, 1.00, 2.00, 0,
+	}
+	datesPT := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesPT); i++ {
+		date, err := time.Parse("2006-01-02", datesPT[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforePT uint
+		// if beforeValuesPT[i] <= 1.00 {
+		// 	statusIDBeforePT = status2.ID
+		// } else {
+		// 	statusIDBeforePT = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesPT[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param20.ID,
+		// 	StandardID:             14,
+		// 	UnitID:                 Unit6.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforePT,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            para20.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterPT uint
+		if afterValuesPT[i] <= 15.00 {
+			statusIDAfterPT = status2.ID
+		} else {
+			statusIDAfterPT = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesPT[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param21.ID,
+			StandardID:             14,
+			UnitID:                 Unit6.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterPT,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param21.ID,
+		})
+	}
+
+	// COD
+	// beforeValuesTCOD := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesTCOD := []float64{
+		3.00, 3.00, 5.00, 4.00,
+		4.00, 3.00, 4.00, 5.00, 5.00, 5.00, 5.00, 7.00,
+		5.00, 6.00, 6.00, 4.00, 5.00, 4.00, 5.00, 8.00,
+		5.00, 4.00, 5.00, 5.00, 5.00, 5.00, 5.00, 5.00,
+		5.00, 5.00, 5.00, 5.00, 5.00, 5.00, 5.00, 5.00,
+	}
+	datesTCOD := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesTCOD); i++ {
+		date, err := time.Parse("2006-01-02", datesTCOD[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeTCOD uint
+		// if beforeValuesTCOD[i] <= 1.00 {
+		// 	statusIDBeforeTCOD = status2.ID
+		// } else {
+		// 	statusIDBeforeTCOD = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesTCOD[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param7.ID,
+		// 	StandardID:             14,
+		// 	UnitID:                 Unit.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeTCOD,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param7.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterTCOD uint
+		if afterValuesTCOD[i] <= 1.00 {
+			statusIDAfterTCOD = status2.ID
+		} else {
+			statusIDAfterTCOD = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesTCOD[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param7.ID,
+			StandardID:             14,
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterTCOD,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param7.ID,
+		})
+	}
+
+	// TH
+	// beforeValuesTH := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesTH := []float64{
+		143.00, 147.00, 149.00, 98.00,
+		114.00, 100.00, 100.00, 96.00, 125.00, 110.00, 120.00, 140.00,
+		120.00, 104.00, 140.00, 110.00, 130.00, 110.00, 130.00, 90.00,
+		82.00, 100.00, 100.00, 60.00, 190.00, 143.00, 140.00, 281.00,
+		170.00, 160.00, 110.00, 140.00, 94.00, 200.00, 169.00, 110.00,
+	}
+	datesTH := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesTH); i++ {
+		date, err := time.Parse("2006-01-02", datesTH[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeTH uint
+		// if beforeValuesTH[i] <= 1.00 {
+		// 	statusIDBeforeTH = status2.ID
+		// } else {
+		// 	statusIDBeforeTH = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesTH[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param15.ID,
+		// 	StandardID:             14,
+		// 	UnitID:                 Unit.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeTH,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param15.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterTH uint
+		if afterValuesTH[i] <= 300.00 {
+			statusIDAfterTH = status2.ID
+		} else {
+			statusIDAfterTH = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesTH[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param15.ID,
+			StandardID:             15,
+			UnitID:                 Unit.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterTH,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param15.ID,
+		})
+	}
+
+	// TCB
+	// beforeValuesTTCB := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesTTCB := []float64{
+		1.10, 1.10, 1.10, 1.10,
+		1.10, 1.10, 1.10, 0, 1.10, 1.10, 0, 1.10,
+		6.90, 1.10, 1.10, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+	}
+	datesTTCB := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesTTCB); i++ {
+		date, err := time.Parse("2006-01-02", datesTTCB[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeTTCB uint
+		// if beforeValuesTTCB[i] <= 1.00 {
+		// 	statusIDBeforeTTCB = status2.ID
+		// } else {
+		// 	statusIDBeforeTTCB = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesTTCB[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param11.ID,
+		// 	StandardID:             15,
+		// 	UnitID:                 Unit4.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeTTCB,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param11.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterTTCB uint
+		if afterValuesTTCB[i] <= 0.00 {
+			statusIDAfterTTCB = status2.ID
+		} else {
+			statusIDAfterTTCB = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesTTCB[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param11.ID,
+			StandardID:             16,
+			UnitID:                 Unit4.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterTTCB,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Tapwater.ID,
+			ParameterID:            param11.ID,
+		})
+	}
+
+	// --- Drinkwater ---
+	// TCB Glass
+	// beforeValuesDTCB := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesDTCB := []float64{
+		1.10, 1.10, 1.10, 1.10,
+		1.10, 1.10, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+	}
+	datesDTCB := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesDTCB); i++ {
+		date, err := time.Parse("2006-01-02", datesDTCB[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeDTCB uint
+		// if beforeValuesDTCB[i] <= 1.00 {
+		// 	statusIDBeforeDTCB = status2.ID
+		// } else {
+		// 	statusIDBeforeDTCB = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesDTCB[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param11.ID,
+		// 	StandardID:             17,
+		// 	UnitID:                 Unit4.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeDTCB,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param11.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterDTCB uint
+		if afterValuesDTCB[i] <= 1.10 {
+			statusIDAfterDTCB = status2.ID
+		} else {
+			statusIDAfterDTCB = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesDTCB[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Drinkwater.ID,
+			ParameterID:            param11.ID,
+			StandardID:             17,
+			UnitID:                 Unit4.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterDTCB,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Drinkwater.ID,
+			ParameterID:            param11.ID,
+		})
+	}
+
+	// TCB Tank
+	// beforeValuesDTCBt := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesDTCBt := []float64{
+		5.10, 1.10, 1.10, 1.10,
+		1.10, 23.00, 0, 0, 0, 0, 0, 0,
+		0, 16.00, 1.10, 0, 0, 0, 0, 0,
+		0, 0, 0, 1.10, 0, 0, 0, 0,
+		0, 12.00, 0, 23.00, 0, 1.10, 0, 0,
+	}
+	datesDTCBt := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesDTCBt); i++ {
+		date, err := time.Parse("2006-01-02", datesDTCBt[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeDTCBt uint
+		// if beforeValuesDTCBt[i] <= 1.00 {
+		// 	statusIDBeforeDTCBt = status2.ID
+		// } else {
+		// 	statusIDBeforeDTCBt = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesDTCBt[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param29.ID,
+		// 	StandardID:             17,
+		// 	UnitID:                 Unit4.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeDTCBt,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param29.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterDTCBt uint
+		if afterValuesDTCBt[i] <= 1.10 {
+			statusIDAfterDTCBt = status2.ID
+		} else {
+			statusIDAfterDTCBt = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesDTCBt[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Drinkwater.ID,
+			ParameterID:            param29.ID,
+			StandardID:             17,
+			UnitID:                 Unit4.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterDTCBt,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Drinkwater.ID,
+			ParameterID:            param29.ID,
+		})
+	}
+
+	// FCB Glass
+	// beforeValuesDFCB := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesDFCB := []float64{
+		1.10, 1.10, 1.10, 1.10,
+		1.10, 1.10, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+	}
+	datesDFCB := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesDFCB); i++ {
+		date, err := time.Parse("2006-01-02", datesDFCB[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeDFCB uint
+		// if beforeValuesDFCB[i] <= 1.00 {
+		// 	statusIDBeforeDFCB = status2.ID
+		// } else {
+		// 	statusIDBeforeDFCB = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesDFCB[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param8.ID,
+		// 	StandardID:             16,
+		// 	UnitID:                 Unit4.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeDFCB,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param8.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterDFCB uint
+		if afterValuesDFCB[i] <= 1.10 {
+			statusIDAfterDFCB = status2.ID
+		} else {
+			statusIDAfterDFCB = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesDFCB[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Drinkwater.ID,
+			ParameterID:            param8.ID,
+			StandardID:             16, //ไม่มีในสมุด
+			UnitID:                 Unit4.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterDFCB,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Drinkwater.ID,
+			ParameterID:            param8.ID,
+		})
+	}
+
+	// FCB Tank
+	// beforeValuesDFCBt := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesDFCBt := []float64{
+		1.10, 1.10, 1.10, 1.10,
+		1.10, 1.10, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 23.00, 0, 0, 0, 0,
+	}
+	datesDFCBt := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesDFCBt); i++ {
+		date, err := time.Parse("2006-01-02", datesDFCBt[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeDFCBt uint
+		// if beforeValuesDFCBt[i] <= 1.00 {
+		// 	statusIDBeforeDFCBt = status2.ID
+		// } else {
+		// 	statusIDBeforeDFCBt = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesDFCBt[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param28.ID,
+		// 	StandardID:             16,
+		// 	UnitID:                 Unit4.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeDFCBt,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param28.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterDFCBt uint
+		if afterValuesDFCBt[i] <= 1.10 {
+			statusIDAfterDFCBt = status2.ID
+		} else {
+			statusIDAfterDFCBt = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesDFCBt[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Drinkwater.ID,
+			ParameterID:            param28.ID,
+			StandardID:             16, //ไม่มีในสมุด
+			UnitID:                 Unit4.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterDFCBt,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Drinkwater.ID,
+			ParameterID:            param28.ID,
+		})
+	}
+
+	// E coli Glass
+	// beforeValuesECO := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesECO := []float64{
+		0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+	}
+	datesECO := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesECO); i++ {
+		date, err := time.Parse("2006-01-02", datesECO[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeECO uint
+		// if beforeValuesECO[i] <= 1.00 {
+		// 	statusIDBeforeECO = status2.ID
+		// } else {
+		// 	statusIDBeforeECO = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesECO[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param8.ID,
+		// 	StandardID:             16,
+		// 	UnitID:                 Unit4.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeECO,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param8.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterECO uint
+		if afterValuesECO[i] <= 0.00 {
+			statusIDAfterECO = status2.ID
+		} else {
+			statusIDAfterECO = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesECO[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Drinkwater.ID,
+			ParameterID:            param12.ID,
+			StandardID:             16,
+			UnitID:                 Unit4.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterECO,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Drinkwater.ID,
+			ParameterID:            param12.ID,
+		})
+	}
+
+	// E coli Tank
+	// beforeValuesECOt := []float64{
+	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
+	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
+	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
+	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
+	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
+	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
+	// 	18, 2.9,
+	// }
+	afterValuesECOt := []float64{
+		0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+	}
+	datesECOt := []string{
+		"2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01",
+		"2022-05-01", "2022-06-01", "2022-07-01", "2022-08-01", "2022-09-01", "2022-10-01", "2022-11-01", "2022-12-01",
+		"2023-01-01", "2023-02-01", "2023-03-01", "2023-04-01", "2023-05-01", "2023-06-01", "2023-07-01", "2023-08-01",
+		"2023-09-01", "2023-10-01", "2023-11-01", "2023-12-01", "2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01",
+		"2024-05-01", "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01", "2024-11-01", "2024-12-01",
+	}
+	for i := 0; i < len(afterValuesECOt); i++ {
+		date, err := time.Parse("2006-01-02", datesECOt[i])
+		if err != nil {
+			fmt.Println("Parse date error:", err)
+			continue
+		}
+
+		// --- เช็คค่าก่อนบำบัด ---
+		// var statusIDBeforeECOt uint
+		// if beforeValuesECOt[i] <= 1.00 {
+		// 	statusIDBeforeECOt = status2.ID
+		// } else {
+		// 	statusIDBeforeECOt = status1.ID
+		// }
+		// // --- ก่อนบำบัด ---
+		// beforeRecord := entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	Data:                   beforeValuesECOt[i],
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param27.ID,
+		// 	StandardID:             16,
+		// 	UnitID:                 Unit4.ID,
+		// 	EmployeeID:             Admin.ID,
+		// 	StatusID:               statusIDBeforeECOt,
+		// }
+		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
+		// 	Date:                   date,
+		// 	BeforeAfterTreatmentID: Before.ID,
+		// 	EnvironmentID:          Tapwater.ID,
+		// 	ParameterID:            param27.ID,
+		// })
+		// --- เช็คค่าหลังบำบัด ---
+		var statusIDAfterECOt uint
+		if afterValuesECOt[i] <= 0.00 {
+			statusIDAfterECOt = status2.ID
+		} else {
+			statusIDAfterECOt = status1.ID
+		}
+		// --- หลังบำบัด ---
+		afterRecord := entity.EnvironmentalRecord{
+			Date:                   date,
+			Data:                   afterValuesECOt[i],
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Drinkwater.ID,
+			ParameterID:            param27.ID,
+			StandardID:             16,
+			UnitID:                 Unit4.ID,
+			EmployeeID:             Admin.ID,
+			StatusID:               statusIDAfterECOt,
+		}
+		db.FirstOrCreate(&afterRecord, entity.EnvironmentalRecord{
+			Date:                   date,
+			BeforeAfterTreatmentID: After.ID,
+			EnvironmentID:          Drinkwater.ID,
+			ParameterID:            param27.ID,
+		})
+	}
 
 	// Garbages
 	// recycledWaste
