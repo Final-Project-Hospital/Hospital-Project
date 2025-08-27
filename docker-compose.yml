@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  python-backend:
+    build: ./backend/model
+    container_name: python-backend
+    ports:
+      - "5000:5000"
+    networks:
+      - app-network
+
+  go-backend:
+    build: ./backend
+    container_name: go-backend
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - python-backend
+      - go-backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

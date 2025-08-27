@@ -216,38 +216,61 @@ const EmployeeEditModal: React.FC<Props> = ({
         okText: "บันทึก",
         cancelText: "ยกเลิก",
         onOk: async () => {
-          try {
-            const token = localStorage.getItem("token");
-            if (!token) return message.error("กรุณาเข้าสู่ระบบก่อน");
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return message.error("กรุณาเข้าสู่ระบบก่อน");
 
-            // ตัด roleID ออกถ้าเป็นบัญชีตัวเอง
-            const { roleID, ...rest } = values as any;
-            const safeValues = isSelf ? rest : values;
+    const formData = new FormData();
 
-            const formData = new FormData();
-            Object.entries(safeValues).forEach(([k, v]) => {
-              if (v !== undefined && v !== null && v !== "") formData.append(k, String(v));
-            });
-            if (uploadFile) formData.append("profile", uploadFile);
+    // ค่าพื้นฐาน
+    formData.append("firstName", String(values.firstName));
+    formData.append("lastName",  String(values.lastName));
+    formData.append("email",     String(values.email));
+    formData.append("phone",     String(values.phone));
 
-            setLoading(true);
-            await axios.put(`/api/employees/${employee.ID}`, formData, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "multipart/form-data",
-              },
-            });
+    // positionID (ต้องมีจากฟอร์ม)
+    if (values.positionID !== undefined && values.positionID !== null)
+      formData.append("positionID", String(values.positionID));
 
-            message.success("แก้ไขข้อมูลสำเร็จ");
-            onSuccess();
-            onClose();
-          } catch (err: any) {
-            const msg = err?.response?.data?.error || "แก้ไขข้อมูลไม่สำเร็จ";
-            message.error(msg);
-          } finally {
-            setLoading(false);
-          }
-        },
+    // password (optional)
+    if (values.password) formData.append("password", String(values.password));
+
+    // *** จุดสำคัญ: roleID ***
+    if (isSelf) {
+      // ซ่อน select อยู่ → จะไม่ได้อยู่ใน values
+      // ให้ใช้ role เดิมของตัวเองส่งกลับไป
+      const currentRoleId = employee?.Role?.ID;
+      if (currentRoleId != null) {
+        formData.append("roleID", String(currentRoleId));
+      }
+      // (ถ้าอยากให้ backend ยอมไม่ส่ง roleID ได้ ก็แก้ที่ controller ตามที่อธิบายก่อนหน้า)
+    } else {
+      // แก้ข้อมูลคนอื่น ต้องส่ง roleID จากฟอร์ม
+      formData.append("roleID", String(values.roleID));
+    }
+
+    // รูปโปรไฟล์ (optional)
+    if (uploadFile) formData.append("profile", uploadFile);
+
+    setLoading(true);
+    await axios.put(`/api/employees/${employee!.ID}`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // ปล่อยให้ browser เซ็ต Content-Type และ boundary เองจะปลอดภัยกว่า:
+        // "Content-Type": "multipart/form-data",
+      },
+    });
+
+    message.success("แก้ไขข้อมูลสำเร็จ");
+    onSuccess();
+    onClose();
+  } catch (err: any) {
+    const msg = err?.response?.data?.error || "แก้ไขข้อมูลไม่สำเร็จ";
+    message.error(msg);
+  } finally {
+    setLoading(false);
+  }
+},
       });
     } catch {
       // validate ไม่ผ่าน — ฟอร์มจะโชว์ error เอง

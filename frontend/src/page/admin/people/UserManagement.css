@@ -51,6 +51,120 @@
   border-radius: 0 0 25px 25px;
   color: white;
 } 
+/* ตารางจัดการบุคคล */
+.user-table-data {
+  background: white;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0px 2px 15px rgba(162, 162, 162, 0.5);
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 5;
+}
+
+.user-table-data .ant-table-thead > tr > th {
+  background-color: #e7ffff;
+  color: #777777;
+  font-weight: normal;
+  text-align: center;
+}
+
+.user-table-data .ant-table {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.user-table-data .ant-table-tbody > tr > td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* โค้งขอบหัวตาราง (thead) */
+.user-table-data .ant-table-thead > tr > th:first-child {
+  border-top-left-radius: 20px;
+}
+.user-table-data .ant-table-thead > tr > th:last-child {
+  border-top-right-radius: 20px;
+}
+
+/* ลบสีพื้นหลัง/active sort */
+.ant-table-thead .ant-table-column-sort {
+  background-color: #e7ffff !important;
+  color: #5D5D5D !important;
+  font-weight: bold !important;
+}
+.ant-table-thead > tr > th.ant-table-column-has-sorters:hover {
+  background-color: #e7ffff !important;
+  color: inherit !important;
+}
+.ant-table-column-sort .ant-table-column-sorter-up.active,
+.ant-table-column-sort .ant-table-column-sorter-down.active {
+  color: #ff6f61 !important;
+}
+
+/* ============ Responsive: Tablet ลงไป ============ */
+@media (max-width: 1025px) {
+  .user-table-data {
+    padding: 16px;
+  }
+}
+
+/* ============ Responsive: <= 768px ============ */
+@media (max-width: 768px) {
+  .user-table-data {
+    padding: 10px;
+    overflow-x: auto;               /* ให้เลื่อนแนวนอนได้เมื่อคอลัมน์เยอะ */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* บังคับความกว้างขั้นต่ำของตาราง เพื่อให้หัวคอลัมน์ไม่เบียด */
+  .user-table-data .ant-table {
+    min-width: 600px !important;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .user-table-data .ant-table-thead > tr > th,
+  .user-table-data .ant-table-tbody > tr > td {
+    white-space: nowrap !important; /* ไม่ตัดบรรทัด */
+    padding: 8px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* ============ Responsive: <= 480px ============ */
+@media (max-width: 480px) {
+  .user-table-data {
+    padding: 10px;
+  }
+
+  .user-table-data .ant-table {
+    min-width: 600px !important;
+  }
+
+  .user-table-data .ant-table-thead > tr > th,
+  .user-table-data .ant-table-tbody > tr > td {
+    padding: 6px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* ============ Responsive: จอเล็กมาก <= 376px ============ */
+@media (max-width: 376px) {
+  .user-table-data {
+    padding: 8px;
+  }
+
+  .user-table-data .ant-table {
+    min-width: 600px !important;
+  }
+
+  .user-table-data .ant-table-thead > tr > th,
+  .user-table-data .ant-table-tbody > tr > td {
+    padding: 5px !important;
+    font-size: 10px !important;
+  }
+}
 
 /* Responsive adjustments for small screens */
 @media (max-width: 640px) {

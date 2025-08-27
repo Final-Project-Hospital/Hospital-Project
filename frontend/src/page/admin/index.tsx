@@ -1,5 +1,5 @@
 // src/page/admin/AdminDashboard.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Row,
   Col,
@@ -11,32 +11,47 @@ import {
   Card,
   Segmented,
   Table,
+  Empty,
 } from "antd";
 import type { Color } from "antd/es/color-picker";
-import dayjs, { Dayjs } from "dayjs";
+import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import th_TH from "antd/es/date-picker/locale/th_TH";
 import ApexChart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import { Maximize2 } from "lucide-react";
 import { fetchPrediction } from "../../services/predict";
-import { PredictionOutput } from "../../interface/IPredict";
+import type { PredictionOutput } from "../../interface/IPredict";
 
+// ===== services =====
 import {
   GetEnvironmentalRecords,
   GetEnvironmentalEfficiency,
-  // @ts-ignore – ฟังก์ชันใหม่ใน service (ต้องมี)
   GetEnvironmentalMeta,
+  // types เดิม
   type RecordItem,
   type EfficiencyItem,
+  // ====== service ใหม่สำหรับ “ขยะ” ======
+  GetWasteMixByMonth,
+  GetRecycledRevenue,
+  GetWasteMix,
+  type WasteMixItem,
+  type RecycledRevenuePoint,
 } from "../../services/DashboardService";
 
+// ===== CSS =====
 import "./dashboard.css";
 import "./skydash-override.css";
 
-const { RangePicker } = DatePicker;
-const { Option } = Select;
+// ===== dayjs thai =====
+import "dayjs/locale/th";
+dayjs.locale("th");
 
-/* ===== meta types ===== */
+const { RangePicker } = DatePicker;
+
+/* =========================================================================
+   TYPES
+   ========================================================================= */
 interface ParamMeta {
   id: number;
   name: string;
@@ -47,47 +62,108 @@ interface ParamMeta {
 }
 interface EnvMeta {
   id: number;
-  name: string; // น้ำเสีย, น้ำดื่ม, น้ำประปา, ขยะ
+  name: string;
   params: ParamMeta[];
 }
 
-/* ===== helpers ===== */
-const formatThaiLabel = (
-  iso: string,
-  mode: "dateRange" | "month" | "year"
-) => {
-  const d = new Date(iso);
+type ViewType = "before" | "after" | "compare";
+type FilterMode = "dateRange" | "month" | "year";
+type StandardMode = "none" | "middle" | "range";
+
+/* =========================================================================
+   HELPERS
+   ========================================================================= */
+
+// key สำหรับ group ตามโหมด filter
+const keyFromDate = (iso: string, mode: FilterMode) => {
+  const d = dayjs(iso);
+  if (mode === "year") return d.startOf("month").format("YYYY-MM"); // รายเดือน
+  return d.format("YYYY-MM-DD"); // รายวัน
+};
+
+// label ภาษาไทยจาก key
+const labelFromKey = (key: string, mode: FilterMode) => {
   if (mode === "year") {
-    return d.toLocaleDateString("th-TH", { year: "numeric" });
+    return dayjs(key + "-01").toDate().toLocaleDateString("th-TH", {
+      month: "short",
+      year: "numeric",
+    });
   }
-  if (mode === "month") {
-    return d.toLocaleDateString("th-TH", { month: "short", year: "numeric" });
-  }
-  return d.toLocaleDateString("th-TH", {
+  return dayjs(key).toDate().toLocaleDateString("th-TH", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
 };
 
-type ViewType = "before" | "after" | "compare";
+// สร้างช่วงคีย์
+const createDateRangeKeys = (
+  start: Dayjs,
+  end: Dayjs,
+  mode: FilterMode
+): string[] => {
+  const keys: string[] = [];
+  if (mode === "dateRange") {
+    let cur = start.startOf("day");
+    const last = end.endOf("day");
+    while (cur.isBefore(last) || cur.isSame(last)) {
+      keys.push(cur.format("YYYY-MM-DD"));
+      cur = cur.add(1, "day");
+    }
+  } else {
+    let cur = start.startOf("month");
+    const last = end.endOf("month");
+    while (cur.isBefore(last) || cur.isSame(last)) {
+      keys.push(cur.format("YYYY-MM"));
+      cur = cur.add(1, "month");
+    }
+  }
+  return keys;
+};
 
-/* ===== main component ===== */
+// fixed number
+function dFix(n: any) {
+  const f = Number(n);
+  if (!Number.isFinite(f)) return 0;
+  return +f.toFixed(3);
+}
+
+// แปลง Dayjs -> YYYY-MM-DD
+function fmt(d?: Dayjs | null) {
+  return d ? d.format("YYYY-MM-DD") : "";
+}
+
+/* =========================================================================
+   MAIN
+   ========================================================================= */
 const AdminDashboard: React.FC = () => {
   // meta
   const [metas, setMetas] = useState<EnvMeta[]>([]);
+  const [metaLoading, setMetaLoading] = useState<boolean>(false);
+  const [metaError, setMetaError] = useState<string | null>(null);
+
+  // selected
   const [selectedEnvId, setSelectedEnvId] = useState<number | null>(null);
   const [selectedParamId, setSelectedParamId] = useState<number | null>(null);
 
-  // raw records + efficiency (optional)
+  // data
   const [rawData, setRawData] = useState<RecordItem[]>([]);
   const [efficiency, setEfficiency] = useState<EfficiencyItem[] | null>(null);
+  const [dataLoading, setDataLoading] = useState<boolean>(false);
+  const [dataError, setDataError] = useState<string | null>(null);
 
-  // ui states
+  // UI
   const [view, setView] = useState<ViewType>("compare");
   const [chartType, setChartType] = useState<"line" | "bar">("line");
   const [showModal, setShowModal] = useState(false);
   const [showAllAlerts, setShowAllAlerts] = useState(false);
+
+  // filters
+  const [filterMode, setFilterMode] = useState<FilterMode>("year");
+  const [dateRange, setDateRange] = useState<Dayjs[] | null>([
+    dayjs().startOf("year"),
+    dayjs().endOf("year"),
+  ]);
 
   // colors
   const [chartColor, setChartColor] = useState({
@@ -98,29 +174,68 @@ const AdminDashboard: React.FC = () => {
     efficiency: "#faad14",
   });
 
-  // date filters
-  const [filterMode, setFilterMode] = useState<"dateRange" | "month" | "year">(
-    "dateRange"
+  // prediction box
+  const [predictionData, setPredictionData] = useState<PredictionOutput | null>(
+    null
   );
-  const [dateRange, setDateRange] = useState<Dayjs[] | null>(null);
+  const [predictionLoading, setPredictionLoading] = useState<boolean>(false);
+  const [predictionError, setPredictionError] = useState<string | null>(null);
 
-  // load meta + records (ครั้งเดียว)
+  // ====== ขยะ (ใหม่) ======
+  const [wasteMix, setWasteMix] = useState<WasteMixItem[]>([]);
+  const [wasteLoading, setWasteLoading] = useState<boolean>(false);
+  const [wasteError, setWasteError] = useState<string | null>(null);
+
+  const [revenue, setRevenue] = useState<RecycledRevenuePoint[]>([]);
+  const [revenueLoading, setRevenueLoading] = useState<boolean>(false);
+  const [revenueError, setRevenueError] = useState<string | null>(null);
+  // ===== ข้อมูลรายได้รีไซเคิล (บาท) =====
+  const [revPoints, setRevPoints] = useState<RecycledRevenuePoint[]>([]);
+  const [revLoading, setRevLoading] = useState(false);
+
+  // เลือกเดือนสำหรับกราฟวงกลมสัดส่วนขยะ
+  const [wasteMonth, setWasteMonth] = useState<Dayjs | null>(dayjs().startOf("month"));
+
+
+  /* ======================= LOAD META ======================= */
   useEffect(() => {
+    let mounted = true;
     const run = async () => {
       try {
+        setMetaLoading(true);
+        setMetaError(null);
         const m = await GetEnvironmentalMeta();
+        if (!mounted) return;
         if (Array.isArray(m) && m.length > 0) {
           setMetas(m);
-          setSelectedEnvId(m[0].id);
-          if (m[0].params?.length) setSelectedParamId(m[0].params[0].id);
+          setSelectedEnvId((prev) => prev ?? m[0]?.id ?? null);
+          const firstParams = m[0]?.params ?? [];
+          if (firstParams.length > 0) {
+            setSelectedParamId((prev) => prev ?? firstParams[0].id ?? null);
+          }
+        } else {
+          setMetas([]);
         }
-      } catch (e) {}
+      } catch (e: any) {
+        if (!mounted) return;
+        setMetaError(e?.message || "โหลดเมตาไม่สำเร็จ");
+      } finally {
+        if (!mounted) return;
+        setMetaLoading(false);
+      }
+    };
+    run();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-      // default: ช่วงปีปัจจุบัน
-      const now = dayjs();
-      setDateRange([dayjs().startOf("year"), now.endOf("month")]);
+  /* ======================= LOAD DATA ======================= */
+  const loadData = useCallback(async () => {
+    try {
+      setDataLoading(true);
+      setDataError(null);
 
-      // records
       const rec = await GetEnvironmentalRecords({
         date: undefined,
         type: undefined,
@@ -128,24 +243,123 @@ const AdminDashboard: React.FC = () => {
       });
       setRawData(rec ?? []);
 
-      // efficiency
       const eff = await GetEnvironmentalEfficiency({
         date: undefined,
         type: undefined,
         param: undefined,
       });
       setEfficiency(eff ?? null);
-    };
-    run();
+    } catch (err: any) {
+      setDataError(err?.message || "โหลดข้อมูลไม่สำเร็จ");
+    } finally {
+      setDataLoading(false);
+    }
   }, []);
 
-  // derived
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      await loadData();
+      if (!mounted) return;
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [loadData]);
+
+  /* ======================= PREDICTION ======================= */
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setPredictionLoading(true);
+        setPredictionError(null);
+        const d = await fetchPrediction();
+        if (!mounted) return;
+        setPredictionData(d);
+      } catch (err: any) {
+        if (!mounted) return;
+        setPredictionError(err?.message || "คำนวณค่าทำนายไม่สำเร็จ");
+      } finally {
+        if (!mounted) return;
+        setPredictionLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  /* ======================= LOAD WASTE & REVENUE (ตามช่วงเวลา) ======================= */
+  const reloadWasteAndRevenue = useCallback(async () => {
+  // ===== WASTE MIX =====
+  // ===== WASTE MIX =====
+try {
+    setWasteLoading(true);
+    setWasteError(null);
+
+    if (wasteMonth) {
+      const m1 = wasteMonth.format("YYYY-MM");
+      let wm = await GetWasteMixByMonth(m1);
+      if (!Array.isArray(wm) || wm.length === 0) {
+        const m2 = wasteMonth.format("YYYY-MM-01");
+        wm = await GetWasteMixByMonth(m2);
+      }
+      setWasteMix(Array.isArray(wm) ? wm : []);
+    } else if (dateRange?.[0] && dateRange?.[1]) {
+      const start = dateRange[0].startOf("day").format("YYYY-MM-DD");
+      const end   = dateRange[1].endOf("day").format("YYYY-MM-DD");
+      const wm = await GetWasteMix({ type: "range", start, end });
+      setWasteMix(Array.isArray(wm) ? wm : []);
+    } else {
+      setWasteMix([]);
+    }
+  } catch (e: any) {
+    setWasteMix([]);
+    setWasteError(e?.message || "โหลดสัดส่วนขยะไม่สำเร็จ");
+  } finally {
+    setWasteLoading(false);
+  }
+  // ===== RECYCLED REVENUE =====
+  try {
+    setRevenueLoading(true);
+    setRevenueError(null);
+
+    const start = dateRange?.[0]?.startOf("day").format("YYYY-MM-DD");
+    const end   = dateRange?.[1]?.endOf("day").format("YYYY-MM-DD");
+
+    const rv = await GetRecycledRevenue({
+      type: "range",
+      start,
+      end,
+      group: "month",
+    });
+    setRevenue(Array.isArray(rv) ? rv : []);
+  } catch (e: any) {
+    setRevenue([]);
+    setRevenueError(e?.message || "โหลดรายได้รีไซเคิลไม่สำเร็จ");
+  } finally {
+    setRevenueLoading(false);
+  }
+}, [dateRange, filterMode, wasteMonth]);
+
+  useEffect(() => {
+    reloadWasteAndRevenue();
+  }, [reloadWasteAndRevenue, wasteMonth]);
+
+  /* ======================= DERIVED META ======================= */
   const selectedEnv = useMemo(
     () => metas.find((e) => e.id === selectedEnvId) || null,
     [metas, selectedEnvId]
   );
 
-  // เดดุปชื่อพารามิเตอร์ กันซ้ำชื่อ
+  // ดึง meta ของ param ที่เลือกจาก metas โดยตรง (ไม่พึ่ง list ที่ dedupe)
+  const globalParamMeta = useMemo(() => {
+    const env = metas.find((e) => e.id === selectedEnvId);
+    return env?.params.find((p) => p.id === selectedParamId) || null;
+  }, [metas, selectedEnvId, selectedParamId]);
+
+  // dedupe param ชื่อซ้ำ
   const paramList = useMemo(() => {
     const list = selectedEnv?.params ?? [];
     const seen = new Set<string>();
@@ -163,63 +377,243 @@ const AdminDashboard: React.FC = () => {
   );
 
   const isGarbage = selectedEnv?.name === "ขยะ";
-  const selectedParamName = selectedParamMeta?.name || "";
-  const selectedParamUnit = selectedParamMeta?.unit || "";
-  const stdMax = selectedParamMeta?.std_max ?? undefined;
+  const selectedParamName = globalParamMeta?.name ?? selectedParamMeta?.name ?? "";
+  const selectedParamUnit = globalParamMeta?.unit ?? selectedParamMeta?.unit ?? "";
 
-  // filter by date
-  const data = useMemo(() => {
+  // มาตรฐานล่าสุดจาก META
+  const stdMin = globalParamMeta?.std_min ?? selectedParamMeta?.std_min ?? 0;
+  const stdMiddle =
+    globalParamMeta?.std_middle ?? selectedParamMeta?.std_middle ?? 0;
+  const stdMax = globalParamMeta?.std_max ?? selectedParamMeta?.std_max ?? 0;
+
+  // เลือกโหมดเส้นมาตรฐาน
+  const { stdMode, stdLow, stdHigh, stdMid } = useMemo(() => {
+    if (stdMiddle && Number(stdMiddle) !== 0) {
+      return {
+        stdMode: "middle" as StandardMode,
+        stdLow: 0,
+        stdHigh: 0,
+        stdMid: Number(stdMiddle),
+      };
+    }
+    const hasLow = stdMin && Number(stdMin) !== 0;
+    const hasHigh = stdMax && Number(stdMax) !== 0;
+    if (hasLow || hasHigh) {
+      return {
+        stdMode: "range" as StandardMode,
+        stdLow: hasLow ? Number(stdMin) : 0,
+        stdHigh: hasHigh ? Number(stdMax) : 0,
+        stdMid: 0,
+      };
+    }
+    return { stdMode: "none" as StandardMode, stdLow: 0, stdHigh: 0, stdMid: 0 };
+  }, [stdMin, stdMiddle, stdMax]);
+
+  /* ======================= FILTERED DATA ======================= */
+  const filteredData = useMemo(() => {
     if (!dateRange || dateRange.length !== 2) return rawData;
     const [start, end] = dateRange;
+    const st = start?.toDate?.() ?? new Date();
+    const en = end?.toDate?.() ?? new Date();
     return (rawData || []).filter((d) => {
       const dd = new Date(d.date);
-      return dd >= start.toDate() && dd <= end.toDate();
+      return dd >= st && dd <= en;
     });
   }, [rawData, dateRange]);
 
-  // labels (TH)
-  const labels = useMemo(() => {
-    return Array.from(
-      new Set(
-        data
-          .filter((d) => d.parameter === selectedParamName)
-          .map((d) => formatThaiLabel(d.date, filterMode))
-      )
+  /* ======================= LABELS/KEYS ======================= */
+  const { labelsKeys, labels } = useMemo(() => {
+    const filtered = (filteredData || []).filter(
+      (d) => d.parameter === selectedParamName
     );
-  }, [data, selectedParamName, filterMode]);
 
-  // series (before / after)
-  const makeSeries = (treatment: "ก่อน" | "หลัง") => {
-    const tdata = data.filter(
-      (d) => d.parameter === selectedParamName && d.treatment === treatment
-    );
-    return labels.map((lb) => {
-      const f = tdata.find((d) => formatThaiLabel(d.date, filterMode) === lb);
-      return { x: lb, y: f ? Number(dFix(f.value)) : 0 };
+    const grouped: Record<string, true> = {};
+    filtered.forEach((d) => {
+      const k = keyFromDate(d.date, filterMode);
+      grouped[k] = true;
     });
-  };
 
-  // efficiency series
+    let allDates: string[] = [];
+
+    if (dateRange) {
+      if (filterMode === "year") {
+        const startYear = dateRange[0].year();
+        const endYear = dateRange[1].year();
+        allDates = Object.keys(grouped)
+          .filter((m) => {
+            const y = dayjs(m + "-01").year();
+            return y >= startYear && y <= endYear;
+          })
+          .sort();
+      } else if (filterMode === "month") {
+        allDates = createDateRangeKeys(
+          dateRange[0].startOf("month"),
+          dateRange[1].endOf("month"),
+          "dateRange"
+        );
+      } else {
+        allDates = createDateRangeKeys(dateRange[0], dateRange[1], "dateRange");
+      }
+    } else {
+      if (filterMode === "year") {
+        const months = Object.keys(grouped).sort();
+        if (months.length > 0) {
+          const latest = dayjs(months[months.length - 1] + "-01");
+          const startLimit = latest.subtract(3, "year").startOf("month");
+          allDates = months.filter((m) => {
+            const md = dayjs(m + "-01");
+            return md.isSame(startLimit) || md.isAfter(startLimit);
+          });
+        } else {
+          allDates = [];
+        }
+      } else if (filterMode === "month") {
+        const dailyKeys = Object.keys(grouped).sort();
+        if (dailyKeys.length > 0) {
+          const monthsSet = new Set(
+            dailyKeys.map((k) => dayjs(k).format("YYYY-MM"))
+          );
+          const months = Array.from(monthsSet).sort();
+          const latestMonth = dayjs(months[months.length - 1] + "-01");
+          allDates = createDateRangeKeys(
+            latestMonth.startOf("month"),
+            latestMonth.endOf("month"),
+            "dateRange"
+          );
+        } else {
+          allDates = [];
+        }
+      } else {
+        const dates = Object.keys(grouped).sort();
+        if (dates.length > 0) {
+          const latestDate = dayjs(dates[dates.length - 1]);
+          allDates = createDateRangeKeys(
+            latestDate.subtract(6, "day").startOf("day"),
+            latestDate.endOf("day"),
+            "dateRange"
+          );
+        } else {
+          allDates = [];
+        }
+      }
+    }
+
+    const niceLabels = allDates.map((k) => labelFromKey(k, filterMode));
+    return { labelsKeys: allDates, labels: niceLabels };
+  }, [filteredData, selectedParamName, filterMode, dateRange]);
+
+  /* ======================= SERIES HELPERS ======================= */
+  const makeSeries = useCallback(
+    (treatment: "ก่อน" | "หลัง") => {
+      const tdata = filteredData.filter(
+        (d) => d.parameter === selectedParamName && d.treatment === treatment
+      );
+      const buckets: Record<string, number[]> = {};
+      tdata.forEach((d) => {
+        const k = keyFromDate(d.date, filterMode);
+        if (!buckets[k]) buckets[k] = [];
+        buckets[k].push(Number(dFix(d.value)));
+      });
+
+      return labelsKeys.map((k, i) => {
+        const vals = buckets[k];
+        const avg =
+          vals && vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+        return { x: labels[i], y: avg };
+      });
+    },
+    [filteredData, selectedParamName, filterMode, labelsKeys, labels]
+  );
+
+  // points memo สำหรับใช้คำนวณเพดาน y
+  const beforeSeriesPoints = useMemo(() => makeSeries("ก่อน"), [makeSeries]);
+  const afterSeriesPoints = useMemo(() => makeSeries("หลัง"), [makeSeries]);
+
+  const getMaxY = (pts: Array<{ x: any; y: number }>) =>
+    pts.reduce((m, p) => Math.max(m, Number(p?.y || 0)), 0);
+
+  // hint เพดาน y-axis ของกราฟหลัก (รวมเส้นมาตรฐานภายหลังใน buildOpts)
+  const mainYMaxHint = useMemo(() => {
+    if (isGarbage) {
+      // ค่าเฉลี่ยต่อ key แล้วหา max
+      let max = 0;
+      labelsKeys.forEach((k) => {
+        const items = filteredData.filter(
+          (d) =>
+            d.parameter === selectedParamName &&
+            keyFromDate(d.date, filterMode) === k
+        );
+        const avg = items.length
+          ? items.reduce((s, it) => s + Number(dFix(it.value)), 0) / items.length
+          : 0;
+        if (avg > max) max = avg;
+      });
+      return max;
+    }
+    if (view === "before") return getMaxY(beforeSeriesPoints);
+    if (view === "after") return getMaxY(afterSeriesPoints);
+    return Math.max(getMaxY(beforeSeriesPoints), getMaxY(afterSeriesPoints));
+  }, [
+    isGarbage,
+    view,
+    labelsKeys,
+    filteredData,
+    selectedParamName,
+    filterMode,
+    beforeSeriesPoints,
+    afterSeriesPoints,
+  ]);
+
+  /* ======================= EFFICIENCY ======================= */
+  // คำนวณจาก avg ก่อน–หลัง ต่อ key
   const effSeriesData = useMemo(() => {
     if (isGarbage) return [];
-    const points =
-      (efficiency || [])
-        .filter((e) => e.parameter === selectedParamName)
-        .map((e) => ({
-          x: formatThaiLabel(e.date, filterMode),
-          y: +Number(e.efficiency).toFixed(2),
-        }))
-        .sort((a, b) => (a.x > b.x ? 1 : -1)) ?? [];
-    return [{ name: "Efficiency", data: points, color: chartColor.efficiency }];
-  }, [efficiency, isGarbage, selectedParamName, filterMode, chartColor.efficiency]);
 
-  // alert (front คำนวณง่าย ๆ)
+    const beforeBuckets: Record<string, number[]> = {};
+    const afterBuckets: Record<string, number[]> = {};
+
+    (filteredData || []).forEach((d) => {
+      if (d.parameter !== selectedParamName) return;
+      const k = keyFromDate(d.date, filterMode);
+      const v = Number(dFix(d.value));
+      if (d.treatment === "ก่อน") {
+        if (!beforeBuckets[k]) beforeBuckets[k] = [];
+        beforeBuckets[k].push(v);
+      } else if (d.treatment === "หลัง") {
+        if (!afterBuckets[k]) afterBuckets[k] = [];
+        afterBuckets[k].push(v);
+      }
+    });
+
+    const dataPoints = labelsKeys.map((k) => {
+      const bArr = beforeBuckets[k] || [];
+      const aArr = afterBuckets[k] || [];
+      const avgBefore =
+        bArr.length ? bArr.reduce((s, x) => s + x, 0) / bArr.length : 0;
+      const avgAfter =
+        aArr.length ? aArr.reduce((s, x) => s + x, 0) / aArr.length : 0;
+      const pct =
+        avgBefore > 0 ? Math.max(0, ((avgBefore - avgAfter) / avgBefore) * 100) : 0;
+      return +pct.toFixed(2);
+    });
+
+    return [{ name: "Efficiency", data: dataPoints, color: chartColor.efficiency }];
+  }, [
+    filteredData,
+    selectedParamName,
+    filterMode,
+    labelsKeys,
+    chartColor.efficiency,
+    isGarbage,
+  ]);
+
+  /* ======================= ALERTS ======================= */
   const alerts = useMemo(() => {
     const byMonth: Record<
       string,
       { values: number[]; param: string; unit: string }
     > = {};
-    data.forEach((d) => {
+    filteredData.forEach((d) => {
       const key = new Date(d.date).toLocaleDateString("th-TH", {
         year: "numeric",
         month: "2-digit",
@@ -231,138 +625,326 @@ const AdminDashboard: React.FC = () => {
     const rows = Object.entries(byMonth).map(([month, v]) => {
       const avg =
         v.values.reduce((a, b) => a + b, 0) / Math.max(v.values.length, 1);
+      const maxValue =
+        stdMode === "middle"
+          ? Number.POSITIVE_INFINITY
+          : stdHigh || Number.POSITIVE_INFINITY;
       return {
         month_year: month,
         parameter: v.param,
         average: avg,
-        max_value: stdMax ?? Number.POSITIVE_INFINITY,
+        max_value: maxValue,
         unit: v.unit,
       };
     });
     return rows.filter((r) => r.average > r.max_value);
-  }, [data, stdMax]);
+  }, [filteredData, stdMode, stdHigh]);
 
   const latestAlerts = alerts.slice(0, 3);
   const historyAlerts = alerts.slice(3);
-const [predictionData, setPredictionData] = useState<PredictionOutput | null>(null);
-  const [predictionLoading, setPredictionLoading] = useState<boolean>(true);
-  const [predictionError, setPredictionError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const getPrediction = async () => {
-      // เรียก API เฉพาะเมื่อหน้าเพจโหลดครั้งแรกเท่านั้น
-      try {
-        const data = await fetchPrediction();
-        setPredictionData(data);
-      } catch (err: any) {
-        setPredictionError(err.message);
-      } finally {
-        setPredictionLoading(false);
+  /* ======================= OPTIONS: หลัก + ขยะ ======================= */
+  const buildOpts = useCallback(
+    (
+      title: string,
+      showStandard = true,
+      yMaxHint?: number
+    ): ApexOptions => {
+      const isEfficiency =
+        /efficiency/i.test(title) || title.includes("ประสิทธิภาพ");
+
+      // annotations object เปล่า
+      const baseAnnotations: NonNullable<ApexOptions["annotations"]> = {
+        position: "front",
+        yaxis: [],
+        xaxis: [],
+        points: [],
+        texts: [],
+        images: [],
+      };
+
+      // เส้นมาตรฐาน (ไม่นับกราฟขยะ/ประสิทธิภาพ)
+      if (showStandard && !isEfficiency && !isGarbage && stdMode !== "none") {
+        if (stdMode === "middle" && stdMid) {
+          baseAnnotations.yaxis!.push({
+            y: Number(stdMid),
+            strokeDashArray: 6,
+            borderColor: "#FF6F61",
+            borderWidth: 1.5,
+            label: {
+              borderColor: "#FF6F61",
+              style: { color: "#fff", background: "#FF6F61" },
+              text: `มาตรฐาน ${Number(stdMid).toLocaleString("th-TH", {
+                maximumFractionDigits: 2,
+              })}${selectedParamUnit ? " " + selectedParamUnit : ""}`,
+            },
+          });
+        } else {
+          if (stdLow != null) {
+            baseAnnotations.yaxis!.push({
+              y: Number(stdLow),
+              strokeDashArray: 6,
+              borderColor: "rgba(255, 163, 24, 0.77)",
+              borderWidth: 1.5,
+              label: {
+                borderColor: "rgba(255, 163, 24, 0.77)",
+                style: {
+                  color: "#fff",
+                  background: "rgba(255, 163, 24, 0.77)",
+                },
+                text: `มาตรฐานต่ำสุด ${Number(stdLow).toLocaleString(
+                  "th-TH",
+                  { maximumFractionDigits: 2 }
+                )}${selectedParamUnit ? " " + selectedParamUnit : ""}`,
+              },
+            });
+          }
+          if (stdHigh != null) {
+            baseAnnotations.yaxis!.push({
+              y: Number(stdHigh),
+              strokeDashArray: 6,
+              borderColor: "#035303ff",
+              borderWidth: 1.5,
+              label: {
+                borderColor: "#035303ff",
+                style: { color: "#fff", background: "rgba(3,83,3,0.6)" },
+                text: `มาตรฐานสูงสุด ${Number(stdHigh).toLocaleString(
+                  "th-TH",
+                  { maximumFractionDigits: 2 }
+                )}${selectedParamUnit ? " " + selectedParamUnit : ""}`,
+              },
+            });
+          }
+        }
       }
-    };
-    // เรียกใช้ฟังก์ชันเมื่อ Component ถูก Mount
-    getPrediction();
-  }, []);
 
-  // graph height
+      // ค่ามาตรฐานที่ต้องเผื่อบนแกน Y
+      const stdCeil =
+        !isEfficiency && showStandard && !isGarbage
+          ? stdMode === "middle"
+            ? Number(stdMid || 0)
+            : Math.max(Number(stdHigh || 0), Number(stdLow || 0))
+          : 0;
+
+      const suggestedMax =
+        Math.max(Number(yMaxHint || 0), stdCeil) > 0
+          ? Math.max(Number(yMaxHint || 0), stdCeil) * 1.1
+          : undefined;
+
+      return {
+        chart: {
+          zoom: { enabled: true, type: "x", autoScaleYaxis: true },
+          foreColor: "#475467",
+          fontFamily: "Prompt, 'Prompt', sans-serif",
+          toolbar: { show: true },
+        },
+        grid: { borderColor: "#e5e7eb", strokeDashArray: 3 },
+        plotOptions: { bar: { columnWidth: "55%", borderRadius: 4 } },
+        dataLabels: { enabled: false },
+        stroke: { width: 2, curve: "smooth" },
+        markers: { size: 4.5, strokeWidth: 2, hover: { sizeOffset: 2 } },
+        xaxis: {
+          categories: labels,
+          tickPlacement: "on",
+          tickAmount: Math.min(labels.length, 6),
+          axisBorder: { show: false },
+          axisTicks: { show: false },
+          labels: {
+            show: true,
+            rotate: -45,
+            trim: true,
+            style: { fontSize: "12px", fontWeight: 500, colors: "#475467" },
+          },
+          tooltip: { enabled: false },
+        },
+        yaxis: {
+          forceNiceScale: true,
+          min: 0,
+          max: isEfficiency ? 100 : suggestedMax,
+          title: {
+            text: isEfficiency
+              ? "เปอร์เซ็น ( % )"
+              : selectedParamUnit
+              ? `หน่วย: ${selectedParamUnit}`
+              : "",
+          },
+          labels: {
+            show: true,
+            style: { fontSize: "12px", fontWeight: 500, colors: "#475467" },
+            formatter: (v: number) =>
+              isEfficiency
+                ? `${v.toFixed(2)}%`
+                : v.toLocaleString("th-TH", { maximumFractionDigits: 2 }),
+          },
+        },
+        annotations: baseAnnotations,
+        title: { text: title, align: "left" },
+        tooltip: {
+          x: {
+            formatter: (_: any, opt: any) =>
+              opt?.w?.globals?.categoryLabels?.[opt?.dataPointIndex] ?? "",
+          },
+          y: {
+            formatter: (v: number) =>
+              isEfficiency
+                ? `${v.toFixed(2)}%`
+                : `${Number(v).toLocaleString("th-TH", {
+                    maximumFractionDigits: 2,
+                  })}${selectedParamUnit ? " " + selectedParamUnit : ""}`,
+          },
+        },
+        legend: { position: "top" },
+      };
+    },
+    [labels, isGarbage, stdMode, stdLow, stdHigh, stdMid, selectedParamUnit]
+  );
+
+  /* ========= WASTE PIE OPTIONS ========= */
+  const wastePieSeries = useMemo(
+    () => (wasteMix || []).map((w) => Number(dFix(w.total || 0))),
+    [wasteMix]
+  );
+
+  const wastePieOptions: ApexOptions = useMemo(
+    () => ({
+      chart: { type: "pie" },
+      labels: (wasteMix || []).map((w) => w.parameter),
+      legend: { position: "bottom" },
+      tooltip: {
+        y: {
+          formatter: (val: number, opts) => {
+            const unit = wasteMix[opts.seriesIndex]?.unit || "kg";
+            return `${val.toLocaleString("th-TH", { maximumFractionDigits: 2 })} ${unit}`;
+          },
+        },
+      },
+      dataLabels: {
+        enabled: true,
+        formatter: (val: number) => `${val.toFixed(1)}%`,
+      },
+    }),
+    [wasteMix]
+  );
+
+  /* ========= RECYCLED REVENUE OPTIONS ========= */
+  const revenueSeries = useMemo(
+    () => [
+      {
+        name: "รายได้รีไซเคิล",
+        data: (revenue || []).map((r) => ({
+          x: r.period,
+          y: Number(dFix(r.total_sale)),
+        })),
+      },
+    ],
+    [revenue]
+  );
+
+  const revenueOpts: ApexOptions = useMemo(
+    () => ({
+      chart: { type: "line", zoom: { enabled: true } },
+      stroke: { curve: "smooth", width: 2 },
+      grid: { borderColor: "#e5e7eb", strokeDashArray: 3 },
+      xaxis: {
+        categories: (revenue || []).map((r) => r.period),
+        labels: {
+          rotate: -30,
+          trim: true,
+          style: { fontSize: "12px" },
+        },
+      },
+      yaxis: {
+        labels: {
+          formatter: (v) =>
+            `${v.toLocaleString("th-TH", { maximumFractionDigits: 0 })}`,
+        },
+        title: { text: "บาท" },
+      },
+      tooltip: {
+        y: {
+          formatter: (v: number) =>
+            `${v.toLocaleString("th-TH", { maximumFractionDigits: 2 })} บาท`,
+        },
+      },
+      legend: { position: "top" },
+    }),
+    [revenue]
+  );
+
+  /* ======================= GRAPH HEIGHT ======================= */
   const graphHeight = alerts.length > 0 ? 250 : 350;
 
-  // build apex options
-  const buildOpts = (title: string): ApexOptions => ({
-    chart: { zoom: { enabled: true, type: "x", autoScaleYaxis: true } },
-    dataLabels: { enabled: false },
-    stroke: { width: 2 },
-    markers: { size: 5, strokeWidth: 2, hover: { sizeOffset: 2 } },
-    xaxis: { categories: labels, labels: { rotate: -45 } },
-    yaxis: {
-      forceNiceScale: true,
-      min: 0,
-      title: { text: selectedParamUnit ? `หน่วย: ${selectedParamUnit}` : "" },
-    },
-    annotations:
-      !isGarbage && stdMax != null
-        ? {
-            yaxis: [
-              {
-                y: Number(stdMax),
-                strokeDashArray: 6,
-                borderColor: "#ff4d4f",
-                label: {
-                  borderColor: "#ff4d4f",
-                  style: { color: "#fff", background: "#ff4d4f" },
-                  text: `มาตรฐาน ${Number(stdMax).toLocaleString("th-TH")}${
-                    selectedParamUnit ? " " + selectedParamUnit : ""
-                  }`,
-                },
-              },
-            ],
-          }
-        : undefined,
-    title: { text: title, align: "left" },
-    tooltip: {
-      x: {
-        formatter: (_: any, opt: any) =>
-          opt?.w?.globals?.categoryLabels?.[opt?.dataPointIndex] ?? "",
-      },
-      y: {
-        formatter: (v: number) =>
-          v != null
-            ? `${Number(v).toLocaleString("th-TH", {
-                maximumFractionDigits: 2,
-              })}${selectedParamUnit ? " " + selectedParamUnit : ""}`
-            : "-",
-      },
-    },
-    legend: { position: "top" },
-  });
-
-  // utils
-  function dFix(n: any) {
-    const f = Number(n);
-    if (!Number.isFinite(f)) return 0;
-    return +f.toFixed(3);
-  }
-
+  /* ======================= RENDER ======================= */
   return (
     <>
       {/* Header */}
-        <div className="dashboard-title-header">
-          <div className="dashboard-title-inner">
-            <h1>การตรวจวัดคุณภาพสิ่งแวดล้อม</h1>
-            <p>
-              โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
-            </p>
-          </div>
+      <div
+        className="dashboard-title-header"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "20px",
+          gap: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        <div className="dashboard-title-inner">
+          <h1 style={{ marginBottom: "4px" }}>การตรวจวัดคุณภาพสิ่งแวดล้อม</h1>
+          <p style={{ margin: 0, color: "#555" }}>
+            โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
+          </p>
         </div>
-        <div style={{
-          backgroundColor: '#e6f7ff',
-          border: '1px solid #91d5ff',
-          padding: '20px',
-          borderRadius: '8px',
-          textAlign: 'center',
-          marginBottom: '16px'
-        }}>
-          <h3>ค่า pH น้ำเสียก่อนบำบัด ที่คาดการณ์สำหรับเดือนถัดไป</h3>
+
+        {/* Prediction Box */}
+        <div
+          style={{
+            backgroundColor: "#e6f7ff",
+            border: "1px solid #91d5ff",
+            padding: "12px 20px",
+            borderRadius: "8px",
+            textAlign: "center",
+            minWidth: "300px",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+          }}
+        >
+          <h3
+            style={{
+              margin: "0 0 8px",
+              fontSize: "1rem",
+              color: "#0050b3",
+              lineHeight: 1.2,
+            }}
+          >
+            ค่า pH น้ำเสียก่อนบำบัด (คาดการณ์เดือนถัดไป)
+          </h3>
           {predictionLoading ? (
-            <p>กำลังคำนวณ...</p>
+            <p style={{ margin: 0 }}>กำลังคำนวณ...</p>
           ) : predictionError ? (
-            <p style={{ color: 'red' }}>ไม่สามารถดึงค่าทำนายได้: {predictionError}</p>
+            <p style={{ margin: 0, color: "red" }}>
+              ไม่สามารถดึงค่าทำนายได้: {predictionError}
+            </p>
           ) : (
-            <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#0050b3' }}>
+            <div
+              style={{
+                fontSize: "1.8rem",
+                fontWeight: "bold",
+                color: "#0050b3",
+                margin: 0,
+              }}
+            >
               {predictionData?.prediction.toFixed(3)}
             </div>
           )}
         </div>
+      </div>
 
+      {/* Body */}
       <div className="content-wrapper">
         <div className="container-xl">
-          {/* Controls Card */}
+          {/* Controls */}
           <Card className="dashboard-controls-card" bordered={false}>
-            <Row
-              gutter={[12, 12]}
-              align="middle"
-              className="dashboard-controls-row"
-            >
+            <Row gutter={[12, 12]} align="middle" className="dashboard-controls-row">
               {/* Environment */}
               <Col xs={24} sm={12} md={8} lg={6}>
                 <label className="dashboard-label">สภาพแวดล้อม</label>
@@ -370,18 +952,18 @@ const [predictionData, setPredictionData] = useState<PredictionOutput | null>(nu
                   value={selectedEnvId ?? undefined}
                   onChange={(v) => {
                     setSelectedEnvId(v);
-
-                    // ✅ เลือก "พารามิเตอร์ตัวแรกหลัง dedupe"
                     const all = metas.find((e) => e.id === v)?.params ?? [];
                     const seen = new Set<string>();
                     const deduped = all.filter((p) => {
-                      const k = (p.name || "").replace(/\s+/g, " ").trim().toLowerCase();
+                      const k = (p.name || "")
+                        .replace(/\s+/g, " ")
+                        .trim()
+                        .toLowerCase();
                       if (seen.has(k)) return false;
                       seen.add(k);
                       return true;
                     });
                     setSelectedParamId(deduped.length ? deduped[0].id : null);
-
                     if (v && metas.find((e) => e.id === v)?.name === "ขยะ") {
                       setView("after");
                     }
@@ -389,13 +971,9 @@ const [predictionData, setPredictionData] = useState<PredictionOutput | null>(nu
                   className="dashboard-select"
                   placeholder="เลือกสภาพแวดล้อม"
                   allowClear={false}
-                >
-                  {metas.map((e) => (
-                    <Option key={e.id} value={e.id}>
-                      {e.name}
-                    </Option>
-                  ))}
-                </Select>
+                  loading={metaLoading}
+                  options={metas.map((e) => ({ value: e.id, label: e.name }))}
+                />
               </Col>
 
               {/* Parameter */}
@@ -407,16 +985,15 @@ const [predictionData, setPredictionData] = useState<PredictionOutput | null>(nu
                   className="dashboard-select"
                   placeholder="เลือกพารามิเตอร์"
                   allowClear={false}
-                >
-                  {paramList.map((p) => (
-                    <Option key={p.id} value={p.id}>
-                      {p.name}
-                    </Option>
-                  ))}
-                </Select>
+                  loading={metaLoading}
+                  options={paramList.map((p) => ({
+                    value: p.id,
+                    label: p.name,
+                  }))}
+                />
               </Col>
 
-              {/* View (hide compare for garbage) */}
+              {/* View */}
               {!isGarbage && (
                 <Col xs={24} sm={12} md={8} lg={6}>
                   <label className="dashboard-label">มุมมอง</label>
@@ -424,11 +1001,12 @@ const [predictionData, setPredictionData] = useState<PredictionOutput | null>(nu
                     value={view}
                     onChange={setView}
                     className="dashboard-select"
-                  >
-                    <Option value="before">น้ำก่อนบำบัด</Option>
-                    <Option value="after">น้ำหลังบำบัด</Option>
-                    <Option value="compare">เปรียบเทียบก่อน–หลัง</Option>
-                  </Select>
+                    options={[
+                      { label: "น้ำก่อนบำบัด", value: "before" },
+                      { label: "น้ำหลังบำบัด", value: "after" },
+                      { label: "เปรียบเทียบก่อน–หลัง", value: "compare" },
+                    ]}
+                  />
                 </Col>
               )}
 
@@ -504,7 +1082,7 @@ const [predictionData, setPredictionData] = useState<PredictionOutput | null>(nu
                 )}
               </Col>
 
-              {/* Chart type toggle (line/bar) */}
+              {/* Chart type */}
               <Col xs={24} md={8} lg={6}>
                 <label className="dashboard-label">ประเภทกราฟ</label>
                 <Segmented
@@ -580,21 +1158,32 @@ const [predictionData, setPredictionData] = useState<PredictionOutput | null>(nu
 
                 <ApexChart
                   key={
-                    String(selectedEnvId) + String(selectedParamId) + view + chartType
+                    String(selectedEnvId) +
+                    String(selectedParamId) +
+                    view +
+                    chartType
                   }
-                  options={buildOpts("")}
+                  options={buildOpts("", true, mainYMaxHint)}
                   series={
                     isGarbage
                       ? [
                           {
                             name: "ปริมาณ",
-                            data: labels.map((lb) => {
-                              const f = data.find(
+                            data: labelsKeys.map((k, i) => {
+                              const lb = labels[i];
+                              const items = filteredData.filter(
                                 (d) =>
                                   d.parameter === selectedParamName &&
-                                  formatThaiLabel(d.date, filterMode) === lb
+                                  keyFromDate(d.date, filterMode) === k
                               );
-                              return { x: lb, y: f ? Number(dFix(f.value)) : 0 };
+                              const avg =
+                                items.length > 0
+                                  ? items.reduce(
+                                      (s, it) => s + Number(dFix(it.value)),
+                                      0
+                                    ) / items.length
+                                  : 0;
+                              return { x: lb, y: avg };
                             }),
                             color: chartColor.after,
                           },
@@ -603,7 +1192,7 @@ const [predictionData, setPredictionData] = useState<PredictionOutput | null>(nu
                       ? [
                           {
                             name: "ก่อน",
-                            data: makeSeries("ก่อน"),
+                            data: beforeSeriesPoints,
                             color: chartColor.before,
                           },
                         ]
@@ -611,19 +1200,19 @@ const [predictionData, setPredictionData] = useState<PredictionOutput | null>(nu
                       ? [
                           {
                             name: "หลัง",
-                            data: makeSeries("หลัง"),
+                            data: afterSeriesPoints,
                             color: chartColor.after,
                           },
                         ]
                       : [
                           {
                             name: "ก่อน",
-                            data: makeSeries("ก่อน"),
+                            data: beforeSeriesPoints,
                             color: chartColor.compareBefore,
                           },
                           {
                             name: "หลัง",
-                            data: makeSeries("หลัง"),
+                            data: afterSeriesPoints,
                             color: chartColor.compareAfter,
                           },
                         ]
@@ -643,13 +1232,16 @@ const [predictionData, setPredictionData] = useState<PredictionOutput | null>(nu
                       <ColorPicker
                         value={chartColor.efficiency}
                         onChange={(c) =>
-                          setChartColor({ ...chartColor, efficiency: c.toHexString() })
+                          setChartColor({
+                            ...chartColor,
+                            efficiency: c.toHexString(),
+                          })
                         }
                       />
                     </div>
                   </div>
                   <ApexChart
-                    options={buildOpts("Efficiency (%)")}
+                    options={buildOpts("Efficiency (%)", false)}
                     series={effSeriesData}
                     type="bar"
                     height={graphHeight}
@@ -660,38 +1252,108 @@ const [predictionData, setPredictionData] = useState<PredictionOutput | null>(nu
           </Row>
 
           {/* Alerts */}
-          {alerts.length > 0 && (
-            <Card className="dashboard-alerts-card" bordered={false}>
-              <div className="dashboard-alerts-list">
-                {latestAlerts.map((a, i) => (
-                  <div key={i} className="dashboard-alert-item">
-                    <div>
-                      <b>เดือน:</b> {a.month_year}
+          <Card className="dashboard-alerts-card" bordered={false}>
+            {alerts.length > 0 ? (
+              <>
+                <div className="dashboard-alerts-list">
+                  {latestAlerts.map((a, i) => (
+                    <div key={i} className="dashboard-alert-item">
+                      <div>
+                        <b>เดือน:</b> {a.month_year}
+                      </div>
+                      <div>
+                        <b>พารามิเตอร์:</b> {a.parameter}
+                      </div>
+                      <div>
+                        <b>ค่าเฉลี่ย:</b> {a.average.toFixed(2)} {a.unit}
+                      </div>
+                      <div>
+                        <b>มาตรฐานสูงสุด:</b> {a.max_value.toFixed(2)} {a.unit}
+                      </div>
                     </div>
-                    <div>
-                      <b>พารามิเตอร์:</b> {a.parameter}
-                    </div>
-                    <div>
-                      <b>ค่าเฉลี่ย:</b> {a.average.toFixed(2)} {a.unit}
-                    </div>
-                    <div>
-                      <b>มาตรฐานสูงสุด:</b> {a.max_value.toFixed(2)} {a.unit}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {historyAlerts.length > 0 && (
-                <div style={{ marginTop: 12, textAlign: "right" }}>
-                  <Button type="link" onClick={() => setShowAllAlerts(true)}>
-                    ดูประวัติการแจ้งเตือนทั้งหมด
-                  </Button>
+                  ))}
                 </div>
-              )}
-            </Card>
-          )}
 
-          {/* Alerts History modal */}
+                {historyAlerts.length > 0 && (
+                  <div style={{ marginTop: 12, textAlign: "right" }}>
+                    <Button type="link" onClick={() => setShowAllAlerts(true)}>
+                      ดูประวัติการแจ้งเตือนทั้งหมด
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div style={{ padding: 12, color: "#666" }}>ไม่มีการแจ้งเตือน</div>
+            )}
+          </Card>
+
+          {/* ====== SECTION ใหม่: ถัดลงจากการ์ดแจ้งเตือน ====== */}
+          <Row gutter={[16, 16]} style={{ marginTop: 8 }}>
+            {/* ซ้าย: กราฟวงกลมสัดส่วนขยะ */}
+            <Col xs={24} lg={12}>
+  <div className="dashboard-graph-card card">
+    <div className="dashboard-head-graph-card" style={{ alignItems: "center" }}>
+      <div className="dashboard-head-title">สัดส่วนขยะ (ต่อเดือน)</div>
+      <div>
+        <DatePicker
+          picker="month"
+          value={wasteMonth}
+          onChange={(d) => setWasteMonth(d ? d.startOf("month") : null)}
+          locale={th_TH}
+          allowClear={false}
+          className="dashboard-picker"
+          placeholder="เลือกเดือน"
+        />
+      </div>
+    </div>
+
+    {wasteLoading ? (
+      <div style={{ padding: 16 }}>กำลังโหลด...</div>
+    ) : wasteError ? (
+      <div style={{ padding: 16, color: "red" }}>{wasteError}</div>
+    ) : wasteMix && wasteMix.length > 0 ? (
+      <ApexChart
+        options={wastePieOptions}
+        series={wastePieSeries}
+        type="pie"
+        height={360}
+      />
+    ) : (
+      <div style={{ padding: 16 }}>
+        <Empty description="ไม่มีข้อมูลสัดส่วนขยะของเดือนนี้" />
+      </div>
+    )}
+  </div>
+</Col>
+            {/* ขวา: กราฟรายได้รีไซเคิล */}
+            <Col xs={24} lg={12}>
+              <div className="dashboard-graph-card card">
+                <div className="dashboard-head-graph-card">
+                  <div className="dashboard-head-title">รายได้ขยะรีไซเคิล (บาท)</div>
+                </div>
+                {revenueLoading ? (
+                  <div style={{ padding: 16 }}>กำลังโหลด...</div>
+                ) : revenueError ? (
+                  <div style={{ padding: 16, color: "red" }}>
+                    {revenueError}
+                  </div>
+                ) : revenue && revenue.length > 0 ? (
+                  <ApexChart
+                    options={revenueOpts}
+                    series={revenueSeries}
+                    type="line"
+                    height={360}
+                  />
+                ) : (
+                  <div style={{ padding: 16 }}>
+                    <Empty description="ไม่มีข้อมูลรายได้รีไซเคิลในช่วงที่เลือก" />
+                  </div>
+                )}
+              </div>
+            </Col>
+          </Row>
+
+          {/* History modal */}
           <Modal
             open={showAllAlerts}
             title="ประวัติการแจ้งเตือนทั้งหมด"
@@ -716,12 +1378,14 @@ const [predictionData, setPredictionData] = useState<PredictionOutput | null>(nu
                 {
                   title: "ค่าเฉลี่ย",
                   dataIndex: "average",
-                  render: (v: number, r) => `${v.toFixed(2)} ${r.unit || ""}`.trim(),
+                  render: (v: number, r) =>
+                    `${v.toFixed(2)} ${r.unit || ""}`.trim(),
                 },
                 {
                   title: "มาตรฐานสูงสุด",
                   dataIndex: "max_value",
-                  render: (v: number, r) => `${v.toFixed(2)} ${r.unit || ""}`.trim(),
+                  render: (v: number, r) =>
+                    `${v.toFixed(2)} ${r.unit || ""}`.trim(),
                 },
                 { title: "สถานะ", dataIndex: "exceed" },
               ]}
@@ -737,36 +1401,56 @@ const [predictionData, setPredictionData] = useState<PredictionOutput | null>(nu
           >
             <ApexChart
               key={"modal" + view + chartType}
-              options={buildOpts("Zoom Chart")}
+              options={buildOpts("Zoom Chart", true, mainYMaxHint)}
               series={
                 isGarbage
                   ? [
                       {
                         name: "ปริมาณ",
-                        data: labels.map((lb) => {
-                          const f = data.find(
+                        data: labelsKeys.map((k, i) => {
+                          const lb = labels[i];
+                          const items = filteredData.filter(
                             (d) =>
                               d.parameter === selectedParamName &&
-                              formatThaiLabel(d.date, filterMode) === lb
+                              keyFromDate(d.date, filterMode) === k
                           );
-                          return { x: lb, y: f ? Number(dFix(f.value)) : 0 };
+                          const avg =
+                            items.length > 0
+                              ? items.reduce(
+                                  (s, it) => s + Number(dFix(it.value)),
+                                  0
+                                ) / items.length
+                              : 0;
+                          return { x: lb, y: avg };
                         }),
                         color: chartColor.after,
                       },
                     ]
                   : view === "before"
-                  ? [{ name: "ก่อน", data: makeSeries("ก่อน"), color: chartColor.before }]
+                  ? [
+                      {
+                        name: "ก่อน",
+                        data: beforeSeriesPoints,
+                        color: chartColor.before,
+                      },
+                    ]
                   : view === "after"
-                  ? [{ name: "หลัง", data: makeSeries("หลัง"), color: chartColor.after }]
+                  ? [
+                      {
+                        name: "หลัง",
+                        data: afterSeriesPoints,
+                        color: chartColor.after,
+                      },
+                    ]
                   : [
                       {
                         name: "ก่อน",
-                        data: makeSeries("ก่อน"),
+                        data: beforeSeriesPoints,
                         color: chartColor.compareBefore,
                       },
                       {
                         name: "หลัง",
-                        data: makeSeries("หลัง"),
+                        data: afterSeriesPoints,
                         color: chartColor.compareAfter,
                       },
                     ]

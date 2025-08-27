@@ -248,7 +248,7 @@ const getCurrentEmployeeId = (): number | null => {
       </div>
 
       <div className="px-4 sm:px-8 lg:px-12 max-w-screen-xl mx-auto">
-        <div className="bg-white rounded-xl shadow p-4 sm:p-6 overflow-x-auto">
+        <div className="user-table-data">
           <Table
             rowKey="ID"
             columns={columns}

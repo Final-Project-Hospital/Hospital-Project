@@ -2,6 +2,7 @@
 .container-xl {
   max-width: 1280px;
   margin: 0 auto;
+  padding: 0 16px; /* เพิ่ม padding ด้านข้าง สำหรับมือถือ */
 }
 
 .dashboard-title-header {
@@ -34,6 +35,9 @@
 }
 
 .dashboard-controls-row {
+  display: flex;
+  flex-wrap: wrap; /* ให้ control row ยืดหยุ่น */
+  gap: 12px;
   align-items: end;
 }
 
@@ -58,7 +62,6 @@
   background: #ffffff;
   padding: 14px;
   border-radius: 16px;
-  min-height: 450px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.06);
   display: flex;
   flex-direction: column;
@@ -66,6 +69,7 @@
 
 .dashboard-head-graph-card {
   display: flex;
+  flex-wrap: wrap; /* ให้ responsive */
   justify-content: space-between;
   align-items: center;
   gap: 12px;
@@ -83,6 +87,7 @@
 
 .dashboard-head-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
@@ -111,6 +116,12 @@
 }
 
 /* ===== Responsive ===== */
+@media (max-width: 1024px) {
+  .dashboard-graph-card {
+    min-height: 400px;
+  }
+}
+
 @media (max-width: 768px) {
   .dashboard-title-header h1 {
     font-size: 1.4rem;
@@ -123,4 +134,136 @@
   .dashboard-graph-card {
     min-height: 350px;
   }
+  .dashboard-controls-row {
+    flex-direction: column; /* stack controls */
+    align-items: stretch;
+  }
+  .dashboard-head-graph-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
 }
+
+@media (max-width: 480px) {
+  .dashboard-title-header {
+    padding: 16px 16px;
+  }
+  .dashboard-graph-card {
+    min-height: 300px;
+  }
+  .dashboard-alert-item {
+    min-width: 180px;
+  }
+}
+@media (max-width: 768px) {
+  .dashboard-graph-card { height: 350px; }
+}
+/* ---------- Layout fundamentals ---------- */
+.container-xl {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 12px; /* กันชิดขอบจอเล็ก */
+}
+
+/* หัวกรอบ */
+.dashboard-head-graph-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;              /* 💡 สำคัญ: ให้หัว+คอนโทรลตะกายลงบรรทัดใหม่ได้ */
+}
+
+/* ป้ายหัวเรื่อง */
+.dashboard-head-title {
+  background-image: linear-gradient(to right, #5DDFE2, #ffffff);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #1b4242;
+  flex: 1 1 auto;               /* กินพื้นที่ที่เหลือได้ */
+  min-width: 180px;
+}
+
+/* ปุ่ม/ColorPicker ด้านขวา */
+.dashboard-head-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;              /* 💡 กันล้น */
+}
+
+/* การ์ดกราฟ – อย่าบังคับความสูงคงที่ */
+.dashboard-graph-card {
+  background: #ffffff;
+  padding: 14px;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  min-height: unset;            /* ยกเลิกค่า fix เดิม */
+  height: auto;
+}
+
+/* จอเล็ก: อย่าบังคับความสูง */
+@media (max-width: 768px) {
+  .dashboard-graph-card { height: auto; }
+}
+
+/* ---------- AntD pickers/select ให้หดได้ ไม่ล้น ---------- */
+.dashboard-select,
+.dashboard-picker,
+.dashboard-segmented {
+  width: 100% !important;
+  min-width: 0;                 /* 💡 ให้ย่อได้ */
+}
+
+/* ---------- ApexCharts: ให้เต็มกว้าง บนจอเล็กลด label ---------- */
+.apexcharts-canvas, .apexcharts-svg {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* ---------- Alerts row ให้เลื่อนแนวนอนได้ ---------- */
+.dashboard-alerts-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-bottom: 4px;
+}
+
+/* ---------- Header block ---------- */
+.dashboard-title-header {
+  background: linear-gradient(90deg, #356768, #5AEEF0);
+  padding: 24px 28px;
+  border-radius: 16px;
+  color: white;
+  margin-bottom: 16px;
+}
+
+.dashboard-title-header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  text-shadow: 0 4px 5px #0000005a;
+}
+
+.dashboard-title-header p {
+  font-size: 0.95rem;
+  margin: 0;
+  line-height: 1.3;
+  color: #e0f7f7;
+}
+
+/* จอเล็ก: ลดฟอนต์, ให้เรียงแนวตั้ง */
+@media (max-width: 768px) {
+  .dashboard-title-header h1 { font-size: 1.4rem; text-align: left; }
+  .dashboard-title-header p  { font-size: 0.9rem; text-align: left; }
+}
+
+/* ⚠️ ลบ/รวม media เดิมที่ซ้ำกัน:
+   - เอาบรรทัด .dashboard-graph-card { height: 350px; } ออกเพื่อไม่ให้ fix สูงบนมือถือ */

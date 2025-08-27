@@ -88,10 +88,16 @@ func main() {
 		authorized.PATCH("/api/employees/:id/role", employee.UpdateRole)
 		authorized.PUT("/api/employees/:id", employee.UpdateEmployeeInfo)
 		authorized.DELETE("/api/employees/:id", employee.DeleteEmployee)
+		// Dashboard (สิ่งแวดล้อม)
 		authorized.GET("/dashboard/environmental", dashboard.GetEnvironmentalDashboard)
 		authorized.GET("/dashboard/environmental/efficiency", dashboard.GetEnvironmentalEfficiency)
 		authorized.GET("/dashboard/environmental/alerts", dashboard.GetEnvironmentalAlerts)
 		authorized.GET("/dashboard/environmental/meta", dashboard.GetEnvironmentalMeta)
+
+		// Waste dashboard
+		authorized.GET("/waste-mix", dashboard.GetWasteMix)                 // กราฟวงกลมสัดส่วนขยะ
+		authorized.GET("/recycled/revenue", dashboard.GetRecycledRevenue)   // กราฟรายได้รีไซเคิล
+		authorized.GET("/waste-mix/month", dashboard.GetWasteMixByMonth)
 		authorized.GET("/api/me", func(c *gin.Context) {
 			// ดึง user id จาก context (ลองหลาย key ที่พบบ่อย)
 			var id uint

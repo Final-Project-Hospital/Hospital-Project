@@ -104,82 +104,106 @@ func GetEmployees(c *gin.Context) {
 
 // UpdateEmployeeInfo แก้ไขข้อมูลพนักงาน (PUT /api/employees/:id)
 func UpdateEmployeeInfo(c *gin.Context) {
-	id := c.Param("id")
-	db := config.DB()
+    id := c.Param("id")
+    db := config.DB()
 
-	// รับ multipart form
-	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form data"})
-		return
-	}
+    if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form data"})
+        return
+    }
 
-	form := c.Request.MultipartForm
-	firstName := form.Value["firstName"]
-	lastName := form.Value["lastName"]
-	email := form.Value["email"]
-	phone := form.Value["phone"]
-	password := form.Value["password"] // new password
-	positionID := form.Value["positionID"]
-	roleID := form.Value["roleID"]
+    form := c.Request.MultipartForm
+    firstName := firstOrEmpty(form.Value["firstName"])
+    lastName  := firstOrEmpty(form.Value["lastName"])
+    email     := firstOrEmpty(form.Value["email"])
+    phone     := firstOrEmpty(form.Value["phone"])
+    password  := firstOrEmpty(form.Value["password"])
+    posRaw    := firstOrEmpty(form.Value["positionID"]) // optional
+    roleRaw   := firstOrEmpty(form.Value["roleID"])     // optional (กรณีแก้ตัวเอง)
 
-	if len(firstName) == 0 || len(lastName) == 0 || len(email) == 0 || len(phone) == 0 || len(positionID) == 0 || len(roleID) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
-		return
-	}
+    if firstName == "" || lastName == "" || email == "" || phone == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
+        return
+    }
 
-	var employee entity.Employee
-	if err := db.First(&employee, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Employee not found"})
-		return
-	}
+    var employee entity.Employee
+    if err := db.First(&employee, id).Error; err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Employee not found"})
+        return
+    }
 
-	// แปลง ID จากฟอร์ม
-	posID, _ := strconv.ParseUint(positionID[0], 10, 32)
-	roleIDVal, _ := strconv.ParseUint(roleID[0], 10, 32)
+    // ใครเป็นคนยิง request
+    reqID, hasReq := getRequesterID(c)
 
-	// ❗ กันเปลี่ยน role ตัวเองผ่านหน้าแก้ไข
-	if reqID, ok := getRequesterID(c); ok {
-		if uint64(reqID) == uint64(employee.ID) && uint(roleIDVal) != employee.RoleID {
-			c.JSON(http.StatusForbidden, gin.H{"error": "You cannot change your own role"})
-			return
-		}
-	}
+    // ตั้งค่าพื้นฐาน
+    employee.FirstName = firstName
+    employee.LastName  = lastName
+    employee.Email     = email
+    employee.Phone     = phone
 
-	employee.FirstName = firstName[0]
-	employee.LastName = lastName[0]
-	employee.Email = email[0]
-	employee.Phone = phone[0]
-	employee.PositionID = uint(posID)
-	// อนุญาตแก้ role ของ "คนอื่น" ได้ (เราบล็อกกรณีตัวเองไว้แล้ว)
-	employee.RoleID = uint(roleIDVal)
+    // positionID: มีค่าส่งมาก็อัปเดต ไม่ส่งมาก็ใช้ของเดิม
+    if posRaw != "" {
+        if posID64, err := strconv.ParseUint(posRaw, 10, 32); err == nil {
+            employee.PositionID = uint(posID64)
+        }
+    }
 
-	// เปลี่ยน password ถ้ามีการกรอกใหม่ (แนะนำให้ hash)
-	if len(password) > 0 && password[0] != "" {
-		hashed, err := bcrypt.GenerateFromPassword([]byte(password[0]), bcrypt.DefaultCost)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถเข้ารหัสรหัสผ่านได้"})
-			return
-		}
-		employee.Password = string(hashed)
-	}
+    // roleID: 
+    // - ถ้ากำลังแก้ "ตัวเอง": อนุญาตให้ไม่ส่ง roleID ได้ (คงค่าเดิม)
+    // - ถ้ากำลังแก้ "คนอื่น": ต้องมี roleID (กันลืม)
+    if roleRaw == "" {
+        if !hasReq || uint64(reqID) != uint64(employee.ID) {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Missing roleID"})
+            return
+        }
+        // เป็นการแก้ตัวเอง → คง Role เดิมไว้
+    } else {
+        roleIDVal, err := strconv.ParseUint(roleRaw, 10, 32)
+        if err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid roleID"})
+            return
+        }
+        // กันเปลี่ยน role ตัวเอง
+        if hasReq && uint64(reqID) == uint64(employee.ID) && uint(roleIDVal) != employee.RoleID {
+            c.JSON(http.StatusForbidden, gin.H{"error": "You cannot change your own role"})
+            return
+        }
+        employee.RoleID = uint(roleIDVal)
+    }
 
-	// ถ้ามีรูปใหม่แนบ
-	file, err := c.FormFile("profile")
-	if err == nil {
-		path := "uploads/profile/" + file.Filename
-		if err := c.SaveUploadedFile(file, path); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปโหลดไฟล์ไม่สำเร็จ"})
-			return
-		}
-		employee.Profile = path
-	}
+    // เปลี่ยนรหัสผ่านถ้ามี
+    if password != "" {
+        if hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost); err == nil {
+            employee.Password = string(hashed)
+        } else {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถเข้ารหัสรหัสผ่านได้"})
+            return
+        }
+    }
 
-	if err := db.Save(&employee).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถอัปเดตข้อมูลได้"})
-		return
-	}
+    if file, err := c.FormFile("profile"); err == nil {
+        path := "uploads/profile/" + file.Filename
+        if err := c.SaveUploadedFile(file, path); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปโหลดไฟล์ไม่สำเร็จ"})
+            return
+        }
+        employee.Profile = path
+    }
 
-	c.JSON(http.StatusOK, gin.H{"message": "แก้ไขข้อมูลสำเร็จ"})
+    if err := db.Save(&employee).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถอัปเดตข้อมูลได้"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"message": "แก้ไขข้อมูลสำเร็จ"})
+}
+
+// helper เล็กๆ
+func firstOrEmpty(arr []string) string {
+    if len(arr) > 0 {
+        return arr[0]
+    }
+    return ""
 }
 
 // DeleteEmployee ลบพนักงาน (DELETE /api/employees/:id)

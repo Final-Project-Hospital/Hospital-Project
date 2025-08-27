@@ -1,6 +1,6 @@
 // src/component/admin/Navbar.tsx
 import { useState, useEffect } from 'react';
-import { AiOutlineMenu } from 'react-icons/ai';
+// import { AiOutlineMenu } from 'react-icons/ai';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import { TooltipComponent } from '@syncfusion/ej2-react-popups';
 import avatar from '../../assets/admin/avatar3.png';
@@ -10,6 +10,8 @@ import  Notification  from './report/Notification';
 import { useStateContext } from '../../contexts/ContextProvider';
 import { GetUserDataByUserID } from '../../services/httpLogin';
 import { useRefresh } from './RefreshContext';
+// import Logo from '../../assets/SUTH Logo.png';
+// import { Link } from 'react-router-dom';
 
 const NavButton = ({ title, customFunc, icon, color, dotColor }: any) => (
   <TooltipComponent content={title} position="BottomCenter">
@@ -31,8 +33,8 @@ const NavButton = ({ title, customFunc, icon, color, dotColor }: any) => (
 const Navbar = () => {
   const {
     currentColor,
-    activeMenu,
-    setActiveMenu,
+    // activeMenu,
+    // setActiveMenu,
     handleClick,
     isClicked,
     setScreenSize,
@@ -42,6 +44,7 @@ const Navbar = () => {
   const [fullName, setFullName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [profileImg, setProfileImg] = useState<string>(avatar);//@ts-ignore
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState<boolean>(true);
 
   const { refreshKey } = useRefresh();
@@ -87,24 +90,31 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    if (screenSize !== undefined && screenSize <= 900) {
-      setActiveMenu(false);
-    } else {
-      setActiveMenu(true);
-    }
-  }, [screenSize, setActiveMenu]);
+    // if (screenSize !== undefined && screenSize <= 900) {
+    //   setActiveMenu(false);
+    // } else {
+    //   setActiveMenu(true);
+    // }
+  }, []);
 
-  const handleActiveMenu = () => setActiveMenu(!activeMenu);
+  // const handleActiveMenu = () => setActiveMenu(!activeMenu);
 
   return (
     <div className="flex justify-between p-2 md:ml-6 md:mr-6 relative">
-      <NavButton
+          {/* <div className="flex items-center">
+            <Link 
+              to= "/admin"
+            >
+              <img src={Logo} alt="Logo" className="h-10 w-auto" />
+            </Link>
+          </div> */}
+      {/* <NavButton
         title="Menu"
         customFunc={handleActiveMenu}
         color={currentColor}
         icon={<AiOutlineMenu />}
-      />
-      <div className="flex">
+      /> */}
+      <div className="flex ml-auto">
         <NavButton
           title="Notification"
           dotColor="rgb(254, 201, 15)"
