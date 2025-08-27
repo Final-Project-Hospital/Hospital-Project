@@ -112,7 +112,7 @@ const EnvironmentBlock = () => {
 
   return (
     <div>
-      <div className="w-title-header">
+      <div className="w-title-header mt-16 md:mt-0">
         <div>
           <h1>นํ้าดื่ม</h1>
           <p>
