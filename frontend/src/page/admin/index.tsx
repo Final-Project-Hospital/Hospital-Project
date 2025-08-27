@@ -70,6 +70,9 @@ type ViewType = "before" | "after" | "compare";
 type FilterMode = "dateRange" | "month" | "year";
 type StandardMode = "none" | "middle" | "range";
 
+// แยกโหมดช่วงเวลาของกราฟ "รายได้รีไซเคิล"
+type RevFilterMode = "dateRange" | "month" | "year";
+
 /* =========================================================================
    HELPERS
    ========================================================================= */
@@ -158,7 +161,7 @@ const AdminDashboard: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [showAllAlerts, setShowAllAlerts] = useState(false);
 
-  // filters
+  // filters (ฝั่งน้ำ)
   const [filterMode, setFilterMode] = useState<FilterMode>("year");
   const [dateRange, setDateRange] = useState<Dayjs[] | null>([
     dayjs().startOf("year"),
@@ -186,16 +189,22 @@ const AdminDashboard: React.FC = () => {
   const [wasteLoading, setWasteLoading] = useState<boolean>(false);
   const [wasteError, setWasteError] = useState<string | null>(null);
 
+  // ===== รายได้รีไซเคิล =====
   const [revenue, setRevenue] = useState<RecycledRevenuePoint[]>([]);
   const [revenueLoading, setRevenueLoading] = useState<boolean>(false);
   const [revenueError, setRevenueError] = useState<string | null>(null);
-  // ===== ข้อมูลรายได้รีไซเคิล (บาท) =====
-  const [revPoints, setRevPoints] = useState<RecycledRevenuePoint[]>([]);
-  const [revLoading, setRevLoading] = useState(false);
+
+  // ช่วงเวลาของ "กราฟรายได้" แยกจากฝั่งน้ำ
+  const [revFilterMode, setRevFilterMode] = useState<RevFilterMode>("year");
+  const [revRange, setRevRange] = useState<[Dayjs | null, Dayjs | null]>([
+    dayjs().startOf("year"),
+    dayjs().endOf("year"),
+  ]);
 
   // เลือกเดือนสำหรับกราฟวงกลมสัดส่วนขยะ
-  const [wasteMonth, setWasteMonth] = useState<Dayjs | null>(dayjs().startOf("month"));
-
+  const [wasteMonth, setWasteMonth] = useState<Dayjs | null>(
+    dayjs().startOf("month")
+  );
 
   /* ======================= LOAD META ======================= */
   useEffect(() => {
@@ -230,7 +239,7 @@ const AdminDashboard: React.FC = () => {
     };
   }, []);
 
-  /* ======================= LOAD DATA ======================= */
+  /* ======================= LOAD DATA (น้ำ) ======================= */
   const loadData = useCallback(async () => {
     try {
       setDataLoading(true);
@@ -290,58 +299,74 @@ const AdminDashboard: React.FC = () => {
     };
   }, []);
 
-  /* ======================= LOAD WASTE & REVENUE (ตามช่วงเวลา) ======================= */
+  /* ======================= LOAD WASTE & REVENUE ======================= */
   const reloadWasteAndRevenue = useCallback(async () => {
-  // ===== WASTE MIX =====
-  // ===== WASTE MIX =====
-try {
-    setWasteLoading(true);
-    setWasteError(null);
+    // ===== WASTE MIX =====
+    try {
+      setWasteLoading(true);
+      setWasteError(null);
 
-    if (wasteMonth) {
-      const m1 = wasteMonth.format("YYYY-MM");
-      let wm = await GetWasteMixByMonth(m1);
-      if (!Array.isArray(wm) || wm.length === 0) {
-        const m2 = wasteMonth.format("YYYY-MM-01");
-        wm = await GetWasteMixByMonth(m2);
+      if (wasteMonth) {
+        const m1 = wasteMonth.format("YYYY-MM");
+        let wm = await GetWasteMixByMonth(m1);
+        if (!Array.isArray(wm) || wm.length === 0) {
+          const m2 = wasteMonth.format("YYYY-MM-01");
+          wm = await GetWasteMixByMonth(m2);
+        }
+        setWasteMix(Array.isArray(wm) ? wm : []);
+      } else if (dateRange?.[0] && dateRange?.[1]) {
+        const start = dateRange[0].startOf("day").format("YYYY-MM-DD");
+        const end = dateRange[1].endOf("day").format("YYYY-MM-DD");
+        const wm = await GetWasteMix({ type: "range", start, end });
+        setWasteMix(Array.isArray(wm) ? wm : []);
+      } else {
+        setWasteMix([]);
       }
-      setWasteMix(Array.isArray(wm) ? wm : []);
-    } else if (dateRange?.[0] && dateRange?.[1]) {
-      const start = dateRange[0].startOf("day").format("YYYY-MM-DD");
-      const end   = dateRange[1].endOf("day").format("YYYY-MM-DD");
-      const wm = await GetWasteMix({ type: "range", start, end });
-      setWasteMix(Array.isArray(wm) ? wm : []);
-    } else {
+    } catch (e: any) {
       setWasteMix([]);
+      setWasteError(e?.message || "โหลดสัดส่วนขยะไม่สำเร็จ");
+    } finally {
+      setWasteLoading(false);
     }
-  } catch (e: any) {
-    setWasteMix([]);
-    setWasteError(e?.message || "โหลดสัดส่วนขยะไม่สำเร็จ");
-  } finally {
-    setWasteLoading(false);
-  }
-  // ===== RECYCLED REVENUE =====
-  try {
-    setRevenueLoading(true);
-    setRevenueError(null);
 
-    const start = dateRange?.[0]?.startOf("day").format("YYYY-MM-DD");
-    const end   = dateRange?.[1]?.endOf("day").format("YYYY-MM-DD");
+    // ===== RECYCLED REVENUE (ใช้ช่วงของตัวเอง) =====
+    try {
+      setRevenueLoading(true);
+      setRevenueError(null);
 
-    const rv = await GetRecycledRevenue({
-      type: "range",
-      start,
-      end,
-      group: "month",
-    });
-    setRevenue(Array.isArray(rv) ? rv : []);
-  } catch (e: any) {
-    setRevenue([]);
-    setRevenueError(e?.message || "โหลดรายได้รีไซเคิลไม่สำเร็จ");
-  } finally {
-    setRevenueLoading(false);
-  }
-}, [dateRange, filterMode, wasteMonth]);
+      let startDay: string;
+      let endDay: string;
+
+      if (revFilterMode === "dateRange") {
+        const s = revRange?.[0] ?? dayjs().startOf("year");
+        const e = revRange?.[1] ?? dayjs().endOf("year");
+        startDay = s.startOf("day").format("YYYY-MM-DD");
+        endDay = e.endOf("day").format("YYYY-MM-DD");
+      } else if (revFilterMode === "month") {
+        const m = (revRange?.[0] ?? dayjs().startOf("month")).startOf("month");
+        startDay = m.format("YYYY-MM-DD");
+        endDay = m.endOf("month").format("YYYY-MM-DD");
+      } else {
+        const s = (revRange?.[0] ?? dayjs().startOf("year")).startOf("year");
+        const e = (revRange?.[1] ?? dayjs().endOf("year")).endOf("year");
+        startDay = s.format("YYYY-MM-DD");
+        endDay = e.format("YYYY-MM-DD");
+      }
+
+      const rv = await GetRecycledRevenue({
+        type: "range",
+        start: startDay,
+        end: endDay,
+        group: "month",
+      });
+      setRevenue(Array.isArray(rv) ? rv : []);
+    } catch (e: any) {
+      setRevenue([]);
+      setRevenueError(e?.message || "โหลดรายได้รีไซเคิลไม่สำเร็จ");
+    } finally {
+      setRevenueLoading(false);
+    }
+  }, [dateRange, wasteMonth, revRange, revFilterMode]);
 
   useEffect(() => {
     reloadWasteAndRevenue();
@@ -377,8 +402,10 @@ try {
   );
 
   const isGarbage = selectedEnv?.name === "ขยะ";
-  const selectedParamName = globalParamMeta?.name ?? selectedParamMeta?.name ?? "";
-  const selectedParamUnit = globalParamMeta?.unit ?? selectedParamMeta?.unit ?? "";
+  const selectedParamName =
+    globalParamMeta?.name ?? selectedParamMeta?.name ?? "";
+  const selectedParamUnit =
+    globalParamMeta?.unit ?? selectedParamMeta?.unit ?? "";
 
   // มาตรฐานล่าสุดจาก META
   const stdMin = globalParamMeta?.std_min ?? selectedParamMeta?.std_min ?? 0;
@@ -409,17 +436,78 @@ try {
     return { stdMode: "none" as StandardMode, stdLow: 0, stdHigh: 0, stdMid: 0 };
   }, [stdMin, stdMiddle, stdMax]);
 
-  /* ======================= FILTERED DATA ======================= */
+  /* ======================= FILTERED DATA (น้ำ) ======================= */
   const filteredData = useMemo(() => {
-    if (!dateRange || dateRange.length !== 2) return rawData;
-    const [start, end] = dateRange;
-    const st = start?.toDate?.() ?? new Date();
-    const en = end?.toDate?.() ?? new Date();
-    return (rawData || []).filter((d) => {
-      const dd = new Date(d.date);
-      return dd >= st && dd <= en;
-    });
-  }, [rawData, dateRange]);
+    // กรองตามช่วงวันก่อน
+    let base = rawData;
+    if (dateRange && dateRange.length === 2) {
+      const [start, end] = dateRange;
+      const st = start?.toDate?.() ?? new Date();
+      const en = end?.toDate?.() ?? new Date();
+      base = (rawData || []).filter((d) => {
+        const dd = new Date(d.date);
+        return dd >= st && dd <= en;
+      });
+    }
+
+    // กรองตาม "สภาพแวดล้อม" (เทียบจากชื่อ)
+    const envName = selectedEnv?.name?.trim().toLowerCase() || "";
+    if (envName) {
+      base = base.filter(
+        (d) => (d.environment || "").trim().toLowerCase() === envName
+      );
+    }
+
+    // กรองตาม "พารามิเตอร์" ที่เลือก
+    const paramName = (selectedParamName || "").trim().toLowerCase();
+    if (paramName) {
+      base = base.filter(
+        (d) => (d.parameter || "").trim().toLowerCase() === paramName
+      );
+    }
+
+    return base;
+  }, [rawData, dateRange, selectedEnv, selectedParamName]);
+
+  // เดา view และขยายช่วงอัตโนมัติถ้ากรองแล้วว่าง
+  useEffect(() => {
+    if (isGarbage) {
+      setView("after");
+      return;
+    }
+    const hasBefore = (filteredData || []).some((d) => d.treatment === "ก่อน");
+    const hasAfter = (filteredData || []).some((d) => d.treatment === "หลัง");
+    if (hasBefore && hasAfter) setView("compare");
+    else if (hasAfter) setView("after");
+    else if (hasBefore) setView("before");
+  }, [isGarbage, selectedEnvId, selectedParamId, filteredData]);
+
+  useEffect(() => {
+    if ((filteredData || []).length > 0) return;
+
+    const envName = selectedEnv?.name?.trim().toLowerCase() || "";
+    const paramName = (selectedParamName || "").trim().toLowerCase();
+    const scope = (rawData || []).filter(
+      (d) =>
+        (d.environment || "").trim().toLowerCase() === envName &&
+        (d.parameter || "").trim().toLowerCase() === paramName
+    );
+    if (scope.length === 0) return;
+
+    const minD = dayjs(
+      scope.reduce(
+        (m, x) => (new Date(x.date) < m ? new Date(x.date) : m),
+        new Date(scope[0].date)
+      )
+    );
+    const maxD = dayjs(
+      scope.reduce(
+        (m, x) => (new Date(x.date) > m ? new Date(x.date) : m),
+        new Date(scope[0].date)
+      )
+    );
+    setDateRange([minD.startOf("day"), maxD.endOf("day")]);
+  }, [filteredData, rawData, selectedEnv, selectedParamName]);
 
   /* ======================= LABELS/KEYS ======================= */
   const { labelsKeys, labels } = useMemo(() => {
@@ -532,10 +620,9 @@ try {
   const getMaxY = (pts: Array<{ x: any; y: number }>) =>
     pts.reduce((m, p) => Math.max(m, Number(p?.y || 0)), 0);
 
-  // hint เพดาน y-axis ของกราฟหลัก (รวมเส้นมาตรฐานภายหลังใน buildOpts)
+  // hint เพดาน y-axis ของกราฟหลัก
   const mainYMaxHint = useMemo(() => {
     if (isGarbage) {
-      // ค่าเฉลี่ยต่อ key แล้วหา max
       let max = 0;
       labelsKeys.forEach((k) => {
         const items = filteredData.filter(
@@ -565,7 +652,6 @@ try {
   ]);
 
   /* ======================= EFFICIENCY ======================= */
-  // คำนวณจาก avg ก่อน–หลัง ต่อ key
   const effSeriesData = useMemo(() => {
     if (isGarbage) return [];
 
@@ -653,7 +739,6 @@ try {
       const isEfficiency =
         /efficiency/i.test(title) || title.includes("ประสิทธิภาพ");
 
-      // annotations object เปล่า
       const baseAnnotations: NonNullable<ApexOptions["annotations"]> = {
         position: "front",
         yaxis: [],
@@ -663,7 +748,6 @@ try {
         images: [],
       };
 
-      // เส้นมาตรฐาน (ไม่นับกราฟขยะ/ประสิทธิภาพ)
       if (showStandard && !isEfficiency && !isGarbage && stdMode !== "none") {
         if (stdMode === "middle" && stdMid) {
           baseAnnotations.yaxis!.push({
@@ -718,7 +802,6 @@ try {
         }
       }
 
-      // ค่ามาตรฐานที่ต้องเผื่อบนแกน Y
       const stdCeil =
         !isEfficiency && showStandard && !isGarbage
           ? stdMode === "middle"
@@ -1287,56 +1370,136 @@ try {
             )}
           </Card>
 
-          {/* ====== SECTION ใหม่: ถัดลงจากการ์ดแจ้งเตือน ====== */}
+          {/* ====== SECTION: สัดส่วนขยะ + รายได้รีไซเคิล ====== */}
           <Row gutter={[16, 16]} style={{ marginTop: 8 }}>
             {/* ซ้าย: กราฟวงกลมสัดส่วนขยะ */}
             <Col xs={24} lg={12}>
-  <div className="dashboard-graph-card card">
-    <div className="dashboard-head-graph-card" style={{ alignItems: "center" }}>
-      <div className="dashboard-head-title">สัดส่วนขยะ (ต่อเดือน)</div>
-      <div>
-        <DatePicker
-          picker="month"
-          value={wasteMonth}
-          onChange={(d) => setWasteMonth(d ? d.startOf("month") : null)}
-          locale={th_TH}
-          allowClear={false}
-          className="dashboard-picker"
-          placeholder="เลือกเดือน"
-        />
-      </div>
-    </div>
+              <div className="dashboard-graph-card card">
+                <div
+                  className="dashboard-head-graph-card"
+                  style={{ alignItems: "center" }}
+                >
+                  <div className="dashboard-head-title">สัดส่วนขยะ (ต่อเดือน)</div>
+                  <div>
+                    <DatePicker
+                      picker="month"
+                      value={wasteMonth}
+                      onChange={(d) =>
+                        setWasteMonth(d ? d.startOf("month") : null)
+                      }
+                      locale={th_TH}
+                      allowClear={false}
+                      className="dashboard-picker"
+                      placeholder="เลือกเดือน"
+                    />
+                  </div>
+                </div>
 
-    {wasteLoading ? (
-      <div style={{ padding: 16 }}>กำลังโหลด...</div>
-    ) : wasteError ? (
-      <div style={{ padding: 16, color: "red" }}>{wasteError}</div>
-    ) : wasteMix && wasteMix.length > 0 ? (
-      <ApexChart
-        options={wastePieOptions}
-        series={wastePieSeries}
-        type="pie"
-        height={360}
-      />
-    ) : (
-      <div style={{ padding: 16 }}>
-        <Empty description="ไม่มีข้อมูลสัดส่วนขยะของเดือนนี้" />
-      </div>
-    )}
-  </div>
-</Col>
-            {/* ขวา: กราฟรายได้รีไซเคิล */}
+                {wasteLoading ? (
+                  <div style={{ padding: 16 }}>กำลังโหลด...</div>
+                ) : wasteError ? (
+                  <div style={{ padding: 16, color: "red" }}>{wasteError}</div>
+                ) : wasteMix && wasteMix.length > 0 ? (
+                  <ApexChart
+                    options={wastePieOptions}
+                    series={wastePieSeries}
+                    type="pie"
+                    height={360}
+                  />
+                ) : (
+                  <div style={{ padding: 16 }}>
+                    <Empty description="ไม่มีข้อมูลสัดส่วนขยะของเดือนนี้" />
+                  </div>
+                )}
+              </div>
+            </Col>
+
+            {/* ขวา: กราฟรายได้รีไซเคิล (คุมช่วงเวลาของตัวเอง) */}
             <Col xs={24} lg={12}>
               <div className="dashboard-graph-card card">
-                <div className="dashboard-head-graph-card">
-                  <div className="dashboard-head-title">รายได้ขยะรีไซเคิล (บาท)</div>
+                <div
+                  className="dashboard-head-graph-card"
+                  style={{ alignItems: "center" }}
+                >
+                  <div className="dashboard-head-title">
+                    รายได้ขยะรีไซเคิล (บาท)
+                  </div>
+
+                  {/* Controls ของกราฟรายได้ */}
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <Select
+                      size="middle"
+                      value={revFilterMode}
+                      onChange={(v: RevFilterMode) => {
+                        setRevFilterMode(v);
+                        if (v === "dateRange") {
+                          setRevRange([
+                            dayjs().startOf("year"),
+                            dayjs().endOf("year"),
+                          ]);
+                        } else if (v === "month") {
+                          const m = dayjs().startOf("month");
+                          setRevRange([m, m.endOf("month")]);
+                        } else {
+                          setRevRange([
+                            dayjs().startOf("year"),
+                            dayjs().endOf("year"),
+                          ]);
+                        }
+                      }}
+                      options={[
+                        { label: "เลือกช่วงวัน", value: "dateRange" },
+                        { label: "เลือกเดือน", value: "month" },
+                        { label: "เลือกปี", value: "year" },
+                      ]}
+                      style={{ minWidth: 140 }}
+                    />
+
+                    {revFilterMode === "dateRange" && (
+                      <DatePicker.RangePicker
+                        value={revRange as [Dayjs, Dayjs]}
+                        onChange={(d) => setRevRange([d?.[0] ?? null, d?.[1] ?? null])}
+                        locale={th_TH}
+                        allowClear={false}
+                      />
+                    )}
+
+                    {revFilterMode === "month" && (
+                      <DatePicker
+                        picker="month"
+                        value={revRange?.[0] as Dayjs | null}
+                        onChange={(d) =>
+                          setRevRange([
+                            d ? d.startOf("month") : null,
+                            d ? d.endOf("month") : null,
+                          ])
+                        }
+                        locale={th_TH}
+                        allowClear={false}
+                      />
+                    )}
+
+                    {revFilterMode === "year" && (
+                      <DatePicker.RangePicker
+                        picker="year"
+                        value={revRange as [Dayjs, Dayjs]}
+                        onChange={(d) =>
+                          setRevRange([
+                            d?.[0] ? d[0].startOf("year") : null,
+                            d?.[1] ? d[1].endOf("year") : null,
+                          ])
+                        }
+                        locale={th_TH}
+                        allowClear={false}
+                      />
+                    )}
+                  </div>
                 </div>
+
                 {revenueLoading ? (
                   <div style={{ padding: 16 }}>กำลังโหลด...</div>
                 ) : revenueError ? (
-                  <div style={{ padding: 16, color: "red" }}>
-                    {revenueError}
-                  </div>
+                  <div style={{ padding: 16, color: "red" }}>{revenueError}</div>
                 ) : revenue && revenue.length > 0 ? (
                   <ApexChart
                     options={revenueOpts}
