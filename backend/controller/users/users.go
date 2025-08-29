@@ -113,6 +113,11 @@ func UpdateEmployeeByID(c *gin.Context) {
 		return
 	}
 
+	// ✅ ตรวจสอบ Email หากมีการส่งมา
+	if email, ok := updateData["Email"]; ok {
+		updateData["Email"] = email
+	}
+
 	if err := db.Model(&employee).Updates(updateData).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปเดตข้อมูลไม่สำเร็จ", "details": err.Error()})
 		return
@@ -123,6 +128,7 @@ func UpdateEmployeeByID(c *gin.Context) {
 		"user":    employee,
 	})
 }
+
 
 func SignUpByUser(c *gin.Context) {
 	var input entity.Employee

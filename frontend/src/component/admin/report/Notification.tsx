@@ -19,9 +19,9 @@ const Notification: React.FC = () => {
     <div className="z-50 nav-item absolute right-1 md:right-40 top-16 bg-white rounded-lg w-96 shadow paddings">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-lg">Report Notifications</span>
+          <span className="font-semibold text-lg">ประวัติการเเจ้งเตื่อน</span>
           <span className="inline-flex items-center justify-center h-6 text-white text-xs rounded-full px-3 py-1 font-semibold bg-gradient-to-r from-teal-500 to-cyan-400 shadow-sm">
-            {currentCount} message
+            {currentCount} ข้อความ
           </span>
         </div>
         <button
@@ -41,10 +41,10 @@ const Notification: React.FC = () => {
         centered
         className="font-semibold"
       >
-        <TabPane tab="Hardware" key="hardware">
+        <TabPane tab="ข้อมูลเซ็นเซอร์" key="hardware">
           <NotificationHardware onCountChange={setHardwareCount} />
         </TabPane>
-        <TabPane tab="Software" key="software">
+        <TabPane tab="ข้อมูลการตรวจวัด" key="software">
           <NotificationSoftware onCountChange={setSoftwareCount} />
         </TabPane>
       </Tabs>

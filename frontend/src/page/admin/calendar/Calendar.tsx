@@ -25,7 +25,7 @@ const Scheduler = () => {
   const [scheduleObj, setScheduleObj] = useState<ScheduleType | null>(null);
   const [events, setEvents] = useState<any[]>([]);
   const views: View[] = ['Day', 'Week', 'WorkWeek', 'Month', 'Agenda'];
-    const [employeeid, setEmployeeid] = useState<number>(
+  const [employeeid, setEmployeeid] = useState<number>(
     Number(localStorage.getItem("employeeid")) || 0
   );
 
@@ -120,46 +120,50 @@ const Scheduler = () => {
   };
 
   return (
-    <div className="m-2 md:m-10 mt-24 p-2 md:p-10 bg-white rounded-3xl">
-      <div className="mb-10">
-        <p className="text-lg text-gray-400"> </p>
-        <p className="text-3xl font-extrabold tracking-tight text-white px-4 py-2 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-500 shadow-md w-fit">
-          Calendar
-        </p>
+    <div className='mt-16 md:mt-0'>
+      <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-4 py-6 rounded-b-3xl mb-1">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">ปฏิทินงาน</h1>
+            <p className="text-sm">จัดการตารางนัดหมายและกิจกรรมต่าง ๆ ในแต่ละวัน</p>
+          </div>
+        </div>
       </div>
-      <ScheduleComponent
-        height="650px"
-        ref={(schedule: any) => setScheduleObj(schedule)}
-        selectedDate={new Date()}
-        eventSettings={{ dataSource: events }}
-        dragStart={onDragStart}
-        actionComplete={handleActionComplete} // จัดการ create, update, delete
-      >
-        <ViewsDirective>
-          {views.map((item) => (
-            <ViewDirective key={item} option={item} />
-          ))}
-        </ViewsDirective>
-        <Inject services={[Day, Week, WorkWeek, Month, Agenda, Resize, DragAndDrop]} />
-      </ScheduleComponent>
-      <PropertyPane>
-        <table style={{ width: '100%', background: 'white' }}>
-          <tbody>
-            <tr style={{ height: '50px' }}>
-              <td style={{ width: '100%' }}>
-                <DatePickerComponent
-                  value={new Date()}
-                  showClearButton={false}
-                  placeholder="Current Date"
-                  floatLabelType="Always"
-                  change={change}
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </PropertyPane>
-    </div>
+
+      <div className="m-2 md:m-10 mt-10 p-2 md:p-10 bg-white rounded-3xl">
+        <ScheduleComponent
+          height="650px"
+          ref={(schedule: any) => setScheduleObj(schedule)}
+          selectedDate={new Date()}
+          eventSettings={{ dataSource: events }}
+          dragStart={onDragStart}
+          actionComplete={handleActionComplete} // จัดการ create, update, delete
+        >
+          <ViewsDirective>
+            {views.map((item) => (
+              <ViewDirective key={item} option={item} />
+            ))}
+          </ViewsDirective>
+          <Inject services={[Day, Week, WorkWeek, Month, Agenda, Resize, DragAndDrop]} />
+        </ScheduleComponent>
+        <PropertyPane>
+          <table style={{ width: '100%', background: 'white' }}>
+            <tbody>
+              <tr style={{ height: '50px' }}>
+                <td style={{ width: '100%' }}>
+                  <DatePickerComponent
+                    value={new Date()}
+                    showClearButton={false}
+                    placeholder="Current Date"
+                    floatLabelType="Always"
+                    change={change}
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </PropertyPane>
+      </div></div>
   );
 };
 

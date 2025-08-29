@@ -35,7 +35,7 @@ export const ProfileNavbar = ({ onUpdateSuccess }: ProfileNavbarProps) => {
       <div className="flex flex-col items-center [&_.ant-btn-link]:text-white hover:[&_.ant-btn-link]:text-[#037dca] md:flex-row md:justify-between">
         <Space>
           <Button size="small" type="link" onClick={() => setShowEdit(true)}>
-            EDIT PROFILE
+            เเก้ไขข้อมูลส่วนตัว
           </Button>
         </Space>
       </div>

@@ -25,11 +25,16 @@ import {
   EditOutlined,
   UserOutlined
 } from "@ant-design/icons";
-import { useStateContext } from "../../../../../contexts/ContextProvider"; 
+import { useStateContext } from "../../../../../contexts/ContextProvider";
 
 const { useToken } = theme;
 
-const AccountItem = ({ item }: { item: NotificationInterface }) => {
+interface AccountItemProps {
+  item: NotificationInterface;
+  isAdmin: boolean; // ✅ รับค่า isAdmin จาก Account.tsx
+}
+
+const AccountItem = ({ item, isAdmin }: AccountItemProps) => {
   const { token } = useToken();
   const [alert, setAlert] = useState<boolean>(item.Alert);
   const { triggerReload } = useNotificationContext();
@@ -46,13 +51,14 @@ const AccountItem = ({ item }: { item: NotificationInterface }) => {
 
   // ✅ Toggle Alert
   const handleToggleAlert = async () => {
+    if (!isAdmin) return; // ❌ ถ้าไม่ใช่ Admin ห้ามทำงาน
     try {
       const newAlert = !alert;
       const res = await UpdateAlertByNotificationID(item.ID, newAlert);
       if (res) {
         setAlert(res.Alert);
         triggerReload();
-        bumpReload(); // ✅ ให้กราฟ/ตารางที่พึ่งพา reloadKey รีเฟรชด้วย
+        bumpReload();
         message.success(
           `อัปเดตสถานะเรียบร้อย: ${res.Alert ? "แจ้งเตือน" : "ไม่แจ้งเตือน"}`
         );
@@ -67,14 +73,15 @@ const AccountItem = ({ item }: { item: NotificationInterface }) => {
 
   // ✅ Delete Notification
   const handleDelete = async () => {
+    if (!isAdmin) return; // ❌ ถ้าไม่ใช่ Admin ห้ามทำงาน
     try {
       const res = await DeleteNotificationByID(item.ID);
       if (res) {
-        message.success("ลบ ข้อมูลผู้ได้รับการเเจ้งเตื่อน สำเร็จ");
+        message.success("ลบ ข้อมูลผู้ได้รับการเเจ้งเตือน สำเร็จ");
         triggerReload();
-        bumpReload(); // ✅ จุดสำคัญ: กระตุ้นรีโหลดให้ RoomAdminTable/MainLine
+        bumpReload();
       } else {
-        message.error("ไม่สามารถลบ ข้อมูลผู้ได้รับการเเจ้งเตื่อน ได้");
+        message.error("ไม่สามารถลบ ข้อมูลผู้ได้รับการเเจ้งเตือน ได้");
       }
     } catch (error) {
       console.error(error);
@@ -86,6 +93,7 @@ const AccountItem = ({ item }: { item: NotificationInterface }) => {
 
   // ✅ Edit Notification
   const handleEdit = () => {
+    if (!isAdmin) return; // ❌ ถ้าไม่ใช่ Admin ห้ามทำงาน
     form.setFieldsValue({
       Name: item.Name,
       UserID: item.UserID,
@@ -94,20 +102,21 @@ const AccountItem = ({ item }: { item: NotificationInterface }) => {
   };
 
   const handleSaveEdit = async () => {
+    if (!isAdmin) return; // ❌ ถ้าไม่ใช่ Admin ห้ามทำงาน
     try {
       const values = await form.validateFields();
       setSaving(true);
       const res = await UpdateNotificationByID(item.ID, {
-        name: values.Name,        // 👈 ต้องส่งเป็น name
-        user_id: values.UserID,   // 👈 ต้องส่งเป็น user_id
+        name: values.Name,
+        user_id: values.UserID,
       });
       if (res) {
-        message.success("อัปเดต ข้อมูลผู้ได้รับการเเจ้งเตื่อน สำเร็จ");
+        message.success("อัปเดต ข้อมูลผู้ได้รับการเเจ้งเตือน สำเร็จ");
         setIsEditModalOpen(false);
         triggerReload();
-        bumpReload(); // ✅ อัปเดตแล้วก็รีโหลดได้เช่นกัน
+        bumpReload();
       } else {
-        message.error("ไม่สามารถอัปเดต ข้อมูลผู้ได้รับการเเจ้งเตื่อน ได้");
+        message.error("ไม่สามารถอัปเดต ข้อมูลผู้ได้รับการเเจ้งเตือน ได้");
       }
     } catch (error) {
       console.error(error);
@@ -150,45 +159,45 @@ const AccountItem = ({ item }: { item: NotificationInterface }) => {
               type={"secondary"}
               className="text-xs m-0"
             >
-              <span
-                style={{ color: token.colorLink }}
-              >
+              <span style={{ color: token.colorLink }}>
                 UserID: {item.UserID || "N/A"}
               </span>
             </Typography.Paragraph>
           }
         />
 
-        <div className="flex items-center gap-3">
-          {/* Toggle Alert */}
-          <div onClick={handleToggleAlert} className="cursor-pointer">
-            <Badge
-              count={alert ? "แจ้งเตือน" : "ไม่แจ้งเตือน"}
-              color={alert ? "green" : "red"}
+        {isAdmin && ( // ✅ แสดงปุ่มเฉพาะ Admin
+          <div className="flex items-center gap-3">
+            {/* Toggle Alert */}
+            <div onClick={handleToggleAlert} className="cursor-pointer">
+              <Badge
+                count={alert ? "แจ้งเตือน" : "ไม่แจ้งเตือน"}
+                color={alert ? "green" : "red"}
+              />
+            </div>
+
+            {/* Edit Button */}
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              size="small"
+              onClick={handleEdit}
+              style={{
+                backgroundColor: "#14b8a6",
+                borderColor: "#14b8a6",
+              }}
+            />
+
+            {/* Delete Button */}
+            <Button
+              danger
+              type="primary"
+              icon={<DeleteOutlined />}
+              size="small"
+              onClick={() => setIsDeleteModalOpen(true)}
             />
           </div>
-
-          {/* Edit Button */}
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            size="small"
-            onClick={handleEdit}
-            style={{
-              backgroundColor: "#14b8a6",
-              borderColor: "#14b8a6",
-            }}
-          />
-
-          {/* Delete Button */}
-          <Button
-            danger
-            type="primary"
-            icon={<DeleteOutlined />}
-            size="small"
-            onClick={() => setIsDeleteModalOpen(true)}
-          />
-        </div>
+        )}
       </List.Item>
 
       {/* ✅ Modal ยืนยันการลบ */}
@@ -196,7 +205,7 @@ const AccountItem = ({ item }: { item: NotificationInterface }) => {
         title={
           <div className="flex items-center gap-2">
             <ExclamationCircleOutlined style={{ color: "#faad14" }} />
-            <span>ยืนยันการลบ ผู้ได้รับการเเจ้งเตื่อน</span>
+            <span>ยืนยันการลบ ผู้ได้รับการเเจ้งเตือน</span>
           </div>
         }
         open={isDeleteModalOpen}
@@ -217,55 +226,67 @@ const AccountItem = ({ item }: { item: NotificationInterface }) => {
       <Modal
         title={
           <div className="flex items-center gap-2 text-teal-600 font-bold">
-            <EditOutlined /> แก้ไข ข้อมูลผู้ได้รับการเเจ้งเตื่อน
+            <EditOutlined /> แก้ไข ข้อมูลผู้ได้รับการเเจ้งเตือน
           </div>
         }
         open={isEditModalOpen}
         onCancel={() => setIsEditModalOpen(false)}
         centered
         width="500px"
-        footer={[
-          <Button key="cancel" onClick={() => setIsEditModalOpen(false)}>
-            ยกเลิก
-          </Button>,
-          <Button
-            key="save"
-            type="primary"
-            loading={saving}
-            onClick={handleSaveEdit}
-            style={{
-              background: "linear-gradient(to right, #14b8a6, #0d9488)",
-              borderColor: "#0d9488",
-            }}
-          >
-            บันทึก
-          </Button>,
-        ]}
+        footer={
+          isAdmin
+            ? [
+                <Button key="cancel" onClick={() => setIsEditModalOpen(false)}>
+                  ยกเลิก
+                </Button>,
+                <Button
+                  key="save"
+                  type="primary"
+                  loading={saving}
+                  onClick={handleSaveEdit}
+                  style={{
+                    background: "linear-gradient(to right, #14b8a6, #0d9488)",
+                    borderColor: "#0d9488",
+                  }}
+                >
+                  บันทึก
+                </Button>,
+              ]
+            : [
+                <Button key="close" onClick={() => setIsEditModalOpen(false)}>
+                  ปิด
+                </Button>,
+              ]
+        }
       >
-        <Form layout="vertical" form={form}>
-          <Form.Item
-            label={
-              <span className="flex items-center gap-1">
-                <EditOutlined /> ชื่อ-สกุล
-              </span>
-            }
-            name="Name"
-            rules={[{ required: true, message: "กรุณากรอก Name" }]}
-          >
-            <Input placeholder="ชื่อ Notification" />
-          </Form.Item>
-          <Form.Item
-            label={
-              <span className="flex items-center gap-1">
-                <UserOutlined /> UserID
-              </span>
-            }
-            name="UserID"
-            rules={[{ required: true, message: "กรุณากรอก UserID" }]}
-          >
-            <Input placeholder="UserID" />
-          </Form.Item>
-        </Form>
+        {isAdmin ? (
+          <Form layout="vertical" form={form}>
+            <Form.Item
+              label={
+                <span className="flex items-center gap-1">
+                  <EditOutlined /> ชื่อ-สกุล
+                </span>
+              }
+              name="Name"
+              rules={[{ required: true, message: "กรุณากรอก Name" }]}
+            >
+              <Input placeholder="ชื่อ Notification" />
+            </Form.Item>
+            <Form.Item
+              label={
+                <span className="flex items-center gap-1">
+                  <UserOutlined /> UserID
+                </span>
+              }
+              name="UserID"
+              rules={[{ required: true, message: "กรุณากรอก UserID" }]}
+            >
+              <Input placeholder="UserID" />
+            </Form.Item>
+          </Form>
+        ) : (
+          <p className="text-red-500">คุณไม่มีสิทธิ์แก้ไขข้อมูลนี้</p>
+        )}
       </Modal>
     </>
   );
