@@ -113,6 +113,21 @@ const InfectiousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
     }
   };
 
+  // คำนวณ AADC อัตโนมัติ
+  const calculateAADC = () => {
+    const quantity = form.getFieldValue("quantity");
+    const monthlyGarbage = form.getFieldValue("monthlyGarbage");
+
+    if (quantity && monthlyGarbage && quantity > 0) {
+      const aadc = monthlyGarbage / (quantity * quantity);
+      form.setFieldsValue({
+        aadc: parseFloat(aadc.toFixed(5)),
+      });
+    } else {
+      form.setFieldsValue({ aadc: null });
+    }
+  };
+
   const handleFinish = async (values: any) => {
     try {
       console.log('Form Values:', values);
@@ -431,33 +446,14 @@ const InfectiousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
                 ]}
               >
-                <InputNumber style={{ width: '100%' }} placeholder="กรอกจำนวนคน" />
+                <InputNumber style={{ width: '100%' }} placeholder="กรอกจำนวนคน"
+                  onChange={() => {
+                    // คำนวณ aadc อัตโนมัติ
+                    calculateAADC();
+                  }} />
               </Form.Item>
             </div>
 
-            <div className="inf-from-mini">
-              <Form.Item
-                label="ค่า AADC"
-                name="aadc"
-                rules={[{ required: true, message: 'กรุณากรอกค่า AADC' },
-                {
-                  validator: async (_, value) => {
-                    if (value === undefined || value === null) return Promise.resolve();
-                    if (typeof value !== "number" || isNaN(value)) {
-                      return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                    }
-                    return Promise.resolve();
-                  },
-                }
-
-                ]}
-              >
-                <InputNumber style={{ width: '100%' }} placeholder="กรอกค่า AADC" step={0.01} />
-              </Form.Item>
-            </div>
-          </div>
-
-          <div className="inf-form-group">
             <div className="inf-from-mini">
               <Form.Item
                 label="ปริมาณขยะต่อเดือน"
@@ -480,6 +476,9 @@ const InfectiousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                   placeholder="กรอกปริมาณขยะ"
                   step={0.01}
                   onChange={(val) => {
+                    // คำนวณ aadc อัตโนมัติ
+                    calculateAADC();
+
                     // ดึงวันที่จากฟอร์ม ถ้าไม่มีให้ใช้วันนี้
                     const selectedDate = form.getFieldValue("date") || new Date()
                     // แปลงเป็น JS Date (รองรับทั้ง dayjs และ Date)
@@ -494,6 +493,16 @@ const InfectiousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     }
                   }}
                 />
+              </Form.Item>
+            </div>
+          </div>
+
+          <div className="inf-form-group">
+            <div className="inf-from-mini">
+              <Form.Item
+                label="ค่า AADC (คำนวณอัตโนมัติ)"
+                name="aadc">
+                <InputNumber style={{ width: '100%' }} placeholder="คำนวณอัตโนมัติ" step={0.01} disabled />
               </Form.Item>
             </div>
 

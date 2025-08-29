@@ -426,6 +426,32 @@ func UpdateOrCreateInfectious(c *gin.Context) {
 		return
 	}
 
+	// หา Target เพื่อตรวจสอบ Status
+	var target entity.Target
+	if err := db.First(&target, *targetID).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบ Target ที่เกี่ยวข้อง"})
+		return
+	}
+
+	// ฟังก์ชันตรวจสอบ Status
+	getStatusID := func(value float64) uint {
+		var status entity.Status
+		if target.MiddleTarget != 0 {
+			if value >= float64(target.MiddleTarget) {
+				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
+			} else {
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
+			}
+		} else {
+			if value >= float64(target.MinTarget) && value <= float64(target.MaxTarget) {
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
+			} else {
+				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
+			}
+		}
+		return status.ID
+	}
+
 	// Update Garbage
 	var garbage entity.Garbage
 	if err := db.First(&garbage, input.ID).Error; err != nil {
@@ -443,6 +469,9 @@ func UpdateOrCreateInfectious(c *gin.Context) {
 	garbage.TargetID = targetID
 	garbage.UnitID = input.UnitID
 	garbage.EmployeeID = input.EmployeeID
+	// คำนวณ StatusID
+	statusID := getStatusID(input.AADC)
+	garbage.StatusID = &statusID
 
 	if err := db.Save(&garbage).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถอัปเดต Garbage"})

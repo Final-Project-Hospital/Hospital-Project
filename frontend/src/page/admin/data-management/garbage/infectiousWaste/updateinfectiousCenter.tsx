@@ -110,6 +110,21 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
         }
     };
 
+    // คำนวณ AADC อัตโนมัติ
+    const calculateAADC = () => {
+        const quantity = form.getFieldValue("quantity");
+        const monthlyGarbage = form.getFieldValue("monthlyGarbage");
+
+        if (quantity && monthlyGarbage && quantity > 0) {
+            const aadc = monthlyGarbage / (quantity * quantity);
+            form.setFieldsValue({
+                aadc: parseFloat(aadc.toFixed(5)),
+            });
+        } else {
+            form.setFieldsValue({ aadc: null });
+        }
+    };
+
     const handleFinish = async (values: any) => {
         try {
             const combinedDateTime = dayjs(values.date)
@@ -384,29 +399,13 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
                         }
                         ]}
                     >
-                        <InputNumber style={{ width: '100%' }} placeholder="กรอกจำนวนคน" />
+                        <InputNumber style={{ width: '100%' }} placeholder="กรอกจำนวนคน"
+                            onChange={() => {
+                                // คำนวณ aadc อัตโนมัติ
+                                calculateAADC();
+                            }} />
                     </Form.Item>
 
-                    <Form.Item
-                        label="ค่า AADC"
-                        name="aadc"
-                        rules={[{ required: true, message: 'กรุณากรอกค่า AADC' },
-                        {
-                            validator: async (_, value) => {
-                                if (value === undefined || value === null) return Promise.resolve();
-                                if (typeof value !== "number" || isNaN(value)) {
-                                    return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                }
-                                return Promise.resolve();
-                            },
-                        }
-                        ]}
-                    >
-                        <InputNumber style={{ width: '100%' }} placeholder="กรอกค่า AADC" step={0.01} />
-                    </Form.Item>
-                </div>
-
-                <div className="up-form-group-recy">
                     <Form.Item
                         label="ปริมาณขยะต่อเดือน"
                         name="monthlyGarbage"
@@ -428,6 +427,9 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
                             placeholder="กรอกปริมาณขยะ"
                             step={0.01}
                             onChange={(val) => {
+                                // คำนวณ aadc อัตโนมัติ
+                                calculateAADC();
+
                                 // ดึงวันที่จากฟอร์ม ถ้าไม่มีให้ใช้วันนี้
                                 const selectedDate = form.getFieldValue("date") || new Date()
                                 // แปลงเป็น JS Date (รองรับทั้ง dayjs และ Date)
@@ -442,6 +444,14 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
                                 }
                             }}
                         />
+                    </Form.Item>
+                </div>
+
+                <div className="up-form-group-recy">
+                    <Form.Item
+                        label="ค่า AADC (คำนวณอัตโนมัติ)"
+                        name="aadc">
+                        <InputNumber style={{ width: '100%' }} placeholder="คำนวณอัตโนมัติ" step={0.01} disabled />
                     </Form.Item>
 
                     <Form.Item label="ปริมาณขยะต่อวัน (คำนวณอัตโนมัติ)" name="average_daily_garbage">

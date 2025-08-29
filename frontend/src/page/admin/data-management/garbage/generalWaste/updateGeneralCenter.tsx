@@ -109,6 +109,21 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
         }
     };
 
+    // คำนวณ AADC อัตโนมัติ
+    const calculateAADC = () => {
+        const quantity = form.getFieldValue("quantity");
+        const monthlyGarbage = form.getFieldValue("monthlyGarbage");
+
+        if (quantity && monthlyGarbage && quantity > 0) {
+            const aadc = monthlyGarbage / (quantity * quantity);
+            form.setFieldsValue({
+                aadc: parseFloat(aadc.toFixed(5)),
+            });
+        } else {
+            form.setFieldsValue({ aadc: null });
+        }
+    };
+
     const handleFinish = async (values: any) => {
         try {
             const combinedDateTime = dayjs(values.date)
@@ -237,7 +252,7 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
                     </div>
 
                     <div className="up-form-group-mini-recy">
-                        <Form.Item label="ค่า Target" name="targetType">
+                        <Form.Item label="ค่าเป้าหมาย" name="targetType">
                             <Select defaultValue="middle" onChange={handleTargetGroupChange}>
                                 <Option value="middle">ค่าเดี่ยว</Option>
                                 <Option value="range">ช่วง (Min - Max)</Option>
@@ -267,7 +282,7 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
                                 <Form.Item
                                     label="กำหนดเอง (ค่าเดี่ยว)"
                                     name="customSingle"
-                                    rules={[{ required: true, message: 'กรุณากรอกค่ามาตรฐาน' },
+                                    rules={[{ required: true, message: 'กรุณากรอกค่าเป้าหมาย' },
                                     {
                                         validator: async (_, value) => {
                                             if (value === undefined || value === null) return Promise.resolve();
@@ -275,8 +290,8 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
                                                 return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
                                             }
                                             const data = await CheckTarget("middle", value);
-                                            if (!data) return Promise.reject("ไม่สามารถตรวจสอบค่า Target ได้");
-                                            if (data.exists) return Promise.reject("ค่า Target นี้มีอยู่แล้วในระบบ");
+                                            if (!data) return Promise.reject("ไม่สามารถตรวจสอบค่าเป้าหมายได้");
+                                            if (data.exists) return Promise.reject("ค่าเป้าหมายนี้มีอยู่แล้วในระบบ");
                                             return Promise.resolve();
                                         },
                                     },
@@ -297,7 +312,7 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
                                 <Form.Item
                                     label="ช่วง (Min - Max)"
                                     name="targetID"
-                                    rules={[{ required: true, message: 'กรุณาเลือกช่วง Target' }]}
+                                    rules={[{ required: true, message: 'กรุณาเลือกช่วงเป้าหมาย' }]}
                                 >
                                     <Select placeholder="เลือกช่วง" onChange={handleTargetSelectChange}>
                                         {rangeTargets.map((s) => (
@@ -347,8 +362,8 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
                                                 }
                                                 // เรียก CheckTarget
                                                 const data = await CheckTarget("range", { min, max: value });
-                                                if (!data) return Promise.reject("ไม่สามารถตรวจสอบค่า Target ได้");
-                                                if (data.exists) return Promise.reject("ช่วงค่า Target นี้มีอยู่แล้วในระบบ");
+                                                if (!data) return Promise.reject("ไม่สามารถตรวจสอบค่าเป้าหมายได้");
+                                                if (data.exists) return Promise.reject("ช่วงเป้าหมายนี้มีอยู่แล้วในระบบ");
                                                 return Promise.resolve();
                                             },
                                         }),
@@ -385,29 +400,13 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
                         }
                         ]}
                     >
-                        <InputNumber style={{ width: '100%' }} placeholder="กรอกจำนวนคน" />
+                        <InputNumber style={{ width: '100%' }} placeholder="กรอกจำนวนคน"
+                            onChange={() => {
+                                // คำนวณ aadc อัตโนมัติ
+                                calculateAADC();
+                            }} />
                     </Form.Item>
 
-                    <Form.Item
-                        label="ค่า AADC"
-                        name="aadc"
-                        rules={[{ required: true, message: 'กรุณากรอกค่า AADC' },
-                        {
-                            validator: async (_, value) => {
-                                if (value === undefined || value === null) return Promise.resolve();
-                                if (typeof value !== "number" || isNaN(value)) {
-                                    return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                }
-                                return Promise.resolve();
-                            },
-                        }
-                        ]}
-                    >
-                        <InputNumber style={{ width: '100%' }} placeholder="กรอกค่า AADC" step={0.01} />
-                    </Form.Item>
-                </div>
-
-                <div className="up-form-group-recy">
                     <Form.Item
                         label="ปริมาณขยะต่อเดือน"
                         name="monthlyGarbage"
@@ -429,6 +428,9 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
                             placeholder="กรอกปริมาณขยะ"
                             step={0.01}
                             onChange={(val) => {
+                                // คำนวณ aadc อัตโนมัติ
+                                calculateAADC();
+
                                 // ดึงวันที่จากฟอร์ม ถ้าไม่มีให้ใช้วันนี้
                                 const selectedDate = form.getFieldValue("date") || new Date()
                                 // แปลงเป็น JS Date (รองรับทั้ง dayjs และ Date)
@@ -443,6 +445,14 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
                                 }
                             }}
                         />
+                    </Form.Item>
+                </div>
+
+                <div className="up-form-group-recy">
+                    <Form.Item
+                        label="ค่า AADC (คำนวณอัตโนมัติ)"
+                        name="aadc">
+                        <InputNumber style={{ width: '100%' }} placeholder="คำนวณอัตโนมัติ" step={0.01} disabled />
                     </Form.Item>
 
                     <Form.Item label="ปริมาณขยะต่อวัน (คำนวณอัตโนมัติ)" name="average_daily_garbage">

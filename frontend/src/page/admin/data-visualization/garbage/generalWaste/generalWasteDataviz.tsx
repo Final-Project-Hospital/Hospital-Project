@@ -626,7 +626,7 @@ const GeneralWaste: React.FC = () => {
       render: (val: number | null) => val != null ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
     },
     {
-      title: 'ค่า Target',
+      title: 'ค่าเป้าหมาย',
       key: 'target_value',
       width: 150,
       render: (_, r) =>
@@ -635,7 +635,7 @@ const GeneralWaste: React.FC = () => {
           : r.target_value?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '-'
     },
     {
-      title: "สถานะ",
+      title: "สถานะเป้าหมาย",
       key: "status",
       width: 200,
       render: (_, record) => {
@@ -647,8 +647,8 @@ const GeneralWaste: React.FC = () => {
           </span>
         );
         if (!s) return getBadge(<QuestionCircleFilled style={{ fontSize: 18 }} />, "ไม่มีข้อมูล", "status-none");
-        if (s.includes("ไม่ผ่าน")) return getBadge(<CloseCircleFilled style={{ fontSize: 18 }} />, s, "status-high");
-        if (s.includes("ผ่าน")) return getBadge(<CheckCircleFilled style={{ fontSize: 18 }} />, s, "status-good");
+        if (s.includes("ไม่สำเร็จ")) return getBadge(<CloseCircleFilled style={{ fontSize: 18 }} />, s, "status-high");
+        if (s.includes("สำเร็จ")) return getBadge(<CheckCircleFilled style={{ fontSize: 18 }} />, s, "status-good");
         return getBadge(<QuestionCircleFilled style={{ fontSize: 20 }} />, "ไม่มีข้อมูล", "status-none");
       }
     },
