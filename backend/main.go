@@ -163,6 +163,10 @@ func main() {
 		public.GET("/user-data/:EmployeeID", user.GetDataByUserID)
 		public.PATCH("/employees/:EmployeeID", user.UpdateEmployeeByID)
 		public.POST("/signup", user.SignUpByUser)
+		public.GET("/roles", employee.ListRole)
+		public.GET("/check-email", employee.CheckEmail)
+		public.POST("/reset-password", employee.ResetPassword)
+
 
 		//PH
 		public.POST("/create-ph", phcenter.CreatePH)

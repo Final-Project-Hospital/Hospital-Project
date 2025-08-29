@@ -18,7 +18,6 @@ import { PositionInterface } from "../../../interface/IPosition";
 import { FaUser } from "react-icons/fa";
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import { ReloadOutlined } from "@ant-design/icons";
-
 import EmployeeEditModal from "../../../component/employees/EmployeeEditModal";
 import EmployeeCreateModal from "../../../component/employees/EmployeeCreateModal";
 import { ListEmployees } from "../../../services/httpLogin";
@@ -32,26 +31,24 @@ export default function UserManagement() {
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [positions, setPositions] = useState<PositionInterface[]>([]);
 
-  // ควบคุมหน้า/จำนวนแถว
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(5);
 
-  // ตัวกรอง & ค้นหา
   const [searchText, setSearchText] = useState<string>("");
-  const [roleFilter, setRoleFilter] = useState<string>("");       // "" = ทั้งหมด
-  const [positionFilter, setPositionFilter] = useState<string>(""); // "" = ทั้งหมด
+  const [roleFilter, setRoleFilter] = useState<string>("");
+  const [positionFilter, setPositionFilter] = useState<string>("");
 
-  // ---------- helpers ----------
+  // ✅ Tailwind classes ตรง ๆ
   const roleBadgeClass = (roleName?: string) => {
     switch ((roleName || "").toLowerCase()) {
       case "admin":
-        return "bg-green-100 text-green-700";
+        return "bg-gradient-to-r from-purple-800 to-purple-500";
       case "employee":
-        return "bg-blue-100 text-blue-700";
+        return "bg-gradient-to-r from-blue-800 to-blue-500";
       case "guest":
-        return "bg-amber-100 text-amber-700";
+        return "bg-gradient-to-r from-amber-800 to-amber-500";
       default:
-        return "bg-gray-100 text-gray-600";
+        return "bg-gradient-to-r from-gray-800 to-gray-500";
     }
   };
 
@@ -64,10 +61,8 @@ export default function UserManagement() {
     return Number.isFinite(num) ? num : null;
   };
 
-  // ดึงรูปจากหลายคีย์ โดยให้ "Profile" มาก่อน (รองรับ data URL / base64)
   const getAvatarSrc = (emp: EmployeeInterface): string | undefined => {
     const pick = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
-
     const profile = pick((emp as any)?.Profile) ?? pick((emp as any)?.profile);
     if (profile) {
       const hasPrefix =
@@ -80,18 +75,9 @@ export default function UserManagement() {
         return `data:image/png;base64,${profile}`;
       }
     }
-
     const keys = [
-      "ProfileImageURL",
-      "ImageURL",
-      "AvatarURL",
-      "ProfileImage",
-      "Image",
-      "Avatar",
-      "Picture",
-      "PhotoUrl",
-      "PhotoURL",
-      "Photo",
+      "ProfileImageURL","ImageURL","AvatarURL","ProfileImage",
+      "Image","Avatar","Picture","PhotoUrl","PhotoURL","Photo",
     ];
     for (const k of keys) {
       const v = pick((emp as any)?.[k]);
@@ -100,7 +86,6 @@ export default function UserManagement() {
     return undefined;
   };
 
-  // list employee → unique positions (ใช้กับ Modal)
   const derivePositions = (emps: EmployeeInterface[]): PositionInterface[] => {
     const map = new Map<string | number, PositionInterface>();
     for (const e of emps) {
@@ -115,7 +100,6 @@ export default function UserManagement() {
     return Array.from(map.values());
   };
 
-  // unique roles จากข้อมูล employees
   const roles = useMemo(() => {
     const s = new Set<string>();
     data.forEach((e) => {
@@ -125,7 +109,6 @@ export default function UserManagement() {
     return Array.from(s.values()).sort((a, b) => a.localeCompare(b));
   }, [data]);
 
-  // ---------- data fetching ----------
   const fetchEmployees = async () => {
     setLoading(true);
     const list = await ListEmployees();
@@ -146,27 +129,21 @@ export default function UserManagement() {
     fetchEmployees();
   }, []);
 
-  // รีเซ็ตหน้าเมื่อ filter/search เปลี่ยน
   useEffect(() => {
     setPage(1);
   }, [searchText, roleFilter, positionFilter]);
 
-  // คำนวณข้อมูลหลังกรอง/ค้นหา
   const filteredData = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     return data.filter((e) => {
       const roleName = (e as any)?.Role?.RoleName ?? "";
       const positionName = (e as any)?.Position?.Position ?? "";
-
       if (roleFilter && String(roleName).toLowerCase() !== roleFilter.toLowerCase()) return false;
       if (positionFilter && String(positionName).toLowerCase() !== positionFilter.toLowerCase()) return false;
-
       if (!q) return true;
-
       const name = `${e.FirstName ?? ""} ${e.LastName ?? ""}`.toLowerCase();
       const email = (e.Email ?? "").toLowerCase();
       const phone = (e.Phone ?? "").toLowerCase();
-
       return (
         name.includes(q) ||
         email.includes(q) ||
@@ -177,7 +154,6 @@ export default function UserManagement() {
     });
   }, [data, searchText, roleFilter, positionFilter]);
 
-  // ---------- actions ----------
   const openEdit = (emp: EmployeeInterface) => {
     setCurrentEmployee(emp);
     setEditOpen(true);
@@ -210,7 +186,6 @@ export default function UserManagement() {
     );
   };
 
-  // ล้างตัวกรองทั้งหมด
   const clearAllFilters = () => {
     setSearchText("");
     setRoleFilter("");
@@ -218,7 +193,6 @@ export default function UserManagement() {
     setPage(1);
   };
 
-  // ---------- columns ----------
   const columns: ColumnsType<EmployeeInterface> = [
     {
       title: "ลำดับ",
@@ -271,7 +245,9 @@ export default function UserManagement() {
       render: (_, record) => {
         const roleName = record.Role?.RoleName || "-";
         return (
-          <Tag className={`px-2 py-1 text-sm rounded-full ${roleBadgeClass(roleName)}`}>
+          <Tag
+            className={`px-3 py-1 text-sm font-bold text-white rounded-full ${roleBadgeClass(roleName)}`}
+          >
             {roleName}
           </Tag>
         );
@@ -292,7 +268,6 @@ export default function UserManagement() {
               <FiEdit2 className="text-teal-600" />
               <span>แก้ไข</span>
             </Button>
-
             {!isSelf && (
               <Button
                 size="small"
@@ -309,13 +284,11 @@ export default function UserManagement() {
     },
   ];
 
-  // ---------- pagination change ----------
   const handleTableChange = (pg: TablePaginationConfig) => {
     setPage(pg.current || 1);
     setPageSize(pg.pageSize || pageSize);
   };
 
-  // locale สำหรับ Pagination ให้แสดง “5 / page”
   const paginationLocale = {
     ...thTH,
     Pagination: {
@@ -326,7 +299,6 @@ export default function UserManagement() {
 
   return (
     <div className="bg-gray-50 min-h-screen w-full flex flex-col mt-16 md:mt-0">
-      {/* Header */}
       <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-4 sm:px-6 lg:px-8 py-6 rounded-b-3xl mb-4 w-full">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -335,8 +307,6 @@ export default function UserManagement() {
               โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
             </p>
           </div>
-
-          {/* ปุ่มสร้างบัญชี — pill style เหมือนมือถือ ทุกหน้าจอ */}
           <button
             onClick={() => setCreateOpen(true)}
             className="inline-flex items-center gap-2 bg-white text-teal-700 rounded-full shadow px-4 py-2"
@@ -349,12 +319,9 @@ export default function UserManagement() {
         </div>
       </div>
 
-      {/* Content */}
       <div className="w-full px-2 sm:px-4 lg:px-8 mt-3">
         <div className="bg-white rounded-xl shadow-md p-2 sm:p-4 md:p-6 w-full overflow-x-auto">
-          {/* Toolbar: Search + Filters + Clear */}
           <div className="mb-3 grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3">
-            {/* Search */}
             <Input
               allowClear
               placeholder="ค้นหา"
@@ -362,8 +329,6 @@ export default function UserManagement() {
               onChange={(e) => setSearchText(e.target.value)}
               className="md:col-span-2 xl:col-span-2"
             />
-
-            {/* Role filter */}
             <Select
               allowClear
               value={roleFilter || undefined}
@@ -372,8 +337,6 @@ export default function UserManagement() {
               options={roles.map((r) => ({ label: r, value: r }))}
               className="w-full"
             />
-
-            {/* Position filter */}
             <Select
               allowClear
               value={positionFilter || undefined}
@@ -384,8 +347,6 @@ export default function UserManagement() {
               showSearch
               optionFilterProp="label"
             />
-
-            {/* Clear all filters */}
             <div className="flex md:justify-end">
               <Button
                 icon={<ReloadOutlined />}
@@ -397,7 +358,6 @@ export default function UserManagement() {
             </div>
           </div>
 
-          {/* Table + Pagination (size changer “5 / page”) */}
           <ConfigProvider locale={paginationLocale}>
             <Table
               rowKey="ID"
@@ -424,7 +384,6 @@ export default function UserManagement() {
         </div>
       </div>
 
-      {/* Modals */}
       <EmployeeEditModal
         open={editOpen}
         onClose={() => setEditOpen(false)}
@@ -437,7 +396,6 @@ export default function UserManagement() {
           currentEmployee.ID === currentUserId
         }
       />
-
       <EmployeeCreateModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
@@ -445,12 +403,11 @@ export default function UserManagement() {
         positions={positions}
       />
 
-      {/* ทำหัวคอลัมน์ Table เป็นสี teal */}
       <style>{`
         .teal-thead .ant-table-thead .ant-table-cell {
-          color: #0f766e;           /* teal-700 */
+          color: #0f766e;           
           font-weight: 600;
-          background: #ffffff;      /* พื้นขาวเหมือนภาพ */
+          background: #ffffff;      
         }
         .teal-thead .ant-table-thead .ant-table-column-sorters {
           color: #0f766e;
