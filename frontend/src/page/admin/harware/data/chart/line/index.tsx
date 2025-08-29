@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
 import LineChart from './linear';
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
@@ -34,7 +34,23 @@ const LineChartIndex: React.FC<ChartdataProps> = ({
   const [selectedRange, setSelectedRange] = useState<any>(null);
   const [lineChartParameters, setLineChartParameters] = useState<LineParamWithColor[]>([]);
 
-  const isMobile = typeof window !== 'undefined' ? window.innerWidth < 640 : false;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
+
+  // ✅ Detect resize dynamically
+  useEffect(() => {
+    const observer = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        if (entry.contentRect) {
+          setContainerWidth(entry.contentRect.width);
+        }
+      }
+    });
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => {
+      if (containerRef.current) observer.unobserve(containerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (parameters && parameters.length > 0) {
@@ -48,6 +64,7 @@ const LineChartIndex: React.FC<ChartdataProps> = ({
     }
   }, [parameters, colors]);
 
+  // ✅ Default selectedRange by type
   useEffect(() => {
     if (timeRangeType === 'day') {
       const today = new Date();
@@ -66,7 +83,6 @@ const LineChartIndex: React.FC<ChartdataProps> = ({
       const y = new Date().getFullYear();
       setSelectedRange([y, y]);
     } else if (timeRangeType === 'hour') {
-      // ค่าเริ่มต้นย้อนหลัง 6 ชั่วโมง
       const end = new Date();
       const start = new Date(end.getTime() - 6 * 60 * 60 * 1000);
       setSelectedRange([start, end]);
@@ -74,10 +90,14 @@ const LineChartIndex: React.FC<ChartdataProps> = ({
   }, [timeRangeType]);
 
   return (
-    <div className="w-full">
+    <div className="w-full" ref={containerRef}>
       <div className="w-full mx-auto px-2 py-2">
         <div className="bg-white rounded-2xl dark:bg-secondary-dark-bg dark:text-gray-200 p-3 sm:p-4 shadow">
+
+          {/* Controls */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+
+            {/* Parameter Labels */}
             <div className="flex flex-wrap gap-2">
               {lineChartParameters.map((param, idx) => (
                 <span
@@ -94,25 +114,26 @@ const LineChartIndex: React.FC<ChartdataProps> = ({
               ))}
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2 md:items-center">
-              <div className="w-full sm:w-40 rounded-xl transition bg-white dark:bg-gray-800 border border-teal-500 dark:border-teal-400 px-2 py-1 shadow-sm">
-                <DropDownListComponent
-                  id="time"
-                  fields={{ text: 'Time', value: 'Id' }}
-                  style={{
-                    border: 'none',
-                    background: 'transparent',
-                    fontWeight: 500,
-                    padding: '4px 0',
-                    color: currentMode === 'Dark' ? 'white' : '#0f766e',
-                  }}
-                  value={timeRangeType}
-                  dataSource={dropdownData}
-                  popupHeight="220px"
-                  popupWidth="160px"
-                  change={(e) => setTimeRangeType(e.value)}
-                />
-              </div>
+            {/* ✅ Responsive selector row */}
+            {/* 📱 Mobile (stacked) */}
+            <div className="flex flex-col gap-2 w-full sm:hidden">
+              <DropDownListComponent
+                id="time-mobile"
+                fields={{ text: 'Time', value: 'Id' }}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  fontWeight: 500,
+                  fontSize: '0.875rem',
+                  padding: '2px 0',
+                  color: currentMode === 'Dark' ? 'white' : '#0f766e',
+                }}
+                value={timeRangeType}
+                dataSource={dropdownData}
+                popupHeight="220px"
+                popupWidth="140px"
+                change={(e) => setTimeRangeType(e.value)}
+              />
 
               <TimeRangeSelector
                 timeRangeType={timeRangeType}
@@ -120,8 +141,40 @@ const LineChartIndex: React.FC<ChartdataProps> = ({
                 selectedValue={selectedRange}
               />
             </div>
+
+            {/* 💻 Tablet / Desktop (row) */}
+            <div className="hidden sm:flex flex-nowrap gap-2 w-full md:w-auto items-center">
+              <div className="flex-shrink min-w-[90px] max-w-[120px] text-xs">
+                <DropDownListComponent
+                  id="time"
+                  fields={{ text: 'Time', value: 'Id' }}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    fontWeight: 500,
+                    fontSize: '0.75rem',
+                    padding: '2px 0',
+                    color: currentMode === 'Dark' ? 'white' : '#0f766e',
+                  }}
+                  value={timeRangeType}
+                  dataSource={dropdownData}
+                  popupHeight="220px"
+                  popupWidth="140px"
+                  change={(e) => setTimeRangeType(e.value)}
+                />
+              </div>
+
+              <div className="flex-1 min-w-[140px] max-w-[220px] text-xs">
+                <TimeRangeSelector
+                  timeRangeType={timeRangeType}
+                  onChange={setSelectedRange}
+                  selectedValue={selectedRange}
+                />
+              </div>
+            </div>
           </div>
 
+          {/* Chart */}
           <div className="flex flex-col gap-8">
             <LineChart
               hardwareID={hardwareID}
@@ -129,8 +182,9 @@ const LineChartIndex: React.FC<ChartdataProps> = ({
               selectedRange={selectedRange}
               parameters={lineChartParameters.map(p => p.parameter)}
               colors={lineChartParameters.map(p => p.color)}
-              chartHeight={isMobile ? "300px" : "420px"}
+              chartHeight="420px"
               reloadKey={reloadKey}
+              key={containerWidth}
             />
           </div>
         </div>

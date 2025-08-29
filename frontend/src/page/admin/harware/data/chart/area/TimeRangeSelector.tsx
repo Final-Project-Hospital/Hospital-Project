@@ -30,7 +30,7 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
   ];
 
   const baseStyle =
-    "block w-full sm:w-auto rounded-md border border-teal-400 bg-white text-teal-600 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-300";
+    "block rounded-md border border-teal-400 bg-white text-teal-600 text-xs px-2 py-1 focus:outline-none focus:ring-2 focus:ring-teal-300 truncate";
 
   if (timeRangeType === 'hour') {
     const formatForInput = (d?: Date) => {
@@ -48,10 +48,10 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
     const endVal = Array.isArray(selectedValue) ? selectedValue[1] : undefined;
 
     return (
-      <div className="flex flex-col sm:flex-row gap-3 w-full">
+      <div className="flex flex-row gap-2 w-full">
         <input
           type="datetime-local"
-          className={baseStyle}
+          className={baseStyle + " w-[110px]"}
           value={formatForInput(startVal)}
           onChange={(e) => {
             const v = e.target.value ? new Date(e.target.value) : null;
@@ -61,7 +61,7 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
         />
         <input
           type="datetime-local"
-          className={baseStyle}
+          className={baseStyle + " w-[110px]"}
           value={formatForInput(endVal)}
           onChange={(e) => {
             const v = e.target.value ? new Date(e.target.value) : null;
@@ -80,40 +80,32 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
         change={args => onChange(args.value)}
         value={selectedValue}
         max={new Date()}
-        cssClass="w-full"
+        cssClass="w-full text-xs"
       />
     );
   }
 
   if (timeRangeType === 'month') {
     return (
-      <div className="flex flex-col sm:flex-row gap-3 w-full">
+      <div className="flex flex-row gap-2 w-full">
         <select
-          className={baseStyle}
+          className={baseStyle + " w-[90px]"}
           value={selectedValue?.month || ''}
           onChange={e => onChange({ ...selectedValue, month: e.target.value })}
         >
-          <option value="" disabled>
-            -- Select --
-          </option>
+          <option value="" disabled>-- M --</option>
           {months.map(m => (
-            <option key={m.value} value={m.value}>
-              {m.label}
-            </option>
+            <option key={m.value} value={m.value}>{m.label}</option>
           ))}
         </select>
         <select
-          className={baseStyle}
+          className={baseStyle + " w-[90px]"}
           value={selectedValue?.year || ''}
           onChange={e => onChange({ ...selectedValue, year: e.target.value })}
         >
-          <option value="" disabled>
-            -- Select --
-          </option>
+          <option value="" disabled>-- Y --</option>
           {years.map(y => (
-            <option key={y} value={y}>
-              {y}
-            </option>
+            <option key={y} value={y}>{y}</option>
           ))}
         </select>
       </div>
@@ -122,33 +114,25 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
 
   if (timeRangeType === 'year') {
     return (
-      <div className="flex flex-col sm:flex-row gap-3 w-full">
+      <div className="flex flex-row gap-2 w-full">
         <select
-          className={baseStyle}
+          className={baseStyle + " w-[90px]"}
           value={selectedValue?.[0] || ''}
           onChange={e => onChange([+e.target.value, selectedValue?.[1] || +e.target.value])}
         >
-          <option value="" disabled>
-            -- Start --
-          </option>
+          <option value="" disabled>-- Start --</option>
           {years.map(y => (
-            <option key={y} value={y}>
-              {y}
-            </option>
+            <option key={y} value={y}>{y}</option>
           ))}
         </select>
         <select
-          className={baseStyle}
+          className={baseStyle + " w-[90px]"}
           value={selectedValue?.[1] || ''}
           onChange={e => onChange([selectedValue?.[0] || +e.target.value, +e.target.value])}
         >
-          <option value="" disabled>
-            -- End --
-          </option>
+          <option value="" disabled>-- End --</option>
           {years.map(y => (
-            <option key={y} value={y}>
-              {y}
-            </option>
+            <option key={y} value={y}>{y}</option>
           ))}
         </select>
       </div>

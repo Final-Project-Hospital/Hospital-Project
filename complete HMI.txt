@@ -1,30 +1,43 @@
 #include <Arduino.h>
 #include <ModbusRTU.h>
+#include <HardwareSerial.h>
+#include <DHT.h>
 
-// ------- RS485 <-> ESP32 wiring -------
+// ===================== RS485 <-> ESP32 wiring =====================
 // ESP32 TXD2(17) -> DI
 // ESP32 RXD2(16) <- RO
 // ESP32 GPIO4    -> RE/DE (ผูก RE กับ DE เข้าด้วยกัน)
 // GND ↔ GND
 // RS485 bus A(D+) -> DB9 pin 9, B(D-) -> DB9 pin 8 (HMI COM1)
 
+// RS485
 #define PIN_DE_RE  4
 #define PIN_RXD2   16
 #define PIN_TXD2   17
-
 #define BAUDRATE   9600
-#define HMI_ID     1        // HMI Station/Slave ID
+#define HMI_ID     1
 
 // LW0..LW7
-#define ADDR_LW0   0   // Formaldehyde raw
+#define ADDR_LW0   0   // Formaldehyde raw (ppm *1000)
 #define ADDR_LW1   1   // Temp raw
 #define ADDR_LW2   2   // Humi raw
-// LW3 ว่าง
 #define ADDR_LW4   4   // Formaldehyde status
 #define ADDR_LW5   5   // Temp status
 #define ADDR_LW6   6   // Humi status
 #define ADDR_LW7   7   // Formaldehyde > 50 trigger
 
+// ===================== ZE08-CH2O (UART) =====================
+static const int PIN_RX = 18;           // ESP32 RX2 <- ZE08 TXD (Pin6)
+static const int PIN_TX_UNUSED = -1;    // ไม่ใช้ TX
+static const uint32_t SENSOR_BAUD = 9600;
+HardwareSerial zeSerial(1);
+
+// ===================== DHT11 =====================
+#define DHTPIN 8
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+// ===================== Modbus =====================
 ModbusRTU mb;
 bool busy = false;
 uint16_t regsAll[8];   // เก็บค่าที่จะส่ง LW0..LW7
@@ -33,84 +46,125 @@ uint16_t regsAll[8];   // เก็บค่าที่จะส่ง LW0..LW7
 bool lw7Triggered = false;
 uint32_t lastTrigger = 0;
 
+// ===================== Calibration =====================
+#define CALIB_FACTOR 21.0f   // ปรับค่าตามเครื่องมือแพทย์ (0.02 → 0.42 ppm ≈ 21x)
+#define DEADZONE     0.01f   // ถ้าต่ำกว่า 0.01 ppm → บังคับเป็น 0
+
+// ===================== Moving Average =====================
+#define AVG_SIZE 10
+float formBuf[AVG_SIZE];
+int bufIndex = 0;
+bool bufFilled = false;
+
 // Callback หลังเขียนเสร็จ
 bool cbWrite(Modbus::ResultCode rc, uint16_t, void*) {
   busy = false;
   return true;
 }
 
-void setup() {
-  Serial.begin(115200);
-  randomSeed(esp_random());
+// ===================== อ่านค่า ZE08 + smoothing =====================
+float readZE08Avg() {
+  float ppm = -1;
 
-  Serial2.begin(BAUDRATE, SERIAL_8N1, PIN_RXD2, PIN_TXD2);
-  mb.begin(&Serial2, PIN_DE_RE);   // คุมทิศทางด้วย DE/RE
-  mb.master();
+  if (zeSerial.available() >= 9) {
+    uint8_t frame[9];
+    if (zeSerial.read() == 0xFF) {
+      frame[0] = 0xFF;
+      zeSerial.readBytes(&frame[1], 8);
+      if (frame[1] == 0x17) {
+        uint16_t raw = ((uint16_t)frame[3] << 8) | frame[4];
+        ppm = raw / 100.0f;
+      }
+    }
+  }
+
+  if (ppm < 0) ppm = 0;
+
+  // apply calibration
+  ppm *= CALIB_FACTOR;
+
+  // apply deadzone
+  if (ppm < DEADZONE) ppm = 0;
+
+  // save to buffer
+  formBuf[bufIndex++] = ppm;
+  if (bufIndex >= AVG_SIZE) {
+    bufIndex = 0;
+    bufFilled = true;
+  }
+
+  // calculate average
+  int n = bufFilled ? AVG_SIZE : bufIndex;
+  float sum = 0;
+  for (int i = 0; i < n; i++) sum += formBuf[i];
+  return (n > 0) ? sum / n : ppm;
 }
 
+// ===================== SETUP =====================
+void setup() {
+  Serial.begin(115200);
+
+  // ZE08
+  zeSerial.begin(SENSOR_BAUD, SERIAL_8N1, PIN_RX, PIN_TX_UNUSED);
+
+  // DHT
+  dht.begin();
+
+  // Modbus
+  Serial2.begin(BAUDRATE, SERIAL_8N1, PIN_RXD2, PIN_TXD2);
+  mb.begin(&Serial2, PIN_DE_RE);
+  mb.master();
+
+  Serial.println("System start: ZE08 + DHT11 -> Modbus RTU to HMI (ppm calibrated + smoothed)");
+}
+
+// ===================== LOOP =====================
 void loop() {
   mb.task();
 
   static uint32_t last = 0;
-  if (!busy && millis() - last > 10000) {
+  if (!busy && millis() - last > 5000) {
+    // ====================== อ่านค่า Formaldehyde ======================
+    float f = readZE08Avg();
 
-    // ==============================
-    // Formaldehyde raw (สุ่มค่า 0.010–0.070 ppm ×1000)
-    // ==============================
-    regsAll[0] = random(10, 71);   // ค่า int = 10..70
-    float f = regsAll[0] / 1000.0; // แปลงเป็น ppm สำหรับแสดงผล
+    regsAll[0] = (uint16_t)(f * 1000); // เก็บเป็น int x1000 (ppm)
 
-    // ✅ เช็กสถานะด้วย integer โดยตรง
-    if (regsAll[0] < 30) {
+    if (f < 0.030) {  // <0.030 ppm
       regsAll[4] = 0;   // ต่ำ
-    } else if (regsAll[0] <= 50) {
+    } else if (f <= 0.050) {  // 0.030-0.050
       regsAll[4] = 1;   // ปกติ
     } else {
       regsAll[4] = 2;   // สูง
-      // ✅ ถ้าเกิน 50 → Trigger LW7 = 1
-      regsAll[7] = 1;
+      regsAll[7] = 1;   // Trigger
       lw7Triggered = true;
       lastTrigger = millis();
     }
 
-    // ==============================
-    // Temperature raw (สุ่ม 15.00–40.00 °C ×100)
-    // ==============================
-    regsAll[1] = random(1500, 4001);  // ค่า int = 1500..4000
-    float t = regsAll[1] / 100.0;     // แปลงเป็น °C
+    // ====================== อ่านค่า DHT11 ======================
+    float t = dht.readTemperature();
+    float h = dht.readHumidity();
 
-    if (regsAll[1] < 2500) {
-      regsAll[5] = 0;   // ต่ำ
-    } else if (regsAll[1] <= 3000) {
-      regsAll[5] = 1;   // ปกติ
-    } else {
-      regsAll[5] = 2;   // สูง
-    }
+    if (isnan(t)) t = 0;
+    if (isnan(h)) h = 0;
 
-    // ==============================
-    // Humidity raw (สุ่ม 20.00–80.00 % ×100)
-    // ==============================
-    regsAll[2] = random(2000, 8001);  // ค่า int = 2000..8000
-    float h = regsAll[2] / 100.0;     // แปลงเป็น %
+    regsAll[1] = (uint16_t)(t * 100); // temp ×100
+    regsAll[2] = (uint16_t)(h * 100); // humi ×100
 
-    if (regsAll[2] < 4000) {
-      regsAll[6] = 0;   // ต่ำ
-    } else if (regsAll[2] <= 6000) {
-      regsAll[6] = 1;   // ปกติ
-    } else {
-      regsAll[6] = 2;   // สูง
-    }
+    if (regsAll[1] < 2500) regsAll[5] = 0;   // ต่ำ
+    else if (regsAll[1] <= 3000) regsAll[5] = 1; // ปกติ
+    else regsAll[5] = 2;   // สูง
 
-    // ==============================
-    // ส่งค่า LW0–LW7 ทีเดียว
-    // ==============================
+    if (regsAll[2] < 4000) regsAll[6] = 0;   // ต่ำ
+    else if (regsAll[2] <= 6000) regsAll[6] = 1; // ปกติ
+    else regsAll[6] = 2;   // สูง
+
+    // ====================== ส่งค่า LW0–LW7 ======================
     if (mb.writeHreg(HMI_ID, ADDR_LW0, regsAll, 8, cbWrite)) {
       busy = true;
       last = millis();
-      Serial.printf("Raw -> Form=%.3f ppm | Temp=%.2f °C | Humi=%.2f %% | LW7=%d\n",
+      Serial.printf("RawCalAvg -> Form=%.3f ppm | Temp=%.2f °C | Humi=%.2f %% | LW7=%d\n",
                     f, t, h, regsAll[7]);
 
-      // ✅ แสดงสถานะเป็นข้อความแทนตัวเลข
       const char* formStatus[] = {"ต่ำ", "ปกติ", "สูง"};
       const char* tempStatus[] = {"ต่ำ", "ปกติ", "สูง"};
       const char* humiStatus[] = {"ต่ำ", "ปกติ", "สูง"};
@@ -122,7 +176,7 @@ void loop() {
     }
   }
 
-  // ✅ ถ้า LW7 ถูก Trigger แล้ว → ผ่านไป 2 วินาทีให้ส่ง 0
+  // ✅ รีเซ็ต LW7 หลัง Trigger 2 วินาที
   if (lw7Triggered && millis() - lastTrigger >= 2000 && !busy) {
     regsAll[7] = 0;
     if (mb.writeHreg(HMI_ID, ADDR_LW7, regsAll[7], cbWrite)) {
