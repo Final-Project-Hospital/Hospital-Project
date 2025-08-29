@@ -26,7 +26,7 @@ import Table, { ColumnsType } from "antd/es/table";
 import { GetGeneralbyID, GetGeneralTABLE, DeleteAllGeneralRecordsByDate } from "../../../../../services/garbageServices/generalWaste";
 import UpdateGeneralCentralForm from "../../../data-management/garbage/generalWaste/updateGeneralCenter";
 import GeneralCentralForm from "../../../data-management/garbage/generalWaste/generalWaste"
-import { ListStatus } from '../../../../../services/index';
+import { ListStatusGarbage } from '../../../../../services/index';
 import { ListStatusInterface } from '../../../../../interface/IStatus';
 
 const normalizeString = (str: any) =>
@@ -83,12 +83,11 @@ const GeneralWaste: React.FC = () => {
   const [tableFilterMode, setTableFilterMode] = useState<"dateRange" | "month" | "year">("year");
   const [tableDateRange, setTableDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [efficiencyFilter, setEfficiencyFilter] = useState<string | null>(null);
   const totalTasks = data.length;
   const doneTasks = data.filter((d: any) => {
-    const status = (d.status ?? "").trim(); return status.includes("ผ่าน") && !status.includes("ไม่ผ่าน");
+    const status = (d.status ?? "").trim(); return status.includes("สำเร็จ") && !status.includes("ไม่สำเร็จ");
   }).length;
-  const inProgressTasks = data.filter((d: any) => normalizeString(d.status ?? "").includes(normalizeString("ไม่ผ่าน"))).length;
+  const inProgressTasks = data.filter((d: any) => normalizeString(d.status ?? "").includes(normalizeString("ไม่สำเร็จ"))).length;
 
   //ใช้กับกราฟ ---โหลดสีจาก localStorage----
   useEffect(() => {
@@ -337,7 +336,7 @@ const GeneralWaste: React.FC = () => {
 
   useEffect(() => {
     const loadStatus = async () => {
-      const data = await ListStatus();
+      const data = await ListStatusGarbage();
       if (data) {
         setStatusOptions(data);
       } else {
@@ -626,7 +625,7 @@ const GeneralWaste: React.FC = () => {
       render: (val: number | null) => val != null ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
     },
     {
-      title: 'ค่า Target',
+      title: 'ค่าเป้าหมาย',
       key: 'target_value',
       width: 150,
       render: (_, r) =>
@@ -635,9 +634,9 @@ const GeneralWaste: React.FC = () => {
           : r.target_value?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '-'
     },
     {
-      title: "สถานะ",
+      title: "สถานะเป้าหมาย",
       key: "status",
-      width: 200,
+      width: 220,
       render: (_, record) => {
         const s = record.status;
         const getBadge = (icon: React.ReactNode, text: string, className: string) => (
@@ -647,8 +646,8 @@ const GeneralWaste: React.FC = () => {
           </span>
         );
         if (!s) return getBadge(<QuestionCircleFilled style={{ fontSize: 18 }} />, "ไม่มีข้อมูล", "status-none");
-        if (s.includes("ไม่ผ่าน")) return getBadge(<CloseCircleFilled style={{ fontSize: 18 }} />, s, "status-high");
-        if (s.includes("ผ่าน")) return getBadge(<CheckCircleFilled style={{ fontSize: 18 }} />, s, "status-good");
+        if (s.includes("ไม่สำเร็จ")) return getBadge(<CloseCircleFilled style={{ fontSize: 18 }} />, s, "status-high");
+        if (s.includes("สำเร็จ")) return getBadge(<CheckCircleFilled style={{ fontSize: 18 }} />, s, "status-good");
         return getBadge(<QuestionCircleFilled style={{ fontSize: 20 }} />, "ไม่มีข้อมูล", "status-none");
       }
     },
@@ -1141,22 +1140,10 @@ const GeneralWaste: React.FC = () => {
         </div>
         <div className="general-select-date">
           <div className="general-filter-status-and-efficiency">
-            <p>ประสิทธิภาพ</p>
+            <p>สถานะเป้าหมาย</p>
             <Select
               allowClear
-              placeholder="เลือกประสิทธิภาพ"
-              value={efficiencyFilter}
-              onChange={(v) => setEfficiencyFilter(v || null)}
-              style={{ width: 200 }}
-              options={[
-                { label: "มากกว่า 50%", value: "gt" },
-                { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
-              ]}
-            />
-            <p>สถานะ</p>
-            <Select
-              allowClear
-              placeholder="เลือกสถานะ"
+              placeholder="เลือกสถานะเป้าหมาย"
               value={statusFilter}
               onChange={(v) => setStatusFilter(v || null)}
               style={{ width: 200 }}
@@ -1255,12 +1242,12 @@ const GeneralWaste: React.FC = () => {
             <div className="general-task-stats">
               <div className="general-task-item">
                 <div className="general-task-number">{doneTasks}</div>
-                <div className="general-task-label">ผ่านเกณฑ์มาตรฐาน</div>
+                <div className="general-task-label">สำเร็จตามเป้าหมาย</div>
               </div>
               <div className="general-task-divider" />
               <div className="general-task-item">
                 <div className="general-task-number">{inProgressTasks}</div>
-                <div className="general-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
+                <div className="general-task-label">ไม่สำเร็จตามเป้าหมาย</div>
               </div>
             </div>
           </div>
@@ -1282,14 +1269,6 @@ const GeneralWaste: React.FC = () => {
                 return recordDate.isBetween(tableDateRange[0], tableDateRange[1], null, '[]');
               })
               .filter((d: any) => {
-                // กรองประสิทธิภาพ
-                if (!efficiencyFilter) return true;
-                const eff = Number(d.efficiency ?? -1);
-                if (efficiencyFilter === "gt") return eff > 50;
-                if (efficiencyFilter === "lte") return eff <= 50;
-                return true;
-              })
-              .filter((d: any) => {
                 // กรองสถานะ
                 if (!statusFilter) return true;
                 return normalizeString(d.status ?? "") === normalizeString(statusFilter);
@@ -1307,44 +1286,51 @@ const GeneralWaste: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล General Waste ใหม่"}
+          title={<span style={{ color: '#1ba0a2ff' }}>เพิ่มข้อมูล General Waste ใหม่</span>}
           open={isModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           destroyOnClose
           closable={false}
           centered
+          bodyStyle={{ padding: '30px 30px 15px 30px' }}
         >
-          <GeneralCentralForm onCancel={handleAddModalCancel}
-            onSuccess={async () => {
-              await fetchGeneralData();      // ✅ โหลดข้อมูลกราฟใหม่
-              await loadGeneralTable();   // ✅ โหลดข้อมูลตารางใหม่
-            }}
-          />
+          <div className="gen-container">
+            <GeneralCentralForm onCancel={handleAddModalCancel}
+              onSuccess={async () => {
+                await fetchGeneralData();   // โหลดข้อมูลกราฟใหม่
+                await loadGeneralTable();   // โหลดข้อมูลตารางใหม่
+              }}
+            />
+          </div>
         </Modal>
+
         <Modal
-          title="แก้ไขข้อมูล General Waste"
+          title={<span style={{ color: '#1ba0a2ff' }}>แก้ไขข้อมูล General Waste</span>}
           open={isEditModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           closable={false}
           destroyOnClose
           centered
           onCancel={handleEditModalCancel}
+          bodyStyle={{ padding: '30px 30px 15px 30px' }}
         >
           {editingRecord && (
-            <UpdateGeneralCentralForm
-              initialValues={editingRecord}
-              onSuccess={() => {
-                setTimeout(async () => {
-                  setIsEditModalVisible(false);
-                  setEditRecord(null);
-                  await loadGeneralTable();
-                  await fetchGeneralData();
-                }, 500);
-              }}
-              onCancel={handleEditModalCancel}
-            />
+            <div className="up-recy-container">
+              <UpdateGeneralCentralForm
+                initialValues={editingRecord}
+                onSuccess={() => {
+                  setTimeout(async () => {
+                    setIsEditModalVisible(false);
+                    setEditRecord(null);
+                    await loadGeneralTable();
+                    await fetchGeneralData();
+                  }, 500);
+                }}
+                onCancel={handleEditModalCancel}
+              />
+            </div>
           )}
         </Modal>
 

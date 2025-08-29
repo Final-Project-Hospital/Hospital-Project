@@ -24,12 +24,7 @@ import { BarChart3, LineChart } from "lucide-react";
 import Table, { ColumnsType } from "antd/es/table";
 import { GetChemicalbyID, GetChemicalTABLE, DeleteAllChemicalRecordsByDate } from "../../../../../services/garbageServices/chemicalWaste";
 import UpdateChemicalCentralForm from "../../../data-management/garbage/chemicalWaste/updateChemicalCenter";
-import ChemicalCentralForm from "../../../data-management/garbage/chemicalWaste/chemicalWaste"
-import { ListStatus } from '../../../../../services/index';
-import { ListStatusInterface } from '../../../../../interface/IStatus';
-
-const normalizeString = (str: any) =>
-  String(str).normalize("NFC").trim().toLowerCase();
+import ChemicalCentralForm from "../../../data-management/garbage/chemicalWaste/chemicalWaste";
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';
@@ -78,16 +73,9 @@ const ChemicalWaste: React.FC = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingRecord, setEditRecord] = useState<any>(null);
   const { confirm } = Modal;
-  const [statusOptions, setStatusOptions] = useState<ListStatusInterface[]>([]);
   const [tableFilterMode, setTableFilterMode] = useState<"dateRange" | "month" | "year">("year");
   const [tableDateRange, setTableDateRange] = useState<[Dayjs, Dayjs] | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [efficiencyFilter, setEfficiencyFilter] = useState<string | null>(null);
   const totalTasks = data.length;
-  const doneTasks = data.filter((d: any) => {
-    const status = (d.status ?? "").trim(); return status.includes("ผ่าน") && !status.includes("ไม่ผ่าน");
-  }).length;
-  const inProgressTasks = data.filter((d: any) => normalizeString(d.status ?? "").includes(normalizeString("ไม่ผ่าน"))).length;
 
   //ใช้กับกราฟ ---โหลดสีจาก localStorage----
   useEffect(() => {
@@ -327,19 +315,6 @@ const ChemicalWaste: React.FC = () => {
   // โหลดครั้งแรก
   useEffect(() => {
     loadChemicalTable();
-  }, []);
-
-  useEffect(() => {
-    const loadStatus = async () => {
-      const data = await ListStatus();
-      if (data) {
-        setStatusOptions(data);
-      } else {
-        console.error("Failed to load status options");
-      }
-    };
-
-    loadStatus();
   }, []);
 
   //ใช้กับกราฟ
@@ -973,30 +948,6 @@ const ChemicalWaste: React.FC = () => {
         </div>
         <div className="chemical-select-date">
           <div className="chemical-filter-status-and-efficiency">
-            <p>ประสิทธิภาพ</p>
-            <Select
-              allowClear
-              placeholder="เลือกประสิทธิภาพ"
-              value={efficiencyFilter}
-              onChange={(v) => setEfficiencyFilter(v || null)}
-              style={{ width: 200 }}
-              options={[
-                { label: "มากกว่า 50%", value: "gt" },
-                { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
-              ]}
-            />
-            <p>สถานะ</p>
-            <Select
-              allowClear
-              placeholder="เลือกสถานะ"
-              value={statusFilter}
-              onChange={(v) => setStatusFilter(v || null)}
-              style={{ width: 200 }}
-              options={statusOptions.map((item) => ({
-                label: item.StatusName,
-                value: item.StatusName,
-              }))}
-            />
           </div>
           <div className="chemical-filter-date">
             <div >
@@ -1086,13 +1037,8 @@ const ChemicalWaste: React.FC = () => {
             <div className="chemical-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="chemical-task-stats">
               <div className="chemical-task-item">
-                <div className="chemical-task-number">{doneTasks}</div>
-                <div className="chemical-task-label">ผ่านเกณฑ์มาตรฐาน</div>
-              </div>
-              <div className="chemical-task-divider" />
-              <div className="chemical-task-item">
-                <div className="chemical-task-number">{inProgressTasks}</div>
-                <div className="chemical-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
+                <div className="chemical-task-number">{ }</div>
+                <div className="chemical-task-label"></div>
               </div>
             </div>
           </div>
@@ -1113,19 +1059,6 @@ const ChemicalWaste: React.FC = () => {
                 const recordDate = dayjs(d.date);
                 return recordDate.isBetween(tableDateRange[0], tableDateRange[1], null, '[]');
               })
-              .filter((d: any) => {
-                // กรองประสิทธิภาพ
-                if (!efficiencyFilter) return true;
-                const eff = Number(d.efficiency ?? -1);
-                if (efficiencyFilter === "gt") return eff > 50;
-                if (efficiencyFilter === "lte") return eff <= 50;
-                return true;
-              })
-              .filter((d: any) => {
-                // กรองสถานะ
-                if (!statusFilter) return true;
-                return normalizeString(d.status ?? "") === normalizeString(statusFilter);
-              })
             }
             rowKey="ID"
             loading={loading}
@@ -1139,44 +1072,51 @@ const ChemicalWaste: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล Chemical Waste ใหม่"}
+          title={<span style={{ color: '#1ba0a2ff' }}>เพิ่มข้อมูล Chemical Waste ใหม่</span>}
           open={isModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           destroyOnClose
           closable={false}
           centered
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
-          <ChemicalCentralForm onCancel={handleAddModalCancel}
-            onSuccess={async () => {
-              await fetchChemicalData();      // ✅ โหลดข้อมูลกราฟใหม่
-              await loadChemicalTable();   // ✅ โหลดข้อมูลตารางใหม่
-            }}
-          />
+          <div className="chem-container">
+            <ChemicalCentralForm onCancel={handleAddModalCancel}
+              onSuccess={async () => {
+                await fetchChemicalData();   // โหลดข้อมูลกราฟใหม่
+                await loadChemicalTable();   // โหลดข้อมูลตารางใหม่
+              }}
+            />
+          </div>
         </Modal>
+
         <Modal
-          title="แก้ไขข้อมูล Chemical Waste"
+          title={<span style={{ color: '#1ba0a2ff' }}>แก้ไขข้อมูล Chemical Waste</span>}
           open={isEditModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           closable={false}
           destroyOnClose
           centered
           onCancel={handleEditModalCancel}
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
           {editingRecord && (
-            <UpdateChemicalCentralForm
-              initialValues={editingRecord}
-              onSuccess={() => {
-                setTimeout(async () => {
-                  setIsEditModalVisible(false);
-                  setEditRecord(null);
-                  await loadChemicalTable();
-                  await fetchChemicalData();
-                }, 500);
-              }}
-              onCancel={handleEditModalCancel}
-            />
+            <div className="up-recy-container">
+              <UpdateChemicalCentralForm
+                initialValues={editingRecord}
+                onSuccess={() => {
+                  setTimeout(async () => {
+                    setIsEditModalVisible(false);
+                    setEditRecord(null);
+                    await loadChemicalTable();
+                    await fetchChemicalData();
+                  }, 500);
+                }}
+                onCancel={handleEditModalCancel}
+              />
+            </div>
           )}
         </Modal>
       </div>

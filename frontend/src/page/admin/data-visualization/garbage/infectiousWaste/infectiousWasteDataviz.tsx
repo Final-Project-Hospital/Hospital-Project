@@ -83,7 +83,6 @@ const InfectiousWaste: React.FC = () => {
   const [tableFilterMode, setTableFilterMode] = useState<"dateRange" | "month" | "year">("year");
   const [tableDateRange, setTableDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [efficiencyFilter, setEfficiencyFilter] = useState<string | null>(null);
   const totalTasks = data.length;
   const doneTasks = data.filter((d: any) => {
     const status = (d.status ?? "").trim(); return status.includes("ผ่าน") && !status.includes("ไม่ผ่าน");
@@ -658,13 +657,13 @@ const InfectiousWaste: React.FC = () => {
       title: 'ค่า AADC',
       dataIndex: 'aadc',
       key: 'aadc',
-      width: 120,
+      width: 100,
       render: (val: number | null) => val != null ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
     },
     {
       title: 'ค่า Target',
       key: 'target_value',
-      width: 150,
+      width: 140,
       render: (_, r) =>
         r.min_target || r.max_target
           ? `${r.min_target.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - ${r.max_target.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -673,7 +672,7 @@ const InfectiousWaste: React.FC = () => {
     {
       title: "สถานะ",
       key: "status",
-      width: 200,
+      width: 220,
       render: (_, record) => {
         const s = record.status;
         const getBadge = (icon: React.ReactNode, text: string, className: string) => (
@@ -1175,18 +1174,6 @@ const InfectiousWaste: React.FC = () => {
         </div>
         <div className="infectious-select-date">
           <div className="infectious-filter-status-and-efficiency">
-            <p>ประสิทธิภาพ</p>
-            <Select
-              allowClear
-              placeholder="เลือกประสิทธิภาพ"
-              value={efficiencyFilter}
-              onChange={(v) => setEfficiencyFilter(v || null)}
-              style={{ width: 200 }}
-              options={[
-                { label: "มากกว่า 50%", value: "gt" },
-                { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
-              ]}
-            />
             <p>สถานะ</p>
             <Select
               allowClear
@@ -1316,14 +1303,6 @@ const InfectiousWaste: React.FC = () => {
                 return recordDate.isBetween(tableDateRange[0], tableDateRange[1], null, '[]');
               })
               .filter((d: any) => {
-                // กรองประสิทธิภาพ
-                if (!efficiencyFilter) return true;
-                const eff = Number(d.efficiency ?? -1);
-                if (efficiencyFilter === "gt") return eff > 50;
-                if (efficiencyFilter === "lte") return eff <= 50;
-                return true;
-              })
-              .filter((d: any) => {
                 // กรองสถานะ
                 if (!statusFilter) return true;
                 return normalizeString(d.status ?? "") === normalizeString(statusFilter);
@@ -1341,44 +1320,51 @@ const InfectiousWaste: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล Infectious Waste ใหม่"}
+          title={<span style={{ color: '#1ba0a2ff' }}>เพิ่มข้อมูล Infectious Waste ใหม่</span>}
           open={isModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           destroyOnClose
           closable={false}
           centered
+          bodyStyle={{ padding: '30px 30px 15px 30px' }}
         >
-          <InfectiousCentralForm onCancel={handleAddModalCancel}
-            onSuccess={async () => {
-              await fetchInfectiousData();      // ✅ โหลดข้อมูลกราฟใหม่
-              await loadInfectiousTable();   // ✅ โหลดข้อมูลตารางใหม่
-            }}
-          />
+          <div className="inf-container">
+            <InfectiousCentralForm onCancel={handleAddModalCancel}
+              onSuccess={async () => {
+                await fetchInfectiousData();   // โหลดข้อมูลกราฟใหม่
+                await loadInfectiousTable();   // โหลดข้อมูลตารางใหม่
+              }}
+            />
+          </div>
         </Modal>
+
         <Modal
-          title="แก้ไขข้อมูล Infectious Waste"
+          title={<span style={{ color: '#1ba0a2ff' }}>แก้ไขข้อมูล Infectious Waste</span>}
           open={isEditModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           closable={false}
           destroyOnClose
           centered
           onCancel={handleEditModalCancel}
+          bodyStyle={{ padding: '30px 30px 15px 30px' }}
         >
           {editingRecord && (
-            <UpdateInfectiousCentralForm
-              initialValues={editingRecord}
-              onSuccess={() => {
-                setTimeout(async () => {
-                  setIsEditModalVisible(false);
-                  setEditRecord(null);
-                  await loadInfectiousTable();
-                  await fetchInfectiousData();
-                }, 500);
-              }}
-              onCancel={handleEditModalCancel}
-            />
+            <div className="up-recy-container">
+              <UpdateInfectiousCentralForm
+                initialValues={editingRecord}
+                onSuccess={() => {
+                  setTimeout(async () => {
+                    setIsEditModalVisible(false);
+                    setEditRecord(null);
+                    await loadInfectiousTable();
+                    await fetchInfectiousData();
+                  }, 500);
+                }}
+                onCancel={handleEditModalCancel}
+              />
+            </div>
           )}
         </Modal>
 
