@@ -4,6 +4,8 @@ import { Modal, Form, Input, Row, Col, Select, message } from "antd";
 import { CameraOutlined, UserAddOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { PositionInterface } from "../../interface/IPosition";
+import { RoleInterface } from "../../interface/IRole";   // ✅ import interface Role
+import { ListRole } from "../../services/httpLogin";      // ✅ import service
 
 type Props = {
   open: boolean;
@@ -18,16 +20,25 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
   const [form] = Form.useForm();
   const [uploadFile, setUploadFile] = useState<File | undefined>();
   const [loading, setLoading] = useState(false);
+  const [roles, setRoles] = useState<RoleInterface[]>([]); // ✅ state สำหรับ Role
 
-  // URL preview ของรูป เพื่อแสดงใน <img>
+  // preview รูป
   const previewUrl = useMemo(() => (uploadFile ? URL.createObjectURL(uploadFile) : ""), [uploadFile]);
 
-  // cleanup object URL เมื่อเปลี่ยนไฟล์/ปิด modal
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
+
+  // ✅ โหลด Role จาก backend เมื่อ modal เปิด
+  useEffect(() => {
+    if (open) {
+      ListRole().then((res) => {
+        if (res) setRoles(res);
+      });
+    }
+  }, [open]);
 
   const handleFileChange = (file?: File) => {
     if (!file) {
@@ -36,18 +47,17 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
     }
     const isImage = file.type.startsWith("image/");
     if (!isImage) {
-      message.error("กรุณาอัปโหลดไฟล์รูปภาพ");
+      message.warning("กรุณาอัปโหลดไฟล์รูปภาพ");
       return;
     }
     const isLt2M = file.size / 1024 / 1024 < 2;
     if (!isLt2M) {
-      message.error("ขนาดรูปต้องไม่เกิน 2MB");
+      message.warning("ขนาดรูปต้องไม่เกิน 2MB");
       return;
     }
     setUploadFile(file);
   };
 
-  // ยกเลิก: ปิดทันที ไม่ต้องมีโมดัลยืนยัน
   const handleCancel = () => {
     onClose();
     setTimeout(() => {
@@ -56,7 +66,6 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
     }, 0);
   };
 
-  // กดสมัครบัญชี: ส่งข้อมูลทันที (ไม่มี Modal ยืนยัน)
   const handleCreate = async () => {
     try {
       const values = await form.validateFields();
@@ -84,7 +93,7 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
       onSuccess();
       onClose();
     } catch (err: any) {
-      if (err?.errorFields) return; // validate ไม่ผ่าน ให้ฟอร์มโชว์เอง
+      if (err?.errorFields) return;
       const msg = err?.response?.data?.error || "สร้างบัญชีไม่สำเร็จ";
       message.error(msg);
     } finally {
@@ -92,7 +101,6 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
     }
   };
 
-  // ชื่อเรื่อง (Title) ไล่สี teal + ไอคอน
   const TitleNode = (
     <div className="flex items-center gap-2">
       <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-teal-500/10">
@@ -120,10 +128,9 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
           "bg-gradient-to-r from-teal-600 to-cyan-500 text-white hover:from-teal-700 hover:to-cyan-600 border-0 px-5 rounded-md shadow",
       }}
     >
-      {/* อัปโหลดโปรไฟล์แบบวงกลม (Tailwind-only) */}
+      {/* อัปโหลดโปรไฟล์ */}
       <div className="w-full flex items-center justify-center my-6">
         <div className="relative group">
-          {/* ปุ่มลบมุมขวาบน (แสดงเมื่อมีรูป) */}
           {uploadFile && (
             <button
               type="button"
@@ -135,7 +142,6 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
             </button>
           )}
 
-          {/* ปุ่มอัปโหลด (label + input file) */}
           <label
             htmlFor="employee-profile-input"
             className={[
@@ -148,14 +154,12 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
             ].join(" ")}
           >
             {uploadFile ? (
-              // แสดงรูป
               <div className="relative w-full h-full">
                 <img
                   src={previewUrl}
                   alt="profile"
                   className="w-full h-full object-cover rounded-full"
                 />
-                {/* Overlay เมื่อ hover */}
                 <div
                   className={[
                     "absolute inset-0 rounded-full",
@@ -171,7 +175,6 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
                 </div>
               </div>
             ) : (
-              // Placeholder (ไม่มีรูป)
               <div className="flex flex-col items-center justify-center">
                 <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center">
                   <CameraOutlined className="text-lg text-teal-600" />
@@ -195,43 +198,87 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
       </div>
 
       <Form layout="vertical" form={form}>
-        {/* ชื่อ + นามสกุล (แถวเดียว) */}
+        {/* ชื่อ + นามสกุล */}
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item name="firstName" label="ชื่อ" rules={[{ required: true }]}>
+            <Form.Item
+              name="firstName"
+              label="ชื่อ"
+              rules={[{ required: true, message: "กรุณากรอกชื่อ" }]}
+            >
               <Input />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item name="lastName" label="นามสกุล" rules={[{ required: true }]}>
+            <Form.Item
+              name="lastName"
+              label="นามสกุล"
+              rules={[{ required: true, message: "กรุณากรอกนามสกุล" }]}
+            >
               <Input />
             </Form.Item>
           </Col>
         </Row>
 
-        {/* อีเมล + รหัสผ่าน (แถวเดียว) */}
+        {/* อีเมล + รหัสผ่าน */}
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item name="email" label="อีเมล" rules={[{ required: true, type: "email" }]}>
+            <Form.Item
+              name="email"
+              label="อีเมล"
+              rules={[
+                { required: true, message: "กรุณากรอกอีเมล" },
+                { type: "email", message: "รูปแบบอีเมลไม่ถูกต้อง" },
+              ]}
+            >
               <Input />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item name="password" label="รหัสผ่าน" rules={[{ required: true }]}>
+            <Form.Item
+              name="password"
+              label="รหัสผ่าน"
+              rules={[{ required: true, message: "กรุณากรอกรหัสผ่าน" }]}
+            >
               <Input.Password />
             </Form.Item>
           </Col>
         </Row>
 
-        {/* เบอร์โทร + ตำแหน่ง (แถวเดียว) */}
+        {/* เบอร์โทร + ตำแหน่ง */}
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item name="phone" label="เบอร์โทร" rules={[{ required: true }]}>
-              <Input />
+            <Form.Item
+              name="phone"
+              label="เบอร์โทร"
+              rules={[
+                { required: true, message: "กรุณากรอกเบอร์โทรศัพท์" },
+                {
+                  validator: (_, value) => {
+                    if (!value) return Promise.resolve();
+                    if (!/^0\d{9}$/.test(value)) {
+                      return Promise.reject("เบอร์โทรต้องขึ้นต้นด้วย 0 และมี 10 หลัก");
+                    }
+                    return Promise.resolve();
+                  },
+                },
+              ]}
+            >
+              <Input
+                maxLength={10}
+                onChange={(e) => {
+                  const onlyNums = e.target.value.replace(/\D/g, "");
+                  form.setFieldsValue({ phone: onlyNums });
+                }}
+              />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item name="positionID" label="ตำแหน่ง" rules={[{ required: true }]}>
+            <Form.Item
+              name="positionID"
+              label="ตำแหน่ง"
+              rules={[{ required: true, message: "กรุณาเลือกตำแหน่ง" }]}
+            >
               <Select placeholder="เลือกตำแหน่ง">
                 {positions.map((p) => (
                   <Option key={p.ID} value={p.ID}>
@@ -244,14 +291,18 @@ const EmployeeCreateModal: React.FC<Props> = ({ open, onClose, onSuccess, positi
         </Row>
 
         {/* สิทธิ์ */}
-        <Form.Item name="roleID" label="สิทธิ์" rules={[{ required: true }]}>
-          <Select
-            options={[
-              { label: "Admin", value: 1 },
-              { label: "Employee", value: 2 },
-              { label: "Guest", value: 3 },
-            ]}
-          />
+        <Form.Item
+          name="roleID"
+          label="สิทธิ์"
+          rules={[{ required: true, message: "กรุณากำหนดสิทธิการใช้งาน" }]}
+        >
+          <Select placeholder="เลือกสิทธิ์">
+            {roles.map((r) => (
+              <Option key={r.ID} value={r.ID}>
+                {r.RoleName}
+              </Option>
+            ))}
+          </Select>
         </Form.Item>
       </Form>
     </Modal>

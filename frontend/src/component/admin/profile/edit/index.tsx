@@ -252,7 +252,10 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
             type="primary"
             htmlType="submit"
             loading={loading}
-            className="bg-teal-600 hover:bg-teal-700 border-none"
+            style={{
+              background: "linear-gradient(to right, #14b8a6, #0d9488)",
+              borderColor: "#0d9488",
+            }}
           >
             บันทึก
           </Button>

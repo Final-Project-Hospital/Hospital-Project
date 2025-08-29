@@ -2,6 +2,7 @@ import { useState } from "react";
 import { message, Form, Upload, Input, Button } from "antd";
 import ImgCrop from "antd-img-crop";
 import { PlusOutlined } from "@ant-design/icons";
+import { FaUser, FaUserPlus, FaEnvelope, FaLock, FaPhone } from "react-icons/fa";
 import { SignupUser, SignupInput } from "../../../services/httpLogin";
 import type { UsersInterface } from "../../../interface/IUser";
 
@@ -10,7 +11,7 @@ function getBase64(file: File | Blob): Promise<string> {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
+    reader.onerror = (error) => reject(error);
   });
 }
 
@@ -62,13 +63,17 @@ const Signin = ({ handleSignIn }: any) => {
   return (
     <div className="w-full max-w-lg mx-auto px-2 sm:px-4 md:px-0">
       {contextHolder}
+
+      {/* Title */}
       <div className="flex flex-col items-center mb-8">
         <div className="flex items-center gap-3">
+          <FaUserPlus className="text-teal-600 text-3xl mb-3" />
           <h1 className="text-2xl md:text-2xl text-teal-700 font-bold">
-            Create Your Account
+            สมัครสมาชิก
           </h1>
         </div>
       </div>
+
       <div className="flex justify-center">
         <Form
           layout="vertical"
@@ -76,7 +81,7 @@ const Signin = ({ handleSignIn }: any) => {
           className="w-full"
           autoComplete="off"
         >
-          {/* Profile Image */}
+          {/* อัปโหลดรูปโปรไฟล์ */}
           <Form.Item
             name="profile"
             className="mb-3 flex justify-center"
@@ -113,58 +118,73 @@ const Signin = ({ handleSignIn }: any) => {
                 {fileList.length < 1 && (
                   <div className="flex flex-col items-center">
                     <PlusOutlined style={{ fontSize: 32, color: "#14b8a6" }} />
-                    <div className="mt-2 text-xs text-teal-600">Upload</div>
+                    <div className="mt-2 text-xs text-teal-600">อัปโหลดรูป</div>
                   </div>
                 )}
               </Upload>
             </ImgCrop>
           </Form.Item>
 
+          {/* ชื่อ - นามสกุล */}
           <div className="flex gap-4 mb-3">
             <Form.Item
               name="firstName"
-              label="First Name"
+              label="ชื่อ"
               className="w-1/2 mb-0"
               rules={[{ required: true, message: "กรุณากรอกชื่อ" }]}
             >
-              <Input className="rounded-lg bg-teal-50 border-teal-200" />
+              <Input
+                prefix={<FaUser className="text-teal-400 mr-2" />}
+                className="rounded-lg bg-teal-50 border-teal-200"
+              />
             </Form.Item>
             <Form.Item
               name="lastName"
-              label="Last Name"
+              label="นามสกุล"
               className="w-1/2 mb-0"
               rules={[{ required: true, message: "กรุณากรอกนามสกุล" }]}
             >
-              <Input className="rounded-lg bg-teal-50 border-teal-200" />
+              <Input
+                prefix={<FaUser className="text-teal-400 mr-2" />}
+                className="rounded-lg bg-teal-50 border-teal-200"
+              />
             </Form.Item>
           </div>
+
+          {/* อีเมล - รหัสผ่าน */}
           <div className="flex gap-4 mb-3">
             <Form.Item
               name="email"
-              label="Email"
+              label="อีเมล"
               className="w-1/2 mb-0"
               rules={[
                 { required: true, message: "กรุณากรอกอีเมล" },
                 { type: "email", message: "รูปแบบอีเมลไม่ถูกต้อง" },
               ]}
             >
-              <Input className="rounded-lg bg-teal-50 border-teal-200" />
+              <Input
+                prefix={<FaEnvelope className="text-teal-400 mr-2" />}
+                className="rounded-lg bg-teal-50 border-teal-200"
+              />
             </Form.Item>
             <Form.Item
               name="password"
-              label="Password"
+              label="รหัสผ่าน"
               className="w-1/2 mb-0"
               rules={[{ required: true, message: "กรุณากรอกรหัสผ่าน" }]}
             >
               <Input.Password
+                prefix={<FaLock className="text-teal-400 mr-2" />}
                 className="rounded-lg bg-teal-50 border-teal-200"
                 autoComplete="new-password"
               />
             </Form.Item>
           </div>
+
+          {/* เบอร์โทร */}
           <Form.Item
             name="phone"
-            label="Phone"
+            label="เบอร์โทรศัพท์"
             className="mb-3"
             rules={[
               { required: false },
@@ -181,21 +201,23 @@ const Signin = ({ handleSignIn }: any) => {
             ]}
           >
             <Input
+              prefix={<FaPhone className="text-teal-400 mr-2" />}
               className="rounded-lg bg-teal-50 border-teal-200"
               maxLength={10}
               onChange={(e) => {
-                // รับเฉพาะตัวเลขเท่านั้น
+                // รับเฉพาะตัวเลข
                 const rawValue = e.target.value;
-                const cleaned = rawValue.replace(/\D/g, ""); 
+                const cleaned = rawValue.replace(/\D/g, "");
                 if (cleaned.length === 0 || cleaned.startsWith("0")) {
                   e.target.value = cleaned;
                 } else {
-                  e.target.value = "0" + cleaned.slice(0, 9); 
+                  e.target.value = "0" + cleaned.slice(0, 9);
                 }
               }}
             />
           </Form.Item>
 
+          {/* ปุ่มสมัครสมาชิก */}
           <Button
             htmlType="submit"
             type="primary"
@@ -209,15 +231,17 @@ const Signin = ({ handleSignIn }: any) => {
             loading={loading}
             block
           >
-            {loading ? "กำลังสร้างบัญชี..." : "Create Account"}
+            {loading ? "กำลังสร้างบัญชี..." : "สมัครสมาชิก"}
           </Button>
         </Form>
       </div>
+
+      {/* ลิงก์กลับไปล็อกอิน */}
       <p
         className="text-center text-teal-500 text-sm my-2 hover:text-teal-700 cursor-pointer"
         onClick={handleSignIn}
       >
-        Already have an Account? Log in
+        มีบัญชีอยู่แล้ว? เข้าสู่ระบบ
       </p>
     </div>
   );
