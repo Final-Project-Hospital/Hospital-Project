@@ -76,6 +76,7 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
         // กำหนดประเภท Target
         const stdType = single.MinTarget === 0 && single.MaxTarget === 0 ? "middle" : "range";
         setTargetType(stdType);
+        console.log(selectedTreatmentID);
 
         // ตั้งค่าในฟอร์ม
         form.setFieldsValue({

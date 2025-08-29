@@ -24,12 +24,7 @@ import { BarChart3, LineChart } from "lucide-react";
 import Table, { ColumnsType } from "antd/es/table";
 import { GetChemicalbyID, GetChemicalTABLE, DeleteAllChemicalRecordsByDate } from "../../../../../services/garbageServices/chemicalWaste";
 import UpdateChemicalCentralForm from "../../../data-management/garbage/chemicalWaste/updateChemicalCenter";
-import ChemicalCentralForm from "../../../data-management/garbage/chemicalWaste/chemicalWaste"
-import { ListStatus } from '../../../../../services/index';
-import { ListStatusInterface } from '../../../../../interface/IStatus';
-
-const normalizeString = (str: any) =>
-  String(str).normalize("NFC").trim().toLowerCase();
+import ChemicalCentralForm from "../../../data-management/garbage/chemicalWaste/chemicalWaste";
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';
@@ -78,16 +73,9 @@ const ChemicalWaste: React.FC = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingRecord, setEditRecord] = useState<any>(null);
   const { confirm } = Modal;
-  const [statusOptions, setStatusOptions] = useState<ListStatusInterface[]>([]);
   const [tableFilterMode, setTableFilterMode] = useState<"dateRange" | "month" | "year">("year");
   const [tableDateRange, setTableDateRange] = useState<[Dayjs, Dayjs] | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [efficiencyFilter, setEfficiencyFilter] = useState<string | null>(null);
   const totalTasks = data.length;
-  const doneTasks = data.filter((d: any) => {
-    const status = (d.status ?? "").trim(); return status.includes("ผ่าน") && !status.includes("ไม่ผ่าน");
-  }).length;
-  const inProgressTasks = data.filter((d: any) => normalizeString(d.status ?? "").includes(normalizeString("ไม่ผ่าน"))).length;
 
   //ใช้กับกราฟ ---โหลดสีจาก localStorage----
   useEffect(() => {
@@ -327,19 +315,6 @@ const ChemicalWaste: React.FC = () => {
   // โหลดครั้งแรก
   useEffect(() => {
     loadChemicalTable();
-  }, []);
-
-  useEffect(() => {
-    const loadStatus = async () => {
-      const data = await ListStatus();
-      if (data) {
-        setStatusOptions(data);
-      } else {
-        console.error("Failed to load status options");
-      }
-    };
-
-    loadStatus();
   }, []);
 
   //ใช้กับกราฟ
@@ -1083,19 +1058,6 @@ const ChemicalWaste: React.FC = () => {
                 if (!tableDateRange) return true;
                 const recordDate = dayjs(d.date);
                 return recordDate.isBetween(tableDateRange[0], tableDateRange[1], null, '[]');
-              })
-              .filter((d: any) => {
-                // กรองประสิทธิภาพ
-                if (!efficiencyFilter) return true;
-                const eff = Number(d.efficiency ?? -1);
-                if (efficiencyFilter === "gt") return eff > 50;
-                if (efficiencyFilter === "lte") return eff <= 50;
-                return true;
-              })
-              .filter((d: any) => {
-                // กรองสถานะ
-                if (!statusFilter) return true;
-                return normalizeString(d.status ?? "") === normalizeString(statusFilter);
               })
             }
             rowKey="ID"

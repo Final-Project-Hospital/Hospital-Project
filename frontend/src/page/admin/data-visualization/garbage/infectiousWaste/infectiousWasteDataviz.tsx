@@ -83,7 +83,6 @@ const InfectiousWaste: React.FC = () => {
   const [tableFilterMode, setTableFilterMode] = useState<"dateRange" | "month" | "year">("year");
   const [tableDateRange, setTableDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [efficiencyFilter, setEfficiencyFilter] = useState<string | null>(null);
   const totalTasks = data.length;
   const doneTasks = data.filter((d: any) => {
     const status = (d.status ?? "").trim(); return status.includes("ผ่าน") && !status.includes("ไม่ผ่าน");
@@ -658,7 +657,7 @@ const InfectiousWaste: React.FC = () => {
       title: 'ค่า AADC',
       dataIndex: 'aadc',
       key: 'aadc',
-      width: 120,
+      width: 100,
       render: (val: number | null) => val != null ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
     },
     {
@@ -1302,14 +1301,6 @@ const InfectiousWaste: React.FC = () => {
                 if (!tableDateRange) return true;
                 const recordDate = dayjs(d.date);
                 return recordDate.isBetween(tableDateRange[0], tableDateRange[1], null, '[]');
-              })
-              .filter((d: any) => {
-                // กรองประสิทธิภาพ
-                if (!efficiencyFilter) return true;
-                const eff = Number(d.efficiency ?? -1);
-                if (efficiencyFilter === "gt") return eff > 50;
-                if (efficiencyFilter === "lte") return eff <= 50;
-                return true;
               })
               .filter((d: any) => {
                 // กรองสถานะ
