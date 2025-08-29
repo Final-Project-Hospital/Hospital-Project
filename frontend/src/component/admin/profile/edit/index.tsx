@@ -1,10 +1,12 @@
+// 📁 component/users/EditUserModal.tsx
 import React, { useState, useEffect } from "react";
 import { Modal, Form, Input, Button, Upload, message } from "antd";
 import ImgCrop from "antd-img-crop";
-import { PlusOutlined, UserOutlined } from "@ant-design/icons";
+import { PlusOutlined, UserOutlined, MailOutlined } from "@ant-design/icons";
 import { UsersInterface } from "../../../../interface/IUser";
 import { UpdateEmployeeByID } from "../../../../services/httpLogin";
 import { EditOutlined } from "@ant-design/icons";
+
 interface EditUserModalProps {
   show: boolean;
   onClose: () => void;
@@ -28,6 +30,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         FirstName: initialData.FirstName,
         LastName: initialData.LastName,
         Phone: initialData.Phone,
+        Email: initialData.Email, // ✅ set ค่า email ด้วย
       });
       if (initialData.Profile) {
         setFileList([
@@ -67,16 +70,9 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   const onFinish = async (values: any) => {
     setLoading(true);
     let base64: string | undefined;
-    if (
-      fileList.length > 0 &&
-      fileList[0].originFileObj
-    ) {
+    if (fileList.length > 0 && fileList[0].originFileObj) {
       base64 = await getBase64(fileList[0].originFileObj);
-    } else if (
-      fileList.length > 0 &&
-      fileList[0].url &&
-      fileList[0].uid === "-1"
-    ) {
+    } else if (fileList.length > 0 && fileList[0].url && fileList[0].uid === "-1") {
       base64 = fileList[0].url;
     } else {
       base64 = undefined;
@@ -86,6 +82,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       FirstName: values.FirstName,
       LastName: values.LastName,
       Phone: values.Phone,
+      Email: values.Email, // ✅ ส่งค่า email ไป backend
       Profile: base64,
     });
 
@@ -131,20 +128,13 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         className="px-8 pt-2 pb-6"
         style={{ background: "white" }}
       >
+        {/* Upload Profile */}
         <div className="flex justify-center mb-6">
           <Form.Item
             name="profile"
             valuePropName="fileList"
             getValueFromEvent={({ fileList }) => fileList}
             className="mb-0"
-            rules={[
-              {
-                validator: () =>
-                  fileList.length > 0
-                    ? Promise.resolve()
-                    : Promise.reject(new Error("กรุณาอัปโหลดรูป")),
-              },
-            ]}
           >
             <ImgCrop rotationSlider>
               <Upload
@@ -176,6 +166,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
           </Form.Item>
         </div>
 
+        {/* FirstName + LastName */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
           <Form.Item
             label={
@@ -204,9 +195,27 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
           </Form.Item>
         </div>
 
+        {/* Email */}
+        <Form.Item
+          label={
+            <span>
+              <MailOutlined className="mr-1 text-teal-600" />
+              อีเมล
+            </span>
+          }
+          name="Email"
+          rules={[
+            { required: true, message: "กรุณากรอกอีเมล" },
+            { type: "email", message: "กรุณากรอกอีเมลให้ถูกต้อง" },
+          ]}
+        >
+          <Input placeholder="กรอกอีเมล" />
+        </Form.Item>
+
+        {/* Phone */}
         <Form.Item
           name="Phone"
-          label="เบอร์โทศัพท์"
+          label="เบอร์โทรศัพท์"
           className="mb-3"
           rules={[
             { required: false },

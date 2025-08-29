@@ -30,6 +30,8 @@ import { RoomInterface } from "../../../../../../interface/IRoom";
 import { BuildingInterface } from "../../../../../../interface/IBuilding";
 import { HardwareInterface } from "../../../../../../interface/IHardware";
 import { NotificationInterface } from "../../../../../../interface/INotification";
+import { GetUserDataByUserID } from "../../../../../../services/httpLogin"; 
+import { UsersInterface } from "../../../../../../interface/IUser"; 
 
 const { Option } = Select;
 
@@ -74,17 +76,37 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
   const [loading, setLoading] = useState(false);
 
   const [notifications, setNotifications] = useState<NotificationInterface[]>([]);
-  const [selectedNotificationIDs, setSelectedNotificationIDs] = useState<number[]>([]); // ✅ multiple select
+  const [selectedNotificationIDs, setSelectedNotificationIDs] = useState<number[]>([]);
+
+  const [isAdmin, setIsAdmin] = useState<boolean>(false); // ✅ role check
 
   const selectedIcon = iconOptions.find((i) => i.name === room.Icon)?.component;
 
   useEffect(() => {
+    const fetchRole = async () => {
+      try {
+        const userId = localStorage.getItem("employeeid");
+        if (userId) {
+          const user: UsersInterface | false = await GetUserDataByUserID(userId);
+          if (user && user.Role?.RoleName === "Admin") {
+            setIsAdmin(true);
+          } else {
+            setIsAdmin(false);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching role:", error);
+        setIsAdmin(false);
+      }
+    };
+
     setEmployeeid(Number(localStorage.getItem("employeeid")));
+
     const fetchData = async () => {
       const b = await ListBuilding();
       const h = await ListHardware();
       const r = await ListRoom();
-      const n = await ListNotification(); // ✅ load notifications
+      const n = await ListNotification();
 
       if (b) setBuildings(b);
       if (h) setAllHardwares(h);
@@ -106,6 +128,7 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
         Icon: "FaMicroscope",
       });
       setSelectedNotificationIDs([]);
+      fetchRole();
       fetchData();
     }
   }, [show]);
@@ -146,9 +169,10 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
     const res = await CreateRoom(payload);
 
     if (res && res.ID) {
-      // ✅ เพิ่มผู้รับผิดชอบเข้าไปด้วย
-      for (const nid of selectedNotificationIDs) {
-        await CreateRoomNotification({ room_id: res.ID, notification_id: nid });
+      if (isAdmin) {
+        for (const nid of selectedNotificationIDs) {
+          await CreateRoomNotification({ room_id: res.ID, notification_id: nid });
+        }
       }
       message.success("สร้างข้อมูลห้องสำเร็จ");
       onCreateSuccess();
@@ -188,9 +212,9 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
           <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-md border border-teal-600">
             {selectedIcon
               ? React.createElement(selectedIcon, {
-                size: 40,
-                className: "text-teal-600",
-              })
+                  size: 40,
+                  className: "text-teal-600",
+                })
               : null}
           </div>
         </div>
@@ -270,21 +294,23 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
             ))}
           </Select>
 
-          {/* ✅ เลือกผู้รับผิดชอบ */}
-          <Select
-            mode="multiple"
-            placeholder="เลือกผู้ที่ได้รับการเเจ้งเตื่อน"
-            value={selectedNotificationIDs}
-            onChange={(val) => setSelectedNotificationIDs(val)}
-            className="w-full col-span-2"
-            allowClear
-          >
-            {notifications.map((n) => (
-              <Option key={n.ID} value={n.ID}>
-                {n.Name}
-              </Option>
-            ))}
-          </Select>
+          {/* ✅ ช่องนี้จะแสดงเฉพาะ Admin */}
+          {isAdmin && (
+            <Select
+              mode="multiple"
+              placeholder="เลือกผู้ที่ได้รับการเเจ้งเตือน"
+              value={selectedNotificationIDs}
+              onChange={(val) => setSelectedNotificationIDs(val)}
+              className="w-full col-span-2"
+              allowClear
+            >
+              {notifications.map((n) => (
+                <Option key={n.ID} value={n.ID}>
+                  {n.Name}
+                </Option>
+              ))}
+            </Select>
+          )}
         </div>
 
         {/* Buttons */}
@@ -298,7 +324,7 @@ const AddRoomModal: React.FC<Props> = ({ show, onClose, onCreateSuccess }) => {
             style={{
               background: "linear-gradient(to right, #14b8a6, #0d9488)",
               borderColor: "#0d9488",
-              color: "#fff", 
+              color: "#fff",
             }}
           >
             บันทึก
