@@ -991,30 +991,6 @@ const HazardousWaste: React.FC = () => {
         </div>
         <div className="hazardous-select-date">
           <div className="hazardous-filter-status-and-efficiency">
-            <p>ประสิทธิภาพ</p>
-            <Select
-              allowClear
-              placeholder="เลือกประสิทธิภาพ"
-              value={efficiencyFilter}
-              onChange={(v) => setEfficiencyFilter(v || null)}
-              style={{ width: 200 }}
-              options={[
-                { label: "มากกว่า 50%", value: "gt" },
-                { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
-              ]}
-            />
-            <p>สถานะ</p>
-            <Select
-              allowClear
-              placeholder="เลือกสถานะ"
-              value={statusFilter}
-              onChange={(v) => setStatusFilter(v || null)}
-              style={{ width: 200 }}
-              options={statusOptions.map((item) => ({
-                label: item.StatusName,
-                value: item.StatusName,
-              }))}
-            />
           </div>
           <div className="hazardous-filter-date">
             <div >
@@ -1104,13 +1080,8 @@ const HazardousWaste: React.FC = () => {
             <div className="hazardous-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="hazardous-task-stats">
               <div className="hazardous-task-item">
-                <div className="hazardous-task-number">{doneTasks}</div>
-                <div className="hazardous-task-label">ผ่านเกณฑ์มาตรฐาน</div>
-              </div>
-              <div className="hazardous-task-divider" />
-              <div className="hazardous-task-item">
-                <div className="hazardous-task-number">{inProgressTasks}</div>
-                <div className="hazardous-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
+                <div className="hazardous-task-number">{ }</div>
+                <div className="hazardous-task-label"></div>
               </div>
             </div>
           </div>
@@ -1157,44 +1128,51 @@ const HazardousWaste: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล Hazardous Waste ใหม่"}
+          title={<span style={{ color: '#1ba0a2ff' }}>เพิ่มข้อมูล Hazardous Waste ใหม่</span>}
           open={isModalVisible}
           footer={null}
-          width={1100}
+          width={1000}
           destroyOnClose
           closable={false}
           centered
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
-          <HazardousCentralForm onCancel={handleAddModalCancel}
-            onSuccess={async () => {
-              await fetchHazardousData();      // ✅ โหลดข้อมูลกราฟใหม่
-              await loadHazardousTable();   // ✅ โหลดข้อมูลตารางใหม่
-            }}
-          />
+          <div className="gen-container">
+            <HazardousCentralForm onCancel={handleAddModalCancel}
+              onSuccess={async () => {
+                await fetchHazardousData();   // โหลดข้อมูลกราฟใหม่
+                await loadHazardousTable();   // โหลดข้อมูลตารางใหม่
+              }}
+            />
+          </div>
         </Modal>
+
         <Modal
-          title="แก้ไขข้อมูล Hazardous Waste"
+          title={<span style={{ color: '#1ba0a2ff' }}>แก้ไขข้อมูล Hazardous Waste</span>}
           open={isEditModalVisible}
           footer={null}
-          width={1100}
+          width={1000}
           closable={false}
           destroyOnClose
           centered
           onCancel={handleEditModalCancel}
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
           {editingRecord && (
-            <UpdateHazardousCentralForm
-              initialValues={editingRecord}
-              onSuccess={() => {
-                setTimeout(async () => {
-                  setIsEditModalVisible(false);
-                  setEditRecord(null);
-                  await loadHazardousTable();
-                  await fetchHazardousData();
-                }, 500);
-              }}
-              onCancel={handleEditModalCancel}
-            />
+            <div className="up-recy-container">
+              <UpdateHazardousCentralForm
+                initialValues={editingRecord}
+                onSuccess={() => {
+                  setTimeout(async () => {
+                    setIsEditModalVisible(false);
+                    setEditRecord(null);
+                    await loadHazardousTable();
+                    await fetchHazardousData();
+                  }, 500);
+                }}
+                onCancel={handleEditModalCancel}
+              />
+            </div>
           )}
         </Modal>
 

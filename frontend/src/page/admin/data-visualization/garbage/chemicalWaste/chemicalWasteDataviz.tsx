@@ -973,30 +973,6 @@ const ChemicalWaste: React.FC = () => {
         </div>
         <div className="chemical-select-date">
           <div className="chemical-filter-status-and-efficiency">
-            <p>ประสิทธิภาพ</p>
-            <Select
-              allowClear
-              placeholder="เลือกประสิทธิภาพ"
-              value={efficiencyFilter}
-              onChange={(v) => setEfficiencyFilter(v || null)}
-              style={{ width: 200 }}
-              options={[
-                { label: "มากกว่า 50%", value: "gt" },
-                { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
-              ]}
-            />
-            <p>สถานะ</p>
-            <Select
-              allowClear
-              placeholder="เลือกสถานะ"
-              value={statusFilter}
-              onChange={(v) => setStatusFilter(v || null)}
-              style={{ width: 200 }}
-              options={statusOptions.map((item) => ({
-                label: item.StatusName,
-                value: item.StatusName,
-              }))}
-            />
           </div>
           <div className="chemical-filter-date">
             <div >
@@ -1086,13 +1062,8 @@ const ChemicalWaste: React.FC = () => {
             <div className="chemical-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="chemical-task-stats">
               <div className="chemical-task-item">
-                <div className="chemical-task-number">{doneTasks}</div>
-                <div className="chemical-task-label">ผ่านเกณฑ์มาตรฐาน</div>
-              </div>
-              <div className="chemical-task-divider" />
-              <div className="chemical-task-item">
-                <div className="chemical-task-number">{inProgressTasks}</div>
-                <div className="chemical-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
+                <div className="chemical-task-number">{ }</div>
+                <div className="chemical-task-label"></div>
               </div>
             </div>
           </div>
@@ -1139,44 +1110,51 @@ const ChemicalWaste: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล Chemical Waste ใหม่"}
+          title={<span style={{ color: '#1ba0a2ff' }}>เพิ่มข้อมูล Chemical Waste ใหม่</span>}
           open={isModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           destroyOnClose
           closable={false}
           centered
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
-          <ChemicalCentralForm onCancel={handleAddModalCancel}
-            onSuccess={async () => {
-              await fetchChemicalData();      // ✅ โหลดข้อมูลกราฟใหม่
-              await loadChemicalTable();   // ✅ โหลดข้อมูลตารางใหม่
-            }}
-          />
+          <div className="chem-container">
+            <ChemicalCentralForm onCancel={handleAddModalCancel}
+              onSuccess={async () => {
+                await fetchChemicalData();   // โหลดข้อมูลกราฟใหม่
+                await loadChemicalTable();   // โหลดข้อมูลตารางใหม่
+              }}
+            />
+          </div>
         </Modal>
+
         <Modal
-          title="แก้ไขข้อมูล Chemical Waste"
+          title={<span style={{ color: '#1ba0a2ff' }}>แก้ไขข้อมูล Chemical Waste</span>}
           open={isEditModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           closable={false}
           destroyOnClose
           centered
           onCancel={handleEditModalCancel}
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
           {editingRecord && (
-            <UpdateChemicalCentralForm
-              initialValues={editingRecord}
-              onSuccess={() => {
-                setTimeout(async () => {
-                  setIsEditModalVisible(false);
-                  setEditRecord(null);
-                  await loadChemicalTable();
-                  await fetchChemicalData();
-                }, 500);
-              }}
-              onCancel={handleEditModalCancel}
-            />
+            <div className="up-recy-container">
+              <UpdateChemicalCentralForm
+                initialValues={editingRecord}
+                onSuccess={() => {
+                  setTimeout(async () => {
+                    setIsEditModalVisible(false);
+                    setEditRecord(null);
+                    await loadChemicalTable();
+                    await fetchChemicalData();
+                  }, 500);
+                }}
+                onCancel={handleEditModalCancel}
+              />
+            </div>
           )}
         </Modal>
       </div>

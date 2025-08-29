@@ -1168,30 +1168,6 @@ const Recycleddataviz: React.FC = () => {
         </div>
         <div className="recycled-select-date">
           <div className="recycled-filter-status-and-efficiency">
-            <p>ประสิทธิภาพ</p>
-            <Select
-              allowClear
-              placeholder="เลือกประสิทธิภาพ"
-              value={efficiencyFilter}
-              onChange={(v) => setEfficiencyFilter(v || null)}
-              style={{ width: 200 }}
-              options={[
-                { label: "มากกว่า 50%", value: "gt" },
-                { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
-              ]}
-            />
-            <p>สถานะ</p>
-            <Select
-              allowClear
-              placeholder="เลือกสถานะ"
-              value={statusFilter}
-              onChange={(v) => setStatusFilter(v || null)}
-              style={{ width: 200 }}
-              options={statusOptions.map((item) => ({
-                label: item.StatusName,
-                value: item.StatusName,
-              }))}
-            />
           </div>
           <div className="recycled-filter-date">
             <div >
@@ -1281,13 +1257,8 @@ const Recycleddataviz: React.FC = () => {
             <div className="recycled-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="recycled-task-stats">
               <div className="recycled-task-item">
-                <div className="recycled-task-number">{doneTasks}</div>
-                <div className="recycled-task-label">ผ่านเกณฑ์มาตรฐาน</div>
-              </div>
-              <div className="recycled-task-divider" />
-              <div className="recycled-task-item">
-                <div className="recycled-task-number">{inProgressTasks}</div>
-                <div className="recycled-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
+                <div className="recycled-task-number">{ }</div>
+                <div className="recycled-task-label"></div>
               </div>
             </div>
           </div>
@@ -1334,45 +1305,52 @@ const Recycleddataviz: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล Recycled Waste ใหม่"}
+          title={<span style={{ color: '#1ba0a2ff' }}>เพิ่มข้อมูล Recycled Waste ใหม่</span>}
           open={isModalVisible}
           footer={null}
-          width={1100}
+          width={1000}
           destroyOnClose
           closable={false}
           centered
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
-          <RecycledCentralForm onCancel={handleAddModalCancel}
-            onSuccess={async () => {
-              await fetchRecycledData();      // ✅ โหลดข้อมูลกราฟใหม่
-              await loadRecycledTable();   // ✅ โหลดข้อมูลตารางใหม่
-            }}
-          />
+          <div className="recy-container">
+            <RecycledCentralForm onCancel={handleAddModalCancel}
+              onSuccess={async () => {
+                await fetchRecycledData();   // โหลดข้อมูลกราฟใหม่
+                await loadRecycledTable();   // โหลดข้อมูลตารางใหม่
+              }}
+            />
+          </div>
         </Modal>
+
         <Modal
-          title="แก้ไขข้อมูล Recycled Waste"
+          title={<span style={{ color: '#1ba0a2ff' }}>แก้ไขข้อมูล Recycled Waste</span>}
           open={isEditModalVisible}
           footer={null}
-          width={1100}
+          width={1000}
           closable={false}
           destroyOnClose
           centered
           onCancel={handleEditModalCancel}
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
-          {editingRecord && (
-            <UpdateRecycledCentralForm
-              initialValues={editingRecord}
-              onSuccess={() => {
-                setTimeout(async () => {
-                  setIsEditModalVisible(false);
-                  setEditRecord(null);
-                  await loadRecycledTable();
-                  await fetchRecycledData();
-                }, 500);
-              }}
-              onCancel={handleEditModalCancel}
-            />
-          )}
+          <div className="up-recy-container">
+            {editingRecord && (
+              <UpdateRecycledCentralForm
+                initialValues={editingRecord}
+                onSuccess={() => {
+                  setTimeout(async () => {
+                    setIsEditModalVisible(false);
+                    setEditRecord(null);
+                    await loadRecycledTable();
+                    await fetchRecycledData();
+                  }, 500);
+                }}
+                onCancel={handleEditModalCancel}
+              />
+            )}
+          </div>
         </Modal>
       </div>
     </div>

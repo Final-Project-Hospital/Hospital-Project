@@ -60,33 +60,43 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
     }, []);
 
     useEffect(() => {
-        if (initialValues && initialValues.length > 0) {
-            const single = initialValues[0];
+        if (!initialValues || initialValues.length === 0) return;
 
-            // กำหนดประเภท Target
-            const stdType = single.MinTarget === 0 && single.MaxTarget === 0 ? 'middle' : 'range';
-            setTargetType(stdType);
+        const single = initialValues[0];
 
-            form.setFieldsValue({
-                id: single.ID,
-                date: dayjs(single.Date),
-                time: dayjs(),
-                quantity: single.Quantity ?? 0,
-                aadc: single.AADC ?? 0,
-                monthlyGarbage: single.MonthlyGarbage ?? 0,
-                average_daily_garbage: single.AverageDailyGarbage ?? 0,
-                note: single.Note || '',
-                targetID: single.TargetID,
-                unit: single.UnitID ?? 'other',
-                employeeID: single.EmployeeID,
-                targetType: stdType,
-                customSingle: stdType === 'middle' ? single.MiddleTarget : undefined,
-                customMin: stdType === 'range' ? single.MinTarget : undefined,
-                customMax: stdType === 'range' ? single.MaxTarget : undefined,
-            });
-            console.log(selectedTreatmentID);
-            setSelectedTreatmentID(single.BeforeAfterTreatmentID);
-        }
+        // ฟังก์ชันเฉพาะ useEffect นี้: ปัดทศนิยม 2 ตำแหน่งแบบ round-half-up
+        const toTwoDecimal = (value: any) => {
+            if (value === null || value === undefined) return undefined;
+            const num = Number(value);
+            if (isNaN(num)) return undefined;
+            return Math.round((num + Number.EPSILON) * 100) / 100;
+        };
+
+        // กำหนดประเภท Target
+        const stdType =
+            single.MinTarget === 0 && single.MaxTarget === 0 ? "middle" : "range";
+        setTargetType(stdType);
+
+        // ตั้งค่าในฟอร์ม
+        form.setFieldsValue({
+            id: single.ID,
+            date: dayjs(single.Date),
+            time: dayjs(),
+            quantity: toTwoDecimal(single.Quantity),
+            aadc: toTwoDecimal(single.AADC),
+            monthlyGarbage: toTwoDecimal(single.MonthlyGarbage),
+            average_daily_garbage: toTwoDecimal(single.AverageDailyGarbage),
+            note: single.Note || "",
+            targetID: single.TargetID,
+            unit: single.UnitID ?? "other",
+            employeeID: single.EmployeeID,
+            targetType: stdType,
+            customSingle: stdType === "middle" ? single.MiddleTarget : undefined,
+            customMin: stdType === "range" ? single.MinTarget : undefined,
+            customMax: stdType === "range" ? single.MaxTarget : undefined,
+        });
+
+        setSelectedTreatmentID(single.BeforeAfterTreatmentID);
     }, [initialValues]);
 
     const handleTargetGroupChange = (value: string) => {
@@ -117,7 +127,7 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
         if (quantity && monthlyGarbage && quantity > 0) {
             const aadc = monthlyGarbage / (quantity * quantity);
             form.setFieldsValue({
-                aadc: parseFloat(aadc.toFixed(5)),
+                aadc: parseFloat(aadc.toFixed(2)),
             });
         } else {
             form.setFieldsValue({ aadc: null });
@@ -388,16 +398,18 @@ const UpdateGeneralCentralForm: React.FC<UpdateGeneralCentralFormProps> = ({
                     <Form.Item
                         label="จำนวนคนที่เข้าใช้บริการโรงพยาบาล"
                         name="quantity"
-                        rules={[{ required: true, message: 'กรุณากรอกจำนวนคน' },
-                        {
-                            validator: async (_, value) => {
-                                if (value === undefined || value === null) return Promise.resolve();
-                                if (typeof value !== "number" || isNaN(value)) {
-                                    return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                }
-                                return Promise.resolve();
-                            },
-                        }
+                        rules={[
+                            { required: true, message: 'กรุณากรอกจำนวนคน' },
+                            {
+                                validator: async (_, value) => {
+                                    if (value === undefined || value === null) return Promise.resolve();
+                                    // ตรวจว่าต้องเป็นจำนวนเต็ม
+                                    if (!Number.isInteger(value)) {
+                                        return Promise.reject("กรุณากรอกเป็นจำนวนเต็มเท่านั้น");
+                                    }
+                                    return Promise.resolve();
+                                },
+                            }
                         ]}
                     >
                         <InputNumber style={{ width: '100%' }} placeholder="กรอกจำนวนคน"

@@ -605,6 +605,7 @@ func main() {
 		public.POST("/add-range-target", selectBoxAll.AddRangeTarget)
 
 		public.GET("/list-status", selectBoxAll.ListStatus)
+		public.GET("/list-status-garbage", selectBoxAll.ListStatusGarbage)
 
 		//public.GET("/api/water-quality", dashboard.GetWaterQuality)
 		//public.GET("/dashboard/environmental", dashboard.GetEnvironmentalDashboard)
