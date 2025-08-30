@@ -11,11 +11,23 @@ const dropdownData = [
   { Id: 'year', Time: 'Year(s)' },
 ];
 
+interface ChartPoint {
+  parameter: string;
+  date: string; // ISO
+  value: number;
+}
+type ChartMetaMap = Record<string, { unit?: string; standard?: number; standardMin?: number }>;
+
 interface ChartdataProps {
   hardwareID: number;
   parameters: string[];
   colors?: string[];
   reloadKey?: number;
+
+  // ✅ รับจากพ่อ
+  data?: ChartPoint[];
+  meta?: ChartMetaMap;
+  loading?: boolean;
 }
 
 interface LineParamWithColor {
@@ -28,6 +40,9 @@ const LineChartIndex: React.FC<ChartdataProps> = ({
   parameters,
   colors = [],
   reloadKey,
+  data,
+  meta,
+  loading,
 }) => {
   const { currentMode } = useStateContext();
   const [timeRangeType, setTimeRangeType] = useState<'hour' | 'day' | 'month' | 'year'>('day');
@@ -185,6 +200,10 @@ const LineChartIndex: React.FC<ChartdataProps> = ({
               chartHeight="420px"
               reloadKey={reloadKey}
               key={containerWidth}
+              // ส่งต่อจากพ่อ
+              data={data}
+              meta={meta}
+              loading={loading}
             />
           </div>
         </div>

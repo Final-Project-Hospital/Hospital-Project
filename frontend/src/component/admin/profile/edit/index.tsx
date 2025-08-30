@@ -1,8 +1,8 @@
 // 📁 component/users/EditUserModal.tsx
 import React, { useState, useEffect } from "react";
-import { Modal, Form, Input, Button, Upload, message } from "antd";
+import { Modal, Form, Input, Button, Upload, message, Row, Col } from "antd";
 import ImgCrop from "antd-img-crop";
-import { PlusOutlined, UserOutlined, MailOutlined } from "@ant-design/icons";
+import { PlusOutlined, UserOutlined, MailOutlined, PhoneOutlined } from "@ant-design/icons";
 import { UsersInterface } from "../../../../interface/IUser";
 import { UpdateEmployeeByID } from "../../../../services/httpLogin";
 import { EditOutlined } from "@ant-design/icons";
@@ -30,7 +30,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         FirstName: initialData.FirstName,
         LastName: initialData.LastName,
         Phone: initialData.Phone,
-        Email: initialData.Email, // ✅ set ค่า email ด้วย
+        Email: initialData.Email,
       });
       if (initialData.Profile) {
         setFileList([
@@ -55,9 +55,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       reader.onerror = (error) => reject(error);
     });
 
-  const onChange = ({ fileList: newFileList }: any) => {
-    setFileList(newFileList);
-  };
+  const onChange = ({ fileList: newFileList }: any) => setFileList(newFileList);
 
   const onPreview = async (file: any) => {
     let src = file.url;
@@ -82,7 +80,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       FirstName: values.FirstName,
       LastName: values.LastName,
       Phone: values.Phone,
-      Email: values.Email, // ✅ ส่งค่า email ไป backend
+      Email: values.Email,
       Profile: base64,
     });
 
@@ -109,6 +107,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       destroyOnClose
       closable={false}
       className="edit-user-modal"
+      style={{ top: window.innerWidth < 768 ? 40 : 0 }}  
       bodyStyle={{
         background: "white",
         padding: 0,
@@ -117,10 +116,11 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       }}
     >
       {/* Header */}
-      <div className="text-center text-lg font-bold bg-teal-600 text-white py-4 rounded-t-2xl mb-2 flex items-center justify-center gap-2">
+      <div className="text-center text-lg font-bold bg-teal-600 text-white py-4 rounded-t-2xl flex items-center justify-center gap-2">
         <EditOutlined className="text-2xl" />
         <span className="tracking-wide">แก้ไขข้อมูลโปรไฟล์</span>
       </div>
+
       <Form
         layout="vertical"
         form={form}
@@ -167,33 +167,36 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         </div>
 
         {/* FirstName + LastName */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-          <Form.Item
-            label={
-              <span>
-                <UserOutlined className="mr-1 text-teal-600" />
-                ชื่อ
-              </span>
-            }
-            name="FirstName"
-            rules={[{ required: true, message: "กรุณากรอกชื่อ" }]}
-          >
-            <Input placeholder="กรอกชื่อ" />
-          </Form.Item>
-
-          <Form.Item
-            label={
-              <span>
-                <UserOutlined className="mr-1 text-teal-600" />
-                นามสกุล
-              </span>
-            }
-            name="LastName"
-            rules={[{ required: true, message: "กรุณากรอกนามสกุล" }]}
-          >
-            <Input placeholder="กรอกนามสกุล" />
-          </Form.Item>
-        </div>
+        <Row gutter={16}>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              label={
+                <span>
+                  <UserOutlined className="mr-1 text-teal-600" />
+                  ชื่อ
+                </span>
+              }
+              name="FirstName"
+              rules={[{ required: true, message: "กรุณากรอกชื่อ" }]}
+            >
+              <Input placeholder="กรอกชื่อ" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              label={
+                <span>
+                  <UserOutlined className="mr-1 text-teal-600" />
+                  นามสกุล
+                </span>
+              }
+              name="LastName"
+              rules={[{ required: true, message: "กรุณากรอกนามสกุล" }]}
+            >
+              <Input placeholder="กรอกนามสกุล" />
+            </Form.Item>
+          </Col>
+        </Row>
 
         {/* Email */}
         <Form.Item
@@ -215,7 +218,12 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         {/* Phone */}
         <Form.Item
           name="Phone"
-          label="เบอร์โทรศัพท์"
+          label={
+            <span>
+              <PhoneOutlined className="mr-1 text-teal-600" />
+              เบอร์โทรศัพท์
+            </span>
+          }
           className="mb-3"
           rules={[
             { required: false },
@@ -232,17 +240,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
           ]}
         >
           <Input
-            className="rounded-lg bg-teal-50 border-teal-200"
             maxLength={10}
-            onChange={(e) => {
-              const rawValue = e.target.value;
-              const cleaned = rawValue.replace(/\D/g, "");
-              if (cleaned.length === 0 || cleaned.startsWith("0")) {
-                e.target.value = cleaned;
-              } else {
-                e.target.value = "0" + cleaned.slice(0, 9);
-              }
-            }}
+            className="rounded-lg bg-teal-50 border-teal-200"
           />
         </Form.Item>
 
