@@ -11,6 +11,9 @@ const dropdownData = [
   { Id: 'year', Time: 'Year(s)' },
 ];
 
+type ChartPoint = { parameter: string; date: string; value: number };
+type ChartMetaMap = Record<string, { unit?: string; standard?: number; standardMin?: number }>;
+
 interface ParamWithColor {
   parameter: string;
   color: string;
@@ -21,6 +24,11 @@ interface StackedChartIndexProps {
   parameters: string[];
   colors?: string[];
   reloadKey?: number;
+
+  // ✅ รับจากพ่อ
+  data?: ChartPoint[];
+  meta?: ChartMetaMap;
+  loading?: boolean;
 }
 
 const StackedChartIndex: React.FC<StackedChartIndexProps> = ({
@@ -28,6 +36,9 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({
   parameters,
   colors = [],
   reloadKey,
+  data,
+  meta,
+  loading,
 }) => {
   const { currentMode } = useStateContext();
   const [timeRangeType, setTimeRangeType] = useState<'hour' | 'day' | 'month' | 'year'>('day');
@@ -41,9 +52,7 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({
   useEffect(() => {
     const observer = new ResizeObserver(entries => {
       for (let entry of entries) {
-        if (entry.contentRect) {
-          setContainerWidth(entry.contentRect.width);
-        }
+        if (entry.contentRect) setContainerWidth(entry.contentRect.width);
       }
     });
     if (containerRef.current) observer.observe(containerRef.current);
@@ -197,6 +206,10 @@ const StackedChartIndex: React.FC<StackedChartIndexProps> = ({
                 chartHeight="420px"
                 reloadKey={reloadKey}
                 key={containerWidth}
+                // ✅ ส่งต่อจากพ่อ
+                data={data}
+                meta={meta}
+                loading={loading}
               />
             ) : (
               <div className="text-center text-gray-500 p-10">Loading data...</div>
