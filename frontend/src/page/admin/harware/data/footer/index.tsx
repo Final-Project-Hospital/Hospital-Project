@@ -36,6 +36,13 @@ const Average: React.FC<AveragedataProps> = ({
   const hardwareStats = Array.isArray(stats) ? stats : [];
   const colors = parameterColors || {};
 
+  // helper แสดงตัวเลขแบบ fix 2 ตำแหน่ง ถ้ามีค่า (รวม 0) ให้โชว์
+  const renderNumberOrUnset = (val: number | undefined, unsetText: string) => {
+    return typeof val === "number" && !Number.isNaN(val)
+      ? <span className="text-gray-800 font-medium">{Number(val).toFixed(2)}</span>
+      : <span className="text-teal-500 font-medium">{unsetText}</span>;
+  };
+
   return (
     <TopProductsWrap>
       <div className="tbl-products overflow-auto">
@@ -72,24 +79,12 @@ const Average: React.FC<AveragedataProps> = ({
 
                 {/* ค่ามาตรฐานต่ำสุด */}
                 <td className="p-2">
-                  {item.standardMin !== undefined && item.standardMin !== 0 ? (
-                    <span className="text-gray-800 font-medium">
-                      {Number(item.standardMin).toFixed(2)}
-                    </span>
-                  ) : (
-                    <span className="text-teal-500 font-medium">ยังไม่กำหนดค่าต่ำสุด</span>
-                  )}
+                  {renderNumberOrUnset(item.standardMin, "ยังไม่กำหนดค่าต่ำสุด")}
                 </td>
 
                 {/* ค่ามาตรฐาน (สูงสุด) */}
                 <td className="p-2">
-                  {item.standard !== undefined && item.standard !== 0 ? (
-                    <span className="text-gray-800 font-medium">
-                      {Number(item.standard).toFixed(2)}
-                    </span>
-                  ) : (
-                    <span className="text-teal-500 font-medium">ยังไม่กำหนดค่ามาตรฐาน</span>
-                  )}
+                  {renderNumberOrUnset(item.standard, "ยังไม่กำหนดค่ามาตรฐาน")}
                 </td>
 
                 {/* แถบแสดงค่าเฉลี่ย */}
