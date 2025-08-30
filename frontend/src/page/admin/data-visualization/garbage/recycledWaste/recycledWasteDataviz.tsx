@@ -26,11 +26,6 @@ import Table, { ColumnsType } from "antd/es/table";
 import { GetRecycledbyID, GetRecycledTABLE, DeleteAllRecycledRecordsByDate } from "../../../../../services/garbageServices/recycledWaste";
 import UpdateRecycledCentralForm from "../../../data-management/garbage/recycledWaste/updateRecycledCenter";
 import RecycledCentralForm from "../../../data-management/garbage/recycledWaste/recycledWaste"
-import { ListStatus } from '../../../../../services/index';
-import { ListStatusInterface } from '../../../../../interface/IStatus';
-
-const normalizeString = (str: any) =>
-  String(str).normalize("NFC").trim().toLowerCase();
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';
@@ -82,16 +77,9 @@ const Recycleddataviz: React.FC = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingRecord, setEditRecord] = useState<any>(null);
   const { confirm } = Modal;
-  const [statusOptions, setStatusOptions] = useState<ListStatusInterface[]>([]);
   const [tableFilterMode, setTableFilterMode] = useState<"dateRange" | "month" | "year">("year");
   const [tableDateRange, setTableDateRange] = useState<[Dayjs, Dayjs] | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [efficiencyFilter, setEfficiencyFilter] = useState<string | null>(null);
   const totalTasks = data.length;
-  const doneTasks = data.filter((d: any) => {
-    const status = (d.status ?? "").trim(); return status.includes("ผ่าน") && !status.includes("ไม่ผ่าน");
-  }).length;
-  const inProgressTasks = data.filter((d: any) => normalizeString(d.status ?? "").includes(normalizeString("ไม่ผ่าน"))).length;
 
   //ใช้กับกราฟ ---โหลดสีจาก localStorage----
   useEffect(() => {
@@ -365,19 +353,6 @@ const Recycleddataviz: React.FC = () => {
   // โหลดครั้งแรก
   useEffect(() => {
     loadRecycledTable();
-  }, []);
-
-  useEffect(() => {
-    const loadStatus = async () => {
-      const data = await ListStatus();
-      if (data) {
-        setStatusOptions(data);
-      } else {
-        console.error("Failed to load status options");
-      }
-    };
-
-    loadStatus();
   }, []);
 
   //ใช้กับกราฟ
@@ -1168,30 +1143,6 @@ const Recycleddataviz: React.FC = () => {
         </div>
         <div className="recycled-select-date">
           <div className="recycled-filter-status-and-efficiency">
-            <p>ประสิทธิภาพ</p>
-            <Select
-              allowClear
-              placeholder="เลือกประสิทธิภาพ"
-              value={efficiencyFilter}
-              onChange={(v) => setEfficiencyFilter(v || null)}
-              style={{ width: 200 }}
-              options={[
-                { label: "มากกว่า 50%", value: "gt" },
-                { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
-              ]}
-            />
-            <p>สถานะ</p>
-            <Select
-              allowClear
-              placeholder="เลือกสถานะ"
-              value={statusFilter}
-              onChange={(v) => setStatusFilter(v || null)}
-              style={{ width: 200 }}
-              options={statusOptions.map((item) => ({
-                label: item.StatusName,
-                value: item.StatusName,
-              }))}
-            />
           </div>
           <div className="recycled-filter-date">
             <div >
@@ -1281,13 +1232,8 @@ const Recycleddataviz: React.FC = () => {
             <div className="recycled-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="recycled-task-stats">
               <div className="recycled-task-item">
-                <div className="recycled-task-number">{doneTasks}</div>
-                <div className="recycled-task-label">ผ่านเกณฑ์มาตรฐาน</div>
-              </div>
-              <div className="recycled-task-divider" />
-              <div className="recycled-task-item">
-                <div className="recycled-task-number">{inProgressTasks}</div>
-                <div className="recycled-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
+                <div className="recycled-task-number">{ }</div>
+                <div className="recycled-task-label"></div>
               </div>
             </div>
           </div>
@@ -1308,19 +1254,6 @@ const Recycleddataviz: React.FC = () => {
                 const recordDate = dayjs(d.date);
                 return recordDate.isBetween(tableDateRange[0], tableDateRange[1], null, '[]');
               })
-              .filter((d: any) => {
-                // กรองประสิทธิภาพ
-                if (!efficiencyFilter) return true;
-                const eff = Number(d.efficiency ?? -1);
-                if (efficiencyFilter === "gt") return eff > 50;
-                if (efficiencyFilter === "lte") return eff <= 50;
-                return true;
-              })
-              .filter((d: any) => {
-                // กรองสถานะ
-                if (!statusFilter) return true;
-                return normalizeString(d.status ?? "") === normalizeString(statusFilter);
-              })
             }
             rowKey="ID"
             loading={loading}
@@ -1334,45 +1267,52 @@ const Recycleddataviz: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล Recycled Waste ใหม่"}
+          title={<span style={{ color: '#1ba0a2ff' }}>เพิ่มข้อมูล Recycled Waste ใหม่</span>}
           open={isModalVisible}
           footer={null}
-          width={1100}
+          width={1000}
           destroyOnClose
           closable={false}
           centered
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
-          <RecycledCentralForm onCancel={handleAddModalCancel}
-            onSuccess={async () => {
-              await fetchRecycledData();      // ✅ โหลดข้อมูลกราฟใหม่
-              await loadRecycledTable();   // ✅ โหลดข้อมูลตารางใหม่
-            }}
-          />
+          <div className="recy-container">
+            <RecycledCentralForm onCancel={handleAddModalCancel}
+              onSuccess={async () => {
+                await fetchRecycledData();   // โหลดข้อมูลกราฟใหม่
+                await loadRecycledTable();   // โหลดข้อมูลตารางใหม่
+              }}
+            />
+          </div>
         </Modal>
+
         <Modal
-          title="แก้ไขข้อมูล Recycled Waste"
+          title={<span style={{ color: '#1ba0a2ff' }}>แก้ไขข้อมูล Recycled Waste</span>}
           open={isEditModalVisible}
           footer={null}
-          width={1100}
+          width={1000}
           closable={false}
           destroyOnClose
           centered
           onCancel={handleEditModalCancel}
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
-          {editingRecord && (
-            <UpdateRecycledCentralForm
-              initialValues={editingRecord}
-              onSuccess={() => {
-                setTimeout(async () => {
-                  setIsEditModalVisible(false);
-                  setEditRecord(null);
-                  await loadRecycledTable();
-                  await fetchRecycledData();
-                }, 500);
-              }}
-              onCancel={handleEditModalCancel}
-            />
-          )}
+          <div className="up-recy-container">
+            {editingRecord && (
+              <UpdateRecycledCentralForm
+                initialValues={editingRecord}
+                onSuccess={() => {
+                  setTimeout(async () => {
+                    setIsEditModalVisible(false);
+                    setEditRecord(null);
+                    await loadRecycledTable();
+                    await fetchRecycledData();
+                  }, 500);
+                }}
+                onCancel={handleEditModalCancel}
+              />
+            )}
+          </div>
         </Modal>
       </div>
     </div>

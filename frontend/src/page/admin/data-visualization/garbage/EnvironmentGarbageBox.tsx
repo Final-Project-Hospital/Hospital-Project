@@ -123,7 +123,7 @@ const EnvironmentBlock = () => {
                   <h3>{center.name}</h3>
                   {center.standard && center.standard !== "-" && (
                     <p>
-                      มาตรฐาน <span>{center.standard}</span>
+                      {center.name === 'General Waste' ? 'เป้าหมาย' : 'มาตรฐาน'} <span>{center.standard}</span>
                     </p>
                   )}
                 </div>
