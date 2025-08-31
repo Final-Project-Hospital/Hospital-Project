@@ -126,8 +126,8 @@ const EnvironmentBlock = () => {
 
         const getDisplayStandard = (data: any) => {
           const { MinValue, MaxValue, MiddleValue } = data;
-          if (MinValue !== 0 || MaxValue !== 0) return `${MinValue} - ${MaxValue}`;
-          if (MiddleValue !== 0) return `${MiddleValue}`;
+          if (MinValue !== -1 || MaxValue !== -1) return `${MinValue} - ${MaxValue}`;
+          if (MiddleValue !== -1) return `${MiddleValue}`;
           return '-';
         };
 

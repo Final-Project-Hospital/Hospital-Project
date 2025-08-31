@@ -51,7 +51,7 @@ func ListMiddleStandard(c *gin.Context) {
 	var list []entity.Standard
 
 	if err := config.DB().
-		Where("min_value = ? AND max_value = ?", 0, 0).
+		Where("min_value = ? AND max_value = ?", -1, -1).
 		Order("middle_value ASC").
 		Find(&list).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถดึงข้อมูลค่าเดี่ยวได้"})
@@ -65,7 +65,7 @@ func ListRangeStandard(c *gin.Context) {
 	var list []entity.Standard
 
 	if err := config.DB().
-		Where("middle_value = ?", 0).
+		Where("middle_value = ?", -1).
 		Order("min_value ASC").
 		Find(&list).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถดึงข้อมูลค่าช่วงได้"})

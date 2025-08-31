@@ -91,7 +91,7 @@ func CreateTTCB(c *gin.Context) {
 
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-		if standard.MiddleValue != 0 { // ค่าเดี่ยว
+		if standard.MiddleValue != -1 { // ค่าเดี่ยว
 			if value > float64(standard.MiddleValue) {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
@@ -348,9 +348,9 @@ func GetTTCBTABLE(c *gin.Context) {
 		if err == nil && latestRec.StandardID != 0 {
 			var std entity.Standard
 			if db.First(&std, latestRec.StandardID).Error == nil {
-				if (std.MinValue != 0 || std.MaxValue != 0) && (std.MinValue < std.MaxValue) {
+				if (std.MinValue != -1 || std.MaxValue != -1) && (std.MinValue < std.MaxValue) {
 					stdVal = fmt.Sprintf("%.2f - %.2f", std.MinValue, std.MaxValue)
-				} else if std.MiddleValue > 0 {
+				} else if std.MiddleValue > -1 {
 					stdVal = fmt.Sprintf("%.2f", std.MiddleValue)
 				}
 			}
@@ -400,7 +400,7 @@ func GetTTCBTABLE(c *gin.Context) {
 			var std entity.Standard
 			if db.First(&std, latestRec.StandardID).Error == nil {
 				after := *ttcbMap[k].AfterValue
-				if std.MinValue != 0 || std.MaxValue != 0 {
+				if std.MinValue != -1 || std.MaxValue != -1 {
 					if after < float64(std.MinValue) || after > float64(std.MaxValue) {
 						ttcbMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
@@ -480,6 +480,20 @@ func UpdateOrCreateTTCB(c *gin.Context) {
 
 	db := config.DB()
 
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?", "น้ำประปา").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
+
+	var parameter entity.Parameter
+	if err := db.Where("parameter_name = ?", "Total Coliform Bacteria").First(&parameter).Error; err != nil {
+		fmt.Println("Error fetching parameter:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
+		return
+	}
+
 	// ✅ ถ้า StandardID = 0 → สร้างใหม่จาก CustomStandard (ถ้าไม่มีซ้ำ)
 	if input.StandardID == 0 && input.CustomStandard != nil {
 		var existing entity.Standard
@@ -496,8 +510,14 @@ func UpdateOrCreateTTCB(c *gin.Context) {
 			}
 		}
 
-		if err := query.First(&existing).Error; errors.Is(err, gorm.ErrRecordNotFound) {
-			newStandard := entity.Standard{}
+	if err := query.First(&existing).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+			// กำหนดค่า default เป็น -1 ทุกตัว
+			newStandard := entity.Standard{
+				MiddleValue: -1,
+				MinValue:    -1,
+				MaxValue:    -1,
+			}
+
 			if input.CustomStandard.Type == "middle" && input.CustomStandard.Value != nil {
 				newStandard.MiddleValue = float32(*input.CustomStandard.Value)
 			} else if input.CustomStandard.Type == "range" {
@@ -529,7 +549,7 @@ func UpdateOrCreateTTCB(c *gin.Context) {
 	getStatusID := func(value float64) uint {
 		var status entity.Status
 
-		if standard.MiddleValue != 0 {
+		if standard.MiddleValue != -1 {
 			if value <= float64(standard.MiddleValue) {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
@@ -591,6 +611,8 @@ func UpdateOrCreateTTCB(c *gin.Context) {
 
 		db.Model(&entity.EnvironmentalRecord{}).
 			Where("date >= ? AND date < ?", startOfDay, endOfDay).
+			Where("parameter_id = ?",parameter.ID).
+			Where("environment_id = ?", environment.ID).
 			Update("unit_id", input.UnitID)
 
 		c.JSON(http.StatusOK, gin.H{"message": "อัปเดตข้อมูลสำเร็จ", "data": existing})
@@ -609,6 +631,8 @@ func UpdateOrCreateTTCB(c *gin.Context) {
 
 		db.Model(&entity.EnvironmentalRecord{}).
 			Where("date >= ? AND date < ?", startOfDay, endOfDay).
+			Where("parameter_id = ?",parameter.ID).
+			Where("environment_id = ?", environment.ID).
 			Update("unit_id", input.UnitID)
 
 		c.JSON(http.StatusOK, gin.H{"message": "สร้างข้อมูลใหม่สำเร็จ", "data": input})

@@ -246,12 +246,12 @@ const BODdataviz: React.FC = () => {
           compare.push({ date, before: avgBefore, after: avgAfter });
         });
         // console.log(lastbod.data)
-        if (lastbod.data.MiddleValue !== 0) {
+        if (lastbod.data.MiddleValue !== -1) {
           setMiddleStandard(lastbod.data.MiddleValue);
-          setMaxStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
-          setMinStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
+          setMaxStandard(-1); //แก้ให้เส้นมาตรฐานอัพเดท
+          setMinStandard(-1); //แก้ให้เส้นมาตรฐานอัพเดท
         } else {
-          setMiddleStandard(0); //แก้ให้เส้นมาตรฐานอัพเดท
+          setMiddleStandard(-1); //แก้ให้เส้นมาตรฐานอัพเดท
           setMaxStandard(lastbod.data.MaxValue);
           setMinStandard(lastbod.data.MinValue);
         }
@@ -358,7 +358,7 @@ const BODdataviz: React.FC = () => {
     const maxValueInData = Math.max(...dataSeries);
     const isStandardRange = minstandard !== undefined && maxstandard !== undefined && minstandard !== maxstandard;
 
-    const standardCeil = middlestandard !== undefined && middlestandard !== 0 ? middlestandard : maxstandard ?? 0;
+    const standardCeil = middlestandard !== undefined && middlestandard !== -1 ? middlestandard : maxstandard ?? -1;
     const adjustedMax = Math.max(maxValueInData, standardCeil) * 1.1;
 
     return {
@@ -388,7 +388,7 @@ const BODdataviz: React.FC = () => {
                 label: { text: `มาตรฐานสูงสุด ${maxstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
               },
             ]
-            : middlestandard !== undefined && middlestandard !== 0
+            : middlestandard !== undefined && middlestandard !== -1
               ? [
                 {
                   y: middlestandard,
@@ -774,9 +774,9 @@ const BODdataviz: React.FC = () => {
               <p>
                 มาตรฐาน{" "}
                 <span>
-                  {(BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== 0) || (BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0) || (BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0) || (BeforeAfter.before.UnitName && BeforeAfter.before.UnitName.trim() !== "")
-                    ? (BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== 0
-                      ? BeforeAfter.before.MiddleValue.toLocaleString() : `${(BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== 0 ? BeforeAfter.before.MinValue.toLocaleString() : "-")} - ${(BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== 0 ? BeforeAfter.before.MaxValue.toLocaleString() : "-")}`) : "-"
+                  {(BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== -1) || (BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== -1) || (BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== -1) || (BeforeAfter.before.UnitName && BeforeAfter.before.UnitName.trim() !== "")
+                    ? (BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== -1
+                      ? BeforeAfter.before.MiddleValue.toLocaleString() : `${(BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== -1 ? BeforeAfter.before.MinValue.toLocaleString() : "-")} - ${(BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== -1 ? BeforeAfter.before.MaxValue.toLocaleString() : "-")}`) : "-"
                   }
                 </span>{" "}
                 {BeforeAfter.before.UnitName || ""}
@@ -805,9 +805,9 @@ const BODdataviz: React.FC = () => {
                 มาตรฐาน{" "}
                 <span>
                   {
-                    (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== 0) || (BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0) || (BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0) || (BeforeAfter.after.UnitName && BeforeAfter.after.UnitName.trim() !== "")
-                      ? (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== 0
-                        ? BeforeAfter.after.MiddleValue.toLocaleString() : `${(BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== 0 ? BeforeAfter.after.MinValue.toLocaleString() : "-")} - ${(BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== 0 ? BeforeAfter.after.MaxValue.toLocaleString() : "-")}`)
+                    (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== -1) || (BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== -1) || (BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== -1) || (BeforeAfter.after.UnitName && BeforeAfter.after.UnitName.trim() !== "")
+                      ? (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== -1
+                        ? BeforeAfter.after.MiddleValue.toLocaleString() : `${(BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== -1 ? BeforeAfter.after.MinValue.toLocaleString() : "-")} - ${(BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== -1 ? BeforeAfter.after.MaxValue.toLocaleString() : "-")}`)
                       : "-"
                   }
                 </span>{" "}
