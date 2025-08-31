@@ -1,0 +1,140 @@
+@import url("https://fonts.googleapis.com/css2?family=Albert+Sans:ital,wght@0,100..900;1,100..900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+/*Common Tailwind CSS Start Here*/
+
+.Container {
+  @apply w-full sm:w-[540px] md:w-[720px] lg:w-[960px] xl:w-[1140px] 2xl:w-[1320px] px-2 md:px-3 lg:px-4 xl:px-5 mx-auto;
+}
+
+.header-btn {
+  @apply inline-block overflow-hidden border border-PrimaryColor-0 bg-PrimaryColor-0 transition-all z-10 hover:text-white duration-500 px-[30px] py-[12px] relative rounded-full text-base text-white font-AlbertSans before:bg-SecondaryColor-0 before:h-full before:w-0 before:absolute before:top-0 before:right-0 before:-z-10 before:transition-all before:duration-500 hover:before:w-full hover:before:left-0;
+}
+
+.primary-btn {
+  @apply flex items-center gap-2 overflow-hidden border border-PrimaryColor-0 bg-PrimaryColor-0 transition-all z-10 hover:text-white duration-500 px-10 py-[14px] relative rounded-full text-[17px] text-white font-medium font-AlbertSans before:bg-SecondaryColor-0 before:h-full before:w-0 before:absolute before:top-0 before:right-0 before:-z-10 before:transition-all before:duration-500 hover:before:w-full hover:before:left-0;
+}
+
+.primary-btn2 {
+  @apply flex items-center gap-2 overflow-hidden border border-PrimaryColor-0 bg-PrimaryColor-0 transition-all z-10 hover:text-white duration-500 py-4 px-10 relative rounded-full text-[17px] text-white font-medium font-AlbertSans before:bg-SecondaryColor-0 before:h-full before:w-0 before:absolute before:top-0 before:right-0 before:-z-10 before:transition-all before:duration-500 hover:before:w-full hover:before:left-0;
+}
+
+.primary-btn3 {
+  @apply flex items-center gap-2 overflow-hidden border border-PrimaryColor-0 bg-PrimaryColor-0 transition-all z-10 hover:text-white duration-500 py-[17px] px-[36px] relative rounded-md uppercase text-[15px] text-white font-medium font-AlbertSans before:bg-SecondaryColor-0 before:h-full before:w-0 before:absolute before:top-0 before:right-0 before:-z-10 before:transition-all before:duration-500 hover:before:w-full hover:before:left-0;
+}
+
+.is-sticky {
+  @apply fixed top-0 left-0 w-full z-[99999] shadow-lg bg-black backdrop-blur-md animate-headerSlideDown;
+}
+
+.header-section4.is-sticky {
+  @apply fixed top-0 left-0 w-full z-[99999] shadow-lg bg-white backdrop-blur-md animate-headerSlideDown;
+}
+
+/* Progress Bar */
+
+.progress-bar-rect-wrap-container {
+  position: relative;
+  z-index: 999;
+}
+
+.rect-progress-bar-percent {
+  @apply !m-0 leading-[10px] absolute !text-[#1b3434] font-AlbertSans font-medium left-[88%] -top-[28px];
+}
+
+.skill2 .rect-progress-bar-percent {
+  @apply !m-0 leading-[10px] absolute !text-[#1b3434] font-AlbertSans font-medium left-[78%] -top-[28px];
+}
+
+.rect-progress-bar-percent {
+  margin: 0 !important;
+  line-height: 10px;
+}
+
+.react-tabs__tab--selected::before {
+  width: 20px !important;
+}
+
+/* Project */
+
+.swiper-slide:hover .project-thumb-title,
+.swiper-slide.swiper-slide-active .project-thumb-title {
+  left: 25px;
+  opacity: 1;
+}
+
+/* Project */
+
+.swiper-slide:hover .project-content,
+.swiper-slide.swiper-slide-active .project-content {
+  bottom: 0px;
+}
+
+.swiper-slide:hover .project-content3,
+.swiper-slide.swiper-slide-active .project-content3 {
+  bottom: 0;
+}
+
+/* Pagination */
+
+.service .swiper-pagination,
+.testimonial .swiper-pagination,
+.project .swiper-pagination {
+  bottom: 6px !important;
+  top: inherit !important;
+  left: 50% !important;
+  flex-direction: row !important;
+  justify-content: center;
+}
+
+/* Faq */
+
+.faq-button[aria-expanded="true"] {
+  background: #79b900;
+  border-radius: 6px 6px 0 0;
+}
+
+.faq-button:hover img,
+.faq-button[aria-expanded="true"] img {
+  filter: brightness(0) invert(1);
+}
+
+.faq2-button[aria-expanded="true"] {
+  border-color: transparent !important;
+}
+
+/* Benefits */
+
+.benefits .rect-progress-bar-percent {
+  color: #fff !important;
+  font-weight: 400;
+}
+
+/* Counter */
+
+.counter-stroke {
+  -webkit-text-stroke: 1px #000000;
+}
+
+/* Animal */
+
+.animal-box.active::before {
+  height: 100%;
+}
+
+.animal-box.active .animal-btn {
+  transform: translateY(-50%) translateX(-50%) scale(1);
+}
