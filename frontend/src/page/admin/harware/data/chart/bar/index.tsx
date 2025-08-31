@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
-import ColorMapping from './ColorMapping';
+import ColorMapping from './bar';
 import TimeRangeSelector from './TimeRangeSelector';
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
 
@@ -31,7 +31,7 @@ interface ColorParamWithColor {
   color: string;
 }
 
-const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
+const BarIndex: React.FC<ColorMappingIndexProps> = ({
   hardwareID,
   parameters,
   colors = [],
@@ -216,4 +216,4 @@ const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
   );
 };
 
-export default ColorMappingIndex;
+export default BarIndex;

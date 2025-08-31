@@ -29,6 +29,7 @@ const UserProfile = () => {
     localStorage.removeItem("roleName");
     localStorage.removeItem("token");
     localStorage.removeItem("token_type");
+    localStorage.clear();
 
     message.success("ออกจากระบบ");
 

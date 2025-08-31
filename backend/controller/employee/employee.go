@@ -104,98 +104,111 @@ func GetEmployees(c *gin.Context) {
 
 // UpdateEmployeeInfo แก้ไขข้อมูลพนักงาน (PUT /api/employees/:id)
 func UpdateEmployeeInfo(c *gin.Context) {
-    id := c.Param("id")
-    db := config.DB()
+	id := c.Param("id")
+	db := config.DB()
 
-    if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form data"})
-        return
-    }
+	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form data"})
+		return
+	}
 
-    form := c.Request.MultipartForm
-    firstName := firstOrEmpty(form.Value["firstName"])
-    lastName  := firstOrEmpty(form.Value["lastName"])
-    email     := firstOrEmpty(form.Value["email"])
-    phone     := firstOrEmpty(form.Value["phone"])
-    password  := firstOrEmpty(form.Value["password"])
-    posRaw    := firstOrEmpty(form.Value["positionID"]) // optional
-    roleRaw   := firstOrEmpty(form.Value["roleID"])     // optional (กรณีแก้ตัวเอง)
+	form := c.Request.MultipartForm
+	firstName := firstOrEmpty(form.Value["firstName"])
+	lastName := firstOrEmpty(form.Value["lastName"])
+	email := strings.ToLower(strings.TrimSpace(firstOrEmpty(form.Value["email"])))
+	phone := strings.TrimSpace(firstOrEmpty(form.Value["phone"]))
+	password := firstOrEmpty(form.Value["password"])
+	posRaw := firstOrEmpty(form.Value["positionID"])
+	roleRaw := firstOrEmpty(form.Value["roleID"])
 
-    if firstName == "" || lastName == "" || email == "" || phone == "" {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
-        return
-    }
+	if firstName == "" || lastName == "" || email == "" || phone == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
+		return
+	}
 
-    var employee entity.Employee
-    if err := db.First(&employee, id).Error; err != nil {
-        c.JSON(http.StatusNotFound, gin.H{"error": "Employee not found"})
-        return
-    }
+	var employee entity.Employee
+	if err := db.First(&employee, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Employee not found"})
+		return
+	}
 
-    // ใครเป็นคนยิง request
-    reqID, hasReq := getRequesterID(c)
+	// ✅ ตรวจสอบ Email/Phone ซ้ำ (ยกเว้นตัวเอง)
+	errors := make(map[string]string)
 
-    // ตั้งค่าพื้นฐาน
-    employee.FirstName = firstName
-    employee.LastName  = lastName
-    employee.Email     = email
-    employee.Phone     = phone
+	var existEmail entity.Employee
+	if err := db.Where("email = ? AND id <> ?", email, employee.ID).First(&existEmail).Error; err == nil {
+		errors["email"] = "อีเมลล์ถูกใช้งานเเล้ว"
+	}
 
-    // positionID: มีค่าส่งมาก็อัปเดต ไม่ส่งมาก็ใช้ของเดิม
-    if posRaw != "" {
-        if posID64, err := strconv.ParseUint(posRaw, 10, 32); err == nil {
-            employee.PositionID = uint(posID64)
-        }
-    }
+	var existPhone entity.Employee
+	if err := db.Where("phone = ? AND id <> ?", phone, employee.ID).First(&existPhone).Error; err == nil {
+		errors["phone"] = "เบอร์โทรศัพท์ถูกใช้งานเเล้ว"
+	}
 
-    // roleID: 
-    // - ถ้ากำลังแก้ "ตัวเอง": อนุญาตให้ไม่ส่ง roleID ได้ (คงค่าเดิม)
-    // - ถ้ากำลังแก้ "คนอื่น": ต้องมี roleID (กันลืม)
-    if roleRaw == "" {
-        if !hasReq || uint64(reqID) != uint64(employee.ID) {
-            c.JSON(http.StatusBadRequest, gin.H{"error": "Missing roleID"})
-            return
-        }
-        // เป็นการแก้ตัวเอง → คง Role เดิมไว้
-    } else {
-        roleIDVal, err := strconv.ParseUint(roleRaw, 10, 32)
-        if err != nil {
-            c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid roleID"})
-            return
-        }
-        // กันเปลี่ยน role ตัวเอง
-        if hasReq && uint64(reqID) == uint64(employee.ID) && uint(roleIDVal) != employee.RoleID {
-            c.JSON(http.StatusForbidden, gin.H{"error": "You cannot change your own role"})
-            return
-        }
-        employee.RoleID = uint(roleIDVal)
-    }
+	if len(errors) > 0 {
+		c.JSON(http.StatusConflict, gin.H{"errors": errors})
+		return
+	}
 
-    // เปลี่ยนรหัสผ่านถ้ามี
-    if password != "" {
-        if hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost); err == nil {
-            employee.Password = string(hashed)
-        } else {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถเข้ารหัสรหัสผ่านได้"})
-            return
-        }
-    }
+	// อัปเดตค่า
+	employee.FirstName = firstName
+	employee.LastName = lastName
+	employee.Email = email
+	employee.Phone = phone
 
-    if file, err := c.FormFile("profile"); err == nil {
-        path := "uploads/profile/" + file.Filename
-        if err := c.SaveUploadedFile(file, path); err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปโหลดไฟล์ไม่สำเร็จ"})
-            return
-        }
-        employee.Profile = path
-    }
+	// Position
+	if posRaw != "" {
+		if posID64, err := strconv.ParseUint(posRaw, 10, 32); err == nil {
+			employee.PositionID = uint(posID64)
+		}
+	}
 
-    if err := db.Save(&employee).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถอัปเดตข้อมูลได้"})
-        return
-    }
+	// Role
+	reqID, hasReq := getRequesterID(c)
+	if roleRaw == "" {
+		if !hasReq || uint64(reqID) != uint64(employee.ID) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing roleID"})
+			return
+		}
+	} else {
+		roleIDVal, err := strconv.ParseUint(roleRaw, 10, 32)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid roleID"})
+			return
+		}
+		if hasReq && uint64(reqID) == uint64(employee.ID) && uint(roleIDVal) != employee.RoleID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "You cannot change your own role"})
+			return
+		}
+		employee.RoleID = uint(roleIDVal)
+	}
 
-    c.JSON(http.StatusOK, gin.H{"message": "แก้ไขข้อมูลสำเร็จ"})
+	// Password
+	if password != "" {
+		if hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost); err == nil {
+			employee.Password = string(hashed)
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถเข้ารหัสรหัสผ่านได้"})
+			return
+		}
+	}
+
+	// Profile
+	if file, err := c.FormFile("profile"); err == nil {
+		path := "uploads/profile/" + file.Filename
+		if err := c.SaveUploadedFile(file, path); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปโหลดไฟล์ไม่สำเร็จ"})
+			return
+		}
+		employee.Profile = path
+	}
+
+	if err := db.Save(&employee).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถอัปเดตข้อมูลได้"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "แก้ไขข้อมูลสำเร็จ"})
 }
 
 // helper เล็กๆ
@@ -240,9 +253,9 @@ func CreateEmployee(c *gin.Context) {
 	// รับค่าจาก multipart form
 	firstName := c.PostForm("firstName")
 	lastName := c.PostForm("lastName")
-	email := c.PostForm("email")
+	email := strings.ToLower(strings.TrimSpace(c.PostForm("email")))
 	password := c.PostForm("password")
-	phone := c.PostForm("phone")
+	phone := strings.TrimSpace(c.PostForm("phone"))
 	positionIDStr := c.PostForm("positionID")
 	roleIDStr := c.PostForm("roleID")
 
@@ -251,6 +264,25 @@ func CreateEmployee(c *gin.Context) {
 		return
 	}
 
+	// ✅ ตรวจสอบ Email/Phone ซ้ำ
+	errors := make(map[string]string)
+
+	var existEmail entity.Employee
+	if err := db.Where("email = ?", email).First(&existEmail).Error; err == nil {
+		errors["email"] = "อีเมลล์ถูกใช้งานเเล้ว"
+	}
+
+	var existPhone entity.Employee
+	if err := db.Where("phone = ?", phone).First(&existPhone).Error; err == nil {
+		errors["phone"] = "เบอร์โทรศัพท์ถูกใช้งานเเล้ว"
+	}
+
+	if len(errors) > 0 {
+		c.JSON(http.StatusConflict, gin.H{"errors": errors})
+		return
+	}
+
+	// ✅ parse ID
 	positionID, err := strconv.ParseUint(positionIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid positionID"})
@@ -269,7 +301,7 @@ func CreateEmployee(c *gin.Context) {
 		return
 	}
 
-	// ✅ อ่านรูปภาพและแปลงเป็น Base64 (หมายเหตุ: โปรดพิจารณาขนาด/ที่จัดเก็บใน production)
+	// ✅ อ่านรูปภาพและแปลงเป็น Base64
 	file, err := c.FormFile("profile")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ต้องแนบรูปโปรไฟล์"})
@@ -290,13 +322,14 @@ func CreateEmployee(c *gin.Context) {
 	contentType := file.Header.Get("Content-Type")
 	base64Image := "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(imageBytes)
 
-	// ตรวจสอบความถูกต้องของตำแหน่ง และสิทธิ์
+	// ตรวจสอบความถูกต้องของตำแหน่ง
 	var position entity.Position
 	if err := db.First(&position, uint(positionID)).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ตำแหน่งไม่ถูกต้อง"})
 		return
 	}
 
+	// ตรวจสอบความถูกต้องของสิทธิ์
 	var role entity.Role
 	if err := db.First(&role, uint(roleID)).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "บทบาทไม่ถูกต้อง"})

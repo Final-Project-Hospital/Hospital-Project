@@ -1,3 +1,4 @@
+// 📁 component/auth/Signin.tsx
 import { useState } from "react";
 import { message, Form, Upload, Input, Button } from "antd";
 import ImgCrop from "antd-img-crop";
@@ -19,6 +20,7 @@ const Signin = ({ handleSignIn }: any) => {
   const [fileList, setFileList] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+  const [form] = Form.useForm();
 
   const onPreview = async (file: any) => {
     let src = file.url;
@@ -41,22 +43,46 @@ const Signin = ({ handleSignIn }: any) => {
     if (file) {
       base64 = await getBase64(file);
     }
+
     const signupInput: SignupInput = {
-      FirstName: values.firstName,
-      LastName: values.lastName,
-      Email: values.email,
-      Phone: values.phone || "",
-      Password: values.password,
+      FirstName: values.FirstName,
+      LastName: values.LastName,
+      Email: values.Email,
+      Phone: values.Phone || "",
+      Password: values.Password,
       Profile: base64,
-      PositionID: Number(values.positionID) || 1,
+      PositionID: Number(values.PositionID) || 1,
     };
-    const res: UsersInterface | false = await SignupUser(signupInput);
-    setLoading(false);
-    if (res) {
+
+    try {//@ts-ignore
+      const res: UsersInterface = await SignupUser(signupInput);
+      setLoading(false);
+
       messageApi.success("สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ");
       setTimeout(() => handleSignIn(), 1000);
-    } else {
-      messageApi.error("เกิดข้อผิดพลาดในการสมัครสมาชิก");
+    } catch (error: any) {
+      setLoading(false);
+
+      const status = error?.response?.status;
+
+      // ✅ รองรับ error หลาย field (Email + Phone)
+      if (status === 409 && error?.response?.data?.errors) {
+        const fieldErrors = Object.entries(error.response.data.errors).map(
+          ([field, msg]) => ({
+            name: field,
+            errors: [msg as string],
+          })
+        );
+        form.setFields(fieldErrors); // แสดง error ใต้ช่อง input
+        return;
+      }
+
+      let errMsg =
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        "เกิดข้อผิดพลาดในการสมัครสมาชิก";
+
+      messageApi.warning(errMsg);
     }
   };
 
@@ -77,13 +103,14 @@ const Signin = ({ handleSignIn }: any) => {
       <div className="flex justify-center">
         <Form
           layout="vertical"
+          form={form}
           onFinish={onFinish}
           className="w-full"
           autoComplete="off"
         >
-          {/* อัปโหลดรูปโปรไฟล์ */}
+          {/* Upload Profile */}
           <Form.Item
-            name="profile"
+            name="Profile"
             className="mb-3 flex justify-center"
             valuePropName="fileList"
             getValueFromEvent={({ fileList }) => fileList}
@@ -125,10 +152,10 @@ const Signin = ({ handleSignIn }: any) => {
             </ImgCrop>
           </Form.Item>
 
-          {/* ชื่อ - นามสกุล */}
+          {/* Firstname - Lastname */}
           <div className="flex gap-4 mb-3">
             <Form.Item
-              name="firstName"
+              name="FirstName"
               label="ชื่อ"
               className="w-1/2 mb-0"
               rules={[{ required: true, message: "กรุณากรอกชื่อ" }]}
@@ -139,7 +166,7 @@ const Signin = ({ handleSignIn }: any) => {
               />
             </Form.Item>
             <Form.Item
-              name="lastName"
+              name="LastName"
               label="นามสกุล"
               className="w-1/2 mb-0"
               rules={[{ required: true, message: "กรุณากรอกนามสกุล" }]}
@@ -151,10 +178,10 @@ const Signin = ({ handleSignIn }: any) => {
             </Form.Item>
           </div>
 
-          {/* อีเมล - รหัสผ่าน */}
+          {/* Email - Password */}
           <div className="flex gap-4 mb-3">
             <Form.Item
-              name="email"
+              name="Email"
               label="อีเมล"
               className="w-1/2 mb-0"
               rules={[
@@ -168,7 +195,7 @@ const Signin = ({ handleSignIn }: any) => {
               />
             </Form.Item>
             <Form.Item
-              name="password"
+              name="Password"
               label="รหัสผ่าน"
               className="w-1/2 mb-0"
               rules={[{ required: true, message: "กรุณากรอกรหัสผ่าน" }]}
@@ -181,20 +208,22 @@ const Signin = ({ handleSignIn }: any) => {
             </Form.Item>
           </div>
 
-          {/* เบอร์โทร */}
+          {/* Phone */}
           <Form.Item
-            name="phone"
+            name="Phone"
             label="เบอร์โทรศัพท์"
             className="mb-3"
             rules={[
-              { required: false },
               {
                 validator: (_, value) => {
-                  if (!value) return Promise.resolve();
-                  if (!/^[0][0-9]{9}$/.test(value))
+                  if (!value || value.trim() === "") {
+                    return Promise.resolve();
+                  }
+                  if (!/^[0][0-9]{9}$/.test(value)) {
                     return Promise.reject(
                       new Error("เบอร์โทรต้องมี 10 หลัก และขึ้นต้นด้วย 0")
                     );
+                  }
                   return Promise.resolve();
                 },
               },
@@ -205,7 +234,6 @@ const Signin = ({ handleSignIn }: any) => {
               className="rounded-lg bg-teal-50 border-teal-200"
               maxLength={10}
               onChange={(e) => {
-                // รับเฉพาะตัวเลข
                 const rawValue = e.target.value;
                 const cleaned = rawValue.replace(/\D/g, "");
                 if (cleaned.length === 0 || cleaned.startsWith("0")) {
@@ -217,7 +245,7 @@ const Signin = ({ handleSignIn }: any) => {
             />
           </Form.Item>
 
-          {/* ปุ่มสมัครสมาชิก */}
+          {/* Button */}
           <Button
             htmlType="submit"
             type="primary"
@@ -236,7 +264,7 @@ const Signin = ({ handleSignIn }: any) => {
         </Form>
       </div>
 
-      {/* ลิงก์กลับไปล็อกอิน */}
+      {/* Link to Login */}
       <p
         className="text-center text-teal-500 text-sm my-2 hover:text-teal-700 cursor-pointer"
         onClick={handleSignIn}

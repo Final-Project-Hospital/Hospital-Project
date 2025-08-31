@@ -12,7 +12,7 @@ import {
 } from "../../../../../services/hardware";
 import LineChart from "../chart/line/index";
 import Area from "../chart/area/index";
-import ColorMapping from "../chart/mapping/index";
+import Bar from "../chart/bar/index";
 import Stacked from "../chart/stack/index";
 import EditParameterModal from "./edit";
 import EditStandardUnitModal from "../standard/index";
@@ -599,8 +599,8 @@ const Index: React.FC = () => {
         return <LineChart {...lineProps} />;
       case "Area":
         return <Area {...lineProps} />;
-      case "Mapping":
-        return <ColorMapping {...lineProps} />;
+      case "Bar":
+        return <Bar {...lineProps} />;
       case "Stacked":
         return <Stacked {...lineProps} />;
       default:
