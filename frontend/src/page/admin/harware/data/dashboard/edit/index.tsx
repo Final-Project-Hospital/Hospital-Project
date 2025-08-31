@@ -92,7 +92,8 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   hardwareID,
   onSuccess,
 }) => {
-  const { isMobile, isTablet, isCompact } = useViewportFlags();
+  // const { isMobile, isTablet, isCompact } = useViewportFlags();
+  const { isCompact } = useViewportFlags();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
