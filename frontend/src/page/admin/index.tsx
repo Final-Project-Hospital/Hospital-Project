@@ -995,7 +995,7 @@ const AdminDashboard: React.FC = () => {
               lineHeight: 1.2,
             }}
           >
-            ค่า pH น้ำเสียก่อนบำบัด (คาดการณ์เดือนถัดไป)
+            ค่า TDS น้ำเสียหลังการบำบัด (คาดการณ์เดือนถัดไป)
           </h3>
           {predictionLoading ? (
             <p style={{ margin: 0 }}>กำลังคำนวณ...</p>
