@@ -1,5 +1,5 @@
 // 📄 EditStandardUnitModal.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Modal, Form, Input, message, Spin, Select, Tooltip, Checkbox } from "antd";
 import {
   ListHardwareParameterByHardwareID,
@@ -97,7 +97,7 @@ const IconBadge: React.FC<{
   </div>
 );
 
-// input ตัวเลข required + เป็นเลขเท่านั้น
+// input ตัวเลข required + เป็นเลขเท่านั้น (อนุญาตให้กรอก 0 ได้)
 const NumberItem: React.FC<{
   name: string;
   placeholder: string;
@@ -133,7 +133,7 @@ const ParamRow: React.FC<{ form: any; param: ParamItem }> = ({ form, param }) =>
   const fieldAlert = `alert_${param.ID}`;
 
   const iconName = Form.useWatch(fieldIcon, form) as string | undefined;
-  const IconPreview = iconMap[iconName || "BiTestTube"]; // ✅ fallback ที่มีอยู่จริง
+  const IconPreview = iconMap[iconName || "BiTestTube"]; // ✅ fallback
 
   const [isMobile, setIsMobile] = useState<boolean>(
     typeof window !== "undefined" ? window.innerWidth <= 768 : false
@@ -208,7 +208,7 @@ const ParamRow: React.FC<{ form: any; param: ParamItem }> = ({ form, param }) =>
               <div className="text-[11px] text-gray-400 mt-1">หน่วยแสดงผลของพารามิเตอร์นี้</div>
             </div>
 
-            {/* Icon Select — ขยายให้กว้างขึ้นมาก */}
+            {/* Icon Select */}
             <div className="md:col-span-2">
               <div className="flex items-center gap-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -277,12 +277,34 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
 
   // ✅ ตรวจจับว่าขนาดจอเป็น "โทรศัพท์" หรือไม่ (<= 640px)
   const [isPhone, setIsPhone] = useState(false);
+
+  // ✅ จับสถานะเปลี่ยนแปลง (Dirty) เพื่อคุมปุ่มบันทึก
+  const [isDirty, setIsDirty] = useState(false);
+  const initialValuesRef = useRef<Record<string, any>>({}); // snapshot ค่าตั้งต้นของฟอร์ม
+
   useEffect(() => {
     const check = () => setIsPhone(typeof window !== "undefined" && window.innerWidth <= 640);
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  // helper: เทียบ object แบบตื้นด้วย key เดียวกัน (พอเพียงสำหรับฟอร์มนี้)
+  const shallowEqual = (a: Record<string, any>, b: Record<string, any>) => {
+    const ka = Object.keys(a).sort();
+    const kb = Object.keys(b).sort();
+    if (ka.length !== kb.length) return false;
+    for (let i = 0; i < ka.length; i++) {
+      if (ka[i] !== kb[i]) return false;
+    }
+    for (const k of ka) {
+      const va = a[k];
+      const vb = b[k];
+      // ปกติเป็น primitive ทั้งหมด: string/number/boolean
+      if (va !== vb) return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
     setEmployeeid(Number(localStorage.getItem("employeeid")) || 0);
@@ -311,12 +333,27 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
         });
 
         form.setFieldsValue(initialValues);
+
+        // เก็บ snapshot ค่าตั้งต้น และรีเซ็ต dirty
+        initialValuesRef.current = initialValues;
+        setIsDirty(false);
       })
       .catch(() => message.error("ไม่สามารถโหลดข้อมูลพารามิเตอร์ได้"))
       .finally(() => setLoading(false));
   }, [open, hardwareID, form]);
 
+  // เมื่อค่าฟอร์มใด ๆ เปลี่ยน เปรียบเทียบกับ snapshot เพื่อกำหนด isDirty
+  const handleValuesChange = (_: any, allValues: Record<string, any>) => {
+    const changed = !shallowEqual(allValues, initialValuesRef.current);
+    setIsDirty(changed);
+  };
+
   const handleSave = async () => {
+    if (!isDirty) {
+      message.info("ยังไม่มีการเปลี่ยนแปลง");
+      return;
+    }
+
     try {
       const values = await form.validateFields();
       setLoading(true);
@@ -402,7 +439,12 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
       {/* Body */}
       <div className="px-4 sm:px-6 pt-4 pb-2 max-h-[80vh] overflow-y-auto bg-white rounded-b-xl">
         <Spin spinning={loading}>
-          <Form layout="vertical" form={form} scrollToFirstError>
+          <Form
+            layout="vertical"
+            form={form}
+            scrollToFirstError
+            onValuesChange={handleValuesChange}
+          >
             {params.map((param) => (
               <ParamRow key={param.ID} form={form} param={param} />
             ))}
@@ -417,16 +459,23 @@ const EditStandardUnitModal: React.FC<EditStandardUnitModalProps> = ({
           >
             ยกเลิก
           </button>
-          <button
-            onClick={handleSave}
-            style={{
-              background: "linear-gradient(to right, #14b8a6, #0d9488)",
-              borderColor: "#0d9488",
-            }}
-            className="px-4 py-2 text-sm rounded-md text-white bg-teal-600 hover:bg-teal-700 transition"
-          >
-            บันทึก
-          </button>
+
+          <Tooltip title={!isDirty ? "ยังไม่มีการเปลี่ยนแปลง" : ""}>
+            <button
+              onClick={handleSave}
+              disabled={!isDirty || loading || params.length === 0}
+              style={{
+                background: "linear-gradient(to right, #14b8a6, #0d9488)",
+                borderColor: "#0d9488",
+                opacity: !isDirty || loading || params.length === 0 ? 0.6 : 1,
+                cursor:
+                  !isDirty || loading || params.length === 0 ? "not-allowed" : "pointer",
+              }}
+              className="px-4 py-2 text-sm rounded-md text-white bg-teal-600 hover:bg-teal-700 transition"
+            >
+              บันทึก
+            </button>
+          </Tooltip>
         </div>
       </div>
     </Modal>

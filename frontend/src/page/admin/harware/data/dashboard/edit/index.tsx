@@ -16,9 +16,10 @@ import {
 import {
   UpdateHardwareParameterByID,
   ListHardwareParameterByHardwareID,
-  UpdateGroupDisplay,             // ✅ ใช้ตัวนี้ยิง group_display + index + right พร้อมกัน
+  UpdateGroupDisplay, // ✅ ใช้ตัวนี้ยิง group_display + index + right พร้อมกัน
   UpdateLayoutDisplay,
   UpdateHardwareParameterColorByID,
+  ListDataGraph, // ✅ ดึง "กราฟทั้งหมด" จาก backend
 } from "../../../../../../services/hardware";
 import { ColorPicker } from "antd";
 import LineChartingImg from "../../../../../../assets/chart/LineCharting.png";
@@ -48,12 +49,14 @@ type ParamRow = {
   Parameter: string;
   GroupDisplay: boolean;
   LayoutDisplay: boolean;
-  HardwareGraphID?: number;            // 1..4
+  HardwareGraphID?: number; // 1..4
   HardwareParameterColorID?: number;
   HardwareParameterColorCode?: string;
-  Index?: number;                      // ✅ index ปัจจุบันจาก backend
-  Right?: boolean;                     // ✅ right ปัจจุบันจาก backend (ถ้ามี)
+  Index?: number; // ✅ index ปัจจุบันจาก backend
+  Right?: boolean; // ✅ right ปัจจุบันจาก backend (ถ้ามี)
 };
+
+type DataGraph = { ID: number; Graph: string };
 
 // ประเภทกราฟ
 const graphTypes = [
@@ -64,7 +67,6 @@ const graphTypes = [
 ];
 
 const deepClone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
-const STORAGE_KEY = (hardwareID: number) => `hw-layout-v2-${hardwareID}`;
 
 type GraphInstance = { uid: string; graphTypeId: number; name: string };
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -84,6 +86,21 @@ const useViewportFlags = () => {
     return () => window.removeEventListener("resize", onResize);
   }, []);
   return state;
+};
+
+// ✅ map ชื่อกราฟ (จาก backend) -> ชนิดกราฟ 1..4
+const graphNameToTypeId = (name?: string): number => {
+  const n = (name || "").toLowerCase();
+  if (n.includes("stack")) return 4;
+  if (n.includes("mapping") || n.includes("color")) return 3;
+  if (n.includes("area")) return 2;
+  if (n.includes("line")) return 1;
+  // fallback: พยายามเทียบชื่อไทย
+  if (n.includes("เส้น")) return 1;
+  if (n.includes("พื้นที่")) return 2;
+  if (n.includes("แม็ป") || n.includes("แมป") || n.includes("สี")) return 3;
+  if (n.includes("ซ้อน") || n.includes("สแตก")) return 4;
+  return 1;
 };
 
 const EditParameterModal: React.FC<EditParameterModalProps> = ({
@@ -115,9 +132,8 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   const [slots, setSlots] = useState<Slot[]>([{ mode: "single", graphs: [null] }]);
   const [layoutDirty, setLayoutDirty] = useState(false);
 
-  // ---- Graph Instances (Desktop)
+  // ---- Graph Instances (มาจาก BACKEND: ListDataGraph)
   const [instances, setInstances] = useState<GraphInstance[]>([]);
-  const [addingTypeId, setAddingTypeId] = useState<number>(1);
 
   // ---- Compact Color Editor (Mobile/iPad)
   const [colorEditPid, setColorEditPid] = useState<number | null>(null);
@@ -127,17 +143,13 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   const graphMeta = (typeId: number | null | undefined) =>
     graphTypes.find((g) => g.id === (typeId ?? 0));
 
-  const getInstanceByUid = (u?: string | null) =>
-    instances.find((it) => it.uid === u);
+  const getInstanceByUid = (u?: string | null) => instances.find((it) => it.uid === u);
 
   const handleChange = (id: number, field: keyof ParamRow, value: any) => {
-    setFormValues((prev) =>
-      prev.map((it) => (it.ID === id ? { ...it, [field]: value } : it))
-    );
+    setFormValues((prev) => prev.map((it) => (it.ID === id ? { ...it, [field]: value } : it)));
   };
 
-  const getParamName = (id: number) =>
-    formValues.find((x) => x.ID === id)?.Parameter ?? `#${id}`;
+  const getParamName = (id: number) => formValues.find((x) => x.ID === id)?.Parameter ?? `#${id}`;
 
   const getParamColorCode = (id: number): string | undefined =>
     formValues.find((x) => x.ID === id)?.HardwareParameterColorCode;
@@ -163,78 +175,117 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     return false;
   };
 
-  // ---------- localStorage ----------
-  const loadLayoutFromStorage = (rows: ParamRow[]) => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY(hardwareID));
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as { slots: Slot[]; instances: GraphInstance[] };
-      if (!parsed || !Array.isArray(parsed.slots)) return null;
-
-      const validIds = new Set(rows.map((r) => r.ID));
-      const cleanedSlots: Slot[] = parsed.slots.map((slot) => {
-        const isSplit = slot.mode === "split";
-        const graphs = (slot.graphs || [])
-          .slice(0, isSplit ? 2 : 1)
-          .map((cg) => {
-            if (!cg) return null;
-            const graphTypeId =
-              typeof cg.graphTypeId === "number" && [1, 2, 3, 4].includes(cg.graphTypeId)
-                ? cg.graphTypeId
-                : null;
-            const paramIds = Array.from(
-              new Set((cg.paramIds || []).filter((id) => validIds.has(id)))
-            );
-            const graphInstanceUid =
-              typeof cg.graphInstanceUid === "string" ? cg.graphInstanceUid : null;
-            return graphTypeId || paramIds.length
-              ? { graphTypeId, graphInstanceUid, paramIds }
-              : null;
-          });
-        if (isSplit) {
-          while (graphs.length < 2) graphs.push(null);
-        } else {
-          graphs.splice(1);
-        }
-        return { mode: isSplit ? "split" : "single", graphs };
+  // ---------- helper: สร้าง instances จาก ListDataGraph (ไม่ซ้ำชื่อ) ----------
+  const buildInstancesFromGraphs = (graphs: DataGraph[]): GraphInstance[] => {
+    const seen = new Set<string>();
+    const list: GraphInstance[] = [];
+    for (const g of graphs || []) {
+      const name = String(g.Graph ?? "").trim();
+      if (!name) continue;
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue; // ❌ กันชื่อซ้ำ
+      seen.add(key);
+      const typeId = graphNameToTypeId(name);
+      list.push({
+        uid: `graph-${g.ID}`, // ทำให้คงที่ต่อเนื่อง
+        graphTypeId: typeId,
+        name,
       });
-
-      const cleanedInstances = (Array.isArray(parsed.instances) ? parsed.instances : []).filter(
-        (it) => it && typeof it.uid === "string" && [1, 2, 3, 4].includes(it.graphTypeId)
-      );
-
-      const paramInSplitLayout = new Set<number>();
-      cleanedSlots.forEach((slot) => {
-        if (slot.mode !== "split") return;
-        slot.graphs.forEach((cg) => cg?.paramIds.forEach((id) => paramInSplitLayout.add(id)));
-      });
-      setFormValues((prev) =>
-        prev.map((p) => ({
-          ...p,
-          LayoutDisplay: paramInSplitLayout.has(p.ID),
-        }))
-      );
-
-      return { slots: cleanedSlots, instances: cleanedInstances };
-    } catch {
-      return null;
     }
+    return list;
   };
 
-  const saveLayoutToStorage = (value: { slots: Slot[]; instances: GraphInstance[] }) => {
-    try {
-      localStorage.setItem(STORAGE_KEY(hardwareID), JSON.stringify(value));
-    } catch {}
+  // ---------- helper: เลือก instance uid ที่ชนิดตรงกับ typeId (หรือ null) ----------
+  const pickInstanceUidForType = (typeId: number, insts: GraphInstance[]): string | null => {
+    const found = insts.find((it) => it.graphTypeId === typeId);
+    return found ? found.uid : null;
+  };
+
+  // ---------- สร้างเลย์เอาต์จาก BACKEND + ผูก instance ที่ตรงชนิด ----------
+  const buildLayoutFromBackend = (rows: ParamRow[], insts: GraphInstance[]) => {
+    if (!rows || rows.length === 0) {
+      return { slots: buildInitialSlots(), splitSet: new Set<number>() };
+    }
+
+    const indexes = Array.from(
+      new Set(rows.map((r) => (typeof r.Index === "number" && r.Index! > 0 ? r.Index! : 1)))
+    ).sort((a, b) => a - b);
+
+    const newSlots: Slot[] = [];
+    const splitParamIds = new Set<number>();
+
+    indexes.forEach((rowIndex) => {
+      const paramsInRow = rows.filter(
+        (r) => (typeof r.Index === "number" && r.Index === rowIndex) || (r.Index == null && rowIndex === 1)
+      );
+
+      const leftParams = paramsInRow.filter((p) => p.Right === false).map((p) => p.ID);
+      const rightParams = paramsInRow
+        .filter((p) => p.Right === true || p.Right == null)
+        .map((p) => p.ID);
+
+      const isSplit = leftParams.length > 0 && rightParams.length > 0;
+
+      if (isSplit) {
+        const leftType = rows.find((r) => r.ID === leftParams[0])?.HardwareGraphID ?? 1;
+        const rightType = rows.find((r) => r.ID === rightParams[0])?.HardwareGraphID ?? 1;
+
+        const leftUid = pickInstanceUidForType(leftType, insts);
+        const rightUid = pickInstanceUidForType(rightType, insts);
+
+        const leftCell: CellGraph | null =
+          leftParams.length > 0
+            ? { graphTypeId: leftType, graphInstanceUid: leftUid, paramIds: leftParams }
+            : null;
+        const rightCell: CellGraph | null =
+          rightParams.length > 0
+            ? { graphTypeId: rightType, graphInstanceUid: rightUid, paramIds: rightParams }
+            : null;
+
+        leftParams.forEach((id) => splitParamIds.add(id));
+        rightParams.forEach((id) => splitParamIds.add(id));
+
+        newSlots.push({ mode: "split", graphs: [leftCell, rightCell] });
+      } else {
+        const allIds = paramsInRow.map((p) => p.ID);
+        const cellType = rows.find((r) => r.ID === allIds[0])?.HardwareGraphID ?? 1;
+        const uidForType = pickInstanceUidForType(cellType, insts);
+        const cell: CellGraph | null =
+          allIds.length > 0
+            ? { graphTypeId: cellType, graphInstanceUid: uidForType, paramIds: allIds }
+            : null;
+
+        newSlots.push({ mode: "single", graphs: [cell] });
+      }
+    });
+
+    return { slots: newSlots, splitSet: splitParamIds };
   };
 
   useEffect(() => {
     setEmployeeid(Number(localStorage.getItem("employeeid")));
     if (!open || !hardwareID) return;
+
     setLoading(true);
-    ListHardwareParameterByHardwareID(hardwareID)
-      .then((params) => {
-        if (!params) return;
-        const rows: ParamRow[] = params.map((p: any) => ({
+    Promise.all([
+      ListHardwareParameterByHardwareID(hardwareID),
+      ListDataGraph(), // ✅ ดึงรายการ "กราฟทั้งหมด"
+    ])
+      .then(([params, graphList]) => {
+        // ----- กราฟทั้งหมด -----
+        const insts = buildInstancesFromGraphs((graphList as DataGraph[]) || []);
+        setInstances(insts);
+
+        // ----- พารามิเตอร์ -----
+        if (!params) {
+          setFormValues([]);
+          setInitialValues([]);
+          setSlots(buildInitialSlots());
+          setLayoutDirty(false);
+          return;
+        }
+
+        const rows: ParamRow[] = (params as any[]).map((p: any) => ({
           ID: p.ID,
           Parameter: p.Parameter,
           GroupDisplay: p.GroupDisplay,
@@ -242,20 +293,23 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
           HardwareGraphID: p.HardwareGraph?.ID,
           HardwareParameterColorID: p.HardwareParameterColor?.ID,
           HardwareParameterColorCode: p.HardwareParameterColor?.Code,
-          Index: p.Index,                 // ✅ รับ index จาก backend
-          Right: p.Right,                 // ✅ รับ right จาก backend ถ้ามี
+          Index: p.Index,
+          Right: p.Right,
         }));
+
         setFormValues(rows);
         setInitialValues(deepClone(rows));
 
-        const fromStore = loadLayoutFromStorage(rows);
-        if (fromStore?.slots?.length) {
-          setSlots(fromStore.slots);
-          setInstances(fromStore.instances ?? []);
-        } else {
-          setSlots(buildInitialSlots());
-          setInstances([]);
-        }
+        // ✅ สร้างเลย์เอาต์จาก BACKEND + ผูก instance ตามชนิด
+        const { slots: s, splitSet } = buildLayoutFromBackend(rows, insts);
+        setSlots(s);
+
+        // ✅ LayoutDisplay = true เฉพาะพารามิเตอร์ที่อยู่ในแถว split
+        setFormValues((prev) =>
+          prev.map((p) =>
+            splitSet.has(p.ID) ? { ...p, LayoutDisplay: true } : { ...p, LayoutDisplay: false }
+          )
+        );
 
         setLayoutDirty(false);
       })
@@ -282,41 +336,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     return false;
   }, [initialValues, formValues]);
 
-  const canSave = useMemo(
-    () => hasUnsavedChanges || layoutDirty,
-    [hasUnsavedChanges, layoutDirty]
-  );
-
-  // ---------- Graph Instances (Desktop) ----------
-  const addGraphInstance = () => {
-    const meta = graphMeta(addingTypeId);
-    if (!meta) return;
-    const countSameType = instances.filter((it) => it.graphTypeId === addingTypeId).length;
-    const inst: GraphInstance = {
-      uid: uid(),
-      graphTypeId: addingTypeId,
-      name: `${meta.name} #${countSameType + 1}`,
-    };
-    setInstances((prev) => [...prev, inst]);
-    setLayoutDirty(true);
-  };
-
-  const removeGraphInstance = (uidToRemove: string) => {
-    setInstances((prev) => prev.filter((it) => it.uid !== uidToRemove));
-    setSlots((prev) =>
-      prev.map((slot) => ({
-        ...slot,
-        graphs: slot.graphs.map((cg) => {
-          if (!cg) return cg;
-          if (cg.graphInstanceUid === uidToRemove) {
-            return { ...cg, graphInstanceUid: null };
-          }
-          return cg;
-        }),
-      }))
-    );
-    setLayoutDirty(true);
-  };
+  const canSave = useMemo(() => hasUnsavedChanges || layoutDirty, [hasUnsavedChanges, layoutDirty]);
 
   // ---------- drag param (Desktop) ----------
   const handleParamDragStart = (paramId: number) => {
@@ -338,20 +358,12 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   };
 
   // ---------- layout drop handlers (Desktop) ----------
-  const handleDragOverSlot = (
-    slotIndex: number,
-    subIndex: number | null,
-    e: React.DragEvent
-  ) => {
+  const handleDragOverSlot = (slotIndex: number, subIndex: number | null, e: React.DragEvent) => {
     e.preventDefault();
     setDragOverSlot({ slot: slotIndex, sub: subIndex });
   };
 
-  const setCell = (
-    slotIndex: number,
-    subIndex: number | null,
-    updater: (cg: CellGraph) => CellGraph
-  ) => {
+  const setCell = (slotIndex: number, subIndex: number | null, updater: (cg: CellGraph) => CellGraph) => {
     setSlots((prev) => {
       const next = [...prev];
       const idx = subIndex ?? 0;
@@ -430,7 +442,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
 
       setCell(slotIndex, subIndex, (cg) => ({
         graphTypeId: graphTypeToUse,
-        graphInstanceUid: cg.graphInstanceUid ?? null,
+        graphInstanceUid: cg.graphInstanceUid ?? pickInstanceUidForType(graphTypeToUse, instances),
         paramIds: Array.from(new Set([...(cg.paramIds ?? []), paramId])),
       }));
 
@@ -485,11 +497,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     setLayoutDirty(true);
   };
 
-  const removeParamFromCell = (
-    slotIndex: number,
-    subIndex: number | null,
-    paramId: number
-  ) => {
+  const removeParamFromCell = (slotIndex: number, subIndex: number | null, paramId: number) => {
     setSlots((prev) => {
       const next = [...prev];
       const idx = subIndex ?? 0;
@@ -507,8 +515,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     const stillUsedSomewhere = slots.some((sl, si) =>
       sl.graphs.some((cg, ci) => {
         if (!cg) return false;
-        if (si === slotIndex && (sl.mode === "single" ? 0 : ci) === (subIndex ?? 0))
-          return false;
+        if (si === slotIndex && (sl.mode === "single" ? 0 : ci) === (subIndex ?? 0)) return false;
         return cg.paramIds.includes(paramId);
       })
     );
@@ -527,9 +534,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   // ---------- รายการพารามิเตอร์ที่ยังไม่ถูกใช้ใน layout (Desktop) ----------
   const usedParamIds = useMemo(() => {
     const s = new Set<number>();
-    slots.forEach((sl) =>
-      sl.graphs.forEach((cg) => cg?.paramIds.forEach((id) => s.add(id)))
-    );
+    slots.forEach((sl) => sl.graphs.forEach((cg) => cg?.paramIds.forEach((id) => s.add(id))));
     return s;
   }, [slots]);
 
@@ -550,11 +555,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       })
     );
     setFormValues((prev) =>
-      prev.map((p) =>
-        p.GroupDisplay === grouped.has(p.ID)
-          ? p
-          : { ...p, GroupDisplay: grouped.has(p.ID) }
-      )
+      prev.map((p) => (p.GroupDisplay === grouped.has(p.ID) ? p : { ...p, GroupDisplay: grouped.has(p.ID) }))
     );
   }, [slots]);
 
@@ -622,6 +623,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       return {
         ...cg,
         graphTypeId: newType,
+        graphInstanceUid: newType != null ? pickInstanceUidForType(newType, instances) : null,
         paramIds: nextIds,
       };
     });
@@ -636,11 +638,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     });
   };
 
-  const handleCompactParamChange = (
-    slotIdx: number,
-    subIdx: number | null,
-    newIds: number[]
-  ) => {
+  const handleCompactParamChange = (slotIdx: number, subIdx: number | null, newIds: number[]) => {
     const cell = slots[slotIdx].graphs[subIdx ?? 0];
     const typeId = cell?.graphTypeId ?? 1;
 
@@ -660,6 +658,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
     setCell(slotIdx, subIdx, (cg) => ({
       ...cg,
       graphTypeId: cg.graphTypeId ?? typeId,
+      graphInstanceUid: pickInstanceUidForType(cg.graphTypeId ?? typeId, instances),
       paramIds: Array.from(new Set(newIds)),
     }));
 
@@ -683,8 +682,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       const usedElsewhere = slots.some((sl, si) =>
         sl.graphs.some((cg, ci) => {
           if (!cg) return false;
-          if (si === slotIdx && (sl.mode === "single" ? 0 : ci) === (subIdx ?? 0))
-            return false;
+          if (si === slotIdx && (sl.mode === "single" ? 0 : ci) === (subIdx ?? 0)) return false;
           return cg.paramIds.includes(pid);
         })
       );
@@ -698,12 +696,10 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   const handleSave = async () => {
     setSaving(true);
     try {
-      // 1) คำนวณ index และ right จากเลย์เอาต์:
-      //    - index ของแต่ละพารามิเตอร์ = หมายเลขแถว (slotIdx + 1)
-      //    - แถวเดี่ยว: right = true
-      //    - แถวแบบซ้าย/ขวา: ซ้าย -> right=false, ขวา -> right=true
+      // 1) คำนวณ index/right + กราฟจากเลย์เอาต์
       const indexByParamId = new Map<number, number>();
       const rightByParamId = new Map<number, boolean>();
+      const graphTypeByParamId = new Map<number, number>();
 
       slots.forEach((slot, slotIdx) => {
         const rowIndex = slotIdx + 1;
@@ -713,23 +709,24 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
           if (cg) {
             cg.paramIds.forEach((pid) => {
               indexByParamId.set(pid, rowIndex);
-              rightByParamId.set(pid, true); // ✅ แถวเดี่ยว → right=true
+              rightByParamId.set(pid, true);
+              if (cg.graphTypeId != null) graphTypeByParamId.set(pid, cg.graphTypeId);
             });
           }
         } else {
-          // split: ซ้าย=0 → right=false, ขวา=1 → right=true
           slot.graphs.forEach((cg, subIdx) => {
             if (!cg) return;
             const isRight = subIdx === 1;
             cg.paramIds.forEach((pid) => {
               indexByParamId.set(pid, rowIndex);
               rightByParamId.set(pid, isRight);
+              if (cg.graphTypeId != null) graphTypeByParamId.set(pid, cg.graphTypeId);
             });
           });
         }
       });
 
-      // 2) เตรียม flag พารามิเตอร์ที่อยู่ใน split layout → LayoutDisplay = true
+      // 2) LayoutDisplay = true เฉพาะพารามิเตอร์ที่อยู่ในแถว split
       const selectedParamIds = new Set<number>();
       slots.forEach((slot) => {
         if (slot.mode !== "split") return;
@@ -746,11 +743,12 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
       formValues.forEach((cur) => {
         const old = initialMap.get(cur.ID);
 
-        // (a) Graph type per parameter
-        if (!old || old.HardwareGraphID !== cur.HardwareGraphID) {
+        // (a) Graph type per parameter — ใช้ค่าจากเลย์เอาต์เป็นหลัก
+        const desiredGraphType = graphTypeByParamId.get(cur.ID) ?? cur.HardwareGraphID;
+        if (!old || old.HardwareGraphID !== desiredGraphType) {
           updates.push(
             UpdateHardwareParameterByID(cur.ID, {
-              hardware_graph_id: cur.HardwareGraphID,
+              hardware_graph_id: desiredGraphType,
             })
           );
         }
@@ -785,10 +783,6 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
           if (indexChanged && typeof desiredIndex === "number") payload.index = desiredIndex;
           if (rightChanged && typeof desiredRight === "boolean") payload.right = desiredRight;
 
-          // หมายเหตุ: หากต้องการ "ส่ง right เสมอเมื่ออยู่ในเลย์เอาต์"
-          // สามารถใช้:
-          // if (typeof desiredRight === "boolean") payload.right = desiredRight;
-
           if (Object.keys(payload).length > 0) {
             updates.push(UpdateGroupDisplay(cur.ID, payload));
           }
@@ -803,14 +797,13 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
 
       await Promise.all(updates);
 
-      // 3) บันทึก layout/instances ลง localStorage
-      saveLayoutToStorage({ slots, instances });
-
-      // 4) sync ค่าเริ่มต้นใหม่ และปิด flag dirty
+      // 3) sync ค่าเริ่มต้นใหม่ และปิด flag dirty
       const nextInitial = deepClone(formValues).map((p) => ({
         ...p,
         Index: indexByParamId.get(p.ID) ?? p.Index,
         Right: rightByParamId.get(p.ID) ?? p.Right,
+        HardwareGraphID: graphTypeByParamId.get(p.ID) ?? p.HardwareGraphID,
+        LayoutDisplay: willLayoutTrue.has(p.ID),
       }));
       setInitialValues(nextInitial);
       setLayoutDirty(false);
@@ -859,53 +852,23 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         <div className="px-3 sm:px-5 md:px-7 pb-6 pt-0 w-full">
           <div
             className={
-              isCompact
-                ? "grid gap-6 grid-cols-1"
-                : "grid gap-6 xl:[grid-template-columns:1.35fr_1fr]"
+              isCompact ? "grid gap-6 grid-cols-1" : "grid gap-6 xl:[grid-template-columns:1.35fr_1fr]"
             }
           >
-            {/* ซ้าย: รายการกราฟ + พารามิเตอร์ (Desktop) */}
+            {/* ซ้าย: กราฟทั้งหมด + พารามิเตอร์ (Desktop) */}
             {!isCompact && (
               <div className="order-2 xl:order-1 space-y-6">
-                {/* เพิ่มกราฟ */}
+                {/* กราฟทั้งหมด (จาก backend) */}
                 <div className="bg-white rounded-xl shadow border border-gray-100 px-4 py-3">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className="font-semibold text-gray-800">เพิ่มกราฟ</span>
-                    <Button
-                      size="small"
-                      onClick={() => setAddingTypeId(1)}
-                      className={addingTypeId === 1 ? "border-blue-500" : ""}
-                    >
-                      Line
-                    </Button>
-                    <Button
-                      size="small"
-                      onClick={() => setAddingTypeId(2)}
-                      className={addingTypeId === 2 ? "border-blue-500" : ""}
-                    >
-                      Area
-                    </Button>
-                    <Button
-                      size="small"
-                      onClick={() => setAddingTypeId(3)}
-                      className={addingTypeId === 3 ? "border-blue-500" : ""}
-                    >
-                      Mapping
-                    </Button>
-                    <Button
-                      size="small"
-                      onClick={() => setAddingTypeId(4)}
-                      className={addingTypeId === 4 ? "border-blue-500" : ""}
-                    >
-                      Stacked
-                    </Button>
-                    <Button size="small" type="primary" onClick={addGraphInstance}>
-                      + เพิ่มกราฟ
-                    </Button>
+                    <span className="font-semibold text-gray-800">กราฟทั้งหมด</span>
+                    <Tag className="text-[11px] rounded-md" color="blue">
+                      {instances.length} รายการ
+                    </Tag>
                   </div>
                   {instances.length === 0 ? (
                     <div className="text-gray-500 text-sm mt-3">
-                      ยังไม่มีกล่องกราฟ (กดปุ่ม “+ เพิ่มกราฟ” เพื่อสร้าง)
+                      ไม่พบกราฟจากระบบ
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
@@ -943,9 +906,6 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                             <Tag className="ml-auto text-[11px] hidden sm:inline-block" color="blue">
                               ลากไปที่เลย์เอาต์
                             </Tag>
-                            <Button size="small" danger onClick={() => removeGraphInstance(inst.uid)}>
-                              ลบ
-                            </Button>
                           </div>
                         );
                       })}
@@ -1029,7 +989,10 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                               />
                             </Form.Item>
 
-                            <Tooltip title="ตั้งค่าเป็น 'รวมกลุ่ม' อัตโนมัติเมื่อมี ≥ 2 พารามิเตอร์ในช่องเดียวกัน" placement="top">
+                            <Tooltip
+                              title="ตั้งค่าเป็น 'รวมกลุ่ม' อัตโนมัติเมื่อมี ≥ 2 พารามิเตอร์ในช่องเดียวกัน"
+                              placement="top"
+                            >
                               <Switch size="small" checked={rowParam.GroupDisplay} disabled checkedChildren="G" unCheckedChildren="G" />
                             </Tooltip>
                             <Tooltip title="การแสดงในเลย์เอาต์ (เดี่ยว=ปิด, แบ่งสอง=เปิด)" placement="top">
@@ -1108,9 +1071,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                                 className={`relative rounded-xl border p-3 min-h-[160px] transition ${
                                   isOver ? "border-teal-400 bg-teal-50" : "border-gray-300 bg-gray-50"
                                 }`}
-                                onDragOver={
-                                  !isCompact ? (e) => handleDragOverSlot(slotIdx, isSplit ? subIdx : null, e) : undefined
-                                }
+                                onDragOver={!isCompact ? (e) => handleDragOverSlot(slotIdx, isSplit ? subIdx : null, e) : undefined}
                                 onDrop={!isCompact ? () => handleDropOnSlot(slotIdx, isSplit ? subIdx : null) : undefined}
                                 title={isSplit ? (subIdx === 0 ? "ช่องซ้าย" : "ขวา") : "ช่องเดี่ยว"}
                               >
@@ -1158,9 +1119,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                                         size="middle"
                                         placeholder="เลือกประเภทกราฟ"
                                         value={cell?.graphTypeId ?? undefined}
-                                        onChange={(val) =>
-                                          handleCompactGraphTypeChange(slotIdx, isSplit ? subIdx : null, val)
-                                        }
+                                        onChange={(val) => handleCompactGraphTypeChange(slotIdx, isSplit ? subIdx : null, val)}
                                         options={graphTypes.map((g) => ({ value: g.id, label: g.name }))}
                                         className="w-full"
                                         allowClear
@@ -1252,7 +1211,11 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                                                   title="แตะเพื่อเปลี่ยนสี"
                                                 />
                                               ) : (
-                                                <Popover content={desktopColorNode} trigger="click" overlayInnerStyle={{ padding: 8 }}>
+                                                <Popover
+                                                  content={desktopColorNode}
+                                                  trigger="click"
+                                                  overlayInnerStyle={{ padding: 8 }}
+                                                >
                                                   <span
                                                     style={{
                                                       display: "inline-block",
@@ -1309,7 +1272,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                     onClick={handleSave}
                     disabled={!canSave || saving}
                     size="small"
-                    className="rounded-md font-semibold px-4 h-[34px] text-[14px]"
+                    className="rounded-md font-semibold px-4 h-[34px] text-[14px] text-white bg-teal-600"
                   >
                     บันทึกทั้งหมด
                   </Button>
