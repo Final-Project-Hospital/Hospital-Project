@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
@@ -113,6 +114,35 @@ func UpdateEmployeeByID(c *gin.Context) {
 		return
 	}
 
+	// ✅ เก็บ error หลายช่องพร้อมกัน
+	errors := make(map[string]string)
+
+	// ตรวจสอบ Email ซ้ำ
+	if email, ok := updateData["Email"]; ok {
+		emailStr := strings.ToLower(strings.TrimSpace(email.(string)))
+		var exist entity.Employee
+		if err := db.Where("email = ? AND id <> ?", emailStr, employee.ID).First(&exist).Error; err == nil {
+			errors["Email"] = "อีเมลล์ถูกใช้งานเเล้ว"
+		}
+		updateData["Email"] = emailStr
+	}
+
+	// ตรวจสอบ Phone ซ้ำ
+	if phone, ok := updateData["Phone"]; ok {
+		phoneStr := strings.TrimSpace(phone.(string))
+		var exist entity.Employee
+		if err := db.Where("phone = ? AND id <> ?", phoneStr, employee.ID).First(&exist).Error; err == nil {
+			errors["Phone"] = "เบอร์โทรศัพท์ถุกใช้งานเเล้ว"
+		}
+		updateData["Phone"] = phoneStr
+	}
+
+	// ถ้ามี error หลาย field → ส่งกลับพร้อมกัน
+	if len(errors) > 0 {
+		c.JSON(http.StatusConflict, gin.H{"errors": errors})
+		return
+	}
+
 	if err := db.Model(&employee).Updates(updateData).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปเดตข้อมูลไม่สำเร็จ", "details": err.Error()})
 		return
@@ -134,20 +164,42 @@ func SignUpByUser(c *gin.Context) {
 
 	db := config.DB()
 
-	var exist entity.Employee
-	if err := db.Where("email = ?", input.Email).First(&exist).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Email already exists"})
+	// ✅ Normalize email & phone
+	email := strings.ToLower(strings.TrimSpace(input.Email))
+	phone := strings.TrimSpace(input.Phone)
+
+	errors := make(map[string]string)
+
+	// ✅ Check Email duplicate
+	var existEmail entity.Employee
+	if err := db.Where("email = ?", email).First(&existEmail).Error; err == nil {
+		errors["Email"] = "อีเมลล์ถูกใช้งานเเล้ว"
+	}
+
+	// ✅ Check Phone duplicate
+	if phone != "" {
+		var existPhone entity.Employee
+		if err := db.Where("phone = ?", phone).First(&existPhone).Error; err == nil {
+			errors["Phone"] = "เบอร์โทรศัพท์ถูกใช้งานเเล้ว"
+		}
+	}
+
+	// ❌ ถ้ามี error ใดๆ ให้ส่งกลับไป
+	if len(errors) > 0 {
+		c.JSON(http.StatusConflict, gin.H{"errors": errors})
 		return
 	}
 
+	// ✅ Hash password
 	hashedPassword, err := config.HashPassword(input.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Password hashing failed"})
 		return
 	}
 
+	input.Email = email
+	input.Phone = phone
 	input.Password = hashedPassword
-
 	input.RoleID = 3
 
 	if err := db.Create(&input).Error; err != nil {
@@ -155,7 +207,9 @@ func SignUpByUser(c *gin.Context) {
 		return
 	}
 
-	input.Password = ""
+	input.Password = "" // ไม่ส่ง password กลับ
 
 	c.JSON(http.StatusOK, input)
 }
+
+

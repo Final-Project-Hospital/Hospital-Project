@@ -287,11 +287,14 @@ const RoomAdminTable: React.FC = () => {
             </div>
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 bg-white text-teal-800 px-4 py-2 rounded-full hover:bg-teal-100 transition"
+              className="inline-flex items-center gap-2 bg-white text-teal-700 rounded-full shadow px-4 py-2 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-500/50"
             >
-              <FaHome />
-              เพิ่มห้อง
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-teal-100">
+                <FaHome size={14} />
+              </span>
+              <span className="font-medium">เพิ่มห้อง</span>
             </button>
+
           </div>
         </div>
 

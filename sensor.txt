@@ -1,0 +1,58 @@
+#include <HardwareSerial.h>
+
+// ใช้ UART1 ของ ESP32 โดยมีเฉพาะขารับ (RX2 = GPIO16)
+static const int PIN_RX = 16;           // ESP32 RX2 <- ZE08 TXD (Pin6)
+static const int PIN_TX_UNUSED = -1;    // ปิด TX (ไม่ใช้)
+static const uint32_t SENSOR_BAUD = 9600;
+
+HardwareSerial zeSerial(1);
+
+void setup() {
+  Serial.begin(115200);
+  delay(100);
+
+  // เปิดพอร์ต UART1 โดย "ไม่ใช้" TX (กำหนดเป็น -1)
+  zeSerial.begin(SENSOR_BAUD, SERIAL_8N1, PIN_RX, PIN_TX_UNUSED);
+
+  Serial.println();
+  Serial.println(F("ZE08-CH2O UART -> ESP32 (RX-only)"));
+  Serial.println(F("Wiring: ZE08 TXD(Pin6) -> ESP32 RX2(GPIO16), Vin->5V, GND->GND"));
+  Serial.println(F("Expect frame: 0xFF 0x17 ... , HCHO bytes [3][4] in 0.01 ppm"));
+}
+
+void loop() {
+  // รอให้มีข้อมูลพอสำหรับเฟรมพื้นฐาน
+  if (zeSerial.available() >= 9) {
+    // หา header 0xFF 0x17
+    if (zeSerial.peek() == 0xFF) {
+      zeSerial.read(); // consume 0xFF
+      if (zeSerial.peek() == 0x17) {
+        // อ่านเฟรมขั้นต่ำ 9 ไบต์
+        uint8_t frame[9];
+        frame[0] = 0xFF;
+        frame[1] = zeSerial.read();  // 0x17
+
+        for (int i = 2; i < 9; i++) {
+          while (!zeSerial.available()) { delay(1); }
+          frame[i] = (uint8_t)zeSerial.read();
+        }
+
+        // HCHO (0.01 ppm) = frame[3](High), frame[4](Low)
+        uint16_t raw = ((uint16_t)frame[3] << 8) | frame[4];
+        float ppm = raw / 100.0f;
+
+        Serial.print(F("HCHO = "));
+        Serial.print(ppm, 2);
+        Serial.println(F(" ppm"));
+      } else {
+        // ไม่ใช่ 0x17 -> อ่านทิ้ง
+        zeSerial.read();
+      }
+    } else {
+      // ไม่ใช่ 0xFF -> อ่านทิ้ง
+      zeSerial.read();
+    }
+  }
+
+  delay(2000); // โมดูลมักส่งทุก ~1 วินาที
+}

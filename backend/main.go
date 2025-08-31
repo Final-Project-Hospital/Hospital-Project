@@ -163,6 +163,10 @@ func main() {
 		public.GET("/user-data/:EmployeeID", user.GetDataByUserID)
 		public.PATCH("/employees/:EmployeeID", user.UpdateEmployeeByID)
 		public.POST("/signup", user.SignUpByUser)
+		public.GET("/roles", employee.ListRole)
+		public.GET("/check-email", employee.CheckEmail)
+		public.POST("/reset-password", employee.ResetPassword)
+
 
 		//PH
 		public.POST("/create-ph", phcenter.CreatePH)
@@ -601,6 +605,7 @@ func main() {
 		public.POST("/add-range-target", selectBoxAll.AddRangeTarget)
 
 		public.GET("/list-status", selectBoxAll.ListStatus)
+		public.GET("/list-status-garbage", selectBoxAll.ListStatusGarbage)
 
 		//public.GET("/api/water-quality", dashboard.GetWaterQuality)
 		//public.GET("/dashboard/environmental", dashboard.GetEnvironmentalDashboard)
@@ -611,8 +616,8 @@ func main() {
 		c.String(http.StatusOK, "API RUNNING... PORT: %s", PORT)
 	})
 
-	r.Run("localhost:" + PORT)
-	// r.Run("0.0.0.0:" + PORT)
+	//r.Run("localhost:" + PORT)
+	r.Run("0.0.0.0:" + PORT)
 
 }
 

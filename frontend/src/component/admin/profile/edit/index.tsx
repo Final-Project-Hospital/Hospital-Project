@@ -1,10 +1,17 @@
+// 📁 component/users/EditUserModal.tsx
 import React, { useState, useEffect } from "react";
-import { Modal, Form, Input, Button, Upload, message } from "antd";
+import { Modal, Form, Input, Button, Upload, message, Row, Col } from "antd";
 import ImgCrop from "antd-img-crop";
-import { PlusOutlined, UserOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  UserOutlined,
+  MailOutlined,
+  PhoneOutlined,
+} from "@ant-design/icons";
 import { UsersInterface } from "../../../../interface/IUser";
 import { UpdateEmployeeByID } from "../../../../services/httpLogin";
 import { EditOutlined } from "@ant-design/icons";
+
 interface EditUserModalProps {
   show: boolean;
   onClose: () => void;
@@ -28,6 +35,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         FirstName: initialData.FirstName,
         LastName: initialData.LastName,
         Phone: initialData.Phone,
+        Email: initialData.Email,
       });
       if (initialData.Profile) {
         setFileList([
@@ -52,9 +60,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       reader.onerror = (error) => reject(error);
     });
 
-  const onChange = ({ fileList: newFileList }: any) => {
-    setFileList(newFileList);
-  };
+  const onChange = ({ fileList: newFileList }: any) => setFileList(newFileList);
 
   const onPreview = async (file: any) => {
     let src = file.url;
@@ -67,36 +73,52 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   const onFinish = async (values: any) => {
     setLoading(true);
     let base64: string | undefined;
-    if (
-      fileList.length > 0 &&
-      fileList[0].originFileObj
-    ) {
+    if (fileList.length > 0 && fileList[0].originFileObj) {
       base64 = await getBase64(fileList[0].originFileObj);
-    } else if (
-      fileList.length > 0 &&
-      fileList[0].url &&
-      fileList[0].uid === "-1"
-    ) {
+    } else if (fileList.length > 0 && fileList[0].url && fileList[0].uid === "-1") {
       base64 = fileList[0].url;
     } else {
       base64 = undefined;
     }
 
-    const res = await UpdateEmployeeByID(initialData.ID!, {
-      FirstName: values.FirstName,
-      LastName: values.LastName,
-      Phone: values.Phone,
-      Profile: base64,
-    });
+    try {
+      const res = await UpdateEmployeeByID(initialData.ID!, {
+        FirstName: values.FirstName,
+        LastName: values.LastName,
+        Phone: values.Phone,
+        Email: values.Email,
+        Profile: base64,
+      });
 
-    setLoading(false);
+      setLoading(false);
 
-    if (res) {
-      message.success("อัปเดตข้อมูลสำเร็จ");
-      onSaveSuccess();
-      onClose();
-    } else {
-      message.error("เกิดข้อผิดพลาดในการอัปเดต");
+      if (res) {
+        message.success("อัปเดตข้อมูลสำเร็จ");
+        onSaveSuccess();
+        onClose();
+      }
+    } catch (err: any) {
+      setLoading(false);
+
+      const status = err?.response?.status;
+
+      // ✅ รองรับ error หลาย field
+      if (status === 409 && err?.response?.data?.errors) {
+        const fieldErrors = Object.entries(err.response.data.errors).map(
+          ([field, msg]) => ({
+            name: field,
+            errors: [msg as string],
+          })
+        );
+        form.setFields(fieldErrors);
+        return;
+      }
+
+      let msg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        "เกิดข้อผิดพลาดในการอัปเดต";
+      message.warning(msg);
     }
   };
 
@@ -112,6 +134,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       destroyOnClose
       closable={false}
       className="edit-user-modal"
+      style={{ top: window.innerWidth < 768 ? 40 : 0 }}
       bodyStyle={{
         background: "white",
         padding: 0,
@@ -120,10 +143,11 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       }}
     >
       {/* Header */}
-      <div className="text-center text-lg font-bold bg-teal-600 text-white py-4 rounded-t-2xl mb-2 flex items-center justify-center gap-2">
+      <div className="text-center text-lg font-bold bg-teal-600 text-white py-4 rounded-t-2xl flex items-center justify-center gap-2">
         <EditOutlined className="text-2xl" />
         <span className="tracking-wide">แก้ไขข้อมูลโปรไฟล์</span>
       </div>
+
       <Form
         layout="vertical"
         form={form}
@@ -131,20 +155,13 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         className="px-8 pt-2 pb-6"
         style={{ background: "white" }}
       >
+        {/* Upload Profile */}
         <div className="flex justify-center mb-6">
           <Form.Item
             name="profile"
             valuePropName="fileList"
             getValueFromEvent={({ fileList }) => fileList}
             className="mb-0"
-            rules={[
-              {
-                validator: () =>
-                  fileList.length > 0
-                    ? Promise.resolve()
-                    : Promise.reject(new Error("กรุณาอัปโหลดรูป")),
-              },
-            ]}
           >
             <ImgCrop rotationSlider>
               <Upload
@@ -176,64 +193,94 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
           </Form.Item>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-          <Form.Item
-            label={
-              <span>
-                <UserOutlined className="mr-1 text-teal-600" />
-                ชื่อ
-              </span>
-            }
-            name="FirstName"
-            rules={[{ required: true, message: "กรุณากรอกชื่อ" }]}
-          >
-            <Input placeholder="กรอกชื่อ" />
-          </Form.Item>
+        {/* FirstName + LastName */}
+        <Row gutter={16}>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              label={
+                <span>
+                  <UserOutlined className="mr-1 text-teal-600" />
+                  ชื่อ
+                </span>
+              }
+              name="FirstName"
+              rules={[{ required: true, message: "กรุณากรอกชื่อ" }]}
+            >
+              <Input placeholder="กรอกชื่อ" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              label={
+                <span>
+                  <UserOutlined className="mr-1 text-teal-600" />
+                  นามสกุล
+                </span>
+              }
+              name="LastName"
+              rules={[{ required: true, message: "กรุณากรอกนามสกุล" }]}
+            >
+              <Input placeholder="กรอกนามสกุล" />
+            </Form.Item>
+          </Col>
+        </Row>
 
-          <Form.Item
-            label={
-              <span>
-                <UserOutlined className="mr-1 text-teal-600" />
-                นามสกุล
-              </span>
-            }
-            name="LastName"
-            rules={[{ required: true, message: "กรุณากรอกนามสกุล" }]}
-          >
-            <Input placeholder="กรอกนามสกุล" />
-          </Form.Item>
-        </div>
-
+        {/* Email */}
         <Form.Item
-          name="Phone"
-          label="เบอร์โทศัพท์"
-          className="mb-3"
+          label={
+            <span>
+              <MailOutlined className="mr-1 text-teal-600" />
+              อีเมล
+            </span>
+          }
+          name="Email"
           rules={[
-            { required: false },
             {
               validator: (_, value) => {
-                if (!value) return Promise.resolve();
-                if (!/^[0][0-9]{9}$/.test(value))
+                if (!value || value.trim() === "") {
+                  return Promise.reject(new Error("กรุณากรอกอีเมล"));
+                }
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                  return Promise.reject(new Error("รูปแบบอีเมลไม่ถูกต้อง"));
+                }
+                return Promise.resolve();
+              },
+            },
+          ]}
+        >
+          <Input placeholder="กรอกอีเมล" />
+        </Form.Item>
+
+        {/* Phone */}
+        <Form.Item
+          name="Phone"
+          label={
+            <span>
+              <PhoneOutlined className="mr-1 text-teal-600" />
+              เบอร์โทรศัพท์
+            </span>
+          }
+          className="mb-3"
+          rules={[
+            {
+              validator: (_, value) => {
+                if (!value || value.trim() === "") {
+                  return Promise.reject(new Error("กรุณากรอกเบอร์โทรศัพท์"));
+                }
+                if (!/^[0][0-9]{9}$/.test(value)) {
                   return Promise.reject(
                     new Error("เบอร์โทรต้องมี 10 หลัก และขึ้นต้นด้วย 0")
                   );
+                }
                 return Promise.resolve();
               },
             },
           ]}
         >
           <Input
-            className="rounded-lg bg-teal-50 border-teal-200"
             maxLength={10}
-            onChange={(e) => {
-              const rawValue = e.target.value;
-              const cleaned = rawValue.replace(/\D/g, "");
-              if (cleaned.length === 0 || cleaned.startsWith("0")) {
-                e.target.value = cleaned;
-              } else {
-                e.target.value = "0" + cleaned.slice(0, 9);
-              }
-            }}
+            className="rounded-lg bg-teal-50 border-teal-200"
           />
         </Form.Item>
 
@@ -243,7 +290,10 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
             type="primary"
             htmlType="submit"
             loading={loading}
-            className="bg-teal-600 hover:bg-teal-700 border-none"
+            style={{
+              background: "linear-gradient(to right, #14b8a6, #0d9488)",
+              borderColor: "#0d9488",
+            }}
           >
             บันทึก
           </Button>

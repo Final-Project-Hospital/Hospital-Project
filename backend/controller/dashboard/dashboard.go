@@ -388,6 +388,7 @@ func GetEnvironmentalMeta(c *gin.Context) {
 		return
 	}
 
+	// สร้างโครง meta จากฝั่ง "น้ำเสีย"
 	byEnv := make(map[uint]*MetaEnvironment)
 	for _, r := range rows {
 		env, ok := byEnv[r.EnvID]
@@ -406,12 +407,47 @@ func GetEnvironmentalMeta(c *gin.Context) {
 	}
 
 	resp := make([]MetaEnvironment, 0, len(byEnv))
-	for _, v := range byEnv {
-		resp = append(resp, *v)
-	}
+    for _, v := range byEnv {
+        resp = append(resp, *v)
+    }
 
-	c.JSON(http.StatusOK, resp)
+    // ===== เพิ่ม "สภาพแวดล้อม: ขยะ" (parameters 25..29) =====
+    type prow struct {
+        ID   uint   `gorm:"column:id"`
+        Name string `gorm:"column:name"` // ให้แม็พกับ alias ชื่อ name
+    }
+    var prows []prow
+
+    if err := db.Raw(`
+        SELECT id, parameter_name AS name
+        FROM parameters
+        WHERE id IN (?, ?, ?, ?, ?)
+        ORDER BY id
+    `,
+        ParamInfectious, // 25 ขยะติดเชื้อ
+        ParamGeneral,    // 26 ขยะทั่วไป
+        ParamRecycled,   // 27 ขยะรีไซเคิล
+        ParamHazardous,  // 28 ขยะอันตราย
+        ParamChemical,   // 29 ขยะเคมีบำบัด
+    ).Scan(&prows).Error; err == nil {
+
+        waste := MetaEnvironment{
+            ID:   1000,      // ไอดีสมมุติสำหรับ "ขยะ" อย่าให้ชนกับ env จริง
+            Name: "ขยะ",
+        }
+        for _, p := range prows {
+            waste.Params = append(waste.Params, MetaParam{
+                ID:   p.ID,
+                Name: p.Name,  // ได้ชื่อถูกต้องแล้ว (เช่น "ขยะติดเชื้อ")
+                Unit: "kg",
+            })
+        }
+        resp = append(resp, waste)
+    }
+
+    c.JSON(http.StatusOK, resp)
 }
+
 // ========================== WASTE MIX ==========================
 
 func GetWasteMix(c *gin.Context) {

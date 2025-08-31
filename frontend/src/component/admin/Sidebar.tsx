@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { MdOutlineCancel } from 'react-icons/md';
 import { TooltipComponent } from '@syncfusion/ej2-react-popups';
 import Logo from '../../assets/SUTH Logo.png';
-import { links } from '../../data/dummy';
+import { getLinks } from '../../data/dummy';   // ✅ ใช้ getLinks ไม่ใช่ links
 import { useStateContext } from '../../contexts/ContextProvider';
 import './Sidebar.css'; // ✅ import CSS ที่แยกไฟล์
 
@@ -24,6 +24,7 @@ const Sidebar = () => {
   const { currentColor, activeMenu, setActiveMenu, screenSize } = useStateContext();
   const location = useLocation();
   const [openKeys, setOpenKeys] = useState<string[]>([]);
+  const [menuLinks, setMenuLinks] = useState<any[]>([]); // ✅ เก็บ links ที่โหลดมา
 
   const handleCloseSideBar = () => {
     if (activeMenu !== undefined && screenSize !== undefined && screenSize <= 900) {
@@ -51,9 +52,15 @@ const Sidebar = () => {
     return [];
   };
 
+  // ✅ โหลด links จาก dummy.tsx
   useEffect(() => {
-    const keys = findOpenKeys(links.flatMap(section => section.links), location.pathname);
-    setOpenKeys(keys);
+    const loadLinks = async () => {
+      const data = await getLinks();
+      setMenuLinks(data);
+      const keys = findOpenKeys(data.flatMap((section) => section.links), location.pathname);
+      setOpenKeys(keys);
+    };
+    loadLinks();
   }, [location.pathname]);
 
   const onOpenChange = (keys: string[]) => {
@@ -139,12 +146,10 @@ const Sidebar = () => {
           </div>
 
           <div className="mt-10">
-            {links.map((section) => (
+            {menuLinks.map((section) => (
               <div key={section.title || 'section'}>
                 {section.title && (
-                  <p className="sidebar-section-title">
-                    {section.title}
-                  </p>
+                  <p className="sidebar-section-title">{section.title}</p>
                 )}
                 <Menu
                   mode="inline"

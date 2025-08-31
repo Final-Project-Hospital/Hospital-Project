@@ -1,4 +1,3 @@
-
 import { FiBarChart, FiCreditCard, FiStar, FiShoppingCart } from 'react-icons/fi';
 import { BsBoxSeam, BsCurrencyDollar, BsShield, BsChatLeft } from 'react-icons/bs';
 import { FiHome } from 'react-icons/fi'; import { MdWaterDrop, MdBarChart, MdManageAccounts, MdSensors } from 'react-icons/md'; import { AiOutlineDatabase, AiOutlineCalendar } from 'react-icons/ai';
@@ -23,7 +22,110 @@ import product4 from '../assets/admin/product4.jpg';
 import product5 from '../assets/admin/product5.jpg';
 import product6 from '../assets/admin/product6.jpg';
 import product7 from '../assets/admin/product7.jpg';
-import SubMenu from 'antd/es/menu/SubMenu';
+import { GetUserDataByUserID } from "../services/httpLogin"; 
+import { UsersInterface } from "../interface/IUser";
+
+export const getLinks = async () => {
+  let isAdmin = false;
+
+  try {
+    const userId = localStorage.getItem("employeeid");
+    if (userId) {
+      const user: UsersInterface | false = await GetUserDataByUserID(userId);
+      if (user && user.Role?.RoleName === "Admin") {
+        isAdmin = true;
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching user role:", error);
+  }
+
+  const links = [
+    {
+      title: 'หน้าแรก',
+      links: [
+        {
+          name: 'Dashboard',
+          label: 'หน้าเเรก',
+          icon: <FiHome />,
+        },
+      ],
+    },
+    {
+      title: 'จัดการ',
+      links: [
+        {
+          name: 'data-visualization',
+          label: 'ข้อมูลตรวจวัด',
+          icon: <MdBarChart />,
+          subMenu: [
+            {
+              name: 'data-visualization/water',
+              label: 'กลุ่มน้ำ',
+              icon: <MdWaterDrop />,
+              subMenu: [
+                { name: 'data-visualization/wastewater', label: 'นํ้าเสีย' },
+                { name: 'data-visualization/tapwater', label: 'น้ำประปา' },
+                { name: 'data-visualization/drinkwater', label: 'น้ำดื่ม' },
+              ],
+            },
+            {
+              name: 'data-visualization/garbage',
+              label: 'กลุ่มขยะ',
+              icon: <FaTrash />,
+              SubMenu: [{}],
+            },
+          ],
+        },
+        {
+          name: 'data-management',
+          label: 'จัดการข้อมูล',
+          icon: <AiOutlineDatabase />,
+          subMenu: [
+            {
+              name: 'data-management/water',
+              label: 'กลุ่มน้ำ',
+              icon: <MdWaterDrop />,
+              subMenu: [
+                { name: 'data-management/wastewater', label: 'นํ้าเสีย' },
+                { name: 'data-management/tapwater', label: 'น้ำประปา' },
+                { name: 'data-management/drinkwater', label: 'น้ำดื่ม' },
+              ],
+            },
+            {
+              name: 'data-management/garbage',
+              label: 'กลุ่มขยะ',
+              icon: <FaTrash />,
+              SubMenu: [{}],
+            },
+          ],
+        },
+        {
+          name: 'Hardware',
+          label: 'ข้อมูลเซนเซอร์',
+          icon: <MdSensors />,
+          subMenu: [
+            { name: 'hardware', label: 'ข้อมูลเซนเซอร์ภายในห้อง', icon: <BiCube /> },
+            { name: 'management', label: 'จัดการข้อมูลเซนเซอร์', icon: <AiOutlineSetting /> },
+          ],
+        },
+        ...(isAdmin
+          ? [{ name: 'People', label: 'จัดการบุคคล', icon: <MdManageAccounts /> }]
+          : []),
+      ],
+    },
+    {
+      title: 'งาน',
+      links: [
+        { name: 'Calendar', label: 'ปฏิทิน', icon: <AiOutlineCalendar /> },
+      ],
+    },
+  ];
+
+  return links;
+};
+
+
 
 export const gridOrderImage = (props: any) => (
   <div>
@@ -509,126 +611,7 @@ export const employeesGrid = [
   },
 ];
 
-export const links = [
-  {
-    title: 'หน้าแรก',
-    links: [
-      {
-        name: 'Dashboard',
-        label: 'หน้าเเรก',
-        icon: <FiHome />,
-      },
-    ],
-  },
 
-  {
-    title: 'จัดการ',
-    links: [
-      {
-        name: 'data-visualization',
-        label: 'ข้อมูลตรวจวัด',
-        icon: <MdBarChart />,
-        subMenu: [
-          {
-            name: 'data-visualization/water',
-            label: 'กลุ่มน้ำ',
-            icon: <MdWaterDrop />,
-            subMenu: [
-              {
-                name: 'data-visualization/wastewater',
-                label: 'นํ้าเสีย',
-              },
-                            {
-                name: 'data-visualization/tapwater',
-                label: 'น้ำประปา',
-              },
-              {
-                name: 'data-visualization/drinkwater',
-                label: 'น้ำดื่ม',
-              },
-            ],
-          },
-          {
-            name: 'data-visualization/garbage',
-            label: 'กลุ่มขยะ',
-            icon: <FaTrash/>,
-            SubMenu: [
-              {}
-            ]
-          },
-        ],
-      },
-      {
-        name: 'data-management',
-        label: 'จัดการข้อมูล',
-        icon: <AiOutlineDatabase />,
-        subMenu: [
-          {
-            name: 'data-management/water',
-            label: 'กลุ่มน้ำ',
-            icon: <MdWaterDrop />,
-            subMenu: [
-              {
-                name: 'data-management/wastewater',
-                label: 'นํ้าเสีย',
-              },
-              {
-                name: 'data-management/tapwater',
-                label: 'น้ำประปา',
-              },
-              {
-                name: 'data-management/drinkwater',
-                label: 'น้ำดื่ม',
-              }
-            ],
-          },
-          {
-            name: 'data-management/garbage',
-            label: 'กลุ่มขยะ',
-            icon: <FaTrash/>,
-            SubMenu: [
-              {}
-            ]
-          },
-        ],
-      },
-      {
-        name: 'Hardware',
-        label: 'ข้อมูลเซนเซอร์',
-        icon: <MdSensors />,
-        subMenu: [
-          {
-            name: 'hardware',
-            label: 'ข้อมูลเซนเซอร์ภายในห้อง',
-            icon: <BiCube />,
-          },
-          {
-            name: 'management',
-            label: 'จัดการข้อมูลเซนเซอร์',
-            icon: <AiOutlineSetting />,
-          },
-        ],
-      },
-      {
-        name: 'People',
-        label: 'จัดการบุคคล',
-        icon: <MdManageAccounts />,
-      },
-    ],
-  },
-
-  {
-    title: 'งาน',
-    links: [
-      {
-        name: 'Calendar',
-        label: 'ปฏิทิน',
-        icon: <AiOutlineCalendar />,
-      },
-    ],
-  },
-
-];
 
 export const cartData = [
   {

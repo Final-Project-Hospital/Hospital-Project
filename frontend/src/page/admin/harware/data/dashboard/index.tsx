@@ -1,5 +1,5 @@
 // (เหมือนเดิมส่วน import ทั้งหมด)
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import picture1 from "../../../../../assets/ESP32.png";
 import Boxsdata from "../box/index";
@@ -12,7 +12,7 @@ import {
 } from "../../../../../services/hardware";
 import LineChart from "../chart/line/index";
 import Area from "../chart/area/index";
-import ColorMapping from "../chart/mapping/index";
+import Bar from "../chart/bar/index";
 import Stacked from "../chart/stack/index";
 import EditParameterModal from "./edit";
 import EditStandardUnitModal from "../standard/index";
@@ -35,34 +35,65 @@ interface HardwareParameterResponse {
   layout_display: boolean;  // true=แบ่งซ้าย/ขวา, false=เต็มแถว
 }
 
+// ====== ใช้ส่งให้ Boxsdata ======
+type SensorParameter = {
+  id: number;
+  name: string;
+  value: number;
+};
+type ParameterMeta = {
+  color: string;
+  unit?: string;
+  standard?: number;
+  icon?: string;
+};
+type ParameterColorMap = Record<string, ParameterMeta>;
+
+// ====== ใช้ส่งให้ Average ======
+type HardwareStat = {
+  id: number;
+  name: string;
+  popularityPercent: number;
+  average: number;
+  standard?: number;      // ค่ามาตรฐานสูงสุด
+  standardMin?: number;   // ค่ามาตรฐานต่ำสุด
+  unit?: string;
+};
+
+// ====== ใช้ส่งให้ Charts (Line/Area/Mapping/Stacked) ======
+type ChartPoint = {
+  parameter: string;
+  date: string;   // ISO string
+  value: number;
+};
+type ChartMetaMap = Record<string, { unit?: string; standard?: number; standardMin?: number }>;
+// ===============================================
+
 type UniqueGraphItem = {
-  ID: number; // ใช้ graph_id หรือ id ตามเคส
+  ID: number;
   Graph: string;
   ParametersWithColor: ParameterWithColor[];
-  fullSpan?: boolean; // true = เต็มแถว
+  fullSpan?: boolean;
 };
 
-// ✅ บล็อกกราฟหลังคำนวณซ้าย/ขวาแล้ว
 type GraphBlock = UniqueGraphItem & {
-  rowIndex: number;                 // มาจาก index
-  side?: "left" | "right";          // มีเมื่อ layout_display = true
+  rowIndex: number;
+  side?: "left" | "right";
 };
 
-// ✅ โครงสร้างแถว
 type RowBlocks = {
   index: number;
-  fullSpan?: GraphBlock;            // ถ้ามีจะใช้เต็มแถว
-  left?: GraphBlock;                // บล็อกฝั่งซ้าย
-  right?: GraphBlock;               // บล็อกฝั่งขวา
+  fullSpan?: GraphBlock;
+  left?: GraphBlock;
+  right?: GraphBlock;
 };
 
-const Index = () => {
+const Index: React.FC = () => {
   const location = useLocation();
-  const { hardwareID } = location.state || {};
+  const { hardwareID } = (location.state as { hardwareID?: number }) || {};
 
   const { activeMenu } = useStateContext();
 
-  // เปลี่ยนจาก uniqueGraphs เป็น "rows" เพื่อจัดวางตามแถว + ซ้าย/ขวา
   const [rows, setRows] = useState<RowBlocks[]>([]);
   const [showEdit, setShowEdit] = useState(false);
   const [showEditStandard, setShowEditStandard] = useState(false);
@@ -79,60 +110,217 @@ const Index = () => {
   const [tableLoaded, setTableLoaded] = useState(false);
   const [averageLoaded, setAverageLoaded] = useState(false);
 
-  // default range for charts: 7 days (today - 6 → today)
+  // ====== Boxsdata states ======
+  const [boxLatestParams, setBoxLatestParams] = useState<SensorParameter[]>([]);
+  const [boxParamMeta, setBoxParamMeta] = useState<ParameterColorMap>({});
+  const [boxLoading, setBoxLoading] = useState(false);
+
+  // ====== Average states ======
+  const [avgStats, setAvgStats] = useState<HardwareStat[]>([]);
+  const [avgParameterColors, setAvgParameterColors] = useState<Record<string, string>>({});
+  const [avgLoading, setAvgLoading] = useState(false);
+
+  // ====== Shared chart states (Line/Area/Mapping/Stacked) ======
+  const [chartDataPoints, setChartDataPoints] = useState<ChartPoint[]>([]);
+  const [chartMeta, setChartMeta] = useState<ChartMetaMap>({});
+  const [chartLoading, setChartLoading] = useState(false);
+
+  // ====== เตรียมข้อมูลให้ TableData (จะส่งให้ลูกภายหลัง) ======
+  const [tablePreparedData, setTablePreparedData] = useState<any[]>([]);
+  const [tableUniqueColumns, setTableUniqueColumns] = useState<string[]>(["วันที่", "เวลา", "หมายเหตุ"]);
+  const [tableParamUnits, setTableParamUnits] = useState<Record<string, string>>({});
+  const [tableAllSensorDataIDs, setTableAllSensorDataIDs] = useState<number[]>([]);
+  const [tableLoading, setTableLoading] = useState(false);
+
+  // default range (ให้ลูกเลือกเองได้ด้วย)
   const defaultStart = new Date();
-  defaultStart.setDate(defaultStart.getDate() - 6);
+  defaultStart.setDate(defaultStart.getDate() - 6); //@ts-ignore
   const defaultEnd = new Date();
 
   const fetchSensorDataAndParameters = useCallback(async () => {
     if (!hardwareID) {
       setRows([]);
+
+      // reset ลูกๆ
+      setBoxLatestParams([]);
+      setBoxParamMeta({});
+      setBoxLoading(false);
+
+      setAvgStats([]);
+      setAvgParameterColors({});
+      setAvgLoading(false);
+
+      setChartDataPoints([]);
+      setChartMeta({});
+      setChartLoading(false);
+
+      // reset เตรียมข้อมูล Table
+      setTablePreparedData([]);
+      setTableUniqueColumns(["วันที่", "เวลา", "หมายเหตุ"]);
+      setTableParamUnits({});
+      setTableAllSensorDataIDs([]);
+      setTableLoading(false);
       return;
     }
 
-    // 1) รวบรวม param IDs ที่ "มีข้อมูลจริง" จาก SensorData
-    const allParamIDsFromSensorData: number[] = [];
+    setBoxLoading(true);
+    setAvgLoading(true);
+    setChartLoading(true);
+    setTableLoading(true);
+
+    // 1) เซนเซอร์ทั้งหมด
     const sensorDataList = await GetSensorDataByHardwareID(hardwareID);
     if (!sensorDataList || sensorDataList.length === 0) {
       setRows([]);
+
+      setBoxLatestParams([]);
+      setBoxParamMeta({});
+      setBoxLoading(false);
+
+      setAvgStats([]);
+      setAvgParameterColors({});
+      setAvgLoading(false);
+
+      setChartDataPoints([]);
+      setChartMeta({});
+      setChartLoading(false);
+
+      // reset เตรียมข้อมูล Table
+      setTablePreparedData([]);
+      setTableUniqueColumns(["วันที่", "เวลา", "หมายเหตุ"]);
+      setTableParamUnits({});
+      setTableAllSensorDataIDs([]);
+      setTableLoading(false);
       return;
     }
 
+    // 2) พารามิเตอร์ + meta
+    const response = await ListHardwareParameterIDsByHardwareID(hardwareID);
+    const allParams: HardwareParameterResponse[] = Array.isArray(response?.parameters)
+      ? (response!.parameters as any as HardwareParameterResponse[])
+      : [];
+
+    const metaForBox: ParameterColorMap = {};
+    const colorMapForAvg: Record<string, string> = {};
+    const metaForAllCharts: ChartMetaMap = {};
+
+    for (const p of allParams) {
+      metaForBox[p.parameter.toLowerCase()] = {
+        color: p.color || "#999999",
+        unit: (p as any).unit || "",
+        standard: (p as any).standard,
+        icon: (p as any).icon || "",
+      };
+      colorMapForAvg[p.parameter] = p.color || "#999999";
+      metaForAllCharts[p.parameter] = {
+        unit: (p as any).unit,
+        standard: typeof (p as any).standard === "number" ? (p as any).standard : undefined,
+        standardMin: typeof (p as any).standard_min === "number" ? (p as any).standard_min : undefined,
+      };
+    }
+    setBoxParamMeta(metaForBox);
+    setAvgParameterColors(colorMapForAvg);
+    setChartMeta(metaForAllCharts);
+
+    // 3) วน sensorData → average + ดิบกราฟ + เตรียมข้อมูลตาราง
+    const allParamIDsFromSensorData: number[] = [];
+    const sums: Record<string, number> = {};
+    const counts: Record<string, number> = {};
+    const maxValues: Record<string, number> = {};
+    const points: ChartPoint[] = [];
+
+    // เตรียมสำหรับ Table
+    const allSensorDataIDs = Array.from(
+      new Set((sensorDataList || []).map((s: any) => Number(s.ID)).filter(Boolean))
+    );
+    setTableAllSensorDataIDs(allSensorDataIDs);
+
+    type ParamDetail = {
+      ParameterName: string;
+      วันที่: string;
+      เวลา: string;
+      rawDate: string;
+      [k: string]: any;
+    };
+    const paramDetails: ParamDetail[] = [];
+
     for (const sensorData of sensorDataList) {
-      const parameters = await GetSensorDataParametersBySensorDataID(sensorData.ID);
-      if (parameters) {
-        const paramIDs = parameters
-          .map((p: any) => p.HardwareParameter?.ID)
-          .filter((id: any): id is number => typeof id === "number");
-        allParamIDsFromSensorData.push(...paramIDs);
+      const params = await GetSensorDataParametersBySensorDataID(sensorData.ID);
+      if (!Array.isArray(params)) continue;
+
+      for (const p of params) {
+        const name = p?.HardwareParameter?.Parameter as string | undefined;
+        const idByHardwareParam = p?.HardwareParameter?.ID as number | undefined;
+        const value = Number(p?.Data);
+        const dateObj = p?.Date ? new Date(p.Date) : undefined;
+        const dateISO = dateObj ? dateObj.toISOString() : undefined;
+
+        if (typeof idByHardwareParam === "number") allParamIDsFromSensorData.push(idByHardwareParam);
+        if (!name || isNaN(value) || !dateISO) continue;
+
+        // average
+        if (!sums[name]) sums[name] = 0;
+        if (!counts[name]) counts[name] = 0;
+        sums[name] += value;
+        counts[name] += 1;
+        if (!maxValues[name] || value > maxValues[name]) maxValues[name] = value;
+
+        // raw points for charts
+        points.push({ parameter: name, date: dateISO, value });
+
+        // ===== สร้างรายละเอียดสำหรับตาราง (เหมือนลูก) =====
+        const standardMax = p?.HardwareParameter?.StandardHardware?.MaxValueStandard ?? null;
+        const standardMin = p?.HardwareParameter?.StandardHardware?.MinValueStandard ?? null;
+        const unit = p?.HardwareParameter?.UnitHardware?.Unit ?? "";
+        const note: string = p?.Note ?? "";
+        const sdpId: number | undefined = p?.ID;
+
+        let sensorDate = "ไม่ทราบวันที่";
+        let rawDate = "";
+        let timeString = "";
+
+        if (dateObj && !isNaN(dateObj.getTime())) {
+          rawDate = dateObj.toISOString();
+          // format DD/MM/YYYY & HH:mm:ss
+          const dd = String(dateObj.getDate()).padStart(2, "0");
+          const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+          const yyyy = String(dateObj.getFullYear());
+          const HH = String(dateObj.getHours()).padStart(2, "0");
+          const MM = String(dateObj.getMinutes()).padStart(2, "0");
+          const SS = String(dateObj.getSeconds()).padStart(2, "0");
+
+          sensorDate = `${dd}/${mm}/${yyyy}`;
+          timeString = `${HH}:${MM}:${SS}`;
+        }
+
+        paramDetails.push({
+          ParameterName: name,
+          วันที่: sensorDate,
+          เวลา: timeString,
+          rawDate,
+          [name]: value,
+          [`${name}_standard`]: standardMax,
+          [`${name}_min`]: standardMin,
+          [`${name}_unit`]: unit,
+          [`${name}_note`]: note,
+          __id: sdpId,
+          Note: note,
+        });
       }
     }
 
-    // 2) ดึงรายการ HardwareParameter ทั้งหมดของ hardware นี้
-    const response = await ListHardwareParameterIDsByHardwareID(hardwareID);
-    if (!response?.parameters || !Array.isArray(response.parameters)) {
-      setRows([]);
-      return;
-    }
-
-    // 3) คัดเฉพาะพารามิเตอร์ที่ "มีข้อมูลจริง"
-    const rawParams: HardwareParameterResponse[] = (response.parameters as HardwareParameterResponse[]).filter(
-      (p) => allParamIDsFromSensorData.includes(p.id)
+    // 4) layout กราฟ
+    const rawParams: HardwareParameterResponse[] = allParams.filter((p) =>
+      allParamIDsFromSensorData.includes(p.id)
     );
 
-    // ✅ 3.1) เรียงลำดับพารามิเตอร์ตาม index (1..n) ก่อนเสมอ
     const sortedParamsByIndex = [...rawParams].sort((a, b) => {
       const ai = Number.isFinite(a.index) ? a.index : Number.MAX_SAFE_INTEGER;
       const bi = Number.isFinite(b.index) ? b.index : Number.MAX_SAFE_INTEGER;
       if (ai !== bi) return ai - bi;
-      return a.id - b.id; // กันชน
+      return a.id - b.id;
     });
 
-    // 4) จัดกลุ่มตาม graph_id แล้วแตกเป็น "บล็อกกราฟ" ที่รู้ตำแหน่งแถว (index) และซ้าย/ขวา (จาก right)
-    //    - กราฟรวม (group_display=true >=2): 1 block ต่อกราฟ → rowIndex = min(index) ในกลุ่ม
-    //      * ถ้ามีใคร layout_display=false => fullSpan=true
-    //      * ถ้า fullSpan=false => side ตัดสินด้วย "เสียงข้างมาก" ของ right (เท่ากันให้เป็น left)
-    //    - เดี่ยว: 1 block ต่อพารามิเตอร์ → rowIndex = index, fullSpan = !layout_display, side = right? "right":"left"
     const byGraphId = new Map<number, HardwareParameterResponse[]>();
     for (const p of sortedParamsByIndex) {
       if (!byGraphId.has(p.graph_id)) byGraphId.set(p.graph_id, []);
@@ -144,7 +332,6 @@ const Index = () => {
     for (const [graphId, paramsOfGraphRaw] of byGraphId.entries()) {
       const graphName = paramsOfGraphRaw[0]?.graph || "Unknown";
 
-      // เรียงภายในกราฟตาม index ด้วย
       const paramsOfGraph = [...paramsOfGraphRaw].sort((a, b) => {
         const ai = Number.isFinite(a.index) ? a.index : Number.MAX_SAFE_INTEGER;
         const bi = Number.isFinite(b.index) ? b.index : Number.MAX_SAFE_INTEGER;
@@ -155,7 +342,6 @@ const Index = () => {
       const groupTrue  = paramsOfGraph.filter((p) => p.group_display === true);
       const groupFalse = paramsOfGraph.filter((p) => p.group_display === false);
 
-      // ====== เคส "รวมกราฟ" (>=2) ======
       if (groupTrue.length >= 2) {
         const anyLayoutFalse = groupTrue.some((p) => p.layout_display === false);
         const orderedParamsInGroup = [...groupTrue].sort((a, b) => {
@@ -166,12 +352,11 @@ const Index = () => {
         });
         const rowIndex = Math.min(...orderedParamsInGroup.map((p) => p.index ?? Number.MAX_SAFE_INTEGER));
 
-        // side: ถ้าไม่ fullSpan ให้ใช้เสียงข้างมากของ right
         let side: "left" | "right" | undefined;
         if (!anyLayoutFalse) {
           const rightVotes = orderedParamsInGroup.filter((p) => p.right === true).length;
           const leftVotes  = orderedParamsInGroup.length - rightVotes;
-          side = rightVotes > leftVotes ? "right" : "left"; // เสมอ → ซ้าย
+          side = rightVotes > leftVotes ? "right" : "left";
         }
 
         blocks.push({
@@ -187,7 +372,6 @@ const Index = () => {
         });
       }
 
-      // ====== เดี่ยวจาก group=false ======
       for (const p of groupFalse) {
         const rowIndex = Number.isFinite(p.index) ? p.index : Number.MAX_SAFE_INTEGER;
         const isFull = p.layout_display === false;
@@ -203,7 +387,6 @@ const Index = () => {
         });
       }
 
-      // ====== เดี่ยวจาก group=true แต่มีแค่ 1 ======
       if (groupTrue.length === 1) {
         const p = groupTrue[0];
         const rowIndex = Number.isFinite(p.index) ? p.index : Number.MAX_SAFE_INTEGER;
@@ -221,13 +404,11 @@ const Index = () => {
       }
     }
 
-    // 5) รวมเป็น "แถว" โดยดู rowIndex แล้ววางซ้าย/ขวา
     const rowsMap = new Map<number, RowBlocks>();
     const putToRow = (blk: GraphBlock) => {
       const idx = blk.rowIndex;
       const r = rowsMap.get(idx) || { index: idx };
       if (blk.fullSpan) {
-        // เต็มแถว: เคลียร์ซ้าย/ขวาทิ้ง และตั้ง fullSpan
         r.fullSpan = blk;
         r.left = undefined;
         r.right = undefined;
@@ -235,21 +416,135 @@ const Index = () => {
         if (!r.fullSpan) {
           if (blk.side === "right") {
             if (!r.right) r.right = blk;
-            else if (!r.left) r.left = blk; // fallback กันข้อมูลชนกัน
+            else if (!r.left) r.left = blk;
           } else {
             if (!r.left) r.left = blk;
-            else if (!r.right) r.right = blk; // fallback
+            else if (!r.right) r.right = blk;
           }
         }
       }
       rowsMap.set(idx, r);
     };
-
     blocks.forEach(putToRow);
-
     const rowsArray = Array.from(rowsMap.values()).sort((a, b) => a.index - b.index);
     setRows(rowsArray);
     setReloadCharts((prev) => prev + 1);
+
+    // 5) ค่าล่าสุดสำหรับ Boxsdata
+    const latestSensorDataID = sensorDataList[sensorDataList.length - 1].ID;
+    const latestParamsRaw = await GetSensorDataParametersBySensorDataID(latestSensorDataID);
+    const latestParamsMap = new Map<string, SensorParameter>();
+    if (latestParamsRaw && latestParamsRaw.length > 0) {
+      latestParamsRaw.forEach((param: any) => {
+        const paramName = param?.HardwareParameter?.Parameter || "Unknown";
+        latestParamsMap.set(paramName, {
+          id: param.ParameterID,
+          name: paramName,
+          value: Number(param.Data),
+        });
+      });
+    }
+    setBoxLatestParams(Array.from(latestParamsMap.values()));
+    setBoxLoading(false);
+
+    // 6) Average  ✅ อ่าน meta จาก "metaForAllCharts"
+    const avgData: HardwareStat[] = Object.keys(sums).map((key, idx) => {
+      const avg = counts[key] > 0 ? sums[key] / counts[key] : 0;
+      const maxValue = maxValues[key] || 100;
+      const popularityPercent = maxValue > 0 ? Math.min((avg / maxValue) * 100, 100) : 0;
+      const meta = metaForAllCharts[key] || {};
+      return {
+        id: idx + 1,
+        name: key,
+        popularityPercent,
+        average: avg,
+        standard: typeof meta.standard === "number" ? meta.standard : undefined,
+        standardMin: typeof meta.standardMin === "number" ? meta.standardMin : undefined,
+        unit: meta.unit,
+      };
+    });
+    setAvgStats(avgData);
+    setAvgLoading(false);
+
+    // 7) ดิบกราฟ (ใช้ร่วมทุกกราฟ)
+    setChartDataPoints(points);
+    setChartLoading(false);
+
+    // 8) ✅ เตรียมข้อมูล TableData (จัดกลุ่ม/รวมหมายเหตุ/เรียงเวลา)
+    // unique params
+    const uniqueParams = Array.from(
+      new Set(paramDetails.map((p) => p.ParameterName).filter(Boolean))
+    );
+
+    setTableUniqueColumns(["วันที่", "เวลา", "หมายเหตุ", ...uniqueParams]);
+
+    // หน่วย
+    const unitMap: Record<string, string> = {};
+    paramDetails.forEach((p) => {
+      if (p.ParameterName && p[`${p.ParameterName}_unit`]) {
+        unitMap[p.ParameterName] = p[`${p.ParameterName}_unit`];
+      }
+    });
+    setTableParamUnits(unitMap);
+
+    // จัดกลุ่มตาม วัน-เวลา (เหมือนลูก)
+    const groupedRows: Record<string, any> = {};
+    for (const p of paramDetails) {
+      const key = `${p.วันที่}-${p.เวลา}`;
+      if (!groupedRows[key]) {
+        groupedRows[key] = {
+          __key: key,
+          วันที่: p.วันที่,
+          เวลา: p.เวลา,
+          rawDate: p.rawDate,
+          หมายเหตุ: "",
+          __ids: new Set<number>(),
+        };
+      }
+
+      // คัดลอกฟิลด์พารามิเตอร์ลงในแถว
+      Object.entries(p).forEach(([k, v]) => {
+        if (!["ParameterName", "rawDate", "วันที่", "เวลา", "Note", "__id"].includes(k)) {
+          groupedRows[key][k] = v;
+        }
+      });
+
+      // รวมหมายเหตุ (unique, คั่นด้วย | )
+      const noteText = typeof p.Note === "string" && p.Note.trim().length > 0 ? p.Note.trim() : "";
+      if (noteText) {
+        if (groupedRows[key]["หมายเหตุ"]) {
+          if (!groupedRows[key]["หมายเหตุ"].includes(noteText)) {
+            groupedRows[key]["หมายเหตุ"] = groupedRows[key]["หมายเหตุ"] + " | " + noteText;
+          }
+        } else {
+          groupedRows[key]["หมายเหตุ"] = noteText;
+        }
+      }
+
+      // เก็บ sdp id
+      if (typeof p.__id === "number") {
+        groupedRows[key].__ids.add(p.__id);
+      }
+    }
+
+    const finalTableData = Object.values(groupedRows)
+      .map((row: any, idx: number) => ({
+        ...row,
+        __ids: Array.from(row.__ids ?? []),
+        __key: `${row.rawDate || row.__key}-${idx}`,
+      }))
+      .sort((a: any, b: any) => {
+        const ta = new Date(a.rawDate).getTime();
+        const tb = new Date(b.rawDate).getTime();
+        // เรียงใหม่ล่าสุดอยู่บน (desc)
+        if (isNaN(ta) && isNaN(tb)) return 0;
+        if (isNaN(ta)) return 1;
+        if (isNaN(tb)) return -1;
+        return tb - ta;
+      });
+
+    setTablePreparedData(finalTableData);
+    setTableLoading(false);
   }, [hardwareID]);
 
   useEffect(() => {
@@ -257,18 +552,14 @@ const Index = () => {
     setBoxLoaded(false);
     setTableLoaded(false);
     setAverageLoaded(false);
-    fetchSensorDataAndParameters().finally(() => {
-      // ลูกจะ call onLoaded เองเมื่อโหลดเสร็จ
-    });
+    fetchSensorDataAndParameters().finally(() => {});
   }, [hardwareID, fetchSensorDataAndParameters]);
 
   useEffect(() => {
-    if (boxLoaded && tableLoaded && averageLoaded) {
-      setLoadingAll(false);
-    }
+    if (boxLoaded && tableLoaded && averageLoaded) setLoadingAll(false);
   }, [boxLoaded, tableLoaded, averageLoaded]);
 
-  const handleEditSuccess = async () => {
+  const handleEditSuccess = useCallback(async () => {
     setLoadingAll(true);
     setBoxLoaded(false);
     setTableLoaded(false);
@@ -279,8 +570,7 @@ const Index = () => {
     setReloadBoxes((prev) => prev + 1);
     setReloadTable((prev) => prev + 1);
     setReloadAverage((prev) => prev + 1);
-    // charts ถูก setReloadCharts ใน fetch แล้ว
-  };
+  }, [fetchSensorDataAndParameters]);
 
   const onBoxLoaded = () => setBoxLoaded(true);
   const onTableLoaded = () => setTableLoaded(true);
@@ -293,24 +583,26 @@ const Index = () => {
     const parameters = blk.ParametersWithColor.map((p) => p.parameter);
     const colors = blk.ParametersWithColor.map((p) => p.color);
 
-    const commonProps = {
-      hardwareID,
+    // ลูกๆ จะควบคุมช่วงเวลาเอง + ใช้ดิบจากพ่อ
+    const lineProps = {
+      hardwareID: hardwareID as number,
       parameters,
       colors,
-      timeRangeType: "day" as const,
-      selectedRange: [defaultStart, defaultEnd] as [Date, Date],
       reloadKey: reloadCharts,
+      data: chartDataPoints,
+      meta: chartMeta,
+      loading: chartLoading,
     };
 
     switch (blk.Graph) {
       case "Line":
-        return <LineChart {...commonProps} />;
+        return <LineChart {...lineProps} />;
       case "Area":
-        return <Area {...commonProps} />;
-      case "Mapping":
-        return <ColorMapping {...commonProps} />;
+        return <Area {...lineProps} />;
+      case "Bar":
+        return <Bar {...lineProps} />;
       case "Stacked":
-        return <Stacked {...commonProps} />;
+        return <Stacked {...lineProps} />;
       default:
         return null;
     }
@@ -363,25 +655,42 @@ const Index = () => {
         <h2 className="text-lg font-semibold mb-4 text-gray-700">ข้อมูลเซนเซอร์ล่าสุด</h2>
         <Boxsdata
           key={`box-${reloadBoxes}`}
-          hardwareID={hardwareID}
+          hardwareID={hardwareID as number}
           reloadKey={reloadBoxes}
           onLoaded={onBoxLoaded}
+          latestParameters={boxLatestParams}
+          parameterMeta={boxParamMeta}
+          loading={boxLoading}
         />
       </section>
 
-      {/* Table: ใช้ activeMenu เลือกความกว้าง */}
+      {/* Table */}
       <section
         className={`px-2 md:px-8 bg-white p-4 rounded-lg shadow ${
           activeMenu ? "w-full w-mid-800 w-mid-1400 w-mid-1600 w-mid-max" : "w-full"
         }`}
       >
         <h2 className="text-lg font-semibold mb-4 text-gray-700">ตารางข้อมูล</h2>
+
+        {/* ⬇️ ตอนนี้ยังคงใช้ TableData แบบเดิม (ลูกจะ fetch เอง)
+             ถ้าคุณพร้อมแก้ฝั่งลูก ให้เสียบ props เหล่านี้:
+             data={tablePreparedData}
+             uniqueColumns={tableUniqueColumns}
+             paramUnits={tableParamUnits}
+             allSensorDataIDs={tableAllSensorDataIDs}
+             loading={tableLoading}
+        */}
         <TableData
           key={`table-${reloadTable}`}
-          hardwareID={hardwareID}
+          hardwareID={hardwareID as number}
           // @ts-ignore
           reloadKey={reloadTable}
           onLoaded={onTableLoaded}
+          data={tablePreparedData}
+          uniqueColumns={tableUniqueColumns}
+          paramUnits={tableParamUnits}
+          allSensorDataIDs={tableAllSensorDataIDs}
+          loading={tableLoading}
         />
       </section>
 
@@ -394,7 +703,6 @@ const Index = () => {
         ) : (
           <div className="flex flex-col gap-6">
             {rows.map((row, ri) => {
-              // ถ้ามี fullSpan ให้แสดงเต็มแถว
               if (row.fullSpan) {
                 return (
                   <div key={`row-${row.index}-${ri}`} className="grid grid-cols-1 gap-6">
@@ -405,8 +713,6 @@ const Index = () => {
                 );
               }
 
-              // ไม่มี fullSpan → ใช้ 2 คอลัมน์ (ซ้าย/ขวา)
-              // ถ้าบางฝั่งไม่มี ให้เว้นช่องว่างไว้เพื่อคงตำแหน่ง
               return (
                 <div
                   key={`row-${row.index}-${ri}`}
@@ -433,9 +739,12 @@ const Index = () => {
         <h2 className="text-lg font-semibold mb-4 text-gray-700">ข้อมูลเฉลี่ยของเซนเซอร์</h2>
         <Avergare
           key={`avg-${reloadAverage}`}
-          hardwareID={hardwareID}
+          hardwareID={hardwareID as number}
           reloadKey={reloadAverage}
           onLoaded={onAverageLoaded}
+          stats={avgStats}
+          parameterColors={avgParameterColors}
+          loading={avgLoading}
         />
       </section>
 
@@ -443,7 +752,7 @@ const Index = () => {
       <EditParameterModal
         open={showEdit}
         onClose={() => setShowEdit(false)}
-        hardwareID={hardwareID}
+        hardwareID={hardwareID as number}
         onSuccess={handleEditSuccess}
       />
 
@@ -451,7 +760,7 @@ const Index = () => {
         open={showEditStandard}
         onClose={() => setShowEditStandard(false)}
         onSuccess={handleEditSuccess}
-        hardwareID={hardwareID}
+        hardwareID={hardwareID as number}
       />
 
       {/* ✅ Media query เฉพาะไฟล์นี้ */}

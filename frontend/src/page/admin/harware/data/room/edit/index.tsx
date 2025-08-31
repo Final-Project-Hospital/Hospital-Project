@@ -34,6 +34,8 @@ import {
   DeleteRoomNotificationByNotificationID,
   CreateRoomNotification,
 } from "../../../../../../services/hardware";
+import { GetUserDataByUserID } from "../../../../../../services/httpLogin";
+import { UsersInterface } from "../../../../../../interface/IUser";
 import { RoomInterface } from "../../../../../../interface/IRoom";
 import { BuildingInterface } from "../../../../../../interface/IBuilding";
 import { HardwareInterface } from "../../../../../../interface/IHardware";
@@ -89,9 +91,23 @@ const EditRoomModal: React.FC<Props> = ({
   const [deletedIds, setDeletedIds] = useState<number[]>([]);
   const [addedIds, setAddedIds] = useState<number[]>([]);
 
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
   const selectedIcon = iconOptions.find((i) => i.name === room.Icon)?.component;
 
   useEffect(() => {
+    const fetchUserRole = async () => {
+      const userId = localStorage.getItem("employeeid");
+      if (userId) {
+        const user: UsersInterface | false = await GetUserDataByUserID(userId);
+        if (user && user.Role?.RoleName === "Admin") {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      }
+    };
+
     setEmployeeid(Number(localStorage.getItem("employeeid")));
     if (show) {
       setRoom(initialData);
@@ -109,6 +125,8 @@ const EditRoomModal: React.FC<Props> = ({
         setDeletedIds([]);
         setAddedIds([]);
       })();
+
+      fetchUserRole();
     }
   }, [show, initialData]);
 
@@ -119,8 +137,9 @@ const EditRoomModal: React.FC<Props> = ({
     }));
   };
 
-  // ✅ ลบ (ทันทีใน state)
+  // ✅ ลบ (Admin เท่านั้น)
   const handleDeleteResponsible = (notificationID: number) => {
+    if (!isAdmin) return;
     setResponsibles((prev) =>
       prev.filter((r) => r.Notification?.ID !== notificationID)
     );
@@ -128,15 +147,16 @@ const EditRoomModal: React.FC<Props> = ({
     setAddedIds((prev) => prev.filter((id) => id !== notificationID));
   };
 
-  // ✅ เพิ่ม (ทันทีใน state)
+  // ✅ เพิ่ม (Admin เท่านั้น)
   const handleAddResponsible = () => {
+    if (!isAdmin) return;
     if (!newNotificationId) {
-      message.warning("กรุณาเลือกผู้ได้รับการเเจ้งเตื่อนก่อน");
+      message.warning("กรุณาเลือกผู้ได้รับการเเจ้งเตือนก่อน");
       return;
     }
     const exists = responsibles.some((r) => r.Notification?.ID === newNotificationId);
     if (exists) {
-      message.warning("มีผู้ผู้ได้รับการเเจ้งเตื่อนนี้อยู่แล้ว");
+      message.warning("มีผู้ผู้ได้รับการเเจ้งเตือนนี้อยู่แล้ว");
       return;
     }
 
@@ -181,13 +201,14 @@ const EditRoomModal: React.FC<Props> = ({
       return;
     }
 
-    // apply delete
-    for (const id of deletedIds) {
-      await DeleteRoomNotificationByNotificationID(id);
-    }
-    // apply add
-    for (const id of addedIds) {
-      await CreateRoomNotification({ room_id: room.ID!, notification_id: id });
+    // ✅ Admin เท่านั้นที่แก้ไข Notification ได้
+    if (isAdmin) {
+      for (const id of deletedIds) {
+        await DeleteRoomNotificationByNotificationID(id);
+      }
+      for (const id of addedIds) {
+        await CreateRoomNotification({ room_id: room.ID!, notification_id: id });
+      }
     }
 
     setLoading(false);
@@ -289,59 +310,61 @@ const EditRoomModal: React.FC<Props> = ({
           </Select>
         </div>
 
-        {/* Section ผู้รับผิดชอบ */}
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-          <h3 className="text-md font-semibold text-gray-700 mb-3">
-            ผู้รับผิดชอบ ({responsibles.length})
-          </h3>
-          {responsibles.length > 0 ? (
-            <List
-              dataSource={responsibles}
-              renderItem={(r) => (
-                <List.Item
-                  actions={[
-                    <Button
-                      danger
-                      size="small"
-                      onClick={() => handleDeleteResponsible(r.Notification?.ID!)}
-                    >
-                      ลบ
-                    </Button>,
-                  ]}
-                >
-                  <List.Item.Meta
-                    avatar={
-                      <Avatar style={{ backgroundColor: "#20c997" }}>
-                        {r.Notification?.Name?.charAt(0) || "U"}
-                      </Avatar>
-                    }
-                    title={r.Notification?.Name ?? "-"}
-                  />
-                </List.Item>
-              )}
-            />
-          ) : (
-            <p className="text-sm text-gray-500">ยังไม่มีผู้รับผิดชอบ</p>
-          )}
-          <div className="flex gap-2 mt-4">
-            <Select
-              placeholder="เลือกผู้ที่ได้รับการเเจ้งเตื่อน"
-              value={newNotificationId || undefined}
-              onChange={(val) => setNewNotificationId(val)}
-              className="w-full"
-              allowClear
-            >
-              {availableNotifications.map((n) => (
-                <Option key={n.ID} value={n.ID}>
-                  {n.Name} ({n.UserID})
-                </Option>
-              ))}
-            </Select>
-            <Button type="primary" onClick={handleAddResponsible}>
-              เพิ่ม
-            </Button>
+        {/* Section ผู้รับผิดชอบ - Admin เท่านั้น */}
+        {isAdmin && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+            <h3 className="text-md font-semibold text-gray-700 mb-3">
+              ผู้รับผิดชอบ ({responsibles.length})
+            </h3>
+            {responsibles.length > 0 ? (
+              <List
+                dataSource={responsibles}
+                renderItem={(r) => (
+                  <List.Item
+                    actions={[
+                      <Button
+                        danger
+                        size="small"
+                        onClick={() => handleDeleteResponsible(r.Notification?.ID!)}
+                      >
+                        ลบ
+                      </Button>,
+                    ]}
+                  >
+                    <List.Item.Meta
+                      avatar={
+                        <Avatar style={{ backgroundColor: "#20c997" }}>
+                          {r.Notification?.Name?.charAt(0) || "U"}
+                        </Avatar>
+                      }
+                      title={r.Notification?.Name ?? "-"}
+                    />
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <p className="text-sm text-gray-500">ยังไม่มีผู้รับผิดชอบ</p>
+            )}
+            <div className="flex gap-2 mt-4">
+              <Select
+                placeholder="เลือกผู้ที่ได้รับการเเจ้งเตือน"
+                value={newNotificationId || undefined}
+                onChange={(val) => setNewNotificationId(val)}
+                className="w-full"
+                allowClear
+              >
+                {availableNotifications.map((n) => (
+                  <Option key={n.ID} value={n.ID}>
+                    {n.Name} ({n.UserID})
+                  </Option>
+                ))}
+              </Select>
+              <Button type="primary" onClick={handleAddResponsible}>
+                เพิ่ม
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="flex justify-end gap-4">
           <Button onClick={onClose}>ยกเลิก</Button>

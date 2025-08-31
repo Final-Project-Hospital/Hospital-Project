@@ -20,6 +20,8 @@ import {
   CreateNotification
 } from "../../../../services/hardware";
 import { LineMasterInterface } from "../../../../interface/ILineMaster";
+import { GetUserDataByUserID } from "../../../../services/httpLogin"; 
+import { UsersInterface } from "../../../../interface/IUser"; 
 
 // ✅ Icons
 import { 
@@ -50,6 +52,31 @@ const Account = () => {
 
   const { reloadKey, triggerReload } = useNotificationContext();
 
+  // ✅ Role Check
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        // สมมุติว่า userID เก็บใน localStorage
+        const userId = localStorage.getItem("employeeid");
+        if (userId) {
+          const user: UsersInterface | false = await GetUserDataByUserID(userId);
+          if (user && user.Role?.RoleName === "Admin") {
+            setIsAdmin(true);
+          } else {
+            setIsAdmin(false);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user role:", error);
+        setIsAdmin(false);
+      }
+    };
+
+    fetchUserRole();
+  }, []);
+
   useEffect(() => {
     const fetchNotifications = async () => {
       setLoading(true);
@@ -65,6 +92,7 @@ const Account = () => {
 
   // ✅ Show Token Modal
   const showLineToken = async () => {
+    if (!isAdmin) return;
     setIsModalOpen(true);
     setLoadingToken(true);
     const res = await GetLineMasterFirst();
@@ -77,7 +105,7 @@ const Account = () => {
 
   // ✅ Save Token
   const handleSaveToken = async () => {
-    if (!lineMaster) return;
+    if (!lineMaster || !isAdmin) return;
     setSaving(true);
     const res = await UpdateLineMasterByID(lineMaster.ID, { Token: newToken });
     if (res) {
@@ -92,6 +120,7 @@ const Account = () => {
 
   // ✅ Create Notification
   const handleCreateNotification = async () => {
+    if (!isAdmin) return;
     try {
       const values = await form.validateFields();
       const res = await CreateNotification({
@@ -118,22 +147,24 @@ const Account = () => {
         title={t("บัญชีทั้งหมด")}
         style={{ height: "100%" }}
         extra={
-          <>
-            <Button
-              style={{
-                background: "linear-gradient(to right, #14b8a6, #0d9488)",
-                color: "white",
-                border: "none",
-              }}
-              icon={<PlusOutlined />}
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              เพิ่มผู้เเจ้งเตือน
-            </Button>
-            <Button type="link" onClick={showLineToken}>
-              LINE Token
-            </Button>
-          </>
+          isAdmin && ( // ✅ แสดงเฉพาะ Admin
+            <>
+              <Button
+                style={{
+                  background: "linear-gradient(to right, #14b8a6, #0d9488)",
+                  color: "white",
+                  border: "none",
+                }}
+                icon={<PlusOutlined />}
+                onClick={() => setIsCreateModalOpen(true)}
+              >
+                เพิ่มผู้เเจ้งเตือน
+              </Button>
+              <Button type="link" onClick={showLineToken}>
+                LINE Token
+              </Button>
+            </>
+          )
         }
         classNames={{ body: "p-0 pb-6", header: "border-0" }}
       >
@@ -147,7 +178,9 @@ const Account = () => {
               size="small"
               split={false}
               dataSource={notifications}
-              renderItem={(item) => <AccountItem item={item} />}
+              renderItem={(item) => (
+                <AccountItem item={item} isAdmin={isAdmin} /> // ✅ ส่งไปที่ AccountItem เพื่อควบคุมปุ่ม แก้ไข/ลบ/Toggle
+              )}
               className="[&_.ant-list-item-meta-title]:font-normal"
             />
           )}
@@ -165,47 +198,58 @@ const Account = () => {
         onCancel={() => setIsCreateModalOpen(false)}
         centered
         width="500px"
-        footer={[
-          <Button key="cancel" onClick={() => setIsCreateModalOpen(false)}>
-            ยกเลิก
-          </Button>,
-          <Button
-            key="create"
-            type="primary"
-            onClick={handleCreateNotification}
-            style={{
-              background: "linear-gradient(to right, #14b8a6, #0d9488)",
-              borderColor: "#0d9488",
-            }}
-          >
-            บันทึก
-          </Button>,
-        ]}
+        footer={
+          isAdmin ? ( // ✅ ปุ่มบันทึกเฉพาะ Admin
+            [
+              <Button key="cancel" onClick={() => setIsCreateModalOpen(false)}>
+                ยกเลิก
+              </Button>,
+              <Button
+                key="create"
+                type="primary"
+                onClick={handleCreateNotification}
+                style={{
+                  background: "linear-gradient(to right, #14b8a6, #0d9488)",
+                  borderColor: "#0d9488",
+                }}
+              >
+                บันทึก
+              </Button>,
+            ]
+          ) : (
+            <Button key="close" onClick={() => setIsCreateModalOpen(false)}>
+              ปิด
+            </Button>
+          )
+        }
       >
-        <Form layout="vertical" form={form}>
-          <Form.Item
-            label={
-              <span className="flex items-center gap-1">
-                <EditOutlined /> ชื่อ-สกุล
-              </span>
-            }
-            name="Name"
-            rules={[{ required: true, message: "กรุณากรอก Name" }]}
-          >
-            <Input placeholder="ชื่อ Notification" />
-          </Form.Item>
-          <Form.Item
-            label={
-              <span className="flex items-center gap-1">
-                <UserOutlined /> UserID
-              </span>
-            }
-            name="UserID"
-            rules={[{ required: true, message: "กรุณากรอก UserID" }]}
-          >
-            <Input placeholder="UserID" />
-          </Form.Item>
-        </Form>
+        {isAdmin && (
+          <Form layout="vertical" form={form}>
+            <Form.Item
+              label={
+                <span className="flex items-center gap-1">
+                  <EditOutlined /> ชื่อ-สกุล
+                </span>
+              }
+              name="Name"
+              rules={[{ required: true, message: "กรุณากรอก Name" }]}
+            >
+              <Input placeholder="ชื่อ Notification" />
+            </Form.Item>
+            <Form.Item
+              label={
+                <span className="flex items-center gap-1">
+                  <UserOutlined /> UserID
+                </span>
+              }
+              name="UserID"
+              rules={[{ required: true, message: "กรุณากรอก UserID" }]}
+            >
+              <Input placeholder="UserID" />
+            </Form.Item>
+          </Form>
+        )}
+        {!isAdmin && <p className="text-red-500">คุณไม่มีสิทธิ์สร้างข้อมูลนี้</p>}
       </Modal>
 
       {/* ✅ Modal LINE Token */}
@@ -219,23 +263,31 @@ const Account = () => {
         onCancel={() => setIsModalOpen(false)}
         centered
         width="600px"
-        footer={[
-          <Button key="close" onClick={() => setIsModalOpen(false)}>
-            ปิด
-          </Button>,
-          <Button
-            key="save"
-            type="primary"
-            loading={saving}
-            onClick={handleSaveToken}
-            style={{
-              background: "linear-gradient(to right, #14b8a6, #0d9488)",
-              borderColor: "#0d9488",
-            }}
-          >
-            บันทึก
-          </Button>,
-        ]}
+        footer={
+          isAdmin ? (
+            [
+              <Button key="close" onClick={() => setIsModalOpen(false)}>
+                ปิด
+              </Button>,
+              <Button
+                key="save"
+                type="primary"
+                loading={saving}
+                onClick={handleSaveToken}
+                style={{
+                  background: "linear-gradient(to right, #14b8a6, #0d9488)",
+                  borderColor: "#0d9488",
+                }}
+              >
+                บันทึก
+              </Button>,
+            ]
+          ) : (
+            <Button key="close" onClick={() => setIsModalOpen(false)}>
+              ปิด
+            </Button>
+          )
+        }
         className="custom-line-token-modal"
       >
         {loadingToken ? (
@@ -243,18 +295,21 @@ const Account = () => {
             <Spin />
           </div>
         ) : (
-          <div className="space-y-1">
-            <span className="flex items-center gap-1 font-semibold text-gray-700">
-              <EditOutlined /> Token
-            </span>
-            <TextArea
-              value={newToken}
-              onChange={(e) => setNewToken(e.target.value)}
-              placeholder="กรอก Line Token"
-              autoSize={{ minRows: 3, maxRows: 6 }}
-            />
-          </div>
+          isAdmin && (
+            <div className="space-y-1">
+              <span className="flex items-center gap-1 font-semibold text-gray-700">
+                <EditOutlined /> Token
+              </span>
+              <TextArea
+                value={newToken}
+                onChange={(e) => setNewToken(e.target.value)}
+                placeholder="กรอก Line Token"
+                autoSize={{ minRows: 3, maxRows: 6 }}
+              />
+            </div>
+          )
         )}
+        {!isAdmin && <p className="text-red-500">คุณไม่มีสิทธิ์แก้ไข Token</p>}
       </Modal>
     </>
   );

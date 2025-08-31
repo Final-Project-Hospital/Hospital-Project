@@ -5,15 +5,15 @@ import { AddLogin, GetUserDataByUserID } from "../../../services/httpLogin";
 import { LoginInterface } from "../../../interface/Login";
 import LogoLogin from "../../../assets/Logo Environment Login.png";
 
-const Login = ({ handleSignIn }: any) => {
+const Login = ({ handleSignIn, handleForgot }: any) => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false); // เพิ่ม state loading
+  const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
 
   const clickLoginbt = async (datalogin: LoginInterface) => {
-    setLoading(true); // เริ่มโหลด
+    setLoading(true);
     let res = await AddLogin(datalogin);
 
     if (res.status === 200) {
@@ -34,12 +34,12 @@ const Login = ({ handleSignIn }: any) => {
         try {
           await GetUserDataByUserID(Number(userID));
         } catch (error) {
-          console.error("Failed to fetch UsersID:", error);
+          console.error("ไม่สามารถดึงข้อมูลผู้ใช้ได้:", error);
         }
       }
       messageApi.success(`เข้าสู่ระบบในฐานะ ${RoleName} สำเร็จ`);
       setTimeout(() => {
-        setLoading(false); // หยุดโหลดก่อนเปลี่ยนหน้า
+        setLoading(false);
         if (RoleName === "Admin") {
           window.location.href = "/admin";
         } else if (RoleName === "Employee") {
@@ -49,7 +49,7 @@ const Login = ({ handleSignIn }: any) => {
         }
       }, 500);
     } else {
-      setLoading(false); // หยุดโหลด
+      setLoading(false);
       messageApi.error("อีเมลหรือรหัสผ่านไม่ถูกต้อง!");
     }
   };
@@ -57,7 +57,7 @@ const Login = ({ handleSignIn }: any) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      messageApi.warning("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
+      messageApi.warning("กรุณากรอกอีเมลและรหัสผ่าน");
       return;
     }
     const datalogin: LoginInterface = { email: email.trim(), password: password };
@@ -74,18 +74,18 @@ const Login = ({ handleSignIn }: any) => {
               src={LogoLogin}
               alt="icon"
               className="w-56 h-56 md:w-64 md:h-20"
-              style={{ objectFit: 'contain' }}
+              style={{ objectFit: "contain" }}
             />
           </div>
-          <h2 className="text-3xl font-semibold text-teal-700 mb-1">Login</h2>
-          <p className="text-teal-400 text-base">Log in to your account.</p>
+          <h2 className="text-3xl font-semibold text-teal-700 mb-1">เข้าสู่ระบบ</h2>
+          <p className="text-teal-400 text-base">โปรดเข้าสู่ระบบด้วยบัญชีของคุณ</p>
         </div>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit} autoComplete="off">
-          {/* Email */}
+          {/* อีเมล */}
           <div>
             <label htmlFor="email" className="block text-xs text-teal-700 font-medium mb-1">
-              Email
+              อีเมล
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-300 text-lg">
@@ -103,10 +103,11 @@ const Login = ({ handleSignIn }: any) => {
               />
             </div>
           </div>
-          {/* Password */}
+
+          {/* รหัสผ่าน */}
           <div>
             <label htmlFor="password" className="block text-xs text-teal-700 font-medium mb-1">
-              Password
+              รหัสผ่าน
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-300 text-lg">
@@ -133,7 +134,12 @@ const Login = ({ handleSignIn }: any) => {
           </div>
 
           <div className="flex justify-end text-xs mt-1">
-            <a href="#" className="text-teal-500 hover:underline">Forgot Password?</a>
+            <span
+              onClick={handleForgot}
+              className="text-teal-500 hover:underline cursor-pointer"
+            >
+              ลืมรหัสผ่าน?
+            </span>
           </div>
 
           <button
@@ -143,28 +149,28 @@ const Login = ({ handleSignIn }: any) => {
               bg-gradient-to-r from-teal-400 to-teal-600
               text-white py-2 rounded-full text-base font-semibold
               shadow-md hover:from-teal-500 hover:to-teal-700 transition
-              ${loading ? 'opacity-70 cursor-not-allowed' : ''}
+              ${loading ? "opacity-70 cursor-not-allowed" : ""}
             `}
             disabled={loading}
           >
             {loading ? (
               <span className="flex items-center gap-2">
                 <Spin size="small" className="!text-white" />
-                Logging in...
+                กำลังเข้าสู่ระบบ...
               </span>
             ) : (
-              "Log In"
+              "เข้าสู่ระบบ"
             )}
           </button>
         </form>
 
         <div className="text-center mt-6 text-base text-teal-400">
-          Don't have an account?{" "}
+          ยังไม่มีบัญชีใช่หรือไม่?{" "}
           <span
             className="text-teal-600 hover:underline cursor-pointer font-bold"
             onClick={handleSignIn}
           >
-            Sign Up
+            สมัครสมาชิก
           </span>
         </div>
       </div>

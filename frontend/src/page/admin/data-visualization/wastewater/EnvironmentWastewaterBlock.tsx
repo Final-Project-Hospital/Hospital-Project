@@ -204,7 +204,7 @@ const EnvironmentBlock = () => {
 
   return (
     <div>
-      <div className="w-title-header">
+      <div className="w-title-header mt-16 md:mt-0">
         <div>
           <h1>น้ำเสีย</h1>
           <p>

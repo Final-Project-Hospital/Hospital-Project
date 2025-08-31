@@ -293,8 +293,21 @@ func GetTargetByID(c *gin.Context) {
 // ListStatus
 func ListStatus(c *gin.Context) {
 	var list []entity.Status
+	statusNames := []string{"ไม่ผ่านเกณฑ์มาตรฐาน", "ผ่านเกณฑ์มาตรฐาน"}
 
-	if err := config.DB().Find(&list).Error; err != nil {
+	if err := config.DB().Where("status_name IN ?", statusNames).Find(&list).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถดึงข้อมูลได้"})
+		return
+	}
+
+	c.JSON(http.StatusOK, list)
+}
+
+func ListStatusGarbage(c *gin.Context) {
+	var list []entity.Status
+	statusNames := []string{"สำเร็จตามเป้าหมาย", "ไม่สำเร็จตามเป้าหมาย"}
+
+	if err := config.DB().Where("status_name IN ?", statusNames).Find(&list).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถดึงข้อมูลได้"})
 		return
 	}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import {
   ChartComponent,
   SeriesCollectionDirective,
@@ -11,11 +11,9 @@ import {
   LineSeries,
 } from '@syncfusion/ej2-react-charts';
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
-import {
-  GetSensorDataByHardwareID,
-  GetSensorDataParametersBySensorDataID,
-} from '../../../../../../services/hardware';
-import { fetchWithRetry } from '../untils/fetchWithRetry';
+
+type ChartPoint = { parameter: string; date: string; value: number };
+type ChartMetaMap = Record<string, { unit?: string; standard?: number; standardMin?: number }>;
 
 interface ChartdataProps {
   hardwareID: number;
@@ -25,6 +23,11 @@ interface ChartdataProps {
   selectedRange: any;
   chartHeight?: string;
   reloadKey?: number;
+
+  // ✅ รับจากพ่อ
+  data?: ChartPoint[];
+  meta?: ChartMetaMap;
+  loading?: boolean;
 }
 
 function labelHour(date: Date) {
@@ -50,13 +53,15 @@ function groupAvgByLabel(data: { x: string; y: number }[], categories: string[])
 }
 
 const Stacked: React.FC<ChartdataProps> = ({
-  hardwareID,
   parameters,
   colors = [],
   timeRangeType,
   selectedRange,
   chartHeight = '420px',
   reloadKey,
+  data = [],
+  meta = {},
+  loading = false,
 }) => {
   const { currentMode } = useStateContext();
   const [seriesDataByParam, setSeriesDataByParam] = useState<Record<string, { x: string; y: number }[]>>({});
@@ -65,7 +70,6 @@ const Stacked: React.FC<ChartdataProps> = ({
   const [unitMap, setUnitMap] = useState<Record<string, string>>({});
   const [sortedParams, setSortedParams] = useState<string[]>([]);
   const [hasData, setHasData] = useState(true);
-  const [loading, setLoading] = useState(false);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -73,219 +77,200 @@ const Stacked: React.FC<ChartdataProps> = ({
     return () => { mounted.current = false; };
   }, [reloadKey]);
 
-
+  const isRangeReady = useMemo(() => {
+    if (!selectedRange) return false;
+    if (timeRangeType === 'hour') return Array.isArray(selectedRange) && selectedRange.length === 2;
+    if (timeRangeType === 'day') return Array.isArray(selectedRange) && selectedRange.length === 2;
+    if (timeRangeType === 'month') return selectedRange?.month && selectedRange?.year;
+    if (timeRangeType === 'year') return Array.isArray(selectedRange) && selectedRange.length === 2;
+    return false;
+  }, [selectedRange, timeRangeType]);
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
+    if (!isRangeReady) return;
+
+    if (loading) {
       setSeriesDataByParam({});
       setStandardLines([]);
       setCategories([]);
       setUnitMap({});
       setSortedParams([]);
       setHasData(true);
+      return;
+    }
 
-      if (!hardwareID || !parameters?.length || !selectedRange) {
-        setLoading(false);
+    if (!parameters?.length || !Array.isArray(data) || data.length === 0) {
+      setSeriesDataByParam({});
+      setCategories([]);
+      setUnitMap({});
+      setSortedParams([]);
+      setHasData(false);
+      return;
+    }
+
+    // กรณีเลือกวันเดียว: เติม label ก่อน/ถัดไป
+    const forcedXLabels: string[] = [];
+    if (timeRangeType === 'day' && Array.isArray(selectedRange) && selectedRange.length === 2) {
+      const s = new Date(selectedRange[0]);
+      const e = new Date(selectedRange[1]);
+      if (s.toDateString() === e.toDateString()) {
+        const prev = new Date(s.getTime() - 86400000);
+        const next = new Date(s.getTime() + 86400000);
+        forcedXLabels.push(labelDay(prev), labelDay(s), labelDay(next));
+      }
+    }
+
+    // unit/standard จาก meta
+    const stdMaxMap: Record<string, number> = {};
+    const stdMinMap: Record<string, number> = {};
+    const unitMapping: Record<string, string> = {};
+    for (const p of parameters) {
+      const m = meta[p];
+      if (m?.unit && !unitMapping[m.unit]) unitMapping[m.unit] = p;
+      if (typeof m?.standard === 'number') stdMaxMap[p] = m.standard;
+      if (typeof m?.standardMin === 'number') stdMinMap[p] = m.standardMin;
+    }
+
+    // กรอง/จัด label ตามช่วงเวลา
+    const paramPoints: Record<string, { x: string; y: number }[]> = {};
+    const xSet = new Set<string>(forcedXLabels);
+
+    const pushPoint = (name: string, d: Date, value: number) => {
+      let inRange = false;
+      let label = '';
+
+      if (timeRangeType === 'hour') {
+        const [start, end] = selectedRange || [];
+        if (!start || !end) return;
+        const s = new Date(start), e = new Date(end);
+        inRange = d >= s && d <= e;
+        if (inRange) label = labelHour(d);
+      } else if (timeRangeType === 'day') {
+        const [start, end] = selectedRange || [];
+        if (!start || !end) return;
+        const s = new Date(start), e = new Date(end);
+        s.setHours(0,0,0,0); e.setHours(23,59,59,999);
+        inRange = d >= s && d <= e;
+        if (inRange) label = labelDay(d);
+      } else if (timeRangeType === 'month') {
+        const m = Number(selectedRange?.month);
+        const y = Number(selectedRange?.year);
+        inRange = (d.getMonth() + 1) === m && d.getFullYear() === y;
+        if (inRange) label = labelDay(d); // วันในเดือน
+      } else if (timeRangeType === 'year') {
+        const [ys, ye] = selectedRange || [];
+        const sameYear = +ys === +ye;
+        inRange = d.getFullYear() >= +ys && d.getFullYear() <= +ye;
+        if (inRange) label = sameYear ? labelMonth(d) : d.getFullYear().toString();
+      }
+
+      if (!inRange || !label) return;
+      (paramPoints[name] ??= []).push({ x: label, y: value });
+      xSet.add(label);
+    };
+
+    for (const pt of data) {
+      const { parameter, date, value } = pt;
+      if (!parameters.includes(parameter)) continue;
+      const d = new Date(date);
+      if (isNaN(d.getTime()) || typeof value !== 'number') continue;
+      pushPoint(parameter, d, value);
+    }
+
+    // เรียงแกน X ให้ถูกลำดับเวลา
+    const parseKey = (s: string): number | string => {
+      // dd/MM HH:mm
+      let m = /^(\d{2})\/(\d{2}) (\d{2}):(\d{2})$/.exec(s);
+      if (m) {
+        const [, dd, MM, hh, mm] = m;
+        const y = new Date().getFullYear();
+        return new Date(+y, +MM - 1, +dd, +hh, +mm).getTime();
+      }
+      // dd/MM
+      m = /^(\d{2})\/(\d{2})$/.exec(s);
+      if (m) {
+        const [, dd, MM] = m;
+        const y = new Date().getFullYear();
+        return new Date(+y, +MM - 1, +dd).getTime();
+      }
+      // Mon (Jan..Dec)
+      if (/^[A-Za-z]{3}$/.test(s)) {
+        const y = new Date().getFullYear();
+        const d = new Date(`${s} 1, ${y}`);
+        if (!isNaN(d.getTime())) return d.getTime();
+      }
+      // YYYY
+      if (/^\d{4}$/.test(s)) return +s;
+      return s;
+    };
+
+    const xCats = Array.from(xSet).sort((a, b) => {
+      const ka = parseKey(a);
+      const kb = parseKey(b);
+      if (typeof ka === 'number' && typeof kb === 'number') return ka - kb;
+      return String(a).localeCompare(String(b));
+    });
+
+    // ทำค่าเฉลี่ย/เติม 0 ให้ครบทุก category
+    const seriesByParam: Record<string, { x: string; y: number }[]> = {};
+    for (const p of parameters) {
+      const arr = paramPoints[p] ?? [];
+      seriesByParam[p] = groupAvgByLabel(arr, xCats);
+    }
+
+    // sort legend/stack โดยยอดรวมรวมจากน้อยไปมาก (อ่าน layer ง่าย)
+    const totals = Object.fromEntries(
+      parameters.map(p => [p, seriesByParam[p].reduce((s, d) => s + d.y, 0)])
+    );
+    const sorted = [...parameters].sort((a, b) => totals[a] - totals[b]);
+
+    // เส้นมาตรฐาน
+    const stdSeries: any[] = [];
+    Object.entries(stdMaxMap).forEach(([p, std]) => {
+      stdSeries.push({
+        dataSource: xCats.map(x => ({ x, y: std })),
+        xName: 'x',
+        yName: 'y',
+        type: 'Line',
+        name: `${p} (Max)`,
+        dashArray: '5,5',
+        width: 2,
+        marker: { visible: false },
+        fill: 'red',
+      });
+    });
+    Object.entries(stdMinMap).forEach(([p, std]) => {
+      stdSeries.push({
+        dataSource: xCats.map(x => ({ x, y: std })),
+        xName: 'x',
+        yName: 'y',
+        type: 'Line',
+        name: `${p} (Min)`,
+        dashArray: '5,5',
+        width: 2,
+        marker: { visible: false },
+        fill: '#f59e0b',
+      });
+    });
+
+    const hasSeries =
+      xCats.length > 0 && sorted.some(p => seriesByParam[p]?.some(d => d.y !== 0));
+
+    if (mounted.current) {
+      if (hasSeries) {
+        setSeriesDataByParam(seriesByParam);
+        setCategories(xCats);
+        setStandardLines(stdSeries);
+        setUnitMap(unitMapping);
+        setSortedParams(sorted);
+        setHasData(true);
+      } else {
+        setSeriesDataByParam({});
+        setCategories([]);
         setHasData(false);
-        return;
       }
-
-      // กรณีเลือกวันเดียว: เติม label ก่อน/ถัดไป
-      const forcedXLabels: string[] = [];
-      if (timeRangeType === 'day' && Array.isArray(selectedRange) && selectedRange.length === 2) {
-        const s = new Date(selectedRange[0]);
-        const e = new Date(selectedRange[1]);
-        if (s.toDateString() === e.toDateString()) {
-          const prev = new Date(s.getTime() - 86400000);
-          const next = new Date(s.getTime() + 86400000);
-          forcedXLabels.push(labelDay(prev), labelDay(s), labelDay(next));
-        }
-      }
-
-      try {
-        const raw = await fetchWithRetry(() => GetSensorDataByHardwareID(hardwareID), 5, 1000);
-
-        const paramPoints: Record<string, { x: string; y: number }[]> = {};
-        const stdMaxMap: Record<string, number> = {};
-        const stdMinMap: Record<string, number> = {};
-        const unitMapping: Record<string, string> = {};
-        const xSet = new Set<string>(forcedXLabels);
-
-        if (!Array.isArray(raw) || raw.length === 0) {
-          setHasData(false);
-          setLoading(false);
-          return;
-        }
-
-        await Promise.all(
-          raw.map(async sensor => {
-            const params = await fetchWithRetry(
-              () => GetSensorDataParametersBySensorDataID(sensor.ID),
-              5,
-              1000
-            );
-            if (!Array.isArray(params)) return;
-
-            for (const param of params) {
-              const name: string | undefined = param.HardwareParameter?.Parameter;
-              const unit: string | undefined = param.HardwareParameter?.UnitHardware?.Unit;
-              const maxStd: number | undefined = param.HardwareParameter?.StandardHardware?.MaxValueStandard;
-              const minStd: number | undefined = param.HardwareParameter?.StandardHardware?.MinValueStandard;
-              const vRaw = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
-              const value: number = Number(vRaw);
-              const date = new Date(param.Date);
-
-              if (!name || !parameters.includes(name)) continue;
-              if (isNaN(value) || isNaN(date.getTime())) continue;
-
-              let inRange = false;
-              let label = '';
-
-              if (timeRangeType === 'hour') {
-                const [start, end] = selectedRange || [];
-                if (!start || !end) continue;
-                const s = new Date(start);
-                const e = new Date(end);
-                inRange = date >= s && date <= e;
-                if (inRange) label = labelHour(date);
-              } else if (timeRangeType === 'day') {
-                const [start, end] = selectedRange || [];
-                if (!start || !end) continue;
-                const s = new Date(start);
-                const e = new Date(end);
-                s.setHours(0,0,0,0);
-                e.setHours(23,59,59,999);
-                inRange = date >= s && date <= e;
-                if (inRange) label = labelDay(date);
-              } else if (timeRangeType === 'month') {
-                inRange =
-                  date.getMonth() + 1 === Number(selectedRange?.month) &&
-                  date.getFullYear() === Number(selectedRange?.year);
-                if (inRange) label = labelDay(date); // แสดงเป็นวันในเดือน
-              } else if (timeRangeType === 'year') {
-                const [ys, ye] = selectedRange || [];
-                const sameYear = +ys === +ye;
-                inRange = date.getFullYear() >= +ys && date.getFullYear() <= +ye;
-                if (inRange) label = sameYear ? labelMonth(date) : date.getFullYear().toString();
-              }
-
-              if (!inRange || !label) continue;
-
-              paramPoints[name] ??= [];
-              paramPoints[name].push({ x: label, y: value });
-              xSet.add(label);
-
-              if (typeof maxStd === 'number' && maxStd > 0 && !stdMaxMap[name]) stdMaxMap[name] = maxStd;
-              if (typeof minStd === 'number' && minStd > 0 && !stdMinMap[name]) stdMinMap[name] = minStd;
-              if (unit && !unitMapping[unit]) unitMapping[unit] = name;
-            }
-          })
-        );
-
-        // เรียงแกน X ให้ถูกลำดับเวลา
-        const parseKey = (s: string): number | string => {
-          // dd/MM HH:mm
-          let m = /^(\d{2})\/(\d{2}) (\d{2}):(\d{2})$/.exec(s);
-          if (m) {
-            const [, dd, MM, hh, mm] = m;
-            const y = new Date().getFullYear();
-            return new Date(+y, +MM - 1, +dd, +hh, +mm).getTime();
-          }
-          // dd/MM
-          m = /^(\d{2})\/(\d{2})$/.exec(s);
-          if (m) {
-            const [, dd, MM] = m;
-            const y = new Date().getFullYear();
-            return new Date(+y, +MM - 1, +dd).getTime();
-          }
-          // Mon (Jan..Dec)
-          if (/^[A-Za-z]{3}$/.test(s)) {
-            const y = new Date().getFullYear();
-            const d = new Date(`${s} 1, ${y}`);
-            if (!isNaN(d.getTime())) return d.getTime();
-          }
-          // YYYY
-          if (/^\d{4}$/.test(s)) return +s;
-          return s;
-        };
-
-        const xCats = Array.from(xSet).sort((a, b) => {
-          const ka = parseKey(a);
-          const kb = parseKey(b);
-          if (typeof ka === 'number' && typeof kb === 'number') return ka - kb;
-          return String(a).localeCompare(String(b));
-        });
-
-        // ทำค่าเฉลี่ย/เติม 0 ให้ครบทุก category
-        const seriesByParam: Record<string, { x: string; y: number }[]> = {};
-        for (const p of parameters) {
-          const arr = paramPoints[p] ?? [];
-          seriesByParam[p] = groupAvgByLabel(arr, xCats);
-        }
-
-        // sort legend/stack โดยยอดรวมรวมจากน้อยไปมาก (อ่าน layer ง่าย)
-        const totals = Object.fromEntries(
-          parameters.map(p => [p, seriesByParam[p].reduce((s, d) => s + d.y, 0)])
-        );
-        const sorted = [...parameters].sort((a, b) => totals[a] - totals[b]);
-
-        // เส้นมาตรฐาน
-        const stdSeries: any[] = [];
-        Object.entries(stdMaxMap).forEach(([p, std]) => {
-          stdSeries.push({
-            dataSource: xCats.map(x => ({ x, y: std })),
-            xName: 'x',
-            yName: 'y',
-            type: 'Line',
-            name: `${p} (Max)`,
-            dashArray: '5,5',
-            width: 2,
-            marker: { visible: false },
-            fill: 'red',
-          });
-        });
-        Object.entries(stdMinMap).forEach(([p, std]) => {
-          stdSeries.push({
-            dataSource: xCats.map(x => ({ x, y: std })),
-            xName: 'x',
-            yName: 'y',
-            type: 'Line',
-            name: `${p} (Min)`,
-            dashArray: '5,5',
-            width: 2,
-            marker: { visible: false },
-            fill: '#f59e0b',
-          });
-        });
-
-        const hasSeries =
-          xCats.length > 0 &&
-          sorted.some(p => seriesByParam[p]?.some(d => d.y !== 0));
-
-        if (mounted.current) {
-          if (hasSeries) {
-            setSeriesDataByParam(seriesByParam);
-            setCategories(xCats);
-            setStandardLines(stdSeries);
-            setUnitMap(unitMapping);
-            setSortedParams(sorted);
-            setHasData(true);
-          } else {
-            setSeriesDataByParam({});
-            setCategories([]);
-            setHasData(false);
-          }
-          setLoading(false);
-        }
-      } catch (e) {
-        if (mounted.current) {
-          setHasData(false);
-          setLoading(false);
-        }
-      }
-    })();
-  }, [hardwareID, parameters, timeRangeType, selectedRange, reloadKey]);
+    }
+  }, [parameters, colors, timeRangeType, selectedRange, reloadKey, loading, data, meta, isRangeReady]);
 
   if (loading) {
     return (
