@@ -44,18 +44,11 @@ const getHeaders = (): Record<string, string> => {
 
 export const SignupUser = async (
   input: SignupInput
-): Promise<UsersInterface | false> => {
-  try {
-    const response = await axios.post(
-      `${apiUrl}/signup`,
-      input,
-      { headers: getHeaders() }
-    );
-    return response.data;
-  } catch (error: any) {
-    console.error("Signup error:", error.response?.data || error.message);
-    return false;
-  }
+): Promise<UsersInterface> => {
+  const response = await axios.post(`${apiUrl}/signup`, input, {
+    headers: getHeaders(),
+  });
+  return response.data;
 };
 
 
@@ -102,7 +95,6 @@ export const UpdateEmployeeByID = async (
     );
 
     if (response.status === 200) {
-      // ถ้ากลับมาเป็น { user: ... } ให้ใช้ response.data.user
       return response.data.user || response.data;
     } else {
       console.error("Unexpected status:", response.status);
@@ -110,9 +102,10 @@ export const UpdateEmployeeByID = async (
     }
   } catch (error) {
     console.error("Error updating employee:", error);
-    return null;
+    throw error; // ✅ โยน error ออกไปให้ catch ใน component
   }
 };
+
 
 export const ListEmployees = async (): Promise<EmployeeInterface[] | null> => {
   try {

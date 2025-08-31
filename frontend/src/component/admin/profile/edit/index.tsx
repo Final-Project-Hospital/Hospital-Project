@@ -2,7 +2,12 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Form, Input, Button, Upload, message, Row, Col } from "antd";
 import ImgCrop from "antd-img-crop";
-import { PlusOutlined, UserOutlined, MailOutlined, PhoneOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  UserOutlined,
+  MailOutlined,
+  PhoneOutlined,
+} from "@ant-design/icons";
 import { UsersInterface } from "../../../../interface/IUser";
 import { UpdateEmployeeByID } from "../../../../services/httpLogin";
 import { EditOutlined } from "@ant-design/icons";
@@ -76,22 +81,44 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       base64 = undefined;
     }
 
-    const res = await UpdateEmployeeByID(initialData.ID!, {
-      FirstName: values.FirstName,
-      LastName: values.LastName,
-      Phone: values.Phone,
-      Email: values.Email,
-      Profile: base64,
-    });
+    try {
+      const res = await UpdateEmployeeByID(initialData.ID!, {
+        FirstName: values.FirstName,
+        LastName: values.LastName,
+        Phone: values.Phone,
+        Email: values.Email,
+        Profile: base64,
+      });
 
-    setLoading(false);
+      setLoading(false);
 
-    if (res) {
-      message.success("อัปเดตข้อมูลสำเร็จ");
-      onSaveSuccess();
-      onClose();
-    } else {
-      message.error("เกิดข้อผิดพลาดในการอัปเดต");
+      if (res) {
+        message.success("อัปเดตข้อมูลสำเร็จ");
+        onSaveSuccess();
+        onClose();
+      }
+    } catch (err: any) {
+      setLoading(false);
+
+      const status = err?.response?.status;
+
+      // ✅ รองรับ error หลาย field
+      if (status === 409 && err?.response?.data?.errors) {
+        const fieldErrors = Object.entries(err.response.data.errors).map(
+          ([field, msg]) => ({
+            name: field,
+            errors: [msg as string],
+          })
+        );
+        form.setFields(fieldErrors);
+        return;
+      }
+
+      let msg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        "เกิดข้อผิดพลาดในการอัปเดต";
+      message.warning(msg);
     }
   };
 
@@ -107,7 +134,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       destroyOnClose
       closable={false}
       className="edit-user-modal"
-      style={{ top: window.innerWidth < 768 ? 40 : 0 }}  
+      style={{ top: window.innerWidth < 768 ? 40 : 0 }}
       bodyStyle={{
         background: "white",
         padding: 0,
@@ -208,8 +235,18 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
           }
           name="Email"
           rules={[
-            { required: true, message: "กรุณากรอกอีเมล" },
-            { type: "email", message: "กรุณากรอกอีเมลให้ถูกต้อง" },
+            {
+              validator: (_, value) => {
+                if (!value || value.trim() === "") {
+                  return Promise.reject(new Error("กรุณากรอกอีเมล"));
+                }
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                  return Promise.reject(new Error("รูปแบบอีเมลไม่ถูกต้อง"));
+                }
+                return Promise.resolve();
+              },
+            },
           ]}
         >
           <Input placeholder="กรอกอีเมล" />
@@ -226,14 +263,16 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
           }
           className="mb-3"
           rules={[
-            { required: false },
             {
               validator: (_, value) => {
-                if (!value) return Promise.resolve();
-                if (!/^[0][0-9]{9}$/.test(value))
+                if (!value || value.trim() === "") {
+                  return Promise.reject(new Error("กรุณากรอกเบอร์โทรศัพท์"));
+                }
+                if (!/^[0][0-9]{9}$/.test(value)) {
                   return Promise.reject(
                     new Error("เบอร์โทรต้องมี 10 หลัก และขึ้นต้นด้วย 0")
                   );
+                }
                 return Promise.resolve();
               },
             },

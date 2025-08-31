@@ -138,7 +138,7 @@ const AdminDashboard: React.FC = () => {
   // meta
   const [metas, setMetas] = useState<EnvMeta[]>([]);
   const [metaLoading, setMetaLoading] = useState<boolean>(false);
-  const [metaError, setMetaError] = useState<string | null>(null);
+  const [, setMetaError] = useState<string | null>(null);
 
   // selected
   const [selectedEnvId, setSelectedEnvId] = useState<number | null>(null);
@@ -146,9 +146,9 @@ const AdminDashboard: React.FC = () => {
 
   // data (น้ำ)
   const [rawData, setRawData] = useState<RecordItem[]>([]);
-  const [efficiency, setEfficiency] = useState<EfficiencyItem[] | null>(null);
-  const [dataLoading, setDataLoading] = useState<boolean>(false);
-  const [dataError, setDataError] = useState<string | null>(null);
+  const [, setEfficiency] = useState<EfficiencyItem[] | null>(null);
+  const [, setDataLoading] = useState<boolean>(false);
+  const [, setDataError] = useState<string | null>(null);
 
   // UI
   const [view, setView] = useState<ViewType>("compare");
@@ -957,66 +957,38 @@ const AdminDashboard: React.FC = () => {
   return (
     <>
       {/* Header */}
-      <div
-        className="dashboard-title-header"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-          gap: 16,
-          flexWrap: "wrap",
-        }}
-      >
-        <div className="dashboard-title-inner">
-          <h1 style={{ marginBottom: "4px" }}>การตรวจวัดคุณภาพสิ่งแวดล้อม</h1>
-          <p style={{ margin: 0, color: "#555" }}>
-            โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
-          </p>
-        </div>
+<div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-4 sm:px-6 lg:px-8 py-6 rounded-b-3xl mb-4 w-full">
+  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    {/* Title + Desc */}
+    <div>
+      <h1 className="text-2xl font-semibold drop-shadow-md">
+        การตรวจวัดคุณภาพสิ่งแวดล้อม
+      </h1>
+      <p className="text-sm drop-shadow-sm leading-snug">
+        โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
+      </p>
+    </div>
 
-        {/* Prediction Box */}
-        <div
-          style={{
-            backgroundColor: "#e6f7ff",
-            border: "1px solid #91d5ff",
-            padding: "12px 20px",
-            borderRadius: "8px",
-            textAlign: "center",
-            minWidth: "300px",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-          }}
-        >
-          <h3
-            style={{
-              margin: "0 0 8px",
-              fontSize: "1rem",
-              color: "#0050b3",
-              lineHeight: 1.2,
-            }}
-          >
-            ค่า TDS น้ำเสียหลังการบำบัด (คาดการณ์เดือนถัดไป)
-          </h3>
-          {predictionLoading ? (
-            <p style={{ margin: 0 }}>กำลังคำนวณ...</p>
-          ) : predictionError ? (
-            <p style={{ margin: 0, color: "red" }}>
-              ไม่สามารถดึงค่าทำนายได้: {predictionError}
-            </p>
-          ) : (
-            <div
-              style={{
-                fontSize: "1.8rem",
-                fontWeight: "bold",
-                color: "#0050b3",
-                margin: 0,
-              }}
-            >
-              {predictionData?.prediction.toFixed(3)}
-            </div>
-          )}
+    {/* Prediction Box */}
+    <div className="bg-white/90 border border-cyan-200 px-5 py-4 rounded-xl text-center min-w-[300px] shadow-lg">
+      <h3 className="text-base font-medium text-cyan-800 mb-2 leading-snug">
+        ค่า pH น้ำเสียก่อนบำบัด (คาดการณ์เดือนถัดไป)
+      </h3>
+      {predictionLoading ? (
+        <p className="text-gray-600 m-0">กำลังคำนวณ...</p>
+      ) : predictionError ? (
+        <p className="text-red-600 m-0">
+          ไม่สามารถดึงค่าทำนายได้: {predictionError}
+        </p>
+      ) : (
+        <div className="text-2xl font-bold text-cyan-900">
+          {predictionData?.prediction.toFixed(3)}
         </div>
-      </div>
+      )}
+    </div>
+  </div>
+</div>
+
 
       {/* Body */}
       <div className="content-wrapper">
@@ -1603,3 +1575,4 @@ const AdminDashboard: React.FC = () => {
 };
 
 export default AdminDashboard;
+ 
