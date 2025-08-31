@@ -30,7 +30,7 @@ interface ColorMappingBarChartProps {
   loading?: boolean;
 }
 
-const ColorMapping: React.FC<ColorMappingBarChartProps> = ({
+const Bar: React.FC<ColorMappingBarChartProps> = ({
   parameters,
   colors = [],
   timeRangeType,
@@ -343,4 +343,4 @@ const ColorMapping: React.FC<ColorMappingBarChartProps> = ({
   );
 };
 
-export default ColorMapping;
+export default Bar;

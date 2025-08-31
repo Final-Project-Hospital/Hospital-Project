@@ -24,7 +24,7 @@ import {
 import { ColorPicker } from "antd";
 import LineChartingImg from "../../../../../../assets/chart/LineCharting.png";
 import AreaChartingImg from "../../../../../../assets/chart/AreaCharting.png";
-import MappingImg from "../../../../../../assets/chart/Mapping.png";
+import BarChartingImg from "../../../../../../assets/chart/Mapping.png"; // ✅ ใช้ภาพเดิม (Mapping.png) แต่เปลี่ยนชื่อเป็น Bar
 import StackChartingImg from "../../../../../../assets/chart/StackCharting.png";
 import "./ColorSelectNoArrow.css";
 
@@ -60,9 +60,9 @@ type DataGraph = { ID: number; Graph: string };
 
 // ประเภทกราฟ
 const graphTypes = [
-  { id: 1, name: "กราฟเส้น (ค่าเริ่มต้น)", img: LineChartingImg },
-  { id: 2, name: "กราฟพื้นที่ (Area)", img: AreaChartingImg },
-  { id: 3, name: "กราฟ Color Mapping", img: MappingImg },
+  { id: 1, name: "กราฟ Line", img: LineChartingImg },
+  { id: 2, name: "กราฟ Area", img: AreaChartingImg },
+  { id: 3, name: "กราฟ Bar", img: BarChartingImg }, // ✅ เปลี่ยนเป็น Bar
   { id: 4, name: "กราฟ Stacked", img: StackChartingImg },
 ];
 
@@ -92,13 +92,13 @@ const useViewportFlags = () => {
 const graphNameToTypeId = (name?: string): number => {
   const n = (name || "").toLowerCase();
   if (n.includes("stack")) return 4;
-  if (n.includes("mapping") || n.includes("color")) return 3;
+  if (n.includes("bar") || n.includes("mapping") || n.includes("color")) return 3; // ✅ รองรับทั้ง "Bar" และเดิม "Mapping/Color"
   if (n.includes("area")) return 2;
   if (n.includes("line")) return 1;
   // fallback: พยายามเทียบชื่อไทย
   if (n.includes("เส้น")) return 1;
   if (n.includes("พื้นที่")) return 2;
-  if (n.includes("แม็ป") || n.includes("แมป") || n.includes("สี")) return 3;
+  if (n.includes("แท่ง") || n.includes("บาร์") || n.includes("แม็ป") || n.includes("แมป") || n.includes("สี")) return 3; // ✅ เพิ่มคำไทยของ Bar
   if (n.includes("ซ้อน") || n.includes("สแตก")) return 4;
   return 1;
 };
@@ -1068,7 +1068,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                             return (
                               <div
                                 key={subIdx}
-                                className={`relative rounded-xl border p-3 min-h-[160px] transition ${
+                                className={`relative rounded-xl border p-3 min-h=[160px] min-h-[160px] transition ${
                                   isOver ? "border-teal-400 bg-teal-50" : "border-gray-300 bg-gray-50"
                                 }`}
                                 onDragOver={!isCompact ? (e) => handleDragOverSlot(slotIdx, isSplit ? subIdx : null, e) : undefined}
