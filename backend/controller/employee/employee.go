@@ -321,3 +321,81 @@ func CreateEmployee(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{"message": "สร้างพนักงานสำเร็จ"})
 }
+
+
+func ListRole(c *gin.Context) {
+	var roles []entity.Role
+
+	db := config.DB()
+	if err := db.Find(&roles).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, roles)
+}
+
+func CheckEmail(c *gin.Context) {
+	email := c.Query("email") 
+	if email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาระบุอีเมล"})
+		return
+	}
+
+	db := config.DB()
+	var employee entity.Employee
+
+	if err := db.Where("email = ?", email).First(&employee).Error; err == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"exists": true,
+			"email":  email,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"exists": false,
+		"email":  email,
+	})
+}
+
+type ResetPasswordRequest struct {
+	Email       string `json:"email" binding:"required,email"`
+	NewPassword string `json:"newPassword" binding:"required"`
+}
+
+func ResetPassword(c *gin.Context) {
+	var req ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ข้อมูลไม่ถูกต้อง"})
+		return
+	}
+
+	db := config.DB()
+	var employee entity.Employee
+
+	// ค้นหาผู้ใช้จาก Email
+	if err := db.Where("email = ?", req.Email).First(&employee).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบผู้ใช้งานนี้"})
+		return
+	}
+
+	// แปลง password → hash
+	hashedPassword, err := config.HashPassword(req.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถเข้ารหัสรหัสผ่านได้"})
+		return
+	}
+
+	// อัปเดต Password
+	employee.Password = hashedPassword
+	if err := db.Save(&employee).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถรีเซ็ตรหัสผ่านได้"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "รีเซ็ตรหัสผ่านสำเร็จ",
+		"email":   employee.Email,
+	})
+}

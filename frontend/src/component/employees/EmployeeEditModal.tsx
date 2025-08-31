@@ -5,14 +5,15 @@ import { CameraOutlined, FormOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { EmployeeInterface } from "../../interface/IEmployee";
 import { PositionInterface } from "../../interface/IPosition";
+import { RoleInterface } from "../../interface/IRole";   // ✅ import interface Role
+import { ListRole } from "../../services/httpLogin";      // ✅ import service
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   employee: EmployeeInterface | null;
-  positions: PositionInterface[]; // ✅ เพิ่มให้ถูกต้อง
-  /** ซ่อนการเปลี่ยนสิทธิ์และห้ามลบบัญชีตัวเองให้ส่งมาจากหน้า UserManagement */
+  positions: PositionInterface[];
   isSelf?: boolean;
 };
 
@@ -29,17 +30,15 @@ const EmployeeEditModal: React.FC<Props> = ({
   const [form] = Form.useForm();
   const [uploadFile, setUploadFile] = useState<File | undefined>();
   const [loading, setLoading] = useState(false);
+  const [roles, setRoles] = useState<RoleInterface[]>([]); // ✅ state role
 
-  // เก็บค่าเริ่มต้นไว้เทียบ (ถ้าต้องการในอนาคต)
   const initialValuesRef = useRef<Record<string, any> | null>(null);
 
-  // URL สำหรับแสดงรูปตัวอย่าง (ไฟล์ใหม่ > รูปเดิม)
   const previewUrl = useMemo(() => {
     if (uploadFile) return URL.createObjectURL(uploadFile);
     return (employee as any)?.Profile || (employee as any)?.profile || "";
   }, [uploadFile, employee]);
 
-  // เคลียร์ Object URL เมื่อไฟล์เปลี่ยน/คอมโพเนนต์ unmount
   useEffect(() => {
     return () => {
       if (uploadFile) URL.revokeObjectURL(previewUrl);
@@ -56,12 +55,17 @@ const EmployeeEditModal: React.FC<Props> = ({
       phone: employee.Phone ?? "",
       positionID: employee.Position?.ID ?? undefined,
       roleID: employee.Role?.ID ?? undefined,
-      password: undefined, // เว้นว่างถ้าไม่เปลี่ยน
+      password: undefined,
     };
 
     form.setFieldsValue(init);
     initialValuesRef.current = init;
     setUploadFile(undefined);
+
+    // ✅ โหลด Roles จาก backend
+    ListRole().then((res) => {
+      if (res) setRoles(res);
+    });
   }, [open, employee, form]);
 
   const handleFileChange = (file?: File) => {
@@ -82,13 +86,9 @@ const EmployeeEditModal: React.FC<Props> = ({
     setUploadFile(file);
   };
 
-  // helper แปลง id -> label
   const roleLabelById = (id?: number) =>
-    ({ 1: "Admin", 2: "Employee", 3: "Guest" } as Record<number, string>)[
-      id ?? -1
-    ] || "-";
+    roles.find((r) => r.ID === id)?.RoleName || "-"; // ✅ ใช้ roles ที่ดึงมาจริง
 
-  // ยกเลิก: ปิดทันที (เหมือน Create — ไม่มี modal ถาม)
   const handleCancel = () => {
     onClose();
     setTimeout(() => {
@@ -97,7 +97,6 @@ const EmployeeEditModal: React.FC<Props> = ({
     }, 0);
   };
 
-  // บันทึก: ส่งข้อมูลทันที (ไม่มี modal diff/ยืนยัน)
   const handleSubmit = async () => {
     if (!employee?.ID) return;
     try {
@@ -118,12 +117,10 @@ const EmployeeEditModal: React.FC<Props> = ({
         formData.append("positionID", String(values.positionID));
       }
 
-      // รหัสผ่านใหม่ (ถ้ามี)
       if (values.password) {
         formData.append("password", String(values.password));
       }
 
-      // roleID: ถ้าแก้ไขบัญชีตัวเอง ให้ส่ง role เดิมกลับไป
       if (isSelf) {
         const currentRoleId = employee?.Role?.ID;
         if (currentRoleId != null) formData.append("roleID", String(currentRoleId));
@@ -131,7 +128,6 @@ const EmployeeEditModal: React.FC<Props> = ({
         formData.append("roleID", String(values.roleID));
       }
 
-      // รูปโปรไฟล์ (ถ้ามี)
       if (uploadFile) formData.append("profile", uploadFile);
 
       setLoading(true);
@@ -145,7 +141,7 @@ const EmployeeEditModal: React.FC<Props> = ({
       onSuccess();
       onClose();
     } catch (err: any) {
-      if (err?.errorFields) return; // validate ไม่ผ่าน ให้ฟอร์มแสดงเอง
+      if (err?.errorFields) return;
       const msg = err?.response?.data?.error || "แก้ไขข้อมูลไม่สำเร็จ";
       message.error(msg);
     } finally {
@@ -153,7 +149,6 @@ const EmployeeEditModal: React.FC<Props> = ({
     }
   };
 
-  // Title ไล่สี teal + ไอคอน (สไตล์เดียวกับ Create)
   const TitleNode = (
     <div className="flex items-center gap-2">
       <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-teal-500/10">
@@ -181,10 +176,9 @@ const EmployeeEditModal: React.FC<Props> = ({
           "bg-gradient-to-r from-teal-600 to-cyan-500 text-white hover:from-teal-700 hover:to-cyan-600 border-0 px-5 rounded-md shadow",
       }}
     >
-      {/* อัปโหลดโปรไฟล์แบบวงกลม (Tailwind-only) */}
+      {/* อัปโหลดโปรไฟล์ */}
       <div className="w-full flex items-center justify-center my-6">
         <div className="relative group">
-          {/* ปุ่มลบไฟล์ใหม่ */}
           {uploadFile && (
             <button
               type="button"
@@ -252,24 +246,39 @@ const EmployeeEditModal: React.FC<Props> = ({
       </div>
 
       <Form layout="vertical" form={form}>
-        {/* ชื่อ + นามสกุล (แถวเดียว) */}
+        {/* ชื่อ + นามสกุล */}
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item name="firstName" label="ชื่อ" rules={[{ required: true }]}>
+            <Form.Item
+              name="firstName"
+              label="ชื่อ"
+              rules={[{ required: true, message: "กรุณากรอกชื่อ" }]}
+            >
               <Input placeholder="ชื่อ" />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item name="lastName" label="นามสกุล" rules={[{ required: true }]}>
+            <Form.Item
+              name="lastName"
+              label="นามสกุล"
+              rules={[{ required: true, message: "กรุณากรอกนามสกุล" }]}
+            >
               <Input placeholder="นามสกุล" />
             </Form.Item>
           </Col>
         </Row>
 
-        {/* อีเมล + รหัสผ่านใหม่ (แถวเดียว) */}
+        {/* อีเมล + รหัสผ่านใหม่ */}
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item name="email" label="อีเมล" rules={[{ required: true, type: "email" }]}>
+            <Form.Item
+              name="email"
+              label="อีเมล"
+              rules={[
+                { required: true, message: "กรุณากรอกอีเมล" },
+                { type: "email", message: "รูปแบบอีเมลไม่ถูกต้อง" },
+              ]}
+            >
               <Input placeholder="email@example.com" />
             </Form.Item>
           </Col>
@@ -280,15 +289,41 @@ const EmployeeEditModal: React.FC<Props> = ({
           </Col>
         </Row>
 
-        {/* เบอร์โทร + ตำแหน่ง (แถวเดียว) */}
+        {/* เบอร์โทร + ตำแหน่ง */}
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item name="phone" label="เบอร์โทร" rules={[{ required: true }]}>
-              <Input placeholder="0xxxxxxxxx" />
+            <Form.Item
+              name="phone"
+              label="เบอร์โทร"
+              rules={[
+                { required: true, message: "กรุณากรอกเบอร์โทรศัพท์" },
+                {
+                  validator: (_, value) => {
+                    if (!value) return Promise.resolve();
+                    if (!/^0\d{9}$/.test(value)) {
+                      return Promise.reject("เบอร์โทรขึ้นต้นด้วย 0 และมี 10 หลัก");
+                    }
+                    return Promise.resolve();
+                  },
+                },
+              ]}
+            >
+              <Input
+                placeholder="0xxxxxxxxx"
+                maxLength={10}
+                onChange={(e) => {
+                  const onlyNums = e.target.value.replace(/\D/g, "");
+                  form.setFieldsValue({ phone: onlyNums });
+                }}
+              />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item name="positionID" label="ตำแหน่ง" rules={[{ required: true }]}>
+            <Form.Item
+              name="positionID"
+              label="ตำแหน่ง"
+              rules={[{ required: true, message: "กรุณาเลือกตำแหน่ง" }]}
+            >
               <Select placeholder="เลือกตำแหน่ง" showSearch optionFilterProp="children">
                 {positions.map((p) => (
                   <Option key={p.ID} value={p.ID}>
@@ -300,7 +335,7 @@ const EmployeeEditModal: React.FC<Props> = ({
           </Col>
         </Row>
 
-        {/* สิทธิ์: ซ่อน select หากเป็นบัญชีตัวเอง */}
+        {/* สิทธิ์ */}
         {isSelf ? (
           <Form.Item label="สิทธิ์">
             <div
@@ -318,14 +353,18 @@ const EmployeeEditModal: React.FC<Props> = ({
             </div>
           </Form.Item>
         ) : (
-          <Form.Item name="roleID" label="สิทธิ์" rules={[{ required: true }]}>
-            <Select
-              options={[
-                { label: "Admin", value: 1 },
-                { label: "Employee", value: 2 },
-                { label: "Guest", value: 3 },
-              ]}
-            />
+          <Form.Item
+            name="roleID"
+            label="สิทธิ์"
+            rules={[{ required: true, message: "กรุณากำหนดสิทธิการใช้งาน" }]}
+          >
+            <Select placeholder="เลือกสิทธิ์">
+              {roles.map((r) => (
+                <Option key={r.ID} value={r.ID}>
+                  {r.RoleName}
+                </Option>
+              ))}
+            </Select>
           </Form.Item>
         )}
       </Form>

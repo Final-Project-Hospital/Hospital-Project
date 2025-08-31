@@ -114,10 +114,14 @@ func SetupDatabase() {
 	// Status
 	status1 := entity.Status{StatusName: "ไม่ผ่านเกณฑ์มาตรฐาน"}
 	status2 := entity.Status{StatusName: "ผ่านเกณฑ์มาตรฐาน"}
+	status3 := entity.Status{StatusName: "สำเร็จตามเป้าหมาย"}
+	status4 := entity.Status{StatusName: "ไม่สำเร็จตามเป้าหมาย"}
 
 	db.FirstOrCreate(&status1, entity.Status{StatusName: "ไม่ผ่านเกณฑ์มาตรฐาน"})
 	db.FirstOrCreate(&status2, entity.Status{StatusName: "ผ่านเกณฑ์มาตรฐาน"})
-
+	db.FirstOrCreate(&status3, entity.Status{StatusName: "สำเร็จตามเป้าหมาย"})
+	db.FirstOrCreate(&status4, entity.Status{StatusName: "ไม่สำเร็จตามเป้าหมาย"})
+	
 	// Unit
 	Unit := entity.Unit{UnitName: "mg/L"}
 	Unit2 := entity.Unit{UnitName: "ไม่มีหน่วย"}
@@ -2830,9 +2834,9 @@ func SetupDatabase() {
 
 		var statusIDBeforegen uint
 		if generalWastePerAADC[i] > 1.00 {
-			statusIDBeforegen = status2.ID
+			statusIDBeforegen = status3.ID
 		} else {
-			statusIDBeforegen = status1.ID
+			statusIDBeforegen = status4.ID
 		}
 
 		generalWaste := entity.Garbage{

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ChartComponent,
   SeriesCollectionDirective,
@@ -10,10 +10,13 @@ import {
   Tooltip,
 } from '@syncfusion/ej2-react-charts';
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
-import {
-  GetSensorDataByHardwareID,
-  GetSensorDataParametersBySensorDataID,
-} from '../../../../../../services/hardware';
+
+interface ChartPoint {
+  parameter: string;
+  date: string; // ISO
+  value: number;
+}
+type ChartMetaMap = Record<string, { unit?: string; standard?: number; standardMin?: number }>;
 
 interface LineChartProps {
   hardwareID: number;
@@ -23,6 +26,11 @@ interface LineChartProps {
   colors?: string[];
   chartHeight?: string;
   reloadKey?: number;
+
+  // ✅ รับจากพ่อ
+  data?: ChartPoint[];
+  meta?: ChartMetaMap;
+  loading?: boolean;
 }
 
 function getMonthStartDate(year: number, month: number) {
@@ -97,223 +105,187 @@ function groupByYearAvg(data: { x: Date; y: number }[]) {
 }
 
 const LineChart: React.FC<LineChartProps> = ({
-  hardwareID,
   timeRangeType,
   selectedRange,
   parameters,
   colors = [],
   chartHeight = "420px",
   reloadKey,
+  data = [],
+  meta = {},
+  loading,
 }) => {
   const { currentMode } = useStateContext();
   const [seriesData, setSeriesData] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   const [noData, setNoData] = useState<boolean>(false);
-  const [unitMap, setUnitMap] = useState<Record<string, string>>({});
+  const [unitMap, setUnitMap] = useState<Record<string, string>>({}); // unit -> parameter
 
   const parameterInfo = parameters.reduce((acc, param, idx) => {
     acc[param] = colors[idx] || '#999999';
     return acc;
   }, {} as Record<string, string>);
 
-  const mounted = useRef(true);
+  // คำนวณจาก data+meta แทนการเรียก service
   useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; };
-  }, [reloadKey]);
-
-  useEffect(() => {
-    let stop = false;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let retryCount = 0;
-
-    async function fetchLoop() {
-      setLoading(true);
-      setNoData(false);
+    // ถ้าพ่อยังโหลดอยู่ ให้โชว์สถานะโหลดใน component นี้
+    if (loading) {
       setSeriesData([]);
-      setUnitMap({});
+      setNoData(false);
+      return;
+    }
 
-      if (!hardwareID || !parameters.length) {
-        setLoading(true);
-        return;
+    // เมื่อไม่ได้ส่ง data มาเลย
+    if (!Array.isArray(data) || data.length === 0 || parameters.length === 0) {
+      setSeriesData([]);
+      setNoData(true);
+      return;
+    }
+
+    // สร้าง map ตาม parameter ที่เลือก
+    const parameterMap: Record<string, { x: Date; y: number }[]> = {};
+    const maxStandardMap: Record<string, number> = {};
+    const minStandardMap: Record<string, number> = {};
+
+    // unitMap: unit -> parameter (แสดงบน UI)
+    const localUnitMap: Record<string, string> = {};
+    for (const p of parameters) {
+      const m = meta[p];
+      if (m?.unit && !localUnitMap[m.unit]) {
+        localUnitMap[m.unit] = p;
       }
-
-      try {
-        const raw = await GetSensorDataByHardwareID(hardwareID);
-        if (!mounted.current || stop) return;
-        if (!Array.isArray(raw) || raw.length === 0) throw new Error("No sensor");
-
-        const parameterMap: Record<string, { x: Date; y: number }[]> = {};
-        const maxStandardMap: Record<string, number> = {};
-        const minStandardMap: Record<string, number> = {};
-        const unitMapping: Record<string, string> = {};
-
-        for (const sensor of raw) {
-          const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
-          if (!Array.isArray(params)) continue;
-
-          for (const param of params) {
-            const name = param.HardwareParameter?.Parameter;
-            const value = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
-            const maxStandard = param.HardwareParameter?.StandardHardware?.MaxValueStandard;
-            const minStandard = param.HardwareParameter?.StandardHardware?.MinValueStandard;
-            const unit = param.HardwareParameter?.UnitHardware?.Unit;
-            const date = new Date(param.Date);
-
-            const include = name && parameters.includes(name) && !isNaN(value) && !isNaN(date.getTime());
-            if (!include) continue;
-
-            let inRange = false;
-            if (timeRangeType === 'hour') {
-              const [start, end] = selectedRange || [];
-              if (!start || !end) continue;
-              const startDate = new Date(start);
-              const endDate = new Date(end);
-              inRange = date >= startDate && date <= endDate; // ใช้ช่วงเวลาแบบ datetime ตรง ๆ
-            } else if (timeRangeType === 'day') {
-              const [start, end] = selectedRange || [];
-              if (!start || !end) continue;
-              const startDate = new Date(start);
-              const endDate = new Date(end);
-              endDate.setHours(23, 59, 59, 999);
-              inRange = date >= startDate && date <= endDate;
-            } else if (timeRangeType === 'month') {
-              inRange = date.getMonth() + 1 === Number(selectedRange?.month) &&
-                date.getFullYear() === Number(selectedRange?.year);
-            } else if (timeRangeType === 'year') {
-              const [start, end] = selectedRange || [];
-              if (!start || !end) continue;
-              inRange = date.getFullYear() >= +start && date.getFullYear() <= +end;
-            }
-
-            if (!inRange) continue;
-
-            parameterMap[name] ??= [];
-            parameterMap[name].push({ x: date, y: value });
-
-            if (typeof maxStandard === 'number' && maxStandard > 0 && !maxStandardMap[name]) {
-              maxStandardMap[name] = maxStandard;
-            }
-            if (typeof minStandard === 'number' && minStandard > 0 && !minStandardMap[name]) {
-              minStandardMap[name] = minStandard;
-            }
-
-            if (unit && name && !unitMapping[unit]) {
-              unitMapping[unit] = name;
-            }
-          }
-        }
-
-        const createStandardLine = (
-          standard: number,
-          data: { x: Date }[]
-        ) => {
-          const sorted = data.sort((a, b) => a.x.getTime() - b.x.getTime());
-          if (sorted.length === 1) {
-            const d = sorted[0];
-            const prev = new Date(d.x.getTime() - 1000 * 60 * 60);
-            const next = new Date(d.x.getTime() + 1000 * 60 * 60);
-            return [
-              { x: prev, y: standard },
-              { x: next, y: standard },
-            ];
-          }
-          return sorted.map(d => ({ x: d.x, y: standard }));
-        };
-
-        let series: any[] = [];
-
-        for (const [name, data] of Object.entries(parameterMap)) {
-          const sortedData = data.sort((a, b) => a.x.getTime() - b.x.getTime());
-          const fillColor = parameterInfo[name] || '#999999';
-
-          const dataSource =
-            timeRangeType === 'hour'
-              ? groupByHourAvg(sortedData)
-              : timeRangeType === 'year'
-                ? (selectedRange?.[0] === selectedRange?.[1]
-                  ? groupByMonthAvg(groupByDayAvg(sortedData.filter(d => d.x.getFullYear() === +selectedRange[0])))
-                  : groupByYearAvg(sortedData))
-                : timeRangeType === 'month'
-                  ? groupByDayAvg(sortedData)
-                  : groupByDayAvg(sortedData);
-
-          // ค่าจริง
-          series.push({
-            dataSource,
-            xName: 'x',
-            yName: 'y',
-            name,
-            width: 2,
-            marker: { visible: true, width: 8, height: 8 },
-            type: 'Line',
-            fill: fillColor,
-          });
-
-          // เส้น Max Standard (สีแดง)
-          if (maxStandardMap[name]) {
-            const stdData = createStandardLine(maxStandardMap[name], dataSource);
-            series.push({
-              dataSource: stdData,
-              xName: 'x',
-              yName: 'y',
-              name: `${name} (Max)`,
-              width: 2,
-              dashArray: '5,5',
-              marker: { visible: false },
-              type: 'Line',
-              fill: 'red',
-            });
-          }
-
-          // เส้น Min Standard (สีทอง)
-          if (minStandardMap[name]) {
-            const stdDataMin = createStandardLine(minStandardMap[name], dataSource);
-            series.push({
-              dataSource: stdDataMin,
-              xName: 'x',
-              yName: 'y',
-              name: `${name} (Min)`,
-              width: 2,
-              dashArray: '5,5',
-              marker: { visible: false },
-              type: 'Line',
-              fill: '#f59e0b',
-            });
-          }
-        }
-
-        if (mounted.current && !stop) {
-          const filteredUnitMap = Object.fromEntries(//@ts-ignore
-            Object.entries(unitMapping).filter(([unit, param]) => parameters.includes(param))
-          );
-
-          setSeriesData(series);
-          setUnitMap(filteredUnitMap);
-          setLoading(false);
-          setNoData(series.length === 0);
-        }
-      } catch (err) {
-        retryCount++;
-        if (retryCount >= 5) {
-          if (mounted.current && !stop) {
-            setLoading(false);
-            setNoData(true);
-          }
-        } else {
-          if (mounted.current && !stop) {
-            timeoutId = setTimeout(fetchLoop, 1500);
-          }
-        }
+      if (typeof m?.standard === 'number') {
+        maxStandardMap[p] = m.standard;
+      }
+      if (typeof m?.standardMin === 'number') {
+        minStandardMap[p] = m.standardMin;
       }
     }
 
-    fetchLoop();
-    return () => {
-      stop = true;
-      if (timeoutId) clearTimeout(timeoutId);
+    // คัดตามช่วงเวลา
+    for (const pt of data) {
+      const { parameter, value, date } = pt;
+      if (!parameters.includes(parameter) || typeof value !== 'number' || !date) continue;
+
+      const d = new Date(date);
+      if (isNaN(d.getTime())) continue;
+
+      let inRange = false;
+      if (timeRangeType === 'hour') {
+        const [start, end] = selectedRange || [];
+        if (!start || !end) continue;
+        const s = new Date(start);
+        const e = new Date(end);
+        inRange = d >= s && d <= e;
+      } else if (timeRangeType === 'day') {
+        const [start, end] = selectedRange || [];
+        if (!start || !end) continue;
+        const s = new Date(start);
+        const e = new Date(end);
+        e.setHours(23, 59, 59, 999);
+        inRange = d >= s && d <= e;
+      } else if (timeRangeType === 'month') {
+        inRange = (d.getMonth() + 1) === Number(selectedRange?.month) &&
+                  d.getFullYear() === Number(selectedRange?.year);
+      } else if (timeRangeType === 'year') {
+        const [startY, endY] = selectedRange || [];
+        if (!startY || !endY) continue;
+        inRange = d.getFullYear() >= +startY && d.getFullYear() <= +endY;
+      }
+
+      if (!inRange) continue;
+
+      (parameterMap[parameter] ??= []).push({ x: d, y: value });
+    }
+
+    const createStandardLine = (
+      standard: number,
+      data: { x: Date; y: number }[]
+    ) => {
+      const sorted = [...data].sort((a, b) => a.x.getTime() - b.x.getTime());
+      if (sorted.length === 0) return [];
+      if (sorted.length === 1) {
+        const d = sorted[0];
+        const prev = new Date(d.x.getTime() - 1000 * 60 * 60);
+        const next = new Date(d.x.getTime() + 1000 * 60 * 60);
+        return [
+          { x: prev, y: standard },
+          { x: next, y: standard },
+        ];
+      }
+      return sorted.map(d => ({ x: d.x, y: standard }));
     };
-  }, [hardwareID, timeRangeType, selectedRange, parameters, colors, reloadKey]);
+
+    // สร้าง series
+    let series: any[] = [];
+
+    Object.entries(parameterMap).forEach(([name, dataArray]) => {
+      const sortedData = dataArray.sort((a, b) => a.x.getTime() - b.x.getTime());
+      const fillColor = parameterInfo[name] || '#999999';
+
+      const dataSource =
+        timeRangeType === 'hour'
+          ? groupByHourAvg(sortedData)
+          : timeRangeType === 'year'
+            ? (selectedRange?.[0] === selectedRange?.[1]
+              ? groupByMonthAvg(groupByDayAvg(sortedData.filter(d => d.x.getFullYear() === +selectedRange[0])))
+              : groupByYearAvg(sortedData))
+            : timeRangeType === 'month'
+              ? groupByDayAvg(sortedData)
+              : groupByDayAvg(sortedData);
+
+      // ค่าจริง
+      series.push({
+        dataSource,
+        xName: 'x',
+        yName: 'y',
+        name,
+        width: 2,
+        marker: { visible: true, width: 8, height: 8 },
+        type: 'Line',
+        fill: fillColor,
+      });
+
+      // เส้น Max Standard (สีแดง)
+      if (maxStandardMap[name]) {
+        const stdData = createStandardLine(maxStandardMap[name], dataSource);
+        if (stdData.length > 0) {
+          series.push({
+            dataSource: stdData,
+            xName: 'x',
+            yName: 'y',
+            name: `${name} (Max)`,
+            width: 2,
+            dashArray: '5,5',
+            marker: { visible: false },
+            type: 'Line',
+            fill: 'red',
+          });
+        }
+      }
+
+      // เส้น Min Standard (สีทอง)
+      if (minStandardMap[name]) {
+        const stdDataMin = createStandardLine(minStandardMap[name], dataSource);
+        if (stdDataMin.length > 0) {
+          series.push({
+            dataSource: stdDataMin,
+            xName: 'x',
+            yName: 'y',
+            name: `${name} (Min)`,
+            width: 2,
+            dashArray: '5,5',
+            marker: { visible: false },
+            type: 'Line',
+            fill: '#f59e0b',
+          });
+        }
+      }
+    });
+
+    setSeriesData(series);
+    setUnitMap(localUnitMap);
+    setNoData(series.length === 0);
+  }, [loading, data, meta, parameters, colors, timeRangeType, selectedRange, reloadKey]);
 
   if (loading) {
     return (

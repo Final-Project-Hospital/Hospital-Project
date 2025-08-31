@@ -42,25 +42,34 @@ const UpdateRecycledCentralForm: React.FC<UpdateRecycledCentralFormProps> = ({
     }, []);
 
     useEffect(() => {
-        if (initialValues && initialValues.length > 0) {
-            const record = initialValues[0];
+        if (!initialValues || initialValues.length === 0) return;
 
-            form.setFieldsValue({
-                date: dayjs(record.Date),
-                time: dayjs(),
-                unit: record.UnitID ?? 'other',
-                standardID: record.StandardID,
-                beforeAfterTreatmentID: record.BeforeAfterTreatmentID,
-                value: record?.Data ?? undefined,
-                note: record?.Note || '',
-                quantity: record?.Quantity ?? undefined,
-                monthlyGarbage: record?.MonthlyGarbage ?? undefined,
-                average_daily_garbage: record?.AverageDailyGarbage ?? undefined,
-                totalSale: record?.TotalSale ?? undefined,
-            });
-            console.log(selectedTreatmentID);
-            setSelectedTreatmentID(record.BeforeAfterTreatmentID);
-        }
+        const record = initialValues[0];
+
+        // ฟังก์ชันเฉพาะ useEffect นี้: ปัดทศนิยม 2 ตำแหน่ง (round half up)
+        const toTwoDecimal = (val: any) => {
+            if (val === null || val === undefined) return undefined;
+            const num = Number(val);
+            if (isNaN(num)) return undefined;
+            return Math.round(num * 100) / 100;
+        };
+
+        form.setFieldsValue({
+            date: dayjs(record.Date),
+            time: dayjs(),
+            unit: record.UnitID ?? 'other',
+            standardID: record.StandardID,
+            beforeAfterTreatmentID: record.BeforeAfterTreatmentID,
+            value: record?.Data ?? undefined,
+            note: record?.Note || '',
+            quantity: toTwoDecimal(record?.Quantity),
+            monthlyGarbage: toTwoDecimal(record?.MonthlyGarbage),
+            average_daily_garbage: toTwoDecimal(record?.AverageDailyGarbage),
+            totalSale: toTwoDecimal(record?.TotalSale),
+        });
+
+        console.log(selectedTreatmentID);
+        setSelectedTreatmentID(record.BeforeAfterTreatmentID);
     }, [initialValues]);
 
     const handleFinish = async (values: any) => {
@@ -183,16 +192,18 @@ const UpdateRecycledCentralForm: React.FC<UpdateRecycledCentralFormProps> = ({
                         <Form.Item
                             label="จำนวนคนที่เข้าใช้บริการโรงพยาบาล"
                             name="quantity"
-                            rules={[{ required: true, message: 'กรุณากรอกจำนวนคน' },
-                            {
-                                validator: async (_, value) => {
-                                    if (value === undefined || value === null) return Promise.resolve();
-                                    if (typeof value !== "number" || isNaN(value)) {
-                                        return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                    }
-                                    return Promise.resolve();
-                                },
-                            }
+                            rules={[
+                                { required: true, message: 'กรุณากรอกจำนวนคน' },
+                                {
+                                    validator: async (_, value) => {
+                                        if (value === undefined || value === null) return Promise.resolve();
+                                        // ตรวจว่าต้องเป็นจำนวนเต็ม
+                                        if (!Number.isInteger(value)) {
+                                            return Promise.reject("กรุณากรอกเป็นจำนวนเต็มเท่านั้น");
+                                        }
+                                        return Promise.resolve();
+                                    },
+                                }
                             ]}
                         >
                             <InputNumber style={{ width: '100%' }} placeholder="กรอกจำนวนคน" />
