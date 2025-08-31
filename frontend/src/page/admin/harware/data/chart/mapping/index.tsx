@@ -11,11 +11,19 @@ const dropdownData = [
   { Id: 'year', Time: 'Year(s)' },
 ];
 
+type ChartPoint = { parameter: string; date: string; value: number };
+type ChartMetaMap = Record<string, { unit?: string; standard?: number; standardMin?: number }>;
+
 interface ColorMappingIndexProps {
   hardwareID: number;
   parameters: string[];
   colors?: string[];
   reloadKey?: number;
+
+  // ✅ รับจากพ่อ
+  data?: ChartPoint[];
+  meta?: ChartMetaMap;
+  loading?: boolean;
 }
 
 interface ColorParamWithColor {
@@ -28,6 +36,9 @@ const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
   parameters,
   colors = [],
   reloadKey,
+  data,
+  meta,
+  loading,
 }) => {
   const { currentMode } = useStateContext();
   const [timeRangeType, setTimeRangeType] = useState<'hour' | 'day' | 'month' | 'year'>('day');
@@ -40,9 +51,7 @@ const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
   useEffect(() => {
     const observer = new ResizeObserver(entries => {
       for (let entry of entries) {
-        if (entry.contentRect) {
-          setContainerWidth(entry.contentRect.width);
-        }
+        if (entry.contentRect) setContainerWidth(entry.contentRect.width);
       }
     });
     if (containerRef.current) observer.observe(containerRef.current);
@@ -103,7 +112,6 @@ const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
 
           {/* Controls */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-
             {/* Parameter Labels */}
             <div className="flex flex-wrap gap-2">
               {colorMappingParameters.map((param, idx) => (
@@ -193,6 +201,10 @@ const ColorMappingIndex: React.FC<ColorMappingIndexProps> = ({
                 chartHeight="420px"
                 reloadKey={reloadKey}
                 key={containerWidth}
+                // ✅ ส่งต่อจากพ่อ
+                data={data}
+                meta={meta}
+                loading={loading}
               />
             ) : (
               <div className="text-center text-gray-500 p-10">Loading data...</div>

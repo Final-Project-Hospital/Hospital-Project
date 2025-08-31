@@ -10,11 +10,14 @@ import {
   LineSeries
 } from '@syncfusion/ej2-react-charts';
 import { useStateContext } from '../../../../../../contexts/ContextProvider';
-import { useEffect, useState, useRef } from 'react';
-import {
-  GetSensorDataByHardwareID,
-  GetSensorDataParametersBySensorDataID
-} from '../../../../../../services/hardware';
+import { useEffect, useState } from 'react';
+
+interface ChartPoint {
+  parameter: string;
+  date: string; // ISO
+  value: number;
+}
+type ChartMetaMap = Record<string, { unit?: string; standard?: number; standardMin?: number }>;
 
 interface ChartdataProps {
   hardwareID: number;
@@ -24,6 +27,11 @@ interface ChartdataProps {
   selectedRange: any;
   chartHeight?: string;
   reloadKey?: number;
+
+  // ✅ รับจากพ่อ
+  data?: ChartPoint[];
+  meta?: ChartMetaMap;
+  loading?: boolean;
 }
 
 function getMonthStartDate(year: number, month: number) {
@@ -103,222 +111,169 @@ function groupByYearAvg(data: { x: Date; y: number }[]) {
     .sort((a, b) => a.x.getTime() - b.x.getTime());
 }
 
-const RETRY_INTERVAL = 1500;
-const MAX_RETRIES = 10;
-
 const Area: React.FC<ChartdataProps> = ({
-  hardwareID,
   parameters,
   colors = [],
   timeRangeType,
   selectedRange,
   chartHeight = "420px",
   reloadKey,
+  data = [],
+  meta = {},
+  loading,
 }) => {
   const { currentMode } = useStateContext();
   const [seriesData, setSeriesData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [noData, setNoData] = useState(false);
-  const [unitMap, setUnitMap] = useState<Record<string, string>>({});
+  const [unitMap, setUnitMap] = useState<Record<string, string>>({}); // unit -> parameter
 
   const parameterColor: Record<string, string> = parameters.reduce((acc, p, i) => {
     acc[p] = colors[i] || '#999999';
     return acc;
   }, {} as Record<string, string>);
 
-  const mounted = useRef(true);
   useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; };
-  }, [reloadKey]);
-
-  useEffect(() => {
-    let stop = false;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let retryCount = 0;
-
-    async function fetchLoop() {
-      setLoading(true);
-      setNoData(false);
+    // ระหว่างพ่อกำลังโหลด
+    if (loading) {
       setSeriesData([]);
-      setUnitMap({});
+      setNoData(false);
+      return;
+    }
 
-      if (!hardwareID || !parameters?.length) {
-        setLoading(false);
-        setNoData(true);
-        return;
+    if (!Array.isArray(data) || data.length === 0 || parameters.length === 0) {
+      setSeriesData([]);
+      setNoData(true);
+      return;
+    }
+
+    const parameterMap: Record<string, { x: Date; y: number }[]> = {};
+    const maxStandardMap: Record<string, number> = {};
+    const minStandardMap: Record<string, number> = {};
+    const localUnitMap: Record<string, string> = {};
+
+    // meta → unit/standard
+    for (const p of parameters) {
+      const m = meta[p];
+      if (m?.unit && !localUnitMap[m.unit]) localUnitMap[m.unit] = p;
+      if (typeof m?.standard === 'number') maxStandardMap[p] = m.standard;
+      if (typeof m?.standardMin === 'number') minStandardMap[p] = m.standardMin;
+    }
+
+    // filter by time-range
+    for (const pt of data) {
+      const { parameter, value } = pt;
+      if (!parameters.includes(parameter) || typeof value !== 'number') continue;
+
+      const d = new Date(pt.date);
+      if (isNaN(d.getTime())) continue;
+
+      let inRange = false;
+      if (timeRangeType === 'hour') {
+        const [start, end] = selectedRange || [];
+        if (!start || !end) continue;
+        const s = new Date(start); const e = new Date(end);
+        inRange = d >= s && d <= e;
+      } else if (timeRangeType === 'day') {
+        const [start, end] = selectedRange || [];
+        if (!start || !end) continue;
+        const s = new Date(start); const e = new Date(end);
+        e.setHours(23, 59, 59, 999);
+        inRange = d >= s && d <= e;
+      } else if (timeRangeType === 'month') {
+        inRange = (d.getMonth() + 1) === Number(selectedRange?.month) &&
+                  d.getFullYear() === Number(selectedRange?.year);
+      } else if (timeRangeType === 'year') {
+        const [ys, ye] = selectedRange || [];
+        if (ys == null || ye == null) continue;
+        inRange = d.getFullYear() >= +ys && d.getFullYear() <= +ye;
       }
 
-      try {
-        const raw = await GetSensorDataByHardwareID(hardwareID);
-        if (!mounted.current || stop) return;
-        if (!Array.isArray(raw) || raw.length === 0) throw new Error("No sensor");
+      if (!inRange) continue;
+      (parameterMap[parameter] ??= []).push({ x: d, y: value });
+    }
 
-        const parameterMap: Record<string, { x: Date; y: number }[]> = {};
-        const maxStandardMap: Record<string, number> = {};
-        const minStandardMap: Record<string, number> = {};
-        const unitMapping: Record<string, string> = {};
+    const createStandardLine = (standard: number, data: { x: Date; y: number }[]) => {
+      const sorted = [...data].sort((a, b) => a.x.getTime() - b.x.getTime());
+      if (sorted.length === 0) return [];
+      if (sorted.length === 1) {
+        const d = sorted[0];
+        const prev = new Date(d.x.getTime() - 1000 * 60 * 60);
+        const next = new Date(d.x.getTime() + 1000 * 60 * 60);
+        return [{ x: prev, y: standard }, { x: next, y: standard }];
+      }
+      return sorted.map(d => ({ x: d.x, y: standard }));
+    };
 
-        for (const sensor of raw) {
-          const params = await GetSensorDataParametersBySensorDataID(sensor.ID);
-          if (!Array.isArray(params)) continue;
+    const series: any[] = [];
 
-          for (const param of params) {
-            const name = param.HardwareParameter?.Parameter;
-            const val = typeof param.Data === 'string' ? parseFloat(param.Data) : param.Data;
-            const date = new Date(param.Date);
-            const maxStd = param.HardwareParameter?.StandardHardware?.MaxValueStandard;
-            const minStd = param.HardwareParameter?.StandardHardware?.MinValueStandard;
-            const unit = param.HardwareParameter?.UnitHardware?.Unit;
+    for (const [name, arr] of Object.entries(parameterMap)) {
+      const sorted = arr.sort((a, b) => a.x.getTime() - b.x.getTime());
+      const fillColor = parameterColor[name] || '#999999';
 
-            if (!name || !parameters.includes(name) || isNaN(val) || isNaN(date.getTime())) continue;
+      const dataSource =
+        timeRangeType === 'hour' ? groupByHourAvg(sorted)
+        : timeRangeType === 'year'
+          ? (selectedRange?.[0] === selectedRange?.[1]
+              ? groupByMonthAvg(groupByDayAvg(sorted.filter(d => d.x.getFullYear() === +selectedRange[0])))
+              : groupByYearAvg(sorted))
+          : timeRangeType === 'month'
+            ? groupByDayAvg(sorted)
+            : groupByDayAvg(sorted);
 
-            let inRange = false;
-            if (timeRangeType === 'hour') {
-              const [start, end] = selectedRange || [];
-              if (!start || !end) continue;
-              const s = new Date(start);
-              const e = new Date(end);
-              inRange = date >= s && date <= e;
-            } else if (timeRangeType === 'day') {
-              const [start, end] = selectedRange || [];
-              if (!start || !end) continue;
-              const s = new Date(start);
-              const e = new Date(end);
-              e.setHours(23, 59, 59, 999);
-              inRange = date >= s && date <= e;
-            } else if (timeRangeType === 'month') {
-              inRange = date.getMonth() + 1 === Number(selectedRange?.month) &&
-                        date.getFullYear() === Number(selectedRange?.year);
-            } else if (timeRangeType === 'year') {
-              const [ys, ye] = selectedRange || [];
-              if (ys == null || ye == null) continue;
-              inRange = date.getFullYear() >= +ys && date.getFullYear() <= +ye;
-            }
+      // ค่าจริง (SplineArea)
+      series.push({
+        dataSource,
+        xName: 'x',
+        yName: 'y',
+        name,
+        type: 'SplineArea',
+        width: 2,
+        marker: { visible: true, width: 6, height: 6 },
+        opacity: 0.4,
+        fill: fillColor,
+      });
 
-            if (!inRange) continue;
-
-            parameterMap[name] ??= [];
-            parameterMap[name].push({ x: date, y: val });
-
-            if (typeof maxStd === 'number' && maxStd > 0 && !maxStandardMap[name]) {
-              maxStandardMap[name] = maxStd;
-            }
-            if (typeof minStd === 'number' && minStd > 0 && !minStandardMap[name]) {
-              minStandardMap[name] = minStd;
-            }
-            if (unit && name && !unitMapping[unit]) {
-              unitMapping[unit] = name;
-            }
-          }
-        }
-
-        const createStandardLine = (standard: number, data: { x: Date }[]) => {
-          const sorted = data.slice().sort((a, b) => a.x.getTime() - b.x.getTime());
-          if (sorted.length === 1) {
-            const d = sorted[0];
-            const prev = new Date(d.x.getTime() - 1000 * 60 * 60);
-            const next = new Date(d.x.getTime() + 1000 * 60 * 60);
-            return [
-              { x: prev, y: standard },
-              { x: next, y: standard },
-            ];
-          }
-          return sorted.map(d => ({ x: d.x, y: standard }));
-        };
-
-        const series: any[] = [];
-
-        for (const [name, data] of Object.entries(parameterMap)) {
-          const sorted = data.slice().sort((a, b) => a.x.getTime() - b.x.getTime());
-          const fillColor = parameterColor[name] || '#999999';
-
-          const dataSource =
-            timeRangeType === 'hour' ? groupByHourAvg(sorted)
-            : timeRangeType === 'year'
-              ? (selectedRange?.[0] === selectedRange?.[1]
-                  ? groupByMonthAvg(groupByDayAvg(sorted.filter(d => d.x.getFullYear() === +selectedRange[0])))
-                  : groupByYearAvg(sorted))
-              : timeRangeType === 'month'
-                ? groupByDayAvg(sorted)
-                : groupByDayAvg(sorted);
-
-          // ค่าแท้จริง (SplineArea)
+      // เส้น Max (แดง)
+      if (maxStandardMap[name]) {
+        const std = createStandardLine(maxStandardMap[name], dataSource);
+        if (std.length > 0) {
           series.push({
-            dataSource,
+            dataSource: std,
             xName: 'x',
             yName: 'y',
-            name,
-            type: 'SplineArea',
+            name: `${name} (Max)`,
             width: 2,
-            marker: { visible: true, width: 6, height: 6 },
-            opacity: 0.4,
-            fill: fillColor,
+            dashArray: '5,5',
+            marker: { visible: false },
+            type: 'Line',
+            fill: 'red',
           });
-
-          // เส้น Max
-          if (maxStandardMap[name]) {
-            const stdData = createStandardLine(maxStandardMap[name], dataSource);
-            series.push({
-              dataSource: stdData,
-              xName: 'x',
-              yName: 'y',
-              name: `${name} (Max)`,
-              width: 2,
-              dashArray: '5,5',
-              marker: { visible: false },
-              type: 'Line',
-              fill: 'red',
-            });
-          }
-
-          // เส้น Min
-          if (minStandardMap[name]) {
-            const stdMin = createStandardLine(minStandardMap[name], dataSource);
-            series.push({
-              dataSource: stdMin,
-              xName: 'x',
-              yName: 'y',
-              name: `${name} (Min)`,
-              width: 2,
-              dashArray: '5,5',
-              marker: { visible: false },
-              type: 'Line',
-              fill: '#f59e0b',
-            });
-          }
         }
+      }
 
-        if (mounted.current && !stop) {
-          const filteredUnitMap = Object.fromEntries( //@ts-ignore
-            Object.entries(unitMapping).filter(([unit, param]) => parameters.includes(param))
-          );
-          setSeriesData(series);
-          setUnitMap(filteredUnitMap);
-          setLoading(false);
-          setNoData(series.length === 0);
-        }
-      } catch (err) {
-        retryCount++;
-        if (retryCount >= MAX_RETRIES) {
-          if (mounted.current && !stop) {
-            setLoading(false);
-            setNoData(true);
-          }
-        } else {
-          if (mounted.current && !stop) {
-            timeoutId = setTimeout(fetchLoop, RETRY_INTERVAL);
-          }
+      // เส้น Min (ทอง)
+      if (minStandardMap[name]) {
+        const stdMin = createStandardLine(minStandardMap[name], dataSource);
+        if (stdMin.length > 0) {
+          series.push({
+            dataSource: stdMin,
+            xName: 'x',
+            yName: 'y',
+            name: `${name} (Min)`,
+            width: 2,
+            dashArray: '5,5',
+            marker: { visible: false },
+            type: 'Line',
+            fill: '#f59e0b',
+          });
         }
       }
     }
 
-    fetchLoop();
-    return () => {
-      stop = true;
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [hardwareID, parameters, colors, timeRangeType, selectedRange, reloadKey]);
+    setSeriesData(series);
+    setUnitMap(localUnitMap);
+    setNoData(series.length === 0);
+  }, [loading, data, meta, parameters, colors, timeRangeType, selectedRange, reloadKey]);
 
   if (loading) {
     return (

@@ -1,10 +1,5 @@
 import React, { ReactNode, useEffect, useState } from "react";
 import { AiOutlineLeft, AiOutlineRight } from "react-icons/ai";
-import {
-  GetSensorDataByHardwareID,
-  GetSensorDataParametersBySensorDataID,
-  ListHardwareParameterIDsByHardwareID,
-} from "../../../../../services/hardware";
 
 import * as GiIcons from "react-icons/gi";
 import * as FaIcons from "react-icons/fa";
@@ -14,7 +9,6 @@ import * as LuIcons from "react-icons/lu";
 import * as RiIcons from "react-icons/ri";
 import * as BiIcons from "react-icons/bi";
 import * as MdIcons from "react-icons/md";
-
 
 function getIconComponentByName(name: string): ReactNode {
   const allIcons = {
@@ -29,12 +23,6 @@ function getIconComponentByName(name: string): ReactNode {
   };
   const IconComponent = allIcons[name as keyof typeof allIcons];
   return IconComponent ? <IconComponent className="text-4xl" /> : <GiIcons.GiChemicalDrop className="text-4xl" />;
-}
-
-interface BoxsdataProps {
-  hardwareID: number;
-  reloadKey?: any;
-  onLoaded?: () => void;
 }
 
 interface SensorParameter {
@@ -54,103 +42,43 @@ interface ParameterColorMap {
   [parameter: string]: ParameterMeta;
 }
 
-interface HardwareParameterWithColor {
-  id: number;
-  parameter: string;
-  graph_id: number;
-  graph: string;
-  color?: string;
-  unit?: string;
-  standard?: number;
-  icon?: string;
-  Icon?: string;
-}
+interface BoxsdataProps {
+  hardwareID: number;
+  reloadKey?: any;
+  onLoaded?: () => void;
 
-interface ListHardwareParameterResponse {
-  hardware_id: string;
-  parameters: HardwareParameterWithColor[];
+  // ✅ รับข้อมูลจากพ่อเท่านั้น
+  latestParameters?: SensorParameter[];
+  parameterMeta?: ParameterColorMap;
+  loading?: boolean; // พ่อเป็นคนคุมว่า loading อยู่ไหม
 }
 
 const MAX_SHOW = 4;
 
-const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) => {
-  const [parameters, setParameters] = useState<SensorParameter[]>([]);
-  const [parameterColors, setParameterColors] = useState<ParameterColorMap>({});
+const Boxsdata: React.FC<BoxsdataProps> = ({
+  hardwareID,
+  reloadKey,
+  onLoaded,
+  latestParameters,
+  parameterMeta,
+  loading: loadingFromParent,
+}) => {
   const [slideIndex, setSlideIndex] = useState(0);
-  const [loading, setLoading] = useState(false);
 
+  // รีเซ็ตหน้าเมื่อ hardware/reload เปลี่ยน
   useEffect(() => {
-    setParameterColors({});
-    setParameters([]);
     setSlideIndex(0);
   }, [hardwareID, reloadKey]);
 
+  // ถ้า parent บอกว่าโหลดเสร็จแล้ว ให้แจ้ง onLoaded
   useEffect(() => {
-    let mounted = true;
-    const fetchSensorAndParameters = async () => {
-      setLoading(true);
-      if (!hardwareID) {
-        setLoading(false);
-        onLoaded?.();
-        return;
-      }
+    if (!loadingFromParent) onLoaded?.();
+  }, [loadingFromParent, onLoaded]);
 
-      const [sensorDataListRaw, paramInfoRaw] = await Promise.all([
-        GetSensorDataByHardwareID(hardwareID),
-        ListHardwareParameterIDsByHardwareID(hardwareID),
-      ]);
-
-      const sensorDataList: any[] = sensorDataListRaw || [];
-      const paramInfo: ListHardwareParameterResponse = paramInfoRaw || {
-        hardware_id: String(hardwareID),
-        parameters: [],
-      };
-
-      const colorsMap: ParameterColorMap = {};
-      if (paramInfo?.parameters) {
-        for (const p of paramInfo.parameters) {
-          colorsMap[p.parameter.toLowerCase()] = {
-            color: p.color || "#999999",
-            unit: p.unit || "",
-            standard: p.standard,
-            icon: p.icon || "",
-          };
-        }
-        if (mounted) setParameterColors(colorsMap);
-      }
-
-      if (sensorDataList.length > 0) {
-        const latestSensorDataID = sensorDataList[sensorDataList.length - 1].ID;
-        const params = await GetSensorDataParametersBySensorDataID(latestSensorDataID);
-        if (params && params.length > 0) {
-          const latestParamsMap = new Map<string, SensorParameter>();
-          params.forEach((param: any) => {
-            const paramName = (param.HardwareParameter?.Parameter || "Unknown");
-            latestParamsMap.set(paramName, {
-              id: param.ParameterID,
-              name: paramName,
-              value: Number(param.Data),
-            });
-          });
-
-          const latestParamsArray = Array.from(latestParamsMap.values());
-          if (mounted) setParameters(latestParamsArray);
-        } else {
-          if (mounted) setParameters([]);
-        }
-      } else {
-        if (mounted) setParameters([]);
-      }
-
-      setLoading(false);
-      onLoaded?.();
-    };
-
-    fetchSensorAndParameters();
-    return () => {
-      mounted = false;
-    };
-  }, [hardwareID, reloadKey, onLoaded]);
+  // ใช้ข้อมูลจากพ่อโดยตรง
+  const parameters: SensorParameter[] = Array.isArray(latestParameters) ? latestParameters : [];
+  const parameterColors: ParameterColorMap = parameterMeta || {};
+  const loading = Boolean(loadingFromParent);
 
   function withIconColor(icon: ReactNode, color: string): ReactNode {
     if (React.isValidElement(icon)) {
@@ -187,7 +115,10 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
       <div className="flex flex-col items-center">
         <div className="flex items-center w-full">
           {totalSlide > 1 && (
-            <button onClick={handlePrev} className="hidden sm:flex w-8 h-8 rounded-full bg-white border border-gray-200 shadow items-center justify-center text-blue-500 hover:text-blue-700 mr-2">
+            <button
+              onClick={handlePrev}
+              className="hidden sm:flex w-8 h-8 rounded-full bg-white border border-gray-200 shadow items-center justify-center text-blue-500 hover:text-blue-700 mr-2"
+            >
               <AiOutlineLeft size={22} />
             </button>
           )}
@@ -210,7 +141,11 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
                 const standard = meta.standard;
                 const icon = getIconComponentByName(meta.icon || "GiChemicalDrop");
                 return (
-                  <div key={param.id} className="flex flex-col items-center justify-center bg-white border-2 rounded-2xl shadow-sm h-[100px] min-h-[110px] w-full transition hover:bg-gray-50" style={{ borderColor: color }}>
+                  <div
+                    key={param.id}
+                    className="flex flex-col items-center justify-center bg-white border-2 rounded-2xl shadow-sm h-[100px] min-h-[110px] w-full transition hover:bg-gray-50"
+                    style={{ borderColor: color }}
+                  >
                     <div>{withIconColor(icon, color)}</div>
                     <div className="text-center mt-1">
                       <h3 className="text-sm font-semibold text-gray-700">{param.name}</h3>
@@ -229,7 +164,10 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
           </div>
 
           {totalSlide > 1 && (
-            <button onClick={handleNext} className="hidden sm:flex w-8 h-8 rounded-full bg-white border border-gray-200 shadow items-center justify-center text-blue-500 hover:text-blue-700 ml-2">
+            <button
+              onClick={handleNext}
+              className="hidden sm:flex w-8 h-8 rounded-full bg-white border border-gray-200 shadow items-center justify-center text-blue-500 hover:text-blue-700 ml-2"
+            >
               <AiOutlineRight size={22} />
             </button>
           )}
@@ -238,11 +176,17 @@ const Boxsdata: React.FC<BoxsdataProps> = ({ hardwareID, reloadKey, onLoaded }) 
         {totalSlide > 1 && (
           <>
             <div className="flex justify-center items-center gap-3 mt-2 sm:hidden">
-              <button onClick={handlePrev} className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-blue-500">
+              <button
+                onClick={handlePrev}
+                className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-blue-500"
+              >
                 <AiOutlineLeft size={22} />
               </button>
               <span className="text-xs text-gray-500">{slideIndex + 1} / {totalSlide}</span>
-              <button onClick={handleNext} className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-blue-500">
+              <button
+                onClick={handleNext}
+                className="w-8 h-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-blue-500"
+              >
                 <AiOutlineRight size={22} />
               </button>
             </div>
