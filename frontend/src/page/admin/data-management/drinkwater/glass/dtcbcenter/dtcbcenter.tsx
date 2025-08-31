@@ -3,8 +3,7 @@ import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input, messa
 import dayjs from 'dayjs';
 import './dtcbcenter.css';
 import { DTCBcenterInterface } from '../../../../../../interface/Idrinkwater/glass/Idtcb';
-import { ListBeforeAfterTreatment, ListUnit } from '../../../../../../services/index';
-import { ListBeforeAfterTreatmentInterface } from '../../../../../../interface/IBeforeAfterTreatment';
+import { ListUnit } from '../../../../../../services/index';
 import { ListUnitInterface } from '../../../../../../interface/IUnit';
 import { GetfirstDTCB, createDTCB } from '../../../../../../services/drinkwaterServices/glass/dtcb';
 import { ListMiddleStandard, ListRangeStandard, AddMiddleStandard, AddRangeStandard, } from '../../../../../../services/index';
@@ -20,9 +19,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const { Option } = Select;
 const DTCBCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
     const [form] = Form.useForm();
-    const [beforeAfterOptions, setBeforeAfterOptions] = useState<ListBeforeAfterTreatmentInterface[]>([]);
     const [unitOptions, setUnitOptions] = useState<ListUnitInterface[]>([]);
-    const [selectedTreatmentID, setSelectedTreatmentID] = useState<number | null>(null);
     const [messageApi, contextHolder] = message.useMessage();
     const [isOtherUnitSelected, setIsOtherunitSelected] = useState(false);
     const [middleStandards, setMiddleStandards] = useState<ListMiddleStandardInterface[]>([]);
@@ -33,27 +30,13 @@ const DTCBCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
     const [customMinValue, setCustomMinValue] = useState<number | undefined>(undefined);
     const [customMaxValue, setCustomMaxValue] = useState<number | undefined>(undefined);
 
-    const renderCustomTreatmentLabel = (text: string) => {
-        const colored = (
-            <span style={{ color: '#f45415ff', fontWeight: 'bold' }}>{text}</span>
-        );
-
-        return (
-            <>
-                ค่า TCB บริเวณบ่อพักน้ำทิ้ง{colored}เข้าระบบบำบัด
-            </>
-        );
-    };
-
     const fetchInitialData = async () => {
-        const [beforeAfter, units, standardsMiddle, standardsRange] = await Promise.all([
-            ListBeforeAfterTreatment(),
+        const [units, standardsMiddle, standardsRange] = await Promise.all([
             ListUnit(),
             ListMiddleStandard(),
             ListRangeStandard(),
         ]);
 
-        if (beforeAfter) setBeforeAfterOptions(beforeAfter);
         if (units) setUnitOptions(units);
         if (standardsMiddle) {
             setMiddleStandards(
@@ -130,8 +113,8 @@ const DTCBCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
     };
 
     const handleFinish = async (values: any) => {
-        // รวม date กับ time เข้าเป็นค่าเดียว
         let standardID = values.standardID ?? null;
+
         if (useCustomStandard) {
             if (standardType === 'middle' && values.customSingle !== undefined) {
                 const res = await AddMiddleStandard({
@@ -139,119 +122,70 @@ const DTCBCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     MinValue: 0,
                     MaxValue: 0,
                 });
-
-                if (res && res.ID) {
+                if (res?.ID) {
                     standardID = res.ID;
                     setMiddleStandards(prev => [...prev, res]);
                 }
-            } else if (
-                standardType === 'range' &&
-                values.customMin !== undefined &&
-                values.customMax !== undefined
-            ) {
+            } else if (standardType === 'range' && values.customMin !== undefined && values.customMax !== undefined) {
                 const res = await AddRangeStandard({
                     MiddleValue: 0,
                     MinValue: values.customMin,
                     MaxValue: values.customMax,
                 });
-
-                if (res && res.ID) {
+                if (res?.ID) {
                     standardID = res.ID;
                     setRangeStandards(prev => [...prev, res]);
                 }
             }
         }
-        // เช็คว่ามี standardID หรือไม่
+
         if (!standardID) {
             message.error('กรุณาเลือกหรือกำหนดมาตรฐานก่อนบันทึก');
             return;
         }
+
         const employeeID = Number(localStorage.getItem('employeeid'));
         const combinedDateTime = dayjs(values.date)
             .hour(dayjs(values.time).hour())
             .minute(dayjs(values.time).minute())
             .second(dayjs(values.time).second())
             .millisecond(0);
-        // ตรวจสอบค่ามาตรฐาน
+
         const isOther = values.unit === 'other';
         const unitID = isOther ? null : values.unit;
         const customUintValue = isOther ? values.customUnit : null;
 
-        if (selectedTreatmentID === 3) {
-            // กรณี "ก่อนและหลังบำบัด" ส่งข้อมูล 2 ชุด
-            const payloadBefore: DTCBcenterInterface = {
-                Date: combinedDateTime.toISOString(),
-                Data: values.valueBefore,
-                BeforeAfterTreatmentID: 1,
-                StandardID: standardID,
-                UnitID: unitID,
-                CustomUnit: customUintValue,
-                EmployeeID: employeeID,
-                Note: values.note,
-            };
+        const dtcbData: DTCBcenterInterface = {
+            Date: combinedDateTime.toISOString(),
+            Data: values.data,
+            Note: values.note,
+            BeforeAfterTreatmentID: 2,
+            StandardID: standardID,
+            UnitID: unitID,
+            CustomUnit: customUintValue,
+            EmployeeID: employeeID,
+        }
 
-            const payloadAfter: DTCBcenterInterface = {
-                Date: combinedDateTime.toISOString(),
-                Data: values.valueAfter,
-                BeforeAfterTreatmentID: 2,
-                StandardID: standardID,
-                UnitID: unitID,
-                CustomUnit: customUintValue,
-                EmployeeID: employeeID,
-                Note: values.note,
-            };
+        const response = await createDTCB(dtcbData);
 
-            const res1 = await createDTCB(payloadBefore);
-            const res2 = await createDTCB(payloadAfter);
-
-            if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
-                messageApi.success('บันทึกข้อมูล TCB of Glass ก่อนและหลังบำบัดสำเร็จ');
-                form.resetFields();
-                setIsOtherunitSelected(false);
-                setUseCustomStandard(false);
-                setCustomSingleValue(undefined);
-                setCustomMinValue(undefined);
-                setCustomMaxValue(undefined);
-                GetfirstrowDTCB();
-                fetchInitialData();
-                await delay(500);
-                if (onSuccess) await onSuccess();
-                onCancel?.();
-            } else {
-                message.error('ไม่สามารถบันทึกข้อมูลก่อนหรือหลังได้');
-            }
+        if (response.status === 201) {
+            messageApi.open({
+                type: 'success',
+                content: 'การบันทึกข้อมูล DTCB of Glass สำเร็จ',
+            });
+            form.resetFields();
+            setIsOtherunitSelected(false);
+            setUseCustomStandard(false);
+            setCustomSingleValue(undefined);
+            setCustomMinValue(undefined);
+            setCustomMaxValue(undefined);
+            GetfirstrowDTCB();
+            fetchInitialData();
+            await delay(500);
+            if (onSuccess) await onSuccess();
+            onCancel?.();
         } else {
-            const dtcbData: DTCBcenterInterface = {
-                Date: combinedDateTime.toISOString(),
-                Data: values.data,
-                Note: values.note,
-                BeforeAfterTreatmentID: values.before_after,
-                StandardID: standardID,
-                UnitID: unitID,
-                CustomUnit: customUintValue,
-                EmployeeID: employeeID,
-            }
-            const response = await createDTCB(dtcbData);
-            console.log(dtcbData);
-            if (response.status === 201) {
-                messageApi.open({
-                    type: 'success',
-                    content: 'การบันทึกข้อมูล DTCB of Glass สำเร็จ',
-                });
-                form.resetFields();
-                setIsOtherunitSelected(false);
-                setUseCustomStandard(false);
-                setCustomSingleValue(undefined);
-                setCustomMinValue(undefined);
-                setCustomMaxValue(undefined);
-                GetfirstrowDTCB();
-                fetchInitialData();
-                await delay(500);
-                if (onSuccess) await onSuccess();
-                onCancel?.();
-            } else {
-                throw new Error(`การบันทึกข้อมูลไม่สำเร็จ สถานะ: ${response.status}`);
-            }
+            throw new Error(`การบันทึกข้อมูลไม่สำเร็จ สถานะ: ${response.status}`);
         }
     };
 
@@ -338,7 +272,7 @@ const DTCBCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                 </Select>
                             </Form.Item>
 
-                            <div style={{ position: 'relative', top: '-15px' }}>
+                            <div style={{ position: 'relative', top: '-17px' }}>
                                 {/* ค่าเดี่ยว */}
                                 {standardType === 'middle' && !useCustomStandard && (
                                     <Form.Item
@@ -466,96 +400,34 @@ const DTCBCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     </div>
 
                     <div className="dtcb-form-group">
-                        <div className='dtcb-from-mini'>
-                            <Form.Item
-                                label="ก่อน / หลัง / ก่อนเเละหลังบำบัด"
-                                name="before_after"
-                                rules={[{ required: true, message: 'กรุณาเลือกสถานะก่อน / หลัง / ก่อนเเละหลังบำบัด' }]}
-                            >
-                                <Select
-                                    placeholder="เลือกสถานะ"
-                                    onChange={(value) => {
-                                        setSelectedTreatmentID(value);
-                                    }}
-                                >
-                                    {beforeAfterOptions.map((b) => (
-                                        <Option key={b.ID} value={b.ID}>
-                                            {renderCustomTreatmentLabel(b.TreatmentName || '')}
-                                        </Option>
-                                    ))}
-                                </Select>
-                            </Form.Item>
-                        </div>
-                        <div className='dtcb-from-mini'>
-                            {selectedTreatmentID === 3 ? (
-                                <div style={{ display: 'flex', gap: '30px' }}>
-                                    <Form.Item
-                                        label="ค่าที่วัดได้ก่อนบำบัด"
-                                        name="valueBefore"
-                                        rules={[{ required: true, message: 'กรุณากรอกค่าก่อนบำบัด' },
-                                        {
-                                            validator: async (_, value) => {
-                                                if (value === undefined || value === null) return Promise.resolve();
-                                                if (typeof value !== "number" || isNaN(value)) {
-                                                    return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                                }
-                                                return Promise.resolve();
-                                            },
+                        <Form.Item
+                            label="ค่าที่วัดได้"
+                            name="data"
+                            rules={[
+                                { required: true, message: 'กรุณากรอกค่าที่วัดได้' },
+                                {
+                                    validator: async (_, value) => {
+                                        if (value === undefined || value === null) return Promise.resolve();
+                                        if (typeof value !== "number" || isNaN(value)) {
+                                            return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
                                         }
+                                        return Promise.resolve();
+                                    },
+                                }
+                            ]}
+                        >
+                            <InputNumber
+                                style={{ width: '100%' }}
+                                placeholder="กรอกค่าที่วัดได้"
+                                step={0.01}
+                            />
+                        </Form.Item>
 
-                                        ]}
-                                        style={{ flex: 1 }}
-                                    >
-                                        <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าก่อนบำบัด" step={0.01} />
-                                    </Form.Item>
-
-                                    <Form.Item
-                                        label="ค่าที่วัดได้หลังบำบัด"
-                                        name="valueAfter"
-                                        rules={[{ required: true, message: 'กรุณากรอกค่าหลังบำบัด' },
-                                        {
-                                            validator: async (_, value) => {
-                                                if (value === undefined || value === null) return Promise.resolve();
-                                                if (typeof value !== "number" || isNaN(value)) {
-                                                    return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                                }
-                                                return Promise.resolve();
-                                            },
-                                        }
-
-                                        ]}
-                                        style={{ flex: 1 }}
-                                    >
-                                        <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าหลังบำบัด" step={0.01} />
-                                    </Form.Item>
-                                </div>
-                            ) : (
-                                <Form.Item
-                                    label="ค่าที่วัดได้"
-                                    name="data"
-                                    rules={[{ required: true, message: 'กรุณากรอกค่าที่วัดได้' },
-                                    {
-                                        validator: async (_, value) => {
-                                            if (value === undefined || value === null) return Promise.resolve();
-                                            if (typeof value !== "number" || isNaN(value)) {
-                                                return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                            }
-                                            return Promise.resolve();
-                                        },
-                                    }
-
-                                    ]}
-                                >
-                                    <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าที่วัดได้" step={0.01} />
-                                </Form.Item>
-                            )}
-                        </div>
-                    </div>
-                    <div className="dtcb-form-group">
                         <Form.Item label="หมายเหตุ" name="note">
                             <Input.TextArea rows={2} placeholder="กรอกหมายเหตุ (ถ้ามี)" />
                         </Form.Item>
                     </div>
+
                     <Form.Item className="dtcb-form-actions" >
                         <Button className="dtcb-cancel" htmlType="button" onClick={handleCancelClick} >
                             ยกเลิก

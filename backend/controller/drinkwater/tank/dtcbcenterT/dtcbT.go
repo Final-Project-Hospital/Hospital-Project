@@ -26,16 +26,13 @@ func CreateDTCBtank(c *gin.Context) {
 	fmt.Println("Creating Environment Record")
 
 	var input struct {
-		Data                   float64
-		Date                   time.Time
-		Note                   string
-		BeforeAfterTreatmentID uint
-		EnvironmentID          uint
-		ParameterID            uint
-		StandardID             uint
-		UnitID                 uint
-		EmployeeID             uint
-		CustomUnit             string
+		Data       float64   `json:"data"`
+		Date       time.Time `json:"date"`
+		Note       string    `json:"note"`
+		StandardID uint      `json:"standardID"`
+		UnitID     uint      `json:"unitID"`
+		EmployeeID uint      `json:"employeeID"`
+		CustomUnit string    `json:"customUnit"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -46,29 +43,24 @@ func CreateDTCBtank(c *gin.Context) {
 
 	db := config.DB()
 
+	// ตรวจสอบและสร้างหน่วยใหม่ถ้ามี CustomUnit
 	if input.CustomUnit != "" {
 		var existingUnit entity.Unit
 		if err := db.Where("unit_name = ?", input.CustomUnit).First(&existingUnit).Error; err == nil {
-			// เจอ unit ที่มีอยู่แล้ว
 			input.UnitID = existingUnit.ID
 		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			// ไม่เจอ unit -> สร้างใหม่
-			newUnit := entity.Unit{
-				UnitName: input.CustomUnit,
-			}
-			if err := db.Create(&newUnit).Error; err != nil {
-				fmt.Println(" ไม่สามารถสร้างหน่วยใหม่ได้:", err) // แค่ขึ้น log
-				// ไม่คืน error ไปยัง frontend
-			} else {
+			newUnit := entity.Unit{UnitName: input.CustomUnit}
+			if err := db.Create(&newUnit).Error; err == nil {
 				input.UnitID = newUnit.ID
+			} else {
+				fmt.Println("ไม่สามารถสร้างหน่วยใหม่ได้:", err)
 			}
 		} else {
-			// เกิด error อื่นขณะเช็กหน่วย
-			fmt.Println(" เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err) // แค่ขึ้น log
-			// ไม่คืน error ไปยัง frontend
+			fmt.Println("เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err)
 		}
 	}
 
+	// หา parameter
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?", "Total Coliform Bacteria of tank").First(&parameter).Error; err != nil {
 		fmt.Println("Error fetching parameter:", err)
@@ -76,6 +68,7 @@ func CreateDTCBtank(c *gin.Context) {
 		return
 	}
 
+	// หา environment
 	var environment entity.Environment
 	if err := db.Where("environment_name = ?", "น้ำดื่ม").First(&environment).Error; err != nil {
 		fmt.Println("Error fetching environment:", err)
@@ -83,12 +76,14 @@ func CreateDTCBtank(c *gin.Context) {
 		return
 	}
 
+	// หา standard
 	var standard entity.Standard
 	if err := db.First(&standard, input.StandardID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูลเกณฑ์มาตรฐาน"})
 		return
 	}
 
+	// ฟังก์ชันตรวจสอบสถานะ
 	getStatusID := func(value float64) uint {
 		var status entity.Status
 		if standard.MiddleValue != 0 { // ค่าเดี่ยว
@@ -107,13 +102,24 @@ func CreateDTCBtank(c *gin.Context) {
 		return status.ID
 	}
 
+	// หา record ของวันเดียวกัน
+	startOfDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	if err := db.Where("date >= ? AND date < ? AND parameter_id = ? AND environment_id = ?", startOfDay, endOfDay, parameter.ID, environment.ID).
+		Delete(&entity.EnvironmentalRecord{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบไม่สำเร็จ"})
+		return
+	}
+
+	// สร้าง Environment Record ใหม่
 	environmentRecord := entity.EnvironmentalRecord{
 		Date:                   input.Date,
 		Data:                   input.Data,
 		Note:                   input.Note,
-		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
+		BeforeAfterTreatmentID: 2, // หลัง
 		EnvironmentID:          environment.ID,
-		ParameterID:            parameter.ID, // แก้ตรงนี้
+		ParameterID:            parameter.ID,
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,
@@ -127,7 +133,7 @@ func CreateDTCBtank(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "Total Coliform Bacteria of tank created successfully", // แก้ข้อความตรงนี้
+		"message": "DTCBtank created successfully",
 		"data":    environmentRecord,
 	})
 }
@@ -150,7 +156,7 @@ func GetfirstDTCBtank(c *gin.Context) {
 	}
 
 	// โครงสร้างสำหรับจัดเก็บข้อมูลผลลัพธ์
-	var firstdtcbT struct {
+	var firstdtcbTT struct {
 		ID                     uint              `json:"ID"`
 		Date                   time.Time         `json:"Date"`
 		Data                   float64           `json:"Data"`
@@ -174,7 +180,7 @@ func GetfirstDTCBtank(c *gin.Context) {
 		Joins("inner join units on environmental_records.unit_id = units.id").
 		Where("parameter_id = ? AND environmental_records.environment_id = ?", parameter.ID, environment.ID).
 		Order("environmental_records.created_at desc").
-		Scan(&firstdtcbT)
+		Scan(&firstdtcbTT)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
 	if result.Error != nil {
@@ -183,7 +189,7 @@ func GetfirstDTCBtank(c *gin.Context) {
 	}
 
 	// ส่งข้อมูลกลับในรูปแบบ JSON
-	c.JSON(http.StatusOK, firstdtcbT)
+	c.JSON(http.StatusOK, firstdtcbTT)
 }
 
 var thaiMonths = [...]string{
@@ -215,7 +221,7 @@ func ListDTCBtank(c *gin.Context) {
 	}
 
 	// โครงสร้างผลลัพธ์
-	var resuldtcbT []struct {
+	var resuldtcbTT []struct {
 		ID                     uint      `json:"ID"`
 		Date                   time.Time `json:"Date"`
 		Data                   float64   `json:"Data"`
@@ -252,14 +258,14 @@ func ListDTCBtank(c *gin.Context) {
 		Joins("inner join statuses on environmental_records.status_id = statuses.id").
 		Where("environmental_records.id IN (?)", subQuery).
 		Order("environmental_records.date DESC").
-		Find(&resuldtcbT).Error
+		Find(&resuldtcbTT).Error
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, resuldtcbT)
+	c.JSON(http.StatusOK, resuldtcbTT)
 }
 
 func DeleterDTCBtank(c *gin.Context) {
@@ -292,14 +298,14 @@ func GetDTCBtankTABLE(c *gin.Context) {
 		return
 	}
 
-	var dtcbT []entity.EnvironmentalRecord
+	var dtcbTT []entity.EnvironmentalRecord
 	result := db.Preload("BeforeAfterTreatment").
 		Preload("Environment").
 		Preload("Unit").
 		Preload("Employee").
 		Where("parameter_id = ? AND environmental_records.environment_id = ?", param.ID, environment.ID).
 		Order("date ASC").
-		Find(&dtcbT)
+		Find(&dtcbTT)
 
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
@@ -325,9 +331,9 @@ func GetDTCBtankTABLE(c *gin.Context) {
 		Status        string   `json:"status"`
 	}
 
-	dtcbTMap := make(map[keyType]*DTCBtankRecord)
+	dtcbTTMap := make(map[keyType]*DTCBtankRecord)
 
-	for _, rec := range dtcbT {
+	for _, rec := range dtcbTT {
 		dateStr := rec.Date.Format("2006-01-02")
 		k := keyType{
 			Date:          dateStr,
@@ -356,7 +362,7 @@ func GetDTCBtankTABLE(c *gin.Context) {
 			}
 		}
 
-		if _, exisdtcbT := dtcbTMap[k]; !exisdtcbT {
+		if _, exisdtcbTT := dtcbTTMap[k]; !exisdtcbTT {
 			unitName := rec.Unit.UnitName // default
 
 			// ลองใช้ unit ของ latestRec ถ้ามี
@@ -367,7 +373,7 @@ func GetDTCBtankTABLE(c *gin.Context) {
 				}
 			}
 
-			dtcbTMap[k] = &DTCBtankRecord{
+			dtcbTTMap[k] = &DTCBtankRecord{
 				Date:          dateStr,
 				Unit:          unitName,
 				StandardValue: stdVal,
@@ -377,48 +383,37 @@ func GetDTCBtankTABLE(c *gin.Context) {
 		// Before / After
 		val := rec.Data
 		if rec.BeforeAfterTreatmentID == 1 {
-			dtcbTMap[k].BeforeValue = &val
-			dtcbTMap[k].BeforeID = &rec.ID
+			dtcbTTMap[k].BeforeValue = &val
+			dtcbTTMap[k].BeforeID = &rec.ID
 		} else if rec.BeforeAfterTreatmentID == 2 {
-			dtcbTMap[k].AfterValue = &val
-			dtcbTMap[k].AfterID = &rec.ID
-		}
-
-		// Efficiency
-		if dtcbTMap[k].BeforeValue != nil && dtcbTMap[k].AfterValue != nil && *dtcbTMap[k].BeforeValue != 0 {
-			eff := ((*dtcbTMap[k].BeforeValue - *dtcbTMap[k].AfterValue) / (*dtcbTMap[k].BeforeValue)) * 100
-			// ✅ ถ้าค่าติดลบให้กลายเป็น 0.00
-			//fmt.Printf("Efficiency2: %.2f\n", eff)
-			if eff < 0 {
-				eff = 0.00
-			}
-			dtcbTMap[k].Efficiency = &eff
+			dtcbTTMap[k].AfterValue = &val
+			dtcbTTMap[k].AfterID = &rec.ID
 		}
 
 		// คำนวณ Status
-		if dtcbTMap[k].AfterValue != nil && latestRec.StandardID != 0 {
+		if dtcbTTMap[k].AfterValue != nil && latestRec.StandardID != 0 {
 			var std entity.Standard
 			if db.First(&std, latestRec.StandardID).Error == nil {
-				after := *dtcbTMap[k].AfterValue
+				after := *dtcbTTMap[k].AfterValue
 				if std.MinValue != 0 || std.MaxValue != 0 {
 					if after < float64(std.MinValue) || after > float64(std.MaxValue) {
-						dtcbTMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
+						dtcbTTMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
-						dtcbTMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
+						dtcbTTMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
 					}
 				} else {
 					if after > float64(std.MiddleValue) {
-						dtcbTMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
+						dtcbTTMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
-						dtcbTMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
+						dtcbTTMap[k].Status = "ผ่านเกณฑ์มาตรฐาน"
 					}
 				}
 
-				// ✅ อัปเดตลง DB ทันที (อัปเดต record หลังการบำบัด)
-				if dtcbTMap[k].AfterID != nil {
+				// อัปเดตลง DB ทันที (อัปเดต record หลังการบำบัด)
+				if dtcbTTMap[k].AfterID != nil {
 					db.Model(&entity.EnvironmentalRecord{}).
-						Where("id = ?", *dtcbTMap[k].AfterID).
-						Update("status_id", getStatusIDFromName(dtcbTMap[k].Status)) // แปลงชื่อเป็น ID
+						Where("id = ?", *dtcbTTMap[k].AfterID).
+						Update("status_id", getStatusIDFromName(dtcbTTMap[k].Status)) // แปลงชื่อเป็น ID
 				}
 			}
 		}
@@ -426,12 +421,12 @@ func GetDTCBtankTABLE(c *gin.Context) {
 
 	// สร้าง map รวบรวม id -> note เพื่อดึง note ของ before และ after จากข้อมูลดิบ
 	noteMap := make(map[uint]string)
-	for _, rec := range dtcbT {
+	for _, rec := range dtcbTT {
 		noteMap[rec.ID] = rec.Note
 	}
 
-	// เติม BeforeNote และ AfterNote ใน dtcbTMap
-	for _, val := range dtcbTMap {
+	// เติม BeforeNote และ AfterNote ใน dtcbTTMap
+	for _, val := range dtcbTTMap {
 		if val.BeforeID != nil {
 			if note, ok := noteMap[*val.BeforeID]; ok {
 				val.BeforeNote = note
@@ -446,7 +441,7 @@ func GetDTCBtankTABLE(c *gin.Context) {
 
 	// รวมข้อมูลส่งกลับ
 	var mergedRecords []DTCBtankRecord
-	for _, val := range dtcbTMap {
+	for _, val := range dtcbTTMap {
 		mergedRecords = append(mergedRecords, *val)
 	}
 
@@ -480,7 +475,7 @@ func UpdateOrCreateDTCBtank(c *gin.Context) {
 
 	db := config.DB()
 
-	// ✅ ถ้า StandardID = 0 → สร้างใหม่จาก CustomStandard (ถ้าไม่มีซ้ำ)
+	// ถ้า StandardID = 0 → สร้างใหม่จาก CustomStandard (ถ้าไม่มีซ้ำ)
 	if input.StandardID == 0 && input.CustomStandard != nil {
 		var existing entity.Standard
 		query := db.Model(&entity.Standard{})
@@ -518,17 +513,16 @@ func UpdateOrCreateDTCBtank(c *gin.Context) {
 		}
 	}
 
-	// ✅ โหลด Standard ที่จะใช้
+	// โหลด Standard
 	var standard entity.Standard
 	if err := db.First(&standard, input.StandardID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูลเกณฑ์มาตรฐาน"})
 		return
 	}
 
-	// ✅ ฟังก์ชันคำนวณสถานะ
+	// ฟังก์ชันคำนวณ Status
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-
 		if standard.MiddleValue != 0 {
 			if value <= float64(standard.MiddleValue) {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
@@ -542,11 +536,10 @@ func UpdateOrCreateDTCBtank(c *gin.Context) {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		}
-
 		return status.ID
 	}
 
-	// ✅ เช็ก CustomUnit → บันทึกถ้ายังไม่มี
+	// ตรวจสอบ CustomUnit
 	if input.CustomUnit != nil && *input.CustomUnit != "" {
 		var unit entity.Unit
 		if err := db.Where("unit_name = ?", *input.CustomUnit).First(&unit).Error; err == nil {
@@ -558,10 +551,10 @@ func UpdateOrCreateDTCBtank(c *gin.Context) {
 			}
 		}
 	}
-
-	// ✅ Update หรือ Create
+	// ให้ BeforeAfterTreatmentID = หลัง
+	input.BeforeAfterTreatmentID = 2
+	// Update หรือ Create
 	if input.ID != 0 {
-		// Update
 		var existing entity.EnvironmentalRecord
 		if err := db.First(&existing, input.ID).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูล"})
@@ -584,14 +577,6 @@ func UpdateOrCreateDTCBtank(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปเดตข้อมูลล้มเหลว"})
 			return
 		}
-		// ✅ อัปเดต Unit ให้ record ทั้งวันเดียวกัน
-		sameDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
-		startOfDay := sameDay
-		endOfDay := sameDay.Add(24 * time.Hour)
-
-		db.Model(&entity.EnvironmentalRecord{}).
-			Where("date >= ? AND date < ?", startOfDay, endOfDay).
-			Update("unit_id", input.UnitID)
 
 		c.JSON(http.StatusOK, gin.H{"message": "อัปเดตข้อมูลสำเร็จ", "data": existing})
 
@@ -602,16 +587,6 @@ func UpdateOrCreateDTCBtank(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "สร้างข้อมูลล้มเหลว"})
 			return
 		}
-		// ✅ อัปเดต Unit ให้ record ทั้งวันเดียวกัน
-		sameDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
-		startOfDay := sameDay
-		endOfDay := sameDay.Add(24 * time.Hour)
-
-		db.Model(&entity.EnvironmentalRecord{}).
-			Where("date >= ? AND date < ?", startOfDay, endOfDay).
-			Update("unit_id", input.UnitID)
-
-		c.JSON(http.StatusOK, gin.H{"message": "สร้างข้อมูลใหม่สำเร็จ", "data": input})
 	}
 }
 
@@ -638,7 +613,7 @@ func GetDTCBtankbyID(c *gin.Context) {
 	id := c.Param("id")
 	db := config.DB()
 
-	var dtcbT struct {
+	var dtcbTT struct {
 		ID                     uint      `json:"ID"`
 		Date                   time.Time `json:"Date"`
 		Data                   float64   `json:"Data"`
@@ -661,14 +636,14 @@ func GetDTCBtankbyID(c *gin.Context) {
 			standards.min_value, standards.middle_value, standards.max_value`).
 		Joins("inner join standards on environmental_records.standard_id = standards.id").
 		Where("environmental_records.id = ?", id).
-		Scan(&dtcbT)
+		Scan(&dtcbTT)
 
 	if result.Error != nil || result.RowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Record not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, dtcbT)
+	c.JSON(http.StatusOK, dtcbTT)
 }
 
 func DeleteAllDTCBtankRecordsByDate(c *gin.Context) {
@@ -793,7 +768,7 @@ func GetBeforeAfterDTCBtank(c *gin.Context) {
 				units.unit_name`).
 		Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
 		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
-		Where("parameter_id = ? AND before_after_treatment_id = ? AND environment_id = ?", parameter.ID, Before.ID,environment.ID).
+		Where("parameter_id = ? AND before_after_treatment_id = ? AND environment_id = ?", parameter.ID, Before.ID, environment.ID).
 		Order("environmental_records.date DESC").
 		First(&latestBefore).Error
 
@@ -806,7 +781,7 @@ func GetBeforeAfterDTCBtank(c *gin.Context) {
 				units.unit_name`).
 		Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
 		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
-		Where("parameter_id = ? AND before_after_treatment_id = ? AND environment_id = ?", parameter.ID, After.ID,environment.ID).
+		Where("parameter_id = ? AND before_after_treatment_id = ? AND environment_id = ?", parameter.ID, After.ID, environment.ID).
 		Order("environmental_records.date DESC").
 		First(&latestAfter).Error
 
