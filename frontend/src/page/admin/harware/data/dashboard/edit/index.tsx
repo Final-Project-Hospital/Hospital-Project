@@ -69,7 +69,7 @@ const graphTypes = [
 const deepClone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
 type GraphInstance = { uid: string; graphTypeId: number; name: string };
-const uid = () => Math.random().toString(36).slice(2, 9);
+//const uid = () => Math.random().toString(36).slice(2, 9);
 
 // ✅ hook ตรวจขนาดหน้าจอ
 const useViewportFlags = () => {

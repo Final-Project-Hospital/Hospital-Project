@@ -735,14 +735,13 @@ const AdminDashboard: React.FC = () => {
       const isEfficiency =
         /efficiency/i.test(title) || title.includes("ประสิทธิภาพ");
 
-      const baseAnnotations: NonNullable<ApexOptions["annotations"]> = {
-        position: "front",
-        yaxis: [],
-        xaxis: [],
-        points: [],
-        texts: [],
-        images: [],
-      };
+    const baseAnnotations: NonNullable<ApexOptions["annotations"]> = {
+      yaxis: [],
+      xaxis: [],
+      points: [],
+      texts: [],
+      images: [],
+    };
 
       if (showStandard && !isEfficiency && !isGarbage && stdMode !== "none") {
         if (stdMode === "middle" && stdMid) {
