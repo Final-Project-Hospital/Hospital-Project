@@ -81,6 +81,12 @@ func main() {
 	r.Use(CORSMiddleware())
 
 	r.POST("/login", logins.AddLogin)
+	r.POST("/signup", user.SignUpByUser)
+	r.GET("/check-email", employee.CheckEmail)
+	r.POST("/reset-password", employee.ResetPassword)
+	r.POST("/hardware/receive", hardware.ReceiveSensorData)
+	r.POST("/webhook/notification", hardware.WebhookNotification) 
+	r.POST("/hardware/read", hardware.ReadDataForHardware) // encryption
 
 	authorized := r.Group("")
 	authorized.Use(middlewares.Authorizes())
@@ -95,8 +101,8 @@ func main() {
 		authorized.GET("/dashboard/environmental/meta", dashboard.GetEnvironmentalMeta)
 
 		// Waste dashboard
-		authorized.GET("/waste-mix", dashboard.GetWasteMix)                 // กราฟวงกลมสัดส่วนขยะ
-		authorized.GET("/recycled/revenue", dashboard.GetRecycledRevenue)   // กราฟรายได้รีไซเคิล
+		authorized.GET("/waste-mix", dashboard.GetWasteMix)               // กราฟวงกลมสัดส่วนขยะ
+		authorized.GET("/recycled/revenue", dashboard.GetRecycledRevenue) // กราฟรายได้รีไซเคิล
 		authorized.GET("/waste-mix/month", dashboard.GetWasteMixByMonth)
 		authorized.GET("/api/me", func(c *gin.Context) {
 			// ดึง user id จาก context (ลองหลาย key ที่พบบ่อย)
@@ -153,20 +159,77 @@ func main() {
 			})
 		})
 
+		//User
+		authorized.GET("/users", user.ListUsers)                            //
+		authorized.GET("/user-data/:EmployeeID", user.GetDataByUserID)      //
+		authorized.PATCH("/employees/:EmployeeID", user.UpdateEmployeeByID) //
+		authorized.GET("/roles", employee.ListRole)                         //
+
+		//Room
+		authorized.GET("/rooms", room.ListRoom)                    //
+		authorized.POST("/create-rooms", room.CreateRoom)          //
+		authorized.PATCH("/update-room/:id", room.UpdateRoom)      //
+		authorized.DELETE("/delete-room/:id", room.DeleteRoomById) //
+
+		//Hardware
+		authorized.GET("/hardwares", hardware.ListHardware)                                               //
+		authorized.GET("/hardware-colors", hardware.ListColors)                                           //
+		authorized.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID) //
+		authorized.PATCH("/update-hardware-parameter/:id", hardware.UpdateHardwareParameterByID)          //
+		authorized.GET("/hardware-parameter-ids", hardware.GetHardwareParametersWithGraph)                //
+		authorized.PATCH("/hardware-parameters/:id/icon", hardware.UpdateIconByHardwareParameterID)       //
+		authorized.PUT("/hardware-parameter/:id/group-display", hardware.UpdateGroupDisplayByID)          //
+		authorized.PATCH("/sensor-data-parameter/:id/note", hardware.CreateNoteBySensorDataParameterID) //
+		authorized.PATCH("/hardware-parameters/:id/layout-display", hardware.UpdateLayoutDisplayByID)       //
+		authorized.PATCH("/update-hardware-parameter-color/:id", hardware.UpdateHardwareParameterColorByID) //
+		authorized.POST("/employees/:id/check-password", hardware.CheckPasswordByID)                        //
+		authorized.GET("/report-hardware", report.ListReportHardware)
+
+		//Standard and Unit
+		authorized.PUT("/update-unit-hardware/:id", hardware.UpdateUnitHardwareByID)
+		authorized.PUT("/update-standard-hardware/:id", hardware.UpdateStandardHardwareByID)
+
+		// Line + Webhook
+		authorized.GET("/notifications", line.ListNotification)
+		authorized.PATCH("/notifications/:id/alert", line.UpdateAlertByNotificationID)
+		authorized.DELETE("/delete-notifications/:id", line.DeleteNotificationByID)
+		authorized.GET("/room-notifications", line.ListRoomNotification)
+		authorized.DELETE("/room-notifications/:id", line.DeleteRoomNotificationByNotificationID)
+		authorized.POST("/create-notification", line.CreateNotification)
+		authorized.PATCH("/update-notification/:id", line.UpdateNotificationByID)
+		authorized.POST("/room-notifications", line.CreateRoomNotification)
+		authorized.PUT("/room-notification/:room_id/notification", line.UpdateNotificationIDByRoomID)
+		authorized.GET("/line-master/first", line.GetLineMasterFirstID)
+		authorized.PUT("/line-master/:id", line.UpdateLineMasterByID)
+
+		// Sensorparameter
+		authorized.GET("/sensor-data-parameters/:id", sensordata.GetSensorDataParametersBySensorDataID)//
+		authorized.GET("/sensor-data-by-hardware/:id", sensordata.GetSensorDataIDByHardwareID) //
+		authorized.GET("/data-sensorparameter", sensordata.ListDataSensorParameter)
+		authorized.GET("/hardware-parameters-by-parameter", sensordata.ListDataHardwareParameterByParameter)
+		authorized.DELETE("/sensor-data-parameters", hardware.DeleteSensorDataParametersByIds)
+		authorized.DELETE("/sensor-data-parameters/all/:sensorDataID", hardware.DeleteAllSensorDataParametersBySensorID)
+
+		//Graph Hardware
+		authorized.GET("/hardware-graphs", graph.ListDataGraph)
+
+		//Building
+		authorized.GET("/buildings", building.ListBuilding)
+		authorized.POST("/create-buildings", building.CreateBuilding)
+		authorized.PUT("/update-buildings/:id", building.UpdateBuildingByID)
+		authorized.DELETE("/delete-buildings/:id", building.DeleteBuildingByID)
+
+		//Calendar
+		authorized.GET("/calendars", calendar.ListCalendar)
+		authorized.POST("/create-calendar", calendar.PostCalendar)
+		authorized.PUT("/update-calendar/:id", calendar.UpdateCalendar)
+		authorized.DELETE("/delete-calendar/:id", calendar.DeleteCalendar)
 	}
 
 	public := r.Group("")
 	{
 		public.POST("/api/predict", predict.Predict)
-		public.GET("/users", user.ListUsers)
-		public.GET("/uploads/*filename", user.ServeImage)
-		public.GET("/user-data/:EmployeeID", user.GetDataByUserID)
-		public.PATCH("/employees/:EmployeeID", user.UpdateEmployeeByID)
-		public.POST("/signup", user.SignUpByUser)
-		public.GET("/roles", employee.ListRole)
-		public.GET("/check-email", employee.CheckEmail)
-		public.POST("/reset-password", employee.ResetPassword)
-
+		// public.GET("/uploads/*filename", user.ServeImage)
 
 		//PH
 		public.POST("/create-ph", phcenter.CreatePH)
@@ -512,74 +575,6 @@ func main() {
 		public.GET("/get-last-day-recycled", recycledWaste.GetLastDayRecycled)
 		public.PATCH("/update-or-create-recycled/:d", recycledWaste.UpdateOrCreateRecycled)
 		public.DELETE("/delete-recycled-day/:id", recycledWaste.DeleteAllRecycledRecordsByDate)
-
-		//Room
-		public.GET("/rooms", room.ListRoom)
-		public.POST("/create-rooms", room.CreateRoom)
-		public.PATCH("/update-room/:id", room.UpdateRoom)
-		public.DELETE("/delete-room/:id", room.DeleteRoomById)
-
-		//Hardware
-		public.GET("/hardwares", hardware.ListHardware)
-		public.GET("/hardware-colors", hardware.ListColors)
-		public.POST("/hardware/receive", hardware.ReceiveSensorData)
-		public.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID)
-		public.PATCH("/update-hardware-parameter/:id", hardware.UpdateHardwareParameterByID)
-		public.GET("/hardware-parameter-ids", hardware.GetHardwareParametersWithGraph)
-		public.PATCH("/hardware-parameters/:id/icon", hardware.UpdateIconByHardwareParameterID)
-		public.PUT("/hardware-parameter/:id/group-display", hardware.UpdateGroupDisplayByID)
-		public.PATCH("/sensor-data-parameter/:id/note", hardware.CreateNoteBySensorDataParameterID)
-		public.PATCH("/hardware-parameters/:id/layout-display", hardware.UpdateLayoutDisplayByID)
-		public.PATCH("/update-hardware-parameter-color/:id", hardware.UpdateHardwareParameterColorByID)
-		public.POST("/employees/:id/check-password", hardware.CheckPasswordByID)
-
-
-		// Line + Webhook
-		public.POST("/webhook/notification", hardware.WebhookNotification)
-		public.PATCH("/notifications/:id/alert", line.UpdateAlertByNotificationID)
-		public.GET("/notifications", line.ListNotification)
-		public.DELETE("/delete-notifications/:id", line.DeleteNotificationByID)
-		public.GET("/room-notifications", line.ListRoomNotification)
-		public.DELETE("/room-notifications/:id", line.DeleteRoomNotificationByNotificationID)
-		public.POST("/room-notifications", line.CreateRoomNotification)
-		public.PUT("/room-notification/:room_id/notification", line.UpdateNotificationIDByRoomID)
-		public.GET("/line-master/first", line.GetLineMasterFirstID)
-		public.PUT("/line-master/:id", line.UpdateLineMasterByID)
-		public.POST("/create-notification", line.CreateNotification)          
-		public.PATCH("/update-notification/:id", line.UpdateNotificationByID) 
-
-		//report hardware
-		public.GET("/report-hardware", report.ListReportHardware)
-
-		//ESP32
-		public.POST("/hardware/read", hardware.ReadDataForHardware)
-
-		//standard
-		public.PUT("/update-unit-hardware/:id", hardware.UpdateUnitHardwareByID)
-		public.PUT("/update-standard-hardware/:id", hardware.UpdateStandardHardwareByID)
-
-		//Graph
-		public.GET("/hardware-graphs", graph.ListDataGraph)
-
-		//Building
-		public.GET("/buildings", building.ListBuilding)
-		public.POST("/create-buildings", building.CreateBuilding)
-		public.PUT("/update-buildings/:id", building.UpdateBuildingByID)
-		public.DELETE("/delete-buildings/:id", building.DeleteBuildingByID)
-
-		// Sensorparameter
-		public.GET("/data-sensorparameter", sensordata.ListDataSensorParameter)
-		public.GET("/hardware-parameters-by-parameter", sensordata.ListDataHardwareParameterByParameter)
-		public.GET("/sensor-data-parameters/:id", sensordata.GetSensorDataParametersBySensorDataID)
-		public.GET("/sensor-data-by-hardware/:id", sensordata.GetSensorDataIDByHardwareID)
-		public.DELETE("/sensor-data-parameters", hardware.DeleteSensorDataParametersByIds)
-		public.DELETE("/sensor-data-parameters/all/:sensorDataID", hardware.DeleteAllSensorDataParametersBySensorID)
-
-		//Calendar
-		public.GET("/calendars", calendar.ListCalendar)
-		public.POST("/create-calendar", calendar.PostCalendar)
-		public.PUT("/update-calendar/:id", calendar.UpdateCalendar)
-		public.DELETE("/delete-calendar/:id", calendar.DeleteCalendar)
 
 		public.GET("/api/employees", employee.GetEmployees)
 		public.POST("/api/employees", employee.CreateEmployee)
