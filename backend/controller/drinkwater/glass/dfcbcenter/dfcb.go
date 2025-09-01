@@ -86,7 +86,7 @@ func CreateDFCB(c *gin.Context) {
 	// ฟังก์ชันตรวจสอบสถานะ
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-		if standard.MiddleValue != 0 { // ค่าเดี่ยว
+		if standard.MiddleValue != -1 { // ค่าเดี่ยว
 			if value > float64(standard.MiddleValue) {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
@@ -354,9 +354,9 @@ func GetDFCBTABLE(c *gin.Context) {
 		if err == nil && latestRec.StandardID != 0 {
 			var std entity.Standard
 			if db.First(&std, latestRec.StandardID).Error == nil {
-				if (std.MinValue != 0 || std.MaxValue != 0) && (std.MinValue < std.MaxValue) {
+				if (std.MinValue != -1 || std.MaxValue != -1) && (std.MinValue < std.MaxValue) {
 					stdVal = fmt.Sprintf("%.2f - %.2f", std.MinValue, std.MaxValue)
-				} else if std.MiddleValue > 0 {
+				} else if std.MiddleValue > -1 {
 					stdVal = fmt.Sprintf("%.2f", std.MiddleValue)
 				}
 			}
@@ -395,7 +395,7 @@ func GetDFCBTABLE(c *gin.Context) {
 			var std entity.Standard
 			if db.First(&std, latestRec.StandardID).Error == nil {
 				after := *dfcbMap[k].AfterValue
-				if std.MinValue != 0 || std.MaxValue != 0 {
+				if std.MinValue != -1 || std.MaxValue != -1 {
 					if after < float64(std.MinValue) || after > float64(std.MaxValue) {
 						dfcbMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
@@ -492,7 +492,13 @@ func UpdateOrCreateDFCB(c *gin.Context) {
 		}
 
 		if err := query.First(&existing).Error; errors.Is(err, gorm.ErrRecordNotFound) {
-			newStandard := entity.Standard{}
+			// กำหนดค่า default เป็น -1 ทุกตัว
+			newStandard := entity.Standard{
+				MiddleValue: -1,
+				MinValue:    -1,
+				MaxValue:    -1,
+			}
+
 			if input.CustomStandard.Type == "middle" && input.CustomStandard.Value != nil {
 				newStandard.MiddleValue = float32(*input.CustomStandard.Value)
 			} else if input.CustomStandard.Type == "range" {
@@ -523,7 +529,7 @@ func UpdateOrCreateDFCB(c *gin.Context) {
 	// ฟังก์ชันคำนวณ Status
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-		if standard.MiddleValue != 0 {
+		if standard.MiddleValue != -1 {
 			if value <= float64(standard.MiddleValue) {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {

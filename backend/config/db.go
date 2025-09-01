@@ -87,12 +87,12 @@ func SetupDatabase() {
 		standard := entity.Standard{
 			MinValue:    r.min,
 			MaxValue:    r.max,
-			MiddleValue: 0, // ไม่ใช้
+			MiddleValue: -1, // ไม่ใช้
 		}
 		db.FirstOrCreate(&standard, entity.Standard{
 			MinValue:    r.min,
 			MaxValue:    r.max,
-			MiddleValue: 0,
+			MiddleValue: -1,
 		})
 	}
 	// จำลองข้อมูลแบบ "ค่าเดี่ยว"
@@ -101,13 +101,13 @@ func SetupDatabase() {
 	for _, m := range middles {
 		standard := entity.Standard{
 			MiddleValue: m,
-			MinValue:    0, // ไม่ใช้
-			MaxValue:    0,
+			MinValue:    -1, // ไม่ใช้
+			MaxValue:    -1,
 		}
 		db.FirstOrCreate(&standard, entity.Standard{
 			MiddleValue: m,
-			MinValue:    0,
-			MaxValue:    0,
+			MinValue:    -1,
+			MaxValue:    -1,
 		})
 	}
 

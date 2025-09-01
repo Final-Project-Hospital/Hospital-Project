@@ -79,7 +79,7 @@ const UpdateIRONCentralForm: React.FC<UpdateIRONCentralFormProps> = ({
                 const before = initialValues[0];
                 const after = initialValues[1];
 
-                const stdType = before.MinValue === 0 && before.MaxValue === 0 ? 'middle' : 'range';
+                const stdType = before.MinValue === -1 && before.MaxValue === -1 ? 'middle' : 'range';
                 setStandardType(stdType);
 
                 form.setFieldsValue({
@@ -98,7 +98,7 @@ const UpdateIRONCentralForm: React.FC<UpdateIRONCentralFormProps> = ({
                 setSelectedTreatmentID(3);
             } else if (initialValues.length === 1) {
                 const single = initialValues[0];
-                const stdType = single.MinValue === 0 && single.MaxValue === 0 ? 'middle' : 'range';
+                const stdType = single.MinValue === -1 && single.MaxValue === -1 ? 'middle' : 'range';
                 setStandardType(stdType);
 
                 form.setFieldsValue({
