@@ -79,7 +79,7 @@ const TKNCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             const responfirstTKN = await GetfirstTKN();
             if (responfirstTKN.status === 200) {
                 const data = responfirstTKN.data;
-                const isMiddle = data.MinValue === 0 && data.MaxValue === 0;
+                const isMiddle = data.MinValue === -1 && data.MaxValue === -1;
                 setStandardType(isMiddle ? 'middle' : 'range');
                 form.setFieldsValue({
                     unit: data.UnitID,
@@ -136,8 +136,8 @@ const TKNCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             if (standardType === 'middle' && values.customSingle !== undefined) {
                 const res = await AddMiddleStandard({
                     MiddleValue: values.customSingle,
-                    MinValue: 0,
-                    MaxValue: 0,
+                    MinValue: -1,
+                    MaxValue: -1,
                 });
 
                 if (res && res.ID) {
@@ -150,7 +150,7 @@ const TKNCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                 values.customMax !== undefined
             ) {
                 const res = await AddRangeStandard({
-                    MiddleValue: 0,
+                    MiddleValue: -1,
                     MinValue: values.customMin,
                     MaxValue: values.customMax,
                 });

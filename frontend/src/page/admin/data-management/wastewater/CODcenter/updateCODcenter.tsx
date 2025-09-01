@@ -79,7 +79,7 @@ const UpdateCODCentralForm: React.FC<UpdateCODCentralFormProps> = ({
                 const before = initialValues[0];
                 const after = initialValues[1];
 
-                const stdType = before.MinValue === 0 && before.MaxValue === 0 ? 'middle' : 'range';
+                const stdType = before.MinValue === -1 && before.MaxValue === -1 ? 'middle' : 'range';
                 setStandardType(stdType);
 
                 form.setFieldsValue({
@@ -98,7 +98,7 @@ const UpdateCODCentralForm: React.FC<UpdateCODCentralFormProps> = ({
                 setSelectedTreatmentID(3);
             } else if (initialValues.length === 1) {
                 const single = initialValues[0];
-                const stdType = single.MinValue === 0 && single.MaxValue === 0 ? 'middle' : 'range';
+                const stdType = single.MinValue === -1 && single.MaxValue === -1 ? 'middle' : 'range';
                 setStandardType(stdType);
 
                 form.setFieldsValue({
@@ -117,6 +117,10 @@ const UpdateCODCentralForm: React.FC<UpdateCODCentralFormProps> = ({
             }
         }
     }, [initialValues]);
+    console.log("🔥 initialValues =", initialValues);
+    console.log("🔥 initialValues[0] =", initialValues[0]);
+    console.log("🔥 initialValues[1] =", initialValues[1]);
+
 
     const handleStandardGroupChange = (value: string) => {
         setStandardType(value);
@@ -181,6 +185,7 @@ const UpdateCODCentralForm: React.FC<UpdateCODCentralFormProps> = ({
                 EmployeeID: employeeID,
                 CustomUnit: customUnitValue,
             };
+            console.log("values.beforeAfterTreatmentID = "+values.beforeAfterTreatmentID)
 
             if (values.beforeAfterTreatmentID === 3) {
                 // --- Payload แรก (Before)
@@ -227,15 +232,15 @@ const UpdateCODCentralForm: React.FC<UpdateCODCentralFormProps> = ({
             } else if (values.beforeAfterTreatmentID === 2) {
                 await UpdateOrCreateCOD({
                     ...basePayload,
-                    ID: initialValues[1]?.ID ?? null,
+                    ID: initialValues[0]?.ID ?? null,
                     Data: values.valueAfter ?? values.data,
                     Note: values.afterNote ?? "",
                     BeforeAfterTreatmentID: 2,
-                    ParameterID: initialValues[1]?.ParameterID,
+                    ParameterID: initialValues[0]?.ParameterID,
                 });
 
-                if (initialValues[0]?.ID) {
-                    deletes.push(initialValues[0].ID);
+                if (initialValues[1]?.ID) {
+                    deletes.push(initialValues[1].ID);
                 }
             }
 
