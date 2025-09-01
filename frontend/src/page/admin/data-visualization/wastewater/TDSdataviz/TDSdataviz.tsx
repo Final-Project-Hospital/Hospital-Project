@@ -240,7 +240,7 @@ const TDSdataviz: React.FC = () => {
         setCompareData(compare);
         setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterTDS
-         if (!tdsRes || !tdsRes.data || tdsRes.data.length === 0) {
+        if (!tdsRes || !tdsRes.data || tdsRes.data.length === 0) {
           setBeforeAfter(null); // ✅ ตรงกับ type
           setError("ไม่พบข้อมูล Before/After TDS");
         } else {
@@ -555,7 +555,7 @@ const TDSdataviz: React.FC = () => {
       dataIndex: 'standard_value',
       key: 'standard_value',
       width: 160,
-       render: (val: string | number | null | undefined) => {
+      render: (val: string | number | null | undefined) => {
         if (!val) return '-';
         // ถ้าเป็น string และมีขีด (-) ให้แยก
         if (typeof val === 'string' && val.includes('-')) {
@@ -1293,44 +1293,50 @@ const TDSdataviz: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล TDS ใหม่"}
+          title={<span style={{ color: '#1ba0a2ff' }}>เพิ่มข้อมูล TDS ใหม่</span>}
           open={isModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           destroyOnClose
           closable={false}
           centered
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
-          <TDSCentralForm onCancel={handleAddModalCancel}
-            onSuccess={async () => {
-              await fetchData();      // ✅ โหลดข้อมูลกราฟใหม่
-              await loadTDSTable();   // ✅ โหลดข้อมูลตารางใหม่
-            }}
-          />
+          <div className="tds-container">
+            <TDSCentralForm onCancel={handleAddModalCancel}
+              onSuccess={async () => {
+                await fetchData();      // โหลดข้อมูลกราฟใหม่
+                await loadTDSTable();   // โหลดข้อมูลตารางใหม่
+              }}
+            />
+          </div>
         </Modal>
         <Modal
-          title="แก้ไขข้อมูล TDS"
+          title={<span style={{ color: '#1ba0a2ff' }}>แก้ไขข้อมูล TDS</span>}
           open={isEditModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           closable={false}
           destroyOnClose
           centered
           onCancel={handleEditModalCancel}
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
           {editingRecord && (
-            <UpdateTDSCentralForm
-              initialValues={editingRecord}
-              onSuccess={() => {
-                setTimeout(async () => {
-                  setIsEditModalVisible(false);
-                  setEditRecord(null);
-                  await loadTDSTable();
-                  await fetchData();
-                }, 500);
-              }}
-              onCancel={handleEditModalCancel}
-            />
+            <div className="up-tds-container">
+              <UpdateTDSCentralForm
+                initialValues={editingRecord}
+                onSuccess={() => {
+                  setTimeout(async () => {
+                    setIsEditModalVisible(false);
+                    setEditRecord(null);
+                    await loadTDSTable();
+                    await fetchData();
+                  }, 500);
+                }}
+                onCancel={handleEditModalCancel}
+              />
+            </div>
           )}
         </Modal>
 

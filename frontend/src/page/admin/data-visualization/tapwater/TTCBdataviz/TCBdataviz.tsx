@@ -81,7 +81,6 @@ const TTCBdataviz: React.FC = () => {
   const [tableFilterMode, setTableFilterMode] = useState<"dateRange" | "month" | "year">("year");
   const [tableDateRange, setTableDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [efficiencyFilter, setEfficiencyFilter] = useState<string | null>(null);
   const totalTasks = data.length;
   const doneTasks = data.filter((d: any) => {
     const status = (d.status ?? "").trim(); return status.includes("ผ่าน") && !status.includes("ไม่ผ่าน");
@@ -493,7 +492,7 @@ const TTCBdataviz: React.FC = () => {
       title: 'วันที่',
       dataIndex: 'date',
       key: 'date',
-      width: 140,
+      width: 180,
       sorter: (a, b) => {
         const da = dayjs(a.date);
         const db = dayjs(b.date);
@@ -514,21 +513,14 @@ const TTCBdataviz: React.FC = () => {
       title: 'หน่วยที่วัด',
       dataIndex: 'unit',
       key: 'unit',
-      width: 125,
+      width: 180,
       render: (unit: string) => unit || '-',
     },
     {
-      title: 'ค่าก่อนเข้าระบบบำบัด',
-      dataIndex: 'before_value',
-      key: 'before_value',
-      width: 120,
-      render: (val: number | null) => val != null ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
-    },
-    {
-      title: 'ค่าหลังเข้าระบบบำบัด',
+      title: 'ค่าที่วัดได้',
       dataIndex: 'after_value',
       key: 'after_value',
-      width: 120,
+      width: 180,
       render: (afterValue: number | null, record: any) => {
         if (afterValue == null) return '-';
         const before = record.before_value;
@@ -542,19 +534,10 @@ const TTCBdataviz: React.FC = () => {
       },
     },
     {
-      title: <>ประสิทธิภาพ<br />(%)</>,
-      key: "efficiency",
-      width: 80,
-      render: (_, r) => {
-        const eff = Number(r.efficiency);
-        return isNaN(eff) ? "-" : Math.max(eff, 0).toFixed(2);
-      },
-    },
-    {
       title: 'ค่ามาตรฐาน',
       dataIndex: 'standard_value',
       key: 'standard_value',
-      width: 160,
+      width: 180,
       render: (val: string | number | null | undefined) => {
         if (!val) return '-';
         // ถ้าเป็น string และมีขีด (-) ให้แยก
@@ -571,7 +554,7 @@ const TTCBdataviz: React.FC = () => {
     {
       title: "สถานะ",
       key: "status",
-      width: 200,
+      width: 180,
       render: (_, record) => {
         const statusName = record.status;
         if (!statusName) {
@@ -602,25 +585,19 @@ const TTCBdataviz: React.FC = () => {
     },
     {
       title: (
-        <>
-          หมายเหตุ
-          <br />
-          ( ก่อน / หลัง )
-        </>
+        <>หมายเหตุ</>
       ),
       dataIndex: 'note',
       key: 'note',
-      width: 150,
+      width: 140,
       render: (_: any, record: any) => {
-        const beforeNote = record.before_note || '-';
-        const afterNote = record.after_note || '-';
-        return [beforeNote, afterNote].filter(Boolean).join(' / ');
+        return record.after_note || '-';
       },
     },
     {
       title: 'จัดการข้อมูล',
       key: 'action',
-      width: 120,
+      width: 140,
       render: (_: any, record: any) => {
         // console.log('record:', record);
         return (
@@ -636,7 +613,7 @@ const TTCBdataviz: React.FC = () => {
             <Tooltip title="ลบ">
               <button
                 className="ttcb-circle-btn ttcb-delete-btn"
-                onClick={() => handleDelete([record.before_id, record.after_id])}  // ✅ ส่ง ID เดียว
+                onClick={() => handleDelete([record.before_id, record.after_id])}  // ส่ง ID เดียว
               >
                 <DeleteOutlined />
               </button>
@@ -731,7 +708,7 @@ const TTCBdataviz: React.FC = () => {
       <div className="ttcb-title-header">
         <div>
           <h1>TCB Central</h1>
-          <p>ค่าไนโตรเจนรวมในรูปสารอินทรีย์และแอมโมเนีย</p>
+          <p>กลุ่มแบคทีเรียโคลิฟอร์มทั้งหมดใช้บ่งบอกคุณภาพความสะอาดของน้ำ</p>
         </div>
         <div className="ttcb-card">
           <img src={BeforeWater} alt="Before Water" className="ttcb-photo" />
@@ -1127,18 +1104,6 @@ const TTCBdataviz: React.FC = () => {
         </div>
         <div className="ttcb-select-date">
           <div className="ttcb-filter-status-and-efficiency">
-            <p>ประสิทธิภาพ</p>
-            <Select
-              allowClear
-              placeholder="เลือกประสิทธิภาพ"
-              value={efficiencyFilter}
-              onChange={(v) => setEfficiencyFilter(v || null)}
-              style={{ width: 200 }}
-              options={[
-                { label: "มากกว่า 50%", value: "gt" },
-                { label: "น้อยกว่าหรือเท่ากับ 50%", value: "lte" },
-              ]}
-            />
             <p>สถานะ</p>
             <Select
               allowClear
@@ -1268,14 +1233,6 @@ const TTCBdataviz: React.FC = () => {
                 return recordDate.isBetween(tableDateRange[0], tableDateRange[1], null, '[]');
               })
               .filter((d: any) => {
-                // กรองประสิทธิภาพ
-                if (!efficiencyFilter) return true;
-                const eff = Number(d.efficiency ?? -1);
-                if (efficiencyFilter === "gt") return eff > 50;
-                if (efficiencyFilter === "lte") return eff <= 50;
-                return true;
-              })
-              .filter((d: any) => {
                 // กรองสถานะ
                 if (!statusFilter) return true;
                 return normalizeString(d.status ?? "") === normalizeString(statusFilter);
@@ -1293,44 +1250,50 @@ const TTCBdataviz: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล TCB ใหม่"}
+          title={<span style={{ color: '#1ba0a2ff' }}>เพิ่มข้อมูล TCB ใหม่</span>}
           open={isModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           destroyOnClose
           closable={false}
           centered
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
-          <TTCBCentralForm onCancel={handleAddModalCancel}
-            onSuccess={async () => {
-              await fetchData();      // ✅ โหลดข้อมูลกราฟใหม่
-              await loadTTCBTable();   // ✅ โหลดข้อมูลตารางใหม่
-            }}
-          />
+          <div className="ttcb-container">
+            <TTCBCentralForm onCancel={handleAddModalCancel}
+              onSuccess={async () => {
+                await fetchData();       // โหลดข้อมูลกราฟใหม่
+                await loadTTCBTable();   // โหลดข้อมูลตารางใหม่
+              }}
+            />
+          </div>
         </Modal>
         <Modal
-          title="แก้ไขข้อมูล TCB"
+          title={<span style={{ color: '#1ba0a2ff' }}>แก้ไขข้อมูล TCB</span>}
           open={isEditModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           closable={false}
           destroyOnClose
           centered
           onCancel={handleEditModalCancel}
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
           {editingRecord && (
-            <UpdateTTCBCentralForm
-              initialValues={editingRecord}
-              onSuccess={() => {
-                setTimeout(async () => {
-                  setIsEditModalVisible(false);
-                  setEditRecord(null);
-                  await loadTTCBTable();
-                  await fetchData();
-                }, 500);
-              }}
-              onCancel={handleEditModalCancel}
-            />
+            <div className="up-tds-container">
+              <UpdateTTCBCentralForm
+                initialValues={editingRecord}
+                onSuccess={() => {
+                  setTimeout(async () => {
+                    setIsEditModalVisible(false);
+                    setEditRecord(null);
+                    await loadTTCBTable();
+                    await fetchData();
+                  }, 500);
+                }}
+                onCancel={handleEditModalCancel}
+              />
+            </div>
           )}
         </Modal>
 
