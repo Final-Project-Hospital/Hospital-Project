@@ -4,7 +4,6 @@ import projectThumb from "../../../assets/user/project/project-img.png";
 import projectThumb2 from "../../../assets/user/project/project-img2.png";
 import projectThumb3 from "../../../assets/user/project/project-img3.png";
 import projectShape from "../../../assets/user/project/project-shape.png";
-import projectContentShape from "../../../assets/user/project/project-content-shape.png";
 import { Swiper, SwiperSlide } from "swiper/react";
 import subTitleShape from "../../../assets/user/project/sub-title-shape.png";
 import "swiper/css";
@@ -20,7 +19,6 @@ interface ProjectItem {
   projectUrl: string;
   buttonTitle: string;
   buttonIcon: JSX.Element;
-  projectContentShape: string;
   projectShape: string;
 }
 
@@ -33,7 +31,6 @@ const ProjectData: ProjectItem[] = [
     projectUrl: "/project_details",
     buttonTitle: "View Details",
     buttonIcon: <FaArrowRightLong />,
-    projectContentShape: projectContentShape,
     projectShape: projectShape,
   },
   {
@@ -44,7 +41,6 @@ const ProjectData: ProjectItem[] = [
     projectUrl: "/project_details",
     buttonTitle: "View Details",
     buttonIcon: <FaArrowRightLong />,
-    projectContentShape: projectContentShape,
     projectShape: projectShape,
   },
   {
@@ -55,7 +51,6 @@ const ProjectData: ProjectItem[] = [
     projectUrl: "/project_details",
     buttonTitle: "View Details",
     buttonIcon: <FaArrowRightLong />,
-    projectContentShape: projectContentShape,
     projectShape: projectShape,
   },
   {
@@ -66,7 +61,6 @@ const ProjectData: ProjectItem[] = [
     projectUrl: "/project_details",
     buttonTitle: "View Details",
     buttonIcon: <FaArrowRightLong />,
-    projectContentShape: projectContentShape,
     projectShape: projectShape,
   },
 ];

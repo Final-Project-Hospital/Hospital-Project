@@ -6,7 +6,6 @@ interface ProjectCardProps {
   projectThumb: string;
   projectSubTitle: string;
   projectShape: string;
-  projectContentShape: string;
   projectTitle: string;
   projectUrl: string;
   buttonTitle: string;
@@ -17,7 +16,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   projectThumb,
   projectSubTitle,
   projectShape,
-  projectContentShape,
   projectTitle,
   projectUrl,
   buttonTitle,
@@ -35,12 +33,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         />
       </div>
       <div className="w-11/12 -mt-[42px] bg-[#f5f8ed] rounded-md overflow-hidden px-4 md:px-8 pb-8 transition-all duration-500 relative z-10 before:absolute before:left-0 before:w-[5px] before:h-full before:bg-PrimaryColor-0 before:-z-10 before:transition-all before:duration-500 group-hover:before:w-full group-hover:-mt-[86px]">
-        <img
-          src={projectContentShape}
-          draggable="false"
-          className="absolute bottom-0 right-10 animate-dance2 -z-10 opacity-0 transition-all
-           duration-500 group-hover:opacity-100"
-        />
         <h6 className="font-AlbertSans font-medium text-TextColor-0 transition-all duration-500 group-hover:text-white pt-[30px]">
           {projectSubTitle}
         </h6>
