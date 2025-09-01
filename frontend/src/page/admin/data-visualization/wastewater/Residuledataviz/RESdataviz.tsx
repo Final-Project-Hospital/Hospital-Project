@@ -1293,44 +1293,50 @@ const RESdataviz: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล Residule ใหม่"}
+          title={<span style={{ color: '#1ba0a2ff' }}>เพิ่มข้อมูล Residule ใหม่</span>}
           open={isModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           destroyOnClose
           closable={false}
           centered
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
-          <RESCentralForm onCancel={handleAddModalCancel}
-            onSuccess={async () => {
-              await fetchData();      // ✅ โหลดข้อมูลกราฟใหม่
-              await loadRESTable();   // ✅ โหลดข้อมูลตารางใหม่
-            }}
-          />
+          <div className="res-container">
+            <RESCentralForm onCancel={handleAddModalCancel}
+              onSuccess={async () => {
+                await fetchData();      // โหลดข้อมูลกราฟใหม่
+                await loadRESTable();   // โหลดข้อมูลตารางใหม่
+              }}
+            />
+          </div>
         </Modal>
         <Modal
-          title="แก้ไขข้อมูล Residule"
+          title={<span style={{ color: '#1ba0a2ff' }}>แก้ไขข้อมูล Residule</span>}
           open={isEditModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           closable={false}
           destroyOnClose
           centered
           onCancel={handleEditModalCancel}
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
           {editingRecord && (
-            <UpdateRESCentralForm
-              initialValues={editingRecord}
-              onSuccess={() => {
-                setTimeout(async () => {
-                  setIsEditModalVisible(false);
-                  setEditRecord(null);
-                  await loadRESTable();
-                  await fetchData();
-                }, 500);
-              }}
-              onCancel={handleEditModalCancel}
-            />
+            <div className="up-tds-container">
+              <UpdateRESCentralForm
+                initialValues={editingRecord}
+                onSuccess={() => {
+                  setTimeout(async () => {
+                    setIsEditModalVisible(false);
+                    setEditRecord(null);
+                    await loadRESTable();
+                    await fetchData();
+                  }, 500);
+                }}
+                onCancel={handleEditModalCancel}
+              />
+            </div>
           )}
         </Modal>
 

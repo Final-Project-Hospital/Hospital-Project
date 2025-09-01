@@ -1293,44 +1293,50 @@ const TKNdataviz: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล TKN ใหม่"}
+          title={<span style={{ color: '#1ba0a2ff' }}>เพิ่มข้อมูล TKN ใหม่</span>}
           open={isModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           destroyOnClose
           closable={false}
           centered
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
-          <TKNCentralForm onCancel={handleAddModalCancel}
-            onSuccess={async () => {
-              await fetchData();      // ✅ โหลดข้อมูลกราฟใหม่
-              await loadTKNTable();   // ✅ โหลดข้อมูลตารางใหม่
-            }}
-          />
+          <div className="tkn-container">
+            <TKNCentralForm onCancel={handleAddModalCancel}
+              onSuccess={async () => {
+                await fetchData();      // โหลดข้อมูลกราฟใหม่
+                await loadTKNTable();   // โหลดข้อมูลตารางใหม่
+              }}
+            />
+          </div>
         </Modal>
         <Modal
-          title="แก้ไขข้อมูล TKN"
+          title={<span style={{ color: '#1ba0a2ff' }}>แก้ไขข้อมูล TKN</span>}
           open={isEditModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           closable={false}
           destroyOnClose
           centered
           onCancel={handleEditModalCancel}
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
           {editingRecord && (
-            <UpdateTKNCentralForm
-              initialValues={editingRecord}
-              onSuccess={() => {
-                setTimeout(async () => {
-                  setIsEditModalVisible(false);
-                  setEditRecord(null);
-                  await loadTKNTable();
-                  await fetchData();
-                }, 500);
-              }}
-              onCancel={handleEditModalCancel}
-            />
+            <div className="up-tds-container">
+              <UpdateTKNCentralForm
+                initialValues={editingRecord}
+                onSuccess={() => {
+                  setTimeout(async () => {
+                    setIsEditModalVisible(false);
+                    setEditRecord(null);
+                    await loadTKNTable();
+                    await fetchData();
+                  }, 500);
+                }}
+                onCancel={handleEditModalCancel}
+              />
+            </div>
           )}
         </Modal>
 

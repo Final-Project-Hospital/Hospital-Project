@@ -1323,44 +1323,50 @@ const BODdataviz: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล BOD ใหม่"}
+          title={<span style={{ color: '#1ba0a2ff' }}>เพิ่มข้อมูล BOD ใหม่</span>}
           open={isModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           destroyOnClose
           closable={false}
           centered
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
+          <div className="bod-container">
           <BODCentralForm onCancel={handleAddModalCancel}
             onSuccess={async () => {
-              await fetchData();      // ✅ โหลดข้อมูลกราฟใหม่
-              await loadBODTable();   // ✅ โหลดข้อมูลตารางใหม่
+              await fetchData();      // โหลดข้อมูลกราฟใหม่
+              await loadBODTable();   // โหลดข้อมูลตารางใหม่
             }}
           />
+          </div>
         </Modal>
         <Modal
-          title="แก้ไขข้อมูล BOD"
+          title={<span style={{ color: '#1ba0a2ff' }}>แก้ไขข้อมูล BOD</span>}
           open={isEditModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           closable={false}
           destroyOnClose
           centered
           onCancel={handleEditModalCancel}
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
           {editingRecord && (
-            <UpdateBODCentralForm
-              initialValues={editingRecord}
-              onSuccess={() => {
-                setTimeout(async () => {
-                  setIsEditModalVisible(false);
-                  setEditRecord(null);
-                  await loadBODTable();
-                  await fetchData();
-                }, 500);
-              }}
-              onCancel={handleEditModalCancel}
-            />
+            <div className="up-tds-container">
+              <UpdateBODCentralForm
+                initialValues={editingRecord}
+                onSuccess={() => {
+                  setTimeout(async () => {
+                    setIsEditModalVisible(false);
+                    setEditRecord(null);
+                    await loadBODTable();
+                    await fetchData();
+                  }, 500);
+                }}
+                onCancel={handleEditModalCancel}
+              />
+            </div>
           )}
         </Modal>
 

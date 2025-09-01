@@ -26,16 +26,13 @@ func CreateTCOD(c *gin.Context) {
 	fmt.Println("Creating Environment Record")
 
 	var input struct {
-		Data                   float64
-		Date                   time.Time
-		Note                   string
-		BeforeAfterTreatmentID uint
-		EnvironmentID          uint
-		ParameterID            uint
-		StandardID             uint
-		UnitID                 uint
-		EmployeeID             uint
-		CustomUnit             string
+		Data       float64   `json:"data"`
+		Date       time.Time `json:"date"`
+		Note       string    `json:"note"`
+		StandardID uint      `json:"standardID"`
+		UnitID     uint      `json:"unitID"`
+		EmployeeID uint      `json:"employeeID"`
+		CustomUnit string    `json:"customUnit"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -46,29 +43,24 @@ func CreateTCOD(c *gin.Context) {
 
 	db := config.DB()
 
+	// ตรวจสอบและสร้างหน่วยใหม่ถ้ามี CustomUnit
 	if input.CustomUnit != "" {
 		var existingUnit entity.Unit
 		if err := db.Where("unit_name = ?", input.CustomUnit).First(&existingUnit).Error; err == nil {
-			// เจอ unit ที่มีอยู่แล้ว
 			input.UnitID = existingUnit.ID
 		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			// ไม่เจอ unit -> สร้างใหม่
-			newUnit := entity.Unit{
-				UnitName: input.CustomUnit,
-			}
-			if err := db.Create(&newUnit).Error; err != nil {
-				fmt.Println(" ไม่สามารถสร้างหน่วยใหม่ได้:", err) // แค่ขึ้น log
-				// ไม่คืน error ไปยัง frontend
-			} else {
+			newUnit := entity.Unit{UnitName: input.CustomUnit}
+			if err := db.Create(&newUnit).Error; err == nil {
 				input.UnitID = newUnit.ID
+			} else {
+				fmt.Println("ไม่สามารถสร้างหน่วยใหม่ได้:", err)
 			}
 		} else {
-			// เกิด error อื่นขณะเช็กหน่วย
-			fmt.Println(" เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err) // แค่ขึ้น log
-			// ไม่คืน error ไปยัง frontend
+			fmt.Println("เกิดข้อผิดพลาดในการตรวจสอบหน่วย:", err)
 		}
 	}
 
+	// หา parameter
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?", "Chemical Oxygen Demand").First(&parameter).Error; err != nil {
 		fmt.Println("Error fetching parameter:", err)
@@ -76,6 +68,7 @@ func CreateTCOD(c *gin.Context) {
 		return
 	}
 
+	// หา environment
 	var environment entity.Environment
 	if err := db.Where("environment_name = ?", "น้ำประปา").First(&environment).Error; err != nil {
 		fmt.Println("Error fetching environment:", err)
@@ -83,12 +76,14 @@ func CreateTCOD(c *gin.Context) {
 		return
 	}
 
+	// หา standard
 	var standard entity.Standard
 	if err := db.First(&standard, input.StandardID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูลเกณฑ์มาตรฐาน"})
 		return
 	}
 
+	// ฟังก์ชันตรวจสอบสถานะ
 	getStatusID := func(value float64) uint {
 		var status entity.Status
 		if standard.MiddleValue != -1 { // ค่าเดี่ยว
@@ -107,13 +102,24 @@ func CreateTCOD(c *gin.Context) {
 		return status.ID
 	}
 
+	// หา record ของวันเดียวกัน
+	startOfDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	if err := db.Where("date >= ? AND date < ? AND parameter_id = ? AND environment_id = ?", startOfDay, endOfDay, parameter.ID, environment.ID).
+		Delete(&entity.EnvironmentalRecord{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบไม่สำเร็จ"})
+		return
+	}
+
+	// สร้าง Environment Record ใหม่
 	environmentRecord := entity.EnvironmentalRecord{
 		Date:                   input.Date,
 		Data:                   input.Data,
 		Note:                   input.Note,
-		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
+		BeforeAfterTreatmentID: 2, // หลัง
 		EnvironmentID:          environment.ID,
-		ParameterID:            parameter.ID, // แก้ตรงนี้
+		ParameterID:            parameter.ID,
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,
@@ -127,7 +133,7 @@ func CreateTCOD(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "Chemical Oxygen Demand created successfully", // แก้ข้อความตรงนี้
+		"message": "TCOD created successfully",
 		"data":    environmentRecord,
 	})
 }
@@ -384,17 +390,6 @@ func GetTCODTABLE(c *gin.Context) {
 			tcodMap[k].AfterID = &rec.ID
 		}
 
-		// Efficiency
-		if tcodMap[k].BeforeValue != nil && tcodMap[k].AfterValue != nil && *tcodMap[k].BeforeValue != 0 {
-			eff := ((*tcodMap[k].BeforeValue - *tcodMap[k].AfterValue) / (*tcodMap[k].BeforeValue)) * 100
-			// ✅ ถ้าค่าติดลบให้กลายเป็น 0.00
-			//fmt.Printf("Efficiency2: %.2f\n", eff)
-			if eff < 0 {
-				eff = 0.00
-			}
-			tcodMap[k].Efficiency = &eff
-		}
-
 		// คำนวณ Status
 		if tcodMap[k].AfterValue != nil && latestRec.StandardID != 0 {
 			var std entity.Standard
@@ -414,7 +409,7 @@ func GetTCODTABLE(c *gin.Context) {
 					}
 				}
 
-				// ✅ อัปเดตลง DB ทันที (อัปเดต record หลังการบำบัด)
+				// อัปเดตลง DB ทันที (อัปเดต record หลังการบำบัด)
 				if tcodMap[k].AfterID != nil {
 					db.Model(&entity.EnvironmentalRecord{}).
 						Where("id = ?", *tcodMap[k].AfterID).
@@ -480,21 +475,7 @@ func UpdateOrCreateTCOD(c *gin.Context) {
 
 	db := config.DB()
 
-	var environment entity.Environment
-	if err := db.Where("environment_name = ?", "น้ำประปา").First(&environment).Error; err != nil {
-		fmt.Println("Error fetching environment:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
-		return
-	}
-
-	var parameter entity.Parameter
-	if err := db.Where("parameter_name = ?", "Chemical Oxygen Demand").First(&parameter).Error; err != nil {
-		fmt.Println("Error fetching parameter:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
-		return
-	}
-
-	// ✅ ถ้า StandardID = 0 → สร้างใหม่จาก CustomStandard (ถ้าไม่มีซ้ำ)
+	// ถ้า StandardID = 0 → สร้างใหม่จาก CustomStandard (ถ้าไม่มีซ้ำ)
 	if input.StandardID == 0 && input.CustomStandard != nil {
 		var existing entity.Standard
 		query := db.Model(&entity.Standard{})
@@ -538,17 +519,16 @@ func UpdateOrCreateTCOD(c *gin.Context) {
 		}
 	}
 
-	// ✅ โหลด Standard ที่จะใช้
+	// โหลด Standard
 	var standard entity.Standard
 	if err := db.First(&standard, input.StandardID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูลเกณฑ์มาตรฐาน"})
 		return
 	}
 
-	// ✅ ฟังก์ชันคำนวณสถานะ
+	// ฟังก์ชันคำนวณ Status
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-
 		if standard.MiddleValue != -1 {
 			if value <= float64(standard.MiddleValue) {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
@@ -562,11 +542,10 @@ func UpdateOrCreateTCOD(c *gin.Context) {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		}
-
 		return status.ID
 	}
 
-	// ✅ เช็ก CustomUnit → บันทึกถ้ายังไม่มี
+	// ตรวจสอบ CustomUnit
 	if input.CustomUnit != nil && *input.CustomUnit != "" {
 		var unit entity.Unit
 		if err := db.Where("unit_name = ?", *input.CustomUnit).First(&unit).Error; err == nil {
@@ -578,10 +557,10 @@ func UpdateOrCreateTCOD(c *gin.Context) {
 			}
 		}
 	}
-
-	// ✅ Update หรือ Create
+	// ให้ BeforeAfterTreatmentID = หลัง
+	input.BeforeAfterTreatmentID = 2
+	// Update หรือ Create
 	if input.ID != 0 {
-		// Update
 		var existing entity.EnvironmentalRecord
 		if err := db.First(&existing, input.ID).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูล"})
@@ -604,16 +583,6 @@ func UpdateOrCreateTCOD(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปเดตข้อมูลล้มเหลว"})
 			return
 		}
-		// ✅ อัปเดต Unit ให้ record ทั้งวันเดียวกัน
-		sameDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
-		startOfDay := sameDay
-		endOfDay := sameDay.Add(24 * time.Hour)
-
-		db.Model(&entity.EnvironmentalRecord{}).
-			Where("date >= ? AND date < ?", startOfDay, endOfDay).
-			Where("parameter_id = ?",parameter.ID).
-			Where("environment_id = ?", environment.ID).
-			Update("unit_id", input.UnitID)
 
 		c.JSON(http.StatusOK, gin.H{"message": "อัปเดตข้อมูลสำเร็จ", "data": existing})
 
@@ -624,18 +593,6 @@ func UpdateOrCreateTCOD(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "สร้างข้อมูลล้มเหลว"})
 			return
 		}
-		// ✅ อัปเดต Unit ให้ record ทั้งวันเดียวกัน
-		sameDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
-		startOfDay := sameDay
-		endOfDay := sameDay.Add(24 * time.Hour)
-
-		db.Model(&entity.EnvironmentalRecord{}).
-			Where("date >= ? AND date < ?", startOfDay, endOfDay).
-			Where("parameter_id = ?",parameter.ID).
-			Where("environment_id = ?", environment.ID).
-			Update("unit_id", input.UnitID)
-
-		c.JSON(http.StatusOK, gin.H{"message": "สร้างข้อมูลใหม่สำเร็จ", "data": input})
 	}
 }
 
@@ -817,7 +774,7 @@ func GetBeforeAfterTCOD(c *gin.Context) {
 				units.unit_name`).
 		Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
 		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
-		Where("parameter_id = ? AND before_after_treatment_id = ? AND environment_id = ? ", parameter.ID, Before.ID,environment.ID).
+		Where("parameter_id = ? AND before_after_treatment_id = ? AND environment_id = ?", parameter.ID, Before.ID, environment.ID).
 		Order("environmental_records.date DESC").
 		First(&latestBefore).Error
 
@@ -830,7 +787,7 @@ func GetBeforeAfterTCOD(c *gin.Context) {
 				units.unit_name`).
 		Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
 		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
-		Where("parameter_id = ? AND before_after_treatment_id = ? AND environment_id = ? ", parameter.ID, After.ID,environment.ID).
+		Where("parameter_id = ? AND before_after_treatment_id = ? AND environment_id = ?", parameter.ID, After.ID, environment.ID).
 		Order("environmental_records.date DESC").
 		First(&latestAfter).Error
 
