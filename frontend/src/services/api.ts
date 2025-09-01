@@ -65,32 +65,34 @@ export const getAuthHeader = (): Record<string, string> => {
 export const api = axios.create({ baseURL: apiUrl });
 
 // แนบ header อัตโนมัติในทุก request (แต่ไม่เขียนทับถ้ามีมาแล้ว)
-api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  if (!config.headers) {
-    // แก้ไขให้ type-safe
-    config.headers = {};
-  }
-
-  const headers = config.headers as Record<string, string>;
-  const hasAuth = !!headers["Authorization"];
-
-  // ใส่ Content-Type อัตโนมัติ (ยกเว้น FormData)
-  const isFormData =
-    typeof FormData !== "undefined" && config.data instanceof FormData;
-  if (!isFormData && !headers["Content-Type"]) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  // ใส่ Authorization ถ้ายังไม่มี
-  if (!hasAuth && !(config as any).skipAuth) {
-    const auth = getAuthHeader();
-    if (auth.Authorization) {
-      headers["Authorization"] = auth.Authorization;
+api.interceptors.request.use(
+  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
+    if (!config.headers) {
+      // แก้ไขให้ type-safe
+      config.headers = {} as InternalAxiosRequestConfig["headers"];
     }
-  }
 
-  return config;
-});
+    const headers = config.headers as Record<string, string>;
+    const hasAuth = !!headers["Authorization"];
+
+    // ใส่ Content-Type อัตโนมัติ (ยกเว้น FormData)
+    const isFormData =
+      typeof FormData !== "undefined" && config.data instanceof FormData;
+    if (!isFormData && !headers["Content-Type"]) {
+      headers["Content-Type"] = "application/json";
+    }
+
+    // ใส่ Authorization ถ้ายังไม่มี
+    if (!hasAuth && !(config as any).skipAuth) {
+      const auth = getAuthHeader();
+      if (auth.Authorization) {
+        headers["Authorization"] = auth.Authorization;
+      }
+    }
+
+    return config;
+  }
+);
 
 // ===== Response Interceptor =====
 api.interceptors.response.use(
@@ -107,3 +109,4 @@ api.interceptors.response.use(
 
 export { apiUrl } from "./index";
 export default api;
+
