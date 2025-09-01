@@ -28,10 +28,16 @@ func ListReportHardware(c *gin.Context) {
 		return
 	}
 
-	// กรองเฉพาะค่าที่เกิน Standard
+	// กรองเฉพาะค่าที่เกินหรือ ต่ำกว่ามาตรฐาน
 	for _, report := range allReports {
 		if report.HardwareParameter != nil && report.HardwareParameter.StandardHardware != nil {
-			if report.Data > report.HardwareParameter.StandardHardware.MaxValueStandard {
+			std := report.HardwareParameter.StandardHardware
+
+			// ถ้า Max หรือ Min = 0 ให้ข้าม
+			isOver := std.MaxValueStandard != 0 && report.Data > std.MaxValueStandard
+			isUnder := std.MinValueStandard != 0 && report.Data < std.MinValueStandard
+
+			if isOver || isUnder {
 				overStandardReports = append(overStandardReports, report)
 			}
 		}
@@ -39,3 +45,4 @@ func ListReportHardware(c *gin.Context) {
 
 	c.JSON(http.StatusOK, overStandardReports)
 }
+

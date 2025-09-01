@@ -214,6 +214,7 @@ const Signin = ({ handleSignIn }: any) => {
             label="เบอร์โทรศัพท์"
             className="mb-3"
             rules={[
+              { required: true, message: "กรุณากรอกเบอร์โทรศัพท์" },
               {
                 validator: (_, value) => {
                   if (!value || value.trim() === "") {
