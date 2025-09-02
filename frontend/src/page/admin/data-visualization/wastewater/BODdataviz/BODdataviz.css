@@ -80,7 +80,8 @@
   color: #1b4242;
   margin-top: 10px;
   display: flex;
-  align-items: center; /* จัดกลางแนวตั้ง */
+  align-items: center;
+  /* จัดกลางแนวตั้ง */
 }
 
 .bod-back-icon {
@@ -150,6 +151,7 @@
   background-color: #efefef !important;
   border-radius: 50px !important;
 }
+
 .apexcharts-tooltip {
   box-shadow: none !important;
   /* border: none !important; */
@@ -251,7 +253,8 @@
   color: #1b4242;
   margin-top: 10px;
   display: flex;
-  align-items: center; /* จัดกลางแนวตั้ง */
+  align-items: center;
+  /* จัดกลางแนวตั้ง */
 }
 
 .bod-search-box {
@@ -379,7 +382,7 @@
 
 .bod-title-text-table {
   margin: 0;
-  font-weight:normal;
+  font-weight: normal;
   font-size: 1.25rem;
   color: #494949;
 }
@@ -712,4 +715,30 @@
     max-width: 1200px !important;
     margin-top: 60px !important;
   }
+}
+
+/* ไม่ใช้กรอบที่มีเงาจากหน้าบันทึก ที่ import มา*/
+.bod-container {
+  all: unset !important;
+  padding: 0px !important;
+  margin: 0px 0px 0px 0px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+  font-size: inherit !important;
+}
+
+/* ไม่ใช้กรอบที่มีเงาจากหน้าแก้ไข ที่ import มา*/
+.up-tds-container {
+  all: unset !important;
+  padding: 0px !important;
+  margin: 0px 0px 0px 0px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+  font-size: inherit !important;
 }
