@@ -4,6 +4,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+
+# เพิ่ม heap memory ตอน build
+ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN npm run build
 
 # Runtime stage
