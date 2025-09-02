@@ -735,14 +735,13 @@ const AdminDashboard: React.FC = () => {
       const isEfficiency =
         /efficiency/i.test(title) || title.includes("ประสิทธิภาพ");
 
-      const baseAnnotations: NonNullable<ApexOptions["annotations"]> = {
-        position: "front",
-        yaxis: [],
-        xaxis: [],
-        points: [],
-        texts: [],
-        images: [],
-      };
+    const baseAnnotations: NonNullable<ApexOptions["annotations"]> = {
+      yaxis: [],
+      xaxis: [],
+      points: [],
+      texts: [],
+      images: [],
+    };
 
       if (showStandard && !isEfficiency && !isGarbage && stdMode !== "none") {
         if (stdMode === "middle" && stdMid) {
@@ -972,7 +971,7 @@ const AdminDashboard: React.FC = () => {
     {/* Prediction Box */}
     <div className="bg-white/90 border border-cyan-200 px-5 py-4 rounded-xl text-center min-w-[300px] shadow-lg">
       <h3 className="text-base font-medium text-cyan-800 mb-2 leading-snug">
-        ค่า pH น้ำเสียก่อนบำบัด (คาดการณ์เดือนถัดไป)
+        ค่า TDS น้ำเสียหลังบำบัด (คาดการณ์เดือนถัดไป)
       </h3>
       {predictionLoading ? (
         <p className="text-gray-600 m-0">กำลังคำนวณ...</p>

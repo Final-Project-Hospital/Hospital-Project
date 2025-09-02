@@ -1,8 +1,9 @@
-version: "3.9"
 
 services:
   python-backend:
-    build: ./backend/model
+    build:
+      context: ./backend/model
+      dockerfile: Dockerfile
     container_name: python-backend
     ports:
       - "5000:5000"
@@ -10,15 +11,21 @@ services:
       - app-network
 
   go-backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: go-backend
     ports:
       - "8000:8000"
+    depends_on:
+      - python-backend   # รอ Python service พร้อมก่อน
     networks:
       - app-network
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: frontend
     ports:
       - "3000:80"
