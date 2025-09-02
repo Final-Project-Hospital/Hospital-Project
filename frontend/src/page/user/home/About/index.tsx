@@ -1,14 +1,14 @@
 // 📁 About.tsx
 import { Link } from "react-router-dom";
 
-import aboutThumb from "../../../assets/user/about/about.png";
-import aboutAward from "../../../assets/user/about/about-award.png";
-import aboutIcon from "../../../assets/user/about/about-icon.png";
-import aboutIcon2 from "../../../assets/user/about/about-icon2.png";
-import aboutShape from "../../../assets/user/about/about-shape.png";
-import aboutShape2 from "../../../assets/user/about/about-shape-1.png";
-import buttonShape from "../../../assets/user/about/button-shape-1.png";
-import subTitleShape from "../../../assets/user/about/sub-title-shape.png";
+import aboutThumb from "../../../../assets/user/about/about.png";
+import aboutAward from "../../../../assets/user/about/about-award.png";
+import aboutIcon from "../../../../assets/user/about/about-icon.png";
+import aboutIcon2 from "../../../../assets/user/about/about-icon2.png";
+import aboutShape from "../../../../assets/user/about/about-shape.png";
+import aboutShape2 from "../../../../assets/user/about/about-shape-1.png";
+import buttonShape from "../../../../assets/user/about/button-shape-1.png";
+import subTitleShape from "../../../../assets/user/about/sub-title-shape.png";
 
 const About: React.FC = () => {
   return (

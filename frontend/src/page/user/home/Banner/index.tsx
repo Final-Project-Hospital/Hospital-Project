@@ -4,7 +4,7 @@ import type { SwiperOptions } from "swiper/types";
 import "swiper/css";
 import "./banner.css";
 import { Pagination } from "swiper/modules";
-import LogoPage from "../../../assets/user/env.jpg";
+import LogoPage from "../../../../assets/user/env.jpg";
 
 const Banner: React.FC = () => {
   const settings: SwiperOptions = {

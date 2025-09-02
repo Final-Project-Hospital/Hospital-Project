@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import processIcon from "../../../assets/user/process/process-icon.png";
-import processIcon2 from "../../../assets/user/process/process-icon2.png";
-import processIcon3 from "../../../assets/user/process/process-icon3.png";
-import boxShape from "../../../assets/user/process/process-arrow.png";
-import boxShape2 from "../../../assets/user/process/process-arrow2.png";
-import subTitleShape from "../../../assets/user/process/sub-title-shape.png";
+import processIcon from "../../../../assets/user/process/process-icon.png";
+import processIcon2 from "../../../../assets/user/process/process-icon2.png";
+import processIcon3 from "../../../../assets/user/process/process-icon3.png";
+import boxShape from "../../../../assets/user/process/process-arrow.png";
+import boxShape2 from "../../../../assets/user/process/process-arrow2.png";
+import subTitleShape from "../../../../assets/user/process/sub-title-shape.png";
 import ProcessCard, { ProcessCardProps } from "./ProcessCard";
 
 const processData: ProcessCardProps[] = [

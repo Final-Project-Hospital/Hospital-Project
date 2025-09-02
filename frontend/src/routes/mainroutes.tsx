@@ -5,7 +5,7 @@ import Loadable from "../component/third-patry/Loadable";
 const Login = Loadable(lazy(() => import("../page/login")));
 
 // User Role
-const User = Loadable(lazy(() => import("../page/user/")));
+const User = Loadable(lazy(() => import("../page/user/home")));
 const MainUser = Loadable(lazy(() => import("../component/user/Main")));
 
 // Admin Role 
@@ -108,6 +108,13 @@ const REC = Loadable(lazy(() => import("../page/admin/data-management/garbage/re
 const UserRoutes = (): RouteObject[] => [
   {
     path: "/",
+    element: <MainUser />,
+    children: [
+      { index: true, element: <User /> },
+    ],
+  },
+  {
+    path: "/guest",
     element: <MainUser />,
     children: [
       { index: true, element: <User /> },

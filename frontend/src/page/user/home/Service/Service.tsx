@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import serviceImg from "../../../assets/user/servic/service-thumb.png";
-import serviceImg2 from "../../../assets/user/servic/service-thumb2.png";
-import serviceImg3 from "../../../assets/user/servic/service-thumb3.png";
-import serviceIcon from "../../../assets/user/servic/service-icon1.png";
-import serviceIcon2 from "../../../assets/user/servic/service-icon2.png";
-import serviceIcon3 from "../../../assets/user/servic/service-icon3.png";
-import serviceShape from "../../../assets/user/servic/service-shape.png";
-import subTitleShape from "../../../assets/user/servic/sub-title-shape.png";
+import serviceImg from "../../../../assets/user/servic/service-thumb.png";
+import serviceImg2 from "../../../../assets/user/servic/service-thumb2.png";
+import serviceImg3 from "../../../../assets/user/servic/service-thumb3.png";
+import serviceIcon from "../../../../assets/user/servic/service-icon1.png";
+import serviceIcon2 from "../../../../assets/user/servic/service-icon2.png";
+import serviceIcon3 from "../../../../assets/user/servic/service-icon3.png";
+import serviceShape from "../../../../assets/user/servic/service-shape.png";
+import subTitleShape from "../../../../assets/user/servic/sub-title-shape.png";
 import { Swiper, SwiperSlide } from "swiper/react";
 import ServiceNavigation from "./ServiceNavigation";
 import ServiceCard, { ServiceCardProps } from "./ServiceCard";

@@ -1,11 +1,11 @@
 /* eslint-disable no-unused-vars */
 import { FaArrowRightLong } from "react-icons/fa6";
-import projectThumb from "../../../assets/user/project/project-img.png";
-import projectThumb2 from "../../../assets/user/project/project-img2.png";
-import projectThumb3 from "../../../assets/user/project/project-img3.png";
-import projectShape from "../../../assets/user/project/project-shape.png";
+import projectThumb from "../../../../assets/user/project/project-img.png";
+import projectThumb2 from "../../../../assets/user/project/project-img2.png";
+import projectThumb3 from "../../../../assets/user/project/project-img3.png";
+import projectShape from "../../../../assets/user/project/project-shape.png";
 import { Swiper, SwiperSlide } from "swiper/react";
-import subTitleShape from "../../../assets/user/project/sub-title-shape.png";
+import subTitleShape from "../../../../assets/user/project/sub-title-shape.png";
 import "swiper/css";
 import ProjectCard from "./ProjectCard";
 import ProjectNavigation from "./ProjectNavigation";
