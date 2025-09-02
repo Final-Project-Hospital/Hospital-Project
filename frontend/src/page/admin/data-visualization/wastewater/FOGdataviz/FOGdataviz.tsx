@@ -555,7 +555,7 @@ const FOGdataviz: React.FC = () => {
       dataIndex: 'standard_value',
       key: 'standard_value',
       width: 160,
-       render: (val: string | number | null | undefined) => {
+      render: (val: string | number | null | undefined) => {
         if (!val) return '-';
         // ถ้าเป็น string และมีขีด (-) ให้แยก
         if (typeof val === 'string' && val.includes('-')) {
@@ -1293,44 +1293,50 @@ const FOGdataviz: React.FC = () => {
         </div>
 
         <Modal
-          title={"เพิ่มข้อมูล FOG ใหม่"}
+          title={<span style={{ color: '#1ba0a2ff' }}>เพิ่มข้อมูล FOG ใหม่</span>}
           open={isModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           destroyOnClose
           closable={false}
           centered
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
-          <FOGCentralForm onCancel={handleAddModalCancel}
-            onSuccess={async () => {
-              await fetchData();      // ✅ โหลดข้อมูลกราฟใหม่
-              await loadFOGTable();   // ✅ โหลดข้อมูลตารางใหม่
-            }}
-          />
+          <div className="fog-container">
+            <FOGCentralForm onCancel={handleAddModalCancel}
+              onSuccess={async () => {
+                await fetchData();      // โหลดข้อมูลกราฟใหม่
+                await loadFOGTable();   // โหลดข้อมูลตารางใหม่
+              }}
+            />
+          </div>
         </Modal>
         <Modal
-          title="แก้ไขข้อมูล FOG"
+          title={<span style={{ color: '#1ba0a2ff' }}>แก้ไขข้อมูล FOG</span>}
           open={isEditModalVisible}
           footer={null}
-          width={1100}
+          width={900}
           closable={false}
           destroyOnClose
           centered
           onCancel={handleEditModalCancel}
+          bodyStyle={{ padding: '35px 35px 20px 35px' }}
         >
           {editingRecord && (
-            <UpdateFOGCentralForm
-              initialValues={editingRecord}
-              onSuccess={() => {
-                setTimeout(async () => {
-                  setIsEditModalVisible(false);
-                  setEditRecord(null);
-                  await loadFOGTable();
-                  await fetchData();
-                }, 500);
-              }}
-              onCancel={handleEditModalCancel}
-            />
+            <div className="up-tds-container">
+              <UpdateFOGCentralForm
+                initialValues={editingRecord}
+                onSuccess={() => {
+                  setTimeout(async () => {
+                    setIsEditModalVisible(false);
+                    setEditRecord(null);
+                    await loadFOGTable();
+                    await fetchData();
+                  }, 500);
+                }}
+                onCancel={handleEditModalCancel}
+              />
+            </div>
           )}
         </Modal>
 

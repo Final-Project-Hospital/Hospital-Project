@@ -723,3 +723,29 @@
     margin-top: 60px !important;
   }
 }
+
+/* ไม่ใช้กรอบที่มีเงาจากหน้าบันทึก ที่ import มา*/
+.al-container {
+  all: unset !important;
+  padding: 0px !important;
+  margin: 0px 0px 0px 0px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+  font-size: inherit !important;
+}
+
+/* ไม่ใช้กรอบที่มีเงาจากหน้าแก้ไข ที่ import มา*/
+.up-tds-container {
+  all: unset !important;
+  padding: 0px !important;
+  margin: 0px 0px 0px 0px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+  font-size: inherit !important;
+}

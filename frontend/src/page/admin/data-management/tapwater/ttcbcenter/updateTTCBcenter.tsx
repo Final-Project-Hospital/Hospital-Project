@@ -3,21 +3,19 @@ import dayjs from 'dayjs';
 import '../../wastewater/TDScenter/updateTDScenter.css';
 import { Form, InputNumber, Button, DatePicker, TimePicker, Select, Input, message } from 'antd';
 import {
-    ListBeforeAfterTreatment,
     ListMiddleStandard,
     ListRangeStandard,
     ListUnit
 } from '../../../../../services/index';
 import { CheckUnit, CheckStandard } from '../../../../../services/tdsService';
-import { UpdateOrCreateTTCB, DeleteTTCB } from '../../../../../services/tapwaterServices/ttcb';
-import { ListBeforeAfterTreatmentInterface } from '../../../../../interface/IBeforeAfterTreatment';
+import { UpdateOrCreateTTCB } from '../../../../../services/tapwaterServices/ttcb';
 import { ListMiddleStandardInterface, ListRangeStandardInterface } from '../../../../../interface/IStandard';
 import { ListUnitInterface } from '../../../../../interface/IUnit';
 
 const { Option } = Select;
 
 interface UpdateTTCBCentralFormProps {
-    initialValues: any; // รับค่า before/after 2 record
+    initialValues: any;
     onSuccess?: () => void;
     onCancel: () => void;
 }
@@ -29,11 +27,9 @@ const UpdateTTCBCentralForm: React.FC<UpdateTTCBCentralFormProps> = ({
 }) => {
     const [form] = Form.useForm();
 
-    const [beforeAfterOptions, setBeforeAfterOptions] = useState<ListBeforeAfterTreatmentInterface[]>([]);
     const [unitOptions, setUnitOptions] = useState<ListUnitInterface[]>([]);
     const [middleStandards, setMiddleStandards] = useState<ListMiddleStandardInterface[]>([]);
     const [rangeStandards, setRangeStandards] = useState<ListRangeStandardInterface[]>([]);
-    const [selectedTreatmentID, setSelectedTreatmentID] = useState<number | null>(null);
 
     const [customSingleValue, setCustomSingleValue] = useState<number | undefined>(undefined);
     const [customMinValue, setCustomMinValue] = useState<number | undefined>(undefined);
@@ -45,26 +41,15 @@ const UpdateTTCBCentralForm: React.FC<UpdateTTCBCentralFormProps> = ({
     const [standardType, setStandardType] = useState('middle');
     const [useCustomStandard, setUseCustomStandard] = useState(false);
 
-
-    const renderCustomTreatmentLabel = (text: string) => (
-        <>
-            ค่า TCB บริเวณบ่อพักน้ำทิ้ง
-            <span style={{ color: '#f45415ff', fontWeight: 'bold' }}>{text}</span>
-            เข้าระบบบำบัด
-        </>
-    );
-
     useEffect(() => {
         // โหลด options
         const fetchInitialData = async () => {
-            const [beforeAfter, units, standardsMiddle, standardsRange] = await Promise.all([
-                ListBeforeAfterTreatment(),
+            const [units, standardsMiddle, standardsRange] = await Promise.all([
                 ListUnit(),
                 ListMiddleStandard(),
                 ListRangeStandard()
             ]);
 
-            if (beforeAfter) setBeforeAfterOptions(beforeAfter);
             if (units) setUnitOptions(units);
             if (standardsMiddle) setMiddleStandards(standardsMiddle);
             if (standardsRange) setRangeStandards(standardsRange);
@@ -75,46 +60,27 @@ const UpdateTTCBCentralForm: React.FC<UpdateTTCBCentralFormProps> = ({
 
     useEffect(() => {
         if (initialValues && initialValues.length > 0) {
-            if (initialValues.length === 2) {
-                const before = initialValues[0];
-                const after = initialValues[1];
+            const single = initialValues[0];
 
-                const stdType = before.MinValue === -1 && before.MaxValue === -1 ? 'middle' : 'range';
-                setStandardType(stdType);
+            // ฟังก์ชันปัดทศนิยม 2 ตำแหน่ง
+            const toTwoDecimal = (value: any) => {
+                if (value === null || value === undefined) return undefined;
+                return Math.round(Number(value) * 100) / 100;
+            };
 
-                form.setFieldsValue({
-                    date: dayjs(before.Date),
-                    time: dayjs(),
-                    unit: before.UnitID ?? 'other',
-                    standardType: stdType,
-                    standardID: before.StandardID,
-                    beforeAfterTreatmentID: 3,
-                    valueBefore: before?.Data ?? undefined, // ✅ map เข้ากับ name="valueBefore"
-                    valueAfter: after?.Data ?? undefined,   // ✅ map เข้ากับ name="valueAfter"
-                    beforeNote: before?.Note || '',
-                    afterNote: after?.Note || ''
-                });
+            const stdType = single.MinValue === -1 && single.MaxValue === -1 ? 'middle' : 'range';
+            setStandardType(stdType);
 
-                setSelectedTreatmentID(3);
-            } else if (initialValues.length === 1) {
-                const single = initialValues[0];
-                const stdType = single.MinValue === -1 && single.MaxValue === -1 ? 'middle' : 'range';
-                setStandardType(stdType);
-
-                form.setFieldsValue({
-                    date: dayjs(single.Date),
-                    time: dayjs(single.Date),
-                    unit: single.UnitID ?? 'other',
-                    standardType: stdType,
-                    standardID: single.StandardID,
-                    beforeAfterTreatmentID: single.BeforeAfterTreatmentID,
-                    data: single?.Data ?? undefined, // ✅ map เข้ากับ name="data"
-                    beforeNote: single.BeforeAfterTreatmentID === 1 ? single.Note || '' : '',
-                    afterNote: single.BeforeAfterTreatmentID === 2 ? single.Note || '' : ''
-                });
-
-                setSelectedTreatmentID(single.BeforeAfterTreatmentID);
-            }
+            form.setFieldsValue({
+                date: dayjs(single.Date),
+                time: dayjs(single.Date),
+                unit: single.UnitID ?? 'other',
+                standardType: stdType,
+                standardID: single.StandardID,
+                beforeAfterTreatmentID: single.BeforeAfterTreatmentID,
+                data: toTwoDecimal(single?.Data),
+                note: single.Note || '',
+            });
         }
     }, [initialValues]);
 
@@ -165,12 +131,13 @@ const UpdateTTCBCentralForm: React.FC<UpdateTTCBCentralFormProps> = ({
             const unitID = isOther ? null : values.unit;
             const customUnitValue = isOther ? values.customUnit : null;
 
-            //const payloads: any[] = [];
-            const deletes: number[] = [];
-
-            // สร้าง payload แรกก่อน
-            const basePayload = {
+            // สร้าง payload สำหรับ update
+            const payload = {
+                ID: initialValues[0]?.ID ?? null,
                 Date: combinedDateTime,
+                Data: values.data,
+                Note: values.note ?? "",
+                BeforeAfterTreatmentID: 2,
                 UnitID: unitID,
                 StandardID: standardID,
                 CustomStandard: standardID === 0
@@ -180,77 +147,18 @@ const UpdateTTCBCentralForm: React.FC<UpdateTTCBCentralFormProps> = ({
                     : null,
                 EmployeeID: employeeID,
                 CustomUnit: customUnitValue,
+                ParameterID: initialValues[0]?.ParameterID,
             };
 
-            if (values.beforeAfterTreatmentID === 3) {
-                // --- Payload แรก (Before)
-                const beforePayload = {
-                    ...basePayload,
-                    ID: initialValues[0]?.ID ?? null,
-                    Data: values.valueBefore,
-                    Note: values.beforeNote ?? "",
-                    BeforeAfterTreatmentID: 1,
-                    ParameterID: initialValues[0]?.ParameterID,
-                };
+            const res = await UpdateOrCreateTTCB(payload);
 
-                // ส่งไปสร้าง/อัปเดต และเก็บ StandardID ที่ backend คืนมา
-                const res = await UpdateOrCreateTTCB(beforePayload);
-                standardID = res?.data?.StandardID ?? standardID;
-
-                // --- Payload สอง (After) ใช้ StandardID ที่สร้างแล้ว
-                const afterPayload = {
-                    ...basePayload,
-                    StandardID: standardID,
-                    CustomStandard: null, // ป้องกันไม่ให้สร้างซ้ำ
-                    ID: initialValues[1]?.ID ?? null,
-                    Data: values.valueAfter,
-                    Note: values.afterNote ?? "",
-                    BeforeAfterTreatmentID: 2,
-                    ParameterID: initialValues[1]?.ParameterID,
-                };
-                await UpdateOrCreateTTCB(afterPayload);
-
-            } else if (values.beforeAfterTreatmentID === 1) {
-                await UpdateOrCreateTTCB({
-                    ...basePayload,
-                    ID: initialValues[0]?.ID ?? null,
-                    Data: values.valueBefore ?? values.data,
-                    Note: values.beforeNote ?? "",
-                    BeforeAfterTreatmentID: 1,
-                    ParameterID: initialValues[0]?.ParameterID,
-                });
-
-                if (initialValues[1]?.ID) {
-                    deletes.push(initialValues[1].ID);
-                }
-
-            } else if (values.beforeAfterTreatmentID === 2) {
-                await UpdateOrCreateTTCB({
-                    ...basePayload,
-                    ID: initialValues[1]?.ID ?? null,
-                    Data: values.valueAfter ?? values.data,
-                    Note: values.afterNote ?? "",
-                    BeforeAfterTreatmentID: 2,
-                    ParameterID: initialValues[1]?.ParameterID,
-                });
-
-                if (initialValues[0]?.ID) {
-                    deletes.push(initialValues[0].ID);
-                }
+            if (res) {
+                messageApi.success("แก้ไขข้อมูลสำเร็จ");
+                if (onSuccess) onSuccess();
             }
-
-            // ลบ record ที่ไม่ใช้แล้ว
-            if (deletes.length > 0) {
-                for (const id of deletes) {
-                    await DeleteTTCB(id);
-                }
-            }
-
-            messageApi.success("แก้ไขข้อมูลสำเร็จ");
-            if (onSuccess) onSuccess();
         } catch (error: any) {
             console.error("Error updating TTCB:", error?.response?.data || error);
-            message.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล handfinish Update");
+            message.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
         }
     };
 
@@ -338,7 +246,7 @@ const UpdateTTCBCentralForm: React.FC<UpdateTTCBCentralFormProps> = ({
                             </Select>
                         </Form.Item>
 
-                        <div style={{ position: 'relative', top: '-15px' }}>
+                        <div style={{ position: 'relative', top: '-17px' }}>
                             {/* ===== ค่าเดี่ยวแบบเลือกจากฐานข้อมูล ===== */}
                             {standardType === 'middle' && !useCustomStandard && (
                                 <Form.Item
@@ -468,114 +376,37 @@ const UpdateTTCBCentralForm: React.FC<UpdateTTCBCentralFormProps> = ({
                     </div>
                 </div>
 
-                {/* Before/After */}
+                {/* Data */}
                 <div className="up-form-group-tds">
-                    <div className="up-form-group-mini-tds">
-                        <Form.Item
-                            label="ก่อน / หลัง / ก่อนและหลังบำบัด"
-                            name="beforeAfterTreatmentID"
-                            rules={[{ required: true, message: 'กรุณาเลือกสถานะ' }]}
-                        >
-                            <Select placeholder="เลือกสถานะ" onChange={(value) => setSelectedTreatmentID(value)}>
-                                {beforeAfterOptions.map((b) => (
-                                    <Option key={b.ID} value={b.ID}>
-                                        {renderCustomTreatmentLabel(b.TreatmentName || '')}
-                                    </Option>
-                                ))}
-                            </Select>
-                        </Form.Item>
-                    </div>
-                    <div className="up-form-group-mini-tds">
-                        {selectedTreatmentID === 3 ? (
-                            <div style={{ display: 'flex', gap: '30px' }}>
-                                <Form.Item
-                                    label="ค่าที่วัดได้ก่อนบำบัด"
-                                    name="valueBefore"
-                                    rules={[
-                                        { required: true, message: 'กรุณากรอกค่าก่อนบำบัด' },
-                                        {
-                                            validator: async (_, value) => {
-                                                if (value === undefined || value === null) return Promise.resolve();
-                                                if (typeof value !== "number" || isNaN(value)) {
-                                                    return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                                }
-                                                return Promise.resolve();
-                                            },
-                                        }
-                                    ]}
-                                    style={{ flex: 1 }}
-                                >
-                                    <InputNumber style={{ width: '100%' }} placeholder="ค่าก่อนบำบัด" step={0.01} />
-                                </Form.Item>
-
-                                <Form.Item
-                                    label="ค่าที่วัดได้หลังบำบัด"
-                                    name="valueAfter"
-                                    rules={[
-                                        { required: true, message: 'กรุณากรอกค่าหลังบำบัด' },
-                                        {
-                                            validator: async (_, value) => {
-                                                if (value === undefined || value === null) return Promise.resolve();
-                                                if (typeof value !== "number" || isNaN(value)) {
-                                                    return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                                }
-                                                return Promise.resolve();
-                                            },
-                                        }
-                                    ]}
-                                    style={{ flex: 1 }}
-                                >
-                                    <InputNumber style={{ width: '100%' }} placeholder="ค่าหลังบำบัด" step={0.01} />
-                                </Form.Item>
-                            </div>
-                        ) : (
-                            <Form.Item
-                                label="ค่าที่วัดได้"
-                                name="data"
-                                rules={[
-                                    { required: true, message: 'กรุณากรอกค่าที่วัดได้' },
-                                    {
-                                        validator: async (_, value) => {
-                                            if (value === undefined || value === null) return Promise.resolve();
-                                            if (typeof value !== "number" || isNaN(value)) {
-                                                return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                            }
-                                            return Promise.resolve();
-                                        },
+                    <Form.Item
+                        label="ค่าที่วัดได้"
+                        name="data"
+                        rules={[
+                            { required: true, message: 'กรุณากรอกค่าที่วัดได้' },
+                            {
+                                validator: async (_, value) => {
+                                    if (value === undefined || value === null) return Promise.resolve();
+                                    if (typeof value !== "number" || isNaN(value)) {
+                                        return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
                                     }
-                                ]}
-                                style={{ flex: 1 }}
-                            >
-                                <InputNumber style={{ width: '100%' }} placeholder="ค่าที่วัดได้" step={0.01} />
-                            </Form.Item>
-                        )}
-                    </div>
-                </div>
+                                    return Promise.resolve();
+                                },
+                            }
+                        ]}
+                    >
+                        <InputNumber
+                            style={{ width: '100%' }}
+                            placeholder="กรอกค่าที่วัดได้"
+                            step={0.01}
+                        />
+                    </Form.Item>
 
-                {/* หมายเหตุ */}
-                <div className="up-form-group-tds">
-                    {selectedTreatmentID === 1 && (
-                        <Form.Item label="หมายเหตุ (ก่อน)" name="beforeNote">
-                            <Input.TextArea rows={2} placeholder="กรอกหมายเหตุก่อนบำบัด" />
-                        </Form.Item>
-                    )}
-
-                    {selectedTreatmentID === 2 && (
-                        <Form.Item label="หมายเหตุ (หลัง)" name="afterNote">
-                            <Input.TextArea rows={2} placeholder="กรอกหมายเหตุหลังบำบัด" />
-                        </Form.Item>
-                    )}
-
-                    {selectedTreatmentID === 3 && (
-                        <>
-                            <Form.Item label="หมายเหตุ (ก่อน)" name="beforeNote">
-                                <Input.TextArea rows={2} placeholder="กรอกหมายเหตุก่อนบำบัด" />
-                            </Form.Item>
-                            <Form.Item label="หมายเหตุ (หลัง)" name="afterNote">
-                                <Input.TextArea rows={2} placeholder="กรอกหมายเหตุหลังบำบัด" />
-                            </Form.Item>
-                        </>
-                    )}
+                    <Form.Item label="หมายเหตุ" name="note">
+                        <Input.TextArea
+                            rows={2}
+                            placeholder="กรอกหมายเหตุ (ถ้ามี)"
+                        />
+                    </Form.Item>
                 </div>
 
                 <Form.Item className="up-form-actions-tds">
