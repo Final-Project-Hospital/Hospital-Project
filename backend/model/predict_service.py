@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
+import pandas as pd
 from flask import Flask, request, jsonify
 from sklearn.preprocessing import MinMaxScaler
-import pandas as pd
 
 app = Flask(__name__)
 
@@ -18,14 +18,13 @@ try:
     df = pd.read_csv('wastewater.csv', sep=',')
     df.columns = df.columns.str.strip()
 
-
     # แปลงคอลัมน์เป็น numeric
-    df['น้ำเข้า ก่อนการบำบัด'] = pd.to_numeric(df['น้ำเข้า ก่อนการบำบัด'], errors='coerce')
+    df['น้ำเสีย หลังการบำบัด'] = pd.to_numeric(df['น้ำเสีย หลังการบำบัด'], errors='coerce')
     
 
     # fit MinMaxScaler
     scaler = MinMaxScaler()
-    scaler.fit(df[['น้ำเข้า ก่อนการบำบัด']].values)
+    scaler.fit(df[['น้ำเสีย หลังการบำบัด']].values)
 
 except Exception as e:
     print(f"Error loading data or fitting scaler: {e}")
@@ -36,7 +35,7 @@ SEQ_LENGTH = 12
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        recent_values = df['น้ำเข้า ก่อนการบำบัด'].tail(SEQ_LENGTH).values
+        recent_values = df['น้ำเสีย หลังการบำบัด'].tail(SEQ_LENGTH).values
         
         if len(recent_values) < SEQ_LENGTH:
             return jsonify({"error": "Not enough data (need at least 12 months) to make a prediction."}), 400
