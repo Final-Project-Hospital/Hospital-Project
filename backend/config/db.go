@@ -96,7 +96,7 @@ func SetupDatabase() {
 		})
 	}
 	// จำลองข้อมูลแบบ "ค่าเดี่ยว"
-	middles := []float32{20.00, 30.00, 35.00, 500.00, 1000.00, 1.00, 5000.00, 0.20, 0.30, 0.10, 50.00, 15.00, 300.00, 0.01, 1.10} //มันสร้าง 0.00 ไม่ได้ (id 16 ใช้เป็น 0.01 อยู่)
+	middles := []float32{20.00, 30.00, 35.00, 500.00, 1000.00, 1.00, 5000.00, 0.20, 0.30, 0.10, 50.00, 15.00, 300.00, 1.10}
 
 	for _, m := range middles {
 		standard := entity.Standard{
@@ -111,6 +111,17 @@ func SetupDatabase() {
 		})
 	}
 
+	// ดึงค่า Standard ที่ MiddleValue = 0.00
+	var zeroStandard entity.Standard
+	if err := db.Where("middle_value = ? AND min_value = ? AND max_value = ?", 0.00, -1, -1).
+		FirstOrCreate(&zeroStandard, entity.Standard{
+			MiddleValue: 0.00,
+			MinValue:    -1,
+			MaxValue:    -1,
+		}).Error; err != nil {
+		fmt.Println("Error finding/creating zero standard:", err)
+	}
+
 	// Status
 	status1 := entity.Status{StatusName: "ไม่ผ่านเกณฑ์มาตรฐาน"}
 	status2 := entity.Status{StatusName: "ผ่านเกณฑ์มาตรฐาน"}
@@ -121,7 +132,7 @@ func SetupDatabase() {
 	db.FirstOrCreate(&status2, entity.Status{StatusName: "ผ่านเกณฑ์มาตรฐาน"})
 	db.FirstOrCreate(&status3, entity.Status{StatusName: "สำเร็จตามเป้าหมาย"})
 	db.FirstOrCreate(&status4, entity.Status{StatusName: "ไม่สำเร็จตามเป้าหมาย"})
-	
+
 	// Unit
 	Unit := entity.Unit{UnitName: "mg/L"}
 	Unit2 := entity.Unit{UnitName: "ไม่มีหน่วย"}
@@ -1114,16 +1125,6 @@ func SetupDatabase() {
 	}
 
 	// COD
-	// beforeValuesCOD := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesCOD := []float64{
 		64, 90, 32, 45, 39, 40, 33, 38, 59, 63,
 		60, 79, 51, 58, 40, 38, 44, 40,
@@ -1139,31 +1140,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeCOD uint
-		// if beforeValuesCOD[i] <= 35.00 {
-		// 	statusIDBeforeCOD = status2.ID
-		// } else {
-		// 	statusIDBeforeCOD = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesCOD[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Wastewater.ID,
-		// 	ParameterID:            param7.ID,
-		// 	StandardID:             5,   //ในสมุดไม่มี
-		// 	UnitID:                 Unit.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeCOD,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Wastewater.ID,
-		// 	ParameterID:            param7.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterCOD uint
 		if afterValuesCOD[i] <= 35.00 {
@@ -1192,16 +1168,6 @@ func SetupDatabase() {
 	}
 
 	// FCB
-	// beforeValuesFCB := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesFCB := []float64{
 		1.8, 4.5, 140, 4.5,
 		2, 7.8, 0, 13, 8, 8, 0, 4.5,
@@ -1223,31 +1189,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeFCB uint
-		// if beforeValuesFCB[i] <= 35.00 {
-		// 	statusIDBeforeFCB = status2.ID
-		// } else {
-		// 	statusIDBeforeFCB = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesFCB[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Wastewater.ID,
-		// 	ParameterID:            param8.ID,
-		// 	StandardID:             7,
-		// 	UnitID:                 Unit4.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeFCB,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Wastewater.ID,
-		// 	ParameterID:            param8.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterFCB uint
 		if afterValuesFCB[i] <= 1000.00 {
@@ -1276,16 +1217,6 @@ func SetupDatabase() {
 	}
 
 	// Residule
-	// beforeValuesRES := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesRES := []float64{
 		0.04, 0.07, 0.02, 0.02, 0.03, 0.03, 0.15, 0.08, 0.05, 0.02, 0.05, 0.12,
 	}
@@ -1299,31 +1230,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeRES uint
-		// if beforeValuesRES[i] <= 35.00 {
-		// 	statusIDBeforeRES = status2.ID
-		// } else {
-		// 	statusIDBeforeRES = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesRES[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Wastewater.ID,
-		// 	ParameterID:            param9.ID,
-		// 	StandardID:             7,
-		// 	UnitID:                 Unit.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeRES,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Wastewater.ID,
-		// 	ParameterID:            param9.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterRES uint
 		if afterValuesRES[i] <= 1.00 {
@@ -1352,16 +1258,6 @@ func SetupDatabase() {
 	}
 
 	// Sulfide
-	// beforeValuesSUL := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesSUL := []float64{
 		0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,
@@ -1383,31 +1279,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeSUL uint
-		// if beforeValuesSUL[i] <= 1.00 {
-		// 	statusIDBeforeSUL = status2.ID
-		// } else {
-		// 	statusIDBeforeSUL = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesSUL[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Wastewater.ID,
-		// 	ParameterID:            param10.ID,
-		// 	StandardID:             8,
-		// 	UnitID:                 Unit.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeSUL,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Wastewater.ID,
-		// 	ParameterID:            param10.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterSUL uint
 		if afterValuesSUL[i] <= 1.00 {
@@ -1436,16 +1307,6 @@ func SetupDatabase() {
 	}
 
 	// TCB
-	// beforeValuesTCB := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesTCB := []float64{
 		21.00, 33.00, 140.00, 240.00,
 		70.00, 23.00, 130.00, 2400.00, 3500.00, 2400.00, 0, 2400.00,
@@ -1467,31 +1328,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeTCB uint
-		// if beforeValuesTCB[i] <= 35.00 {
-		// 	statusIDBeforeTCB = status2.ID
-		// } else {
-		// 	statusIDBeforeTCB = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesTCB[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Wastewater.ID,
-		// 	ParameterID:            param11.ID,
-		// 	StandardID:             9,
-		// 	UnitID:                 Unit4.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeTCB,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Wastewater.ID,
-		// 	ParameterID:            param11.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterTCB uint
 		if afterValuesTCB[i] <= 5000.00 {
@@ -1521,16 +1357,6 @@ func SetupDatabase() {
 
 	// --- Tapwater ---
 	// Al
-	// beforeValuesAL := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesAL := []float64{
 		0, 0, 0, 0,
 		0, 0, 0, 0, 0.20, 0, 0, 0,
@@ -1552,31 +1378,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeAL uint
-		// if beforeValuesAL[i] <= 0.20 {
-		// 	statusIDBeforeAL = status2.ID
-		// } else {
-		// 	statusIDBeforeAL = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesAL[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param17.ID,
-		// 	StandardID:             10,
-		// 	UnitID:                 Unit.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeAL,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param17.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterAL uint
 		if afterValuesAL[i] <= 0.20 {
@@ -1605,16 +1406,6 @@ func SetupDatabase() {
 	}
 
 	// Fe
-	// beforeValuesFE := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesFE := []float64{
 		0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,
@@ -1636,31 +1427,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeFE uint
-		// if beforeValuesFE[i] <= 0.30 {
-		// 	statusIDBeforeFE = status2.ID
-		// } else {
-		// 	statusIDBeforeFE = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesFE[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param18.ID,
-		// 	StandardID:             11,
-		// 	UnitID:                 Unit.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeFE,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param18.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterFE uint
 		if afterValuesFE[i] <= 0.30 {
@@ -1689,16 +1455,6 @@ func SetupDatabase() {
 	}
 
 	// Mn
-	// beforeValuesMN := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesMN := []float64{
 		0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,
@@ -1720,31 +1476,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeMN uint
-		// if beforeValuesMN[i] <= 0.30 {
-		// 	statusIDBeforeMN = status2.ID
-		// } else {
-		// 	statusIDBeforeMN = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesMN[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param19.ID,
-		// 	StandardID:             12,
-		// 	UnitID:                 Unit.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeMN,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param19.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterMN uint
 		if afterValuesMN[i] <= 0.30 {
@@ -1773,16 +1504,6 @@ func SetupDatabase() {
 	}
 
 	// Nitrate
-	// beforeValuesNI := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesNI := []float64{
 		2.50, 2.30, 3.50, 1.40,
 		0.10, 2.00, 1.90, 2.00, 1.90, 2.00, 2.50, 1.90,
@@ -1804,31 +1525,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeNI uint
-		// if beforeValuesNI[i] <= 50.00 {
-		// 	statusIDBeforeNI = status2.ID
-		// } else {
-		// 	statusIDBeforeNI = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesNI[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param16.ID,
-		// 	StandardID:             13,
-		// 	UnitID:                 Unit.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeNI,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param16.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterNI uint
 		if afterValuesNI[i] <= 50.00 {
@@ -1857,16 +1553,6 @@ func SetupDatabase() {
 	}
 
 	// NTU
-	// beforeValuesNTU := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesNTU := []float64{
 		0.60, 0.50, 0.80, 0.50,
 		0.80, 0.60, 0.30, 0.70, 0.70, 0.70, 0.60, 0.70,
@@ -1888,31 +1574,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeNTU uint
-		// if beforeValuesNTU[i] <= 1.00 {
-		// 	statusIDBeforeNTU = status2.ID
-		// } else {
-		// 	statusIDBeforeNTU = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesNTU[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param20.ID,
-		// 	StandardID:             8,
-		// 	UnitID:                 Unit5.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeNTU,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            para20.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterNTU uint
 		if afterValuesNTU[i] <= 1.00 {
@@ -1941,16 +1602,6 @@ func SetupDatabase() {
 	}
 
 	// PT
-	// beforeValuesPT := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesPT := []float64{
 		0, 0, 7.00, 0,
 		0, 0, 4.00, 0, 0, 0, 1.00, 0,
@@ -1972,31 +1623,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforePT uint
-		// if beforeValuesPT[i] <= 1.00 {
-		// 	statusIDBeforePT = status2.ID
-		// } else {
-		// 	statusIDBeforePT = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesPT[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param20.ID,
-		// 	StandardID:             14,
-		// 	UnitID:                 Unit6.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforePT,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            para20.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterPT uint
 		if afterValuesPT[i] <= 15.00 {
@@ -2025,16 +1651,6 @@ func SetupDatabase() {
 	}
 
 	// COD
-	// beforeValuesTCOD := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesTCOD := []float64{
 		3.00, 3.00, 5.00, 4.00,
 		4.00, 3.00, 4.00, 5.00, 5.00, 5.00, 5.00, 7.00,
@@ -2056,31 +1672,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeTCOD uint
-		// if beforeValuesTCOD[i] <= 1.00 {
-		// 	statusIDBeforeTCOD = status2.ID
-		// } else {
-		// 	statusIDBeforeTCOD = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesTCOD[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param7.ID,
-		// 	StandardID:             14,
-		// 	UnitID:                 Unit.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeTCOD,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param7.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterTCOD uint
 		if afterValuesTCOD[i] <= 1.00 {
@@ -2109,16 +1700,6 @@ func SetupDatabase() {
 	}
 
 	// TH
-	// beforeValuesTH := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesTH := []float64{
 		143.00, 147.00, 149.00, 98.00,
 		114.00, 100.00, 100.00, 96.00, 125.00, 110.00, 120.00, 140.00,
@@ -2140,31 +1721,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeTH uint
-		// if beforeValuesTH[i] <= 1.00 {
-		// 	statusIDBeforeTH = status2.ID
-		// } else {
-		// 	statusIDBeforeTH = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesTH[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param15.ID,
-		// 	StandardID:             14,
-		// 	UnitID:                 Unit.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeTH,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param15.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterTH uint
 		if afterValuesTH[i] <= 300.00 {
@@ -2193,16 +1749,6 @@ func SetupDatabase() {
 	}
 
 	// TCB
-	// beforeValuesTTCB := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesTTCB := []float64{
 		1.10, 1.10, 1.10, 1.10,
 		1.10, 1.10, 1.10, 0, 1.10, 1.10, 0, 1.10,
@@ -2224,31 +1770,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeTTCB uint
-		// if beforeValuesTTCB[i] <= 1.00 {
-		// 	statusIDBeforeTTCB = status2.ID
-		// } else {
-		// 	statusIDBeforeTTCB = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesTTCB[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param11.ID,
-		// 	StandardID:             15,
-		// 	UnitID:                 Unit4.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeTTCB,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param11.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterTTCB uint
 		if afterValuesTTCB[i] <= 0.00 {
@@ -2263,7 +1784,7 @@ func SetupDatabase() {
 			BeforeAfterTreatmentID: After.ID,
 			EnvironmentID:          Tapwater.ID,
 			ParameterID:            param11.ID,
-			StandardID:             16,
+			StandardID:             zeroStandard.ID, // 0.00
 			UnitID:                 Unit4.ID,
 			EmployeeID:             Admin.ID,
 			StatusID:               statusIDAfterTTCB,
@@ -2278,16 +1799,6 @@ func SetupDatabase() {
 
 	// --- Drinkwater ---
 	// TCB Glass
-	// beforeValuesDTCB := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesDTCB := []float64{
 		1.10, 1.10, 1.10, 1.10,
 		1.10, 1.10, 0, 0, 0, 0, 0, 0,
@@ -2309,31 +1820,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeDTCB uint
-		// if beforeValuesDTCB[i] <= 1.00 {
-		// 	statusIDBeforeDTCB = status2.ID
-		// } else {
-		// 	statusIDBeforeDTCB = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesDTCB[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param11.ID,
-		// 	StandardID:             17,
-		// 	UnitID:                 Unit4.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeDTCB,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param11.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterDTCB uint
 		if afterValuesDTCB[i] <= 1.10 {
@@ -2348,7 +1834,7 @@ func SetupDatabase() {
 			BeforeAfterTreatmentID: After.ID,
 			EnvironmentID:          Drinkwater.ID,
 			ParameterID:            param11.ID,
-			StandardID:             17,
+			StandardID:             16,
 			UnitID:                 Unit4.ID,
 			EmployeeID:             Admin.ID,
 			StatusID:               statusIDAfterDTCB,
@@ -2362,16 +1848,6 @@ func SetupDatabase() {
 	}
 
 	// TCB Tank
-	// beforeValuesDTCBt := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesDTCBt := []float64{
 		5.10, 1.10, 1.10, 1.10,
 		1.10, 23.00, 0, 0, 0, 0, 0, 0,
@@ -2393,31 +1869,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeDTCBt uint
-		// if beforeValuesDTCBt[i] <= 1.00 {
-		// 	statusIDBeforeDTCBt = status2.ID
-		// } else {
-		// 	statusIDBeforeDTCBt = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesDTCBt[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param29.ID,
-		// 	StandardID:             17,
-		// 	UnitID:                 Unit4.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeDTCBt,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param29.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterDTCBt uint
 		if afterValuesDTCBt[i] <= 1.10 {
@@ -2432,7 +1883,7 @@ func SetupDatabase() {
 			BeforeAfterTreatmentID: After.ID,
 			EnvironmentID:          Drinkwater.ID,
 			ParameterID:            param29.ID,
-			StandardID:             17,
+			StandardID:             16,
 			UnitID:                 Unit4.ID,
 			EmployeeID:             Admin.ID,
 			StatusID:               statusIDAfterDTCBt,
@@ -2446,16 +1897,6 @@ func SetupDatabase() {
 	}
 
 	// FCB Glass
-	// beforeValuesDFCB := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesDFCB := []float64{
 		1.10, 1.10, 1.10, 1.10,
 		1.10, 1.10, 0, 0, 0, 0, 0, 0,
@@ -2477,31 +1918,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeDFCB uint
-		// if beforeValuesDFCB[i] <= 1.00 {
-		// 	statusIDBeforeDFCB = status2.ID
-		// } else {
-		// 	statusIDBeforeDFCB = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesDFCB[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param8.ID,
-		// 	StandardID:             16,
-		// 	UnitID:                 Unit4.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeDFCB,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param8.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterDFCB uint
 		if afterValuesDFCB[i] <= 1.10 {
@@ -2516,7 +1932,7 @@ func SetupDatabase() {
 			BeforeAfterTreatmentID: After.ID,
 			EnvironmentID:          Drinkwater.ID,
 			ParameterID:            param8.ID,
-			StandardID:             16, //ไม่มีในสมุด
+			StandardID:             zeroStandard.ID, // 0.00 (ไม่มีมาตรฐานในสมุด)
 			UnitID:                 Unit4.ID,
 			EmployeeID:             Admin.ID,
 			StatusID:               statusIDAfterDFCB,
@@ -2530,16 +1946,6 @@ func SetupDatabase() {
 	}
 
 	// FCB Tank
-	// beforeValuesDFCBt := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesDFCBt := []float64{
 		1.10, 1.10, 1.10, 1.10,
 		1.10, 1.10, 0, 0, 0, 0, 0, 0,
@@ -2561,31 +1967,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeDFCBt uint
-		// if beforeValuesDFCBt[i] <= 1.00 {
-		// 	statusIDBeforeDFCBt = status2.ID
-		// } else {
-		// 	statusIDBeforeDFCBt = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesDFCBt[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param28.ID,
-		// 	StandardID:             16,
-		// 	UnitID:                 Unit4.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeDFCBt,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param28.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterDFCBt uint
 		if afterValuesDFCBt[i] <= 1.10 {
@@ -2600,7 +1981,7 @@ func SetupDatabase() {
 			BeforeAfterTreatmentID: After.ID,
 			EnvironmentID:          Drinkwater.ID,
 			ParameterID:            param28.ID,
-			StandardID:             16, //ไม่มีในสมุด
+			StandardID:             zeroStandard.ID, // 0.00 (ไม่มีมาตรฐานในสมุด)
 			UnitID:                 Unit4.ID,
 			EmployeeID:             Admin.ID,
 			StatusID:               statusIDAfterDFCBt,
@@ -2614,16 +1995,6 @@ func SetupDatabase() {
 	}
 
 	// E coli Glass
-	// beforeValuesECO := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesECO := []float64{
 		0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,
@@ -2645,31 +2016,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeECO uint
-		// if beforeValuesECO[i] <= 1.00 {
-		// 	statusIDBeforeECO = status2.ID
-		// } else {
-		// 	statusIDBeforeECO = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesECO[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param8.ID,
-		// 	StandardID:             16,
-		// 	UnitID:                 Unit4.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeECO,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param8.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterECO uint
 		if afterValuesECO[i] <= 0.00 {
@@ -2684,7 +2030,7 @@ func SetupDatabase() {
 			BeforeAfterTreatmentID: After.ID,
 			EnvironmentID:          Drinkwater.ID,
 			ParameterID:            param12.ID,
-			StandardID:             16,
+			StandardID:             zeroStandard.ID, // 0.00
 			UnitID:                 Unit4.ID,
 			EmployeeID:             Admin.ID,
 			StatusID:               statusIDAfterECO,
@@ -2698,16 +2044,6 @@ func SetupDatabase() {
 	}
 
 	// E coli Tank
-	// beforeValuesECOt := []float64{
-	// 	1, 1, 1.4, 14, 31, 12, 28, 13,
-	// 	8.6, 1.9, 1.2, 12, 3.2, 18, 2.9, 16,
-	// 	11, 8, 12, 18, 9, 3, 30, 1.9,
-	// 	1.2, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	12, 12, 3.2, 18, 2.9, 16, 11, 8,
-	// 	1.9, 1.2, 12, 3.2, 18, 2.9, 16, 11,
-	// 	8, 12, 60, 62, 1.9, 1.2, 12, 3.2,
-	// 	18, 2.9,
-	// }
 	afterValuesECOt := []float64{
 		0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,
@@ -2729,31 +2065,6 @@ func SetupDatabase() {
 			continue
 		}
 
-		// --- เช็คค่าก่อนบำบัด ---
-		// var statusIDBeforeECOt uint
-		// if beforeValuesECOt[i] <= 1.00 {
-		// 	statusIDBeforeECOt = status2.ID
-		// } else {
-		// 	statusIDBeforeECOt = status1.ID
-		// }
-		// // --- ก่อนบำบัด ---
-		// beforeRecord := entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	Data:                   beforeValuesECOt[i],
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param27.ID,
-		// 	StandardID:             16,
-		// 	UnitID:                 Unit4.ID,
-		// 	EmployeeID:             Admin.ID,
-		// 	StatusID:               statusIDBeforeECOt,
-		// }
-		// db.FirstOrCreate(&beforeRecord, entity.EnvironmentalRecord{
-		// 	Date:                   date,
-		// 	BeforeAfterTreatmentID: Before.ID,
-		// 	EnvironmentID:          Tapwater.ID,
-		// 	ParameterID:            param27.ID,
-		// })
 		// --- เช็คค่าหลังบำบัด ---
 		var statusIDAfterECOt uint
 		if afterValuesECOt[i] <= 0.00 {
@@ -2768,7 +2079,7 @@ func SetupDatabase() {
 			BeforeAfterTreatmentID: After.ID,
 			EnvironmentID:          Drinkwater.ID,
 			ParameterID:            param27.ID,
-			StandardID:             16,
+			StandardID:             zeroStandard.ID, //0.00
 			UnitID:                 Unit4.ID,
 			EmployeeID:             Admin.ID,
 			StatusID:               statusIDAfterECOt,

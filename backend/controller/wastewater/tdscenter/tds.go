@@ -489,7 +489,7 @@ func UpdateOrCreateTDS(c *gin.Context) {
 			}
 		}
 
-	if err := query.First(&existing).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+		if err := query.First(&existing).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 			// กำหนดค่า default เป็น -1 ทุกตัว
 			newStandard := entity.Standard{
 				MiddleValue: -1,
@@ -590,7 +590,7 @@ func UpdateOrCreateTDS(c *gin.Context) {
 
 		db.Model(&entity.EnvironmentalRecord{}).
 			Where("date >= ? AND date < ?", startOfDay, endOfDay).
-			Where("parameter_id = ?",parameter.ID).
+			Where("parameter_id = ?", parameter.ID).
 			Where("environment_id = ?", environment.ID).
 			Update("unit_id", input.UnitID)
 
@@ -610,7 +610,7 @@ func UpdateOrCreateTDS(c *gin.Context) {
 
 		db.Model(&entity.EnvironmentalRecord{}).
 			Where("date >= ? AND date < ?", startOfDay, endOfDay).
-			Where("parameter_id = ?",parameter.ID).
+			Where("parameter_id = ?", parameter.ID).
 			Where("environment_id = ?", environment.ID).
 			Update("unit_id", input.UnitID)
 
@@ -847,27 +847,60 @@ func CheckUnit(c *gin.Context) {
 	c.JSON(200, gin.H{"exists": false})
 }
 
+// // ใช้ส่วนรวม
+// func CheckStandard(c *gin.Context) {
+// 	standardType := c.Query("type")
+
+// 	if standardType == "middle" {
+// 		middleValue := c.Query("value")
+// 		var std entity.Standard
+// 		if err := config.DB().Where("middle_value = ?", middleValue).First(&std).Error; err == nil {
+// 			c.JSON(200, gin.H{"exists": true})
+// 			return
+// 		}
+// 		c.JSON(200, gin.H{"exists": false})
+// 		return
+// 	}
+
+// 	if standardType == "range" {
+// 		min := c.Query("min")
+// 		max := c.Query("max")
+// 		var std entity.Standard
+// 		if err := config.DB().
+// 			Where("min_value = ? AND max_value = ?", min, max).
+// 			First(&std).Error; err == nil {
+// 			c.JSON(200, gin.H{"exists": true})
+// 			return
+// 		}
+// 		c.JSON(200, gin.H{"exists": false})
+// 		return
+// 	}
+
+//		c.JSON(400, gin.H{"error": "invalid type"})
+//	}
+//
 // ใช้ส่วนรวม
 func CheckStandard(c *gin.Context) {
 	standardType := c.Query("type")
 
+	// ฟังก์ชันปัดทศนิยม 2 ตำแหน่ง
+	roundToTwo := func(val string) (float64, error) {
+		num, err := strconv.ParseFloat(val, 64)
+		if err != nil {
+			return 0, err
+		}
+		return math.Round(num*100) / 100, nil
+	}
 	if standardType == "middle" {
 		middleValue := c.Query("value")
-		var std entity.Standard
-		if err := config.DB().Where("middle_value = ?", middleValue).First(&std).Error; err == nil {
-			c.JSON(200, gin.H{"exists": true})
+		roundedMiddle, err := roundToTwo(middleValue)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "invalid middle value"})
 			return
 		}
-		c.JSON(200, gin.H{"exists": false})
-		return
-	}
-
-	if standardType == "range" {
-		min := c.Query("min")
-		max := c.Query("max")
 		var std entity.Standard
 		if err := config.DB().
-			Where("min_value = ? AND max_value = ?", min, max).
+			Where("ROUND(middle_value, 2) = ?", roundedMiddle).
 			First(&std).Error; err == nil {
 			c.JSON(200, gin.H{"exists": true})
 			return
@@ -875,7 +908,26 @@ func CheckStandard(c *gin.Context) {
 		c.JSON(200, gin.H{"exists": false})
 		return
 	}
+	if standardType == "range" {
+		min := c.Query("min")
+		max := c.Query("max")
 
+		roundedMin, err1 := roundToTwo(min)
+		roundedMax, err2 := roundToTwo(max)
+		if err1 != nil || err2 != nil {
+			c.JSON(400, gin.H{"error": "invalid range values"})
+			return
+		}
+		var std entity.Standard
+		if err := config.DB().
+			Where("ROUND(min_value, 2) = ? AND ROUND(max_value, 2) = ?", roundedMin, roundedMax).
+			First(&std).Error; err == nil {
+			c.JSON(200, gin.H{"exists": true})
+			return
+		}
+		c.JSON(200, gin.H{"exists": false})
+		return
+	}
 	c.JSON(400, gin.H{"error": "invalid type"})
 }
 
