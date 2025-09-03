@@ -2,6 +2,7 @@ package hardware
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Tawunchai/hospital-project/config"
@@ -262,8 +264,6 @@ func ReadDataForHardware(c *gin.Context) {
 		sb.WriteString(fmt.Sprintf("🏢 อาคาร: %s\n", safeStr(buildingName)))
 		sb.WriteString(fmt.Sprintf("🏬 ชั้น: %s\n", safeStr(floorStr)))
 		sb.WriteString(fmt.Sprintf("🚪 ห้อง: %s\n", safeStr(roomName)))
-		sb.WriteString(fmt.Sprintf("📡 ฮาร์ดแวร์: %s\n", safeStr(hardware.Name)))
-		sb.WriteString(fmt.Sprintf("🆔 MAC: %s\n\n", safeStr(hardware.MacAddress)))
 
 		if len(overParts) > 0 {
 			sb.WriteString("พบค่าที่เกินมาตรฐานสูงสุด:\n")
@@ -327,6 +327,46 @@ type WebhookPayload struct {
 	} `json:"events"`
 }
 
+// ===== Cache & RateLimit =====
+var (
+	registeredUsers sync.Map
+
+	// userId → {count, expiresAt}
+	userRateLimit   = make(map[string]*rateInfo)
+	rateLimitMu     sync.Mutex
+	rateLimitMax    = 10              // จำกัด 10 ข้อความ
+	rateLimitWindow = time.Minute     // ต่อ 1 นาที
+)
+
+type rateInfo struct {
+	count     int
+	expiresAt time.Time
+}
+
+func checkRateLimit(userID string) bool {
+	rateLimitMu.Lock()
+	defer rateLimitMu.Unlock()
+
+	info, exists := userRateLimit[userID]
+	now := time.Now()
+
+	if !exists || now.After(info.expiresAt) {
+		// เริ่มนับใหม่
+		userRateLimit[userID] = &rateInfo{
+			count:     1,
+			expiresAt: now.Add(rateLimitWindow),
+		}
+		return true
+	}
+
+	if info.count >= rateLimitMax {
+		return false
+	}
+	info.count++
+	return true
+}
+
+// ===== Webhook =====
 func WebhookNotification(c *gin.Context) {
 	var payload WebhookPayload
 
@@ -343,17 +383,53 @@ func WebhookNotification(c *gin.Context) {
 	replyToken := strings.TrimSpace(event.ReplyToken)
 	userID := strings.TrimSpace(event.Source.UserID)
 
+	// Early return ถ้า userID ว่าง
+	if userID == "" {
+		c.JSON(http.StatusOK, gin.H{"message": "ignored: missing userId"})
+		return
+	}
+
+	// ✅ Rate Limit check
+	if !checkRateLimit(userID) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"message": "rate limit exceeded"})
+		return
+	}
+
 	// รองรับเฉพาะข้อความ
 	var text string
 	if strings.EqualFold(event.Message.Type, "text") {
 		text = strings.TrimSpace(event.Message.Text)
 	}
 
+	// ✅ ถ้ามีใน cache อยู่แล้ว → ตัดจบเร็ว
+	if _, ok := registeredUsers.Load(userID); ok {
+		// ถ้า user เดิมส่ง "ยกเลิกการใช้บริการ"
+		if text == "ยกเลิกการใช้บริการ" {
+			db := config.DB()
+			var existing entity.Notification
+			if err := db.Where("user_id = ?", userID).First(&existing).Error; err == nil && existing.Alert {
+				existing.Alert = false
+				if err := db.Save(&existing).Error; err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+				_ = replyToLINE(replyToken, "ท่านได้ทำการยกเลิกการใช้งานบริการแจ้งเตือนสำเร็จ ❌\nถ้าต้องการใช้บริการอีกครั้ง กรุณาติดต่อผู้ดูแลระบบ\nขอบคุณครับ 🙏")
+				c.JSON(http.StatusOK, gin.H{"message": "alert cancelled"})
+				return
+			}
+		}
+		// ผู้ใช้เดิมทั่วไป → ไม่ทำอะไร
+		c.JSON(http.StatusOK, gin.H{"message": "user already registered (cache), ignored"})
+		return
+	}
+
+	// ===== DB Query (ครั้งแรก) =====
 	db := config.DB()
 	var existing entity.Notification
-
-	// ===== ถ้ามี User อยู่แล้ว =====
 	if err := db.Where("user_id = ?", userID).First(&existing).Error; err == nil {
+		// cache ทันที
+		registeredUsers.Store(userID, true)
+
 		// กรณีขอยกเลิกการใช้บริการ
 		if text == "ยกเลิกการใช้บริการ" {
 			if existing.Alert {
@@ -362,53 +438,41 @@ func WebhookNotification(c *gin.Context) {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 					return
 				}
-				// ✅ ผู้ใช้เก่า/มี Alert อยู่ → ตอบกลับแจ้งยกเลิกสำเร็จ
 				_ = replyToLINE(replyToken, "ท่านได้ทำการยกเลิกการใช้งานบริการแจ้งเตือนสำเร็จ ❌\nถ้าต้องการใช้บริการอีกครั้ง กรุณาติดต่อผู้ดูแลระบบ\nขอบคุณครับ 🙏")
 				c.JSON(http.StatusOK, gin.H{"message": "alert cancelled"})
 				return
 			}
-			// Alert เป็น false อยู่แล้ว
 			c.JSON(http.StatusOK, gin.H{"message": "no action needed"})
 			return
 		}
 
-		// ถ้าผู้ใช้เดิมส่งชื่อว่างมา → ไม่อัปเดต ไม่ตอบกลับ
-		if text == "" {
-			c.JSON(http.StatusOK, gin.H{"message": "ignored: empty name for existing user"})
-			return
-		}
-
-		// ผู้ใช้เดิมและไม่ใช่ยกเลิก → ไม่เปลี่ยนแปลง (ไม่จำเป็นต้องตอบกลับ)
 		c.JSON(http.StatusOK, gin.H{"message": "user already registered, no changes"})
 		return
 	}
 
-	// ===== ผู้ใช้ยังไม่เคยลงทะเบียน =====
-	// เงื่อนไขใหม่: ต้องมีทั้ง Name (text) ไม่ว่าง และมี UserID
-	if userID == "" || text == "" {
-		// ❗ ไม่บันทึก และ "ไม่ตอบกลับ"
-		c.JSON(http.StatusOK, gin.H{"message": "ignored: missing userId or empty name"})
+	// ===== ผู้ใช้ใหม่ =====
+	if text == "" {
+		c.JSON(http.StatusOK, gin.H{"message": "ignored: empty name"})
 		return
 	}
-
-	// ถ้าผู้ใช้ใหม่ส่ง "ยกเลิกการใช้บริการ" มาก่อนลงทะเบียน → ไม่ทำอะไร ไม่ตอบกลับ
 	if text == "ยกเลิกการใช้บริการ" {
 		c.JSON(http.StatusOK, gin.H{"message": "ignored: cancel from non-registered user"})
 		return
 	}
 
-	// บันทึกผู้ใช้ใหม่
 	notification := entity.Notification{
 		Name:   text,
 		UserID: userID,
-		Alert:  false, // รอแอดมินเปิดใช้งาน
+		Alert:  false,
 	}
 	if err := db.Create(&notification).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// ตอบกลับเฉพาะกรณีสร้างสำเร็จเท่านั้น
+	// cache ผู้ใช้ใหม่
+	registeredUsers.Store(userID, true)
+
 	replyMessage := fmt.Sprintf("คุณ %s ได้ทำการลงทะเบียนการใช้งานระบบการแจ้งเตือนสำเร็จ กรุณารอการยืนยันจากผู้ดูแลระบบ ขอบคุณครับ 🙏", text)
 	if err := replyToLINE(replyToken, replyMessage); err != nil {
 		log.Printf("Error replying to LINE: %v", err)
@@ -418,7 +482,6 @@ func WebhookNotification(c *gin.Context) {
 }
 
 // ============= LINE Reply Helper =============
-
 func replyToLINE(replyToken, message string) error {
 	url := "https://api.line.me/v2/bot/message/reply"
 
@@ -438,14 +501,14 @@ func replyToLINE(replyToken, message string) error {
 		return fmt.Errorf("cannot get LINE token from DB: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", url, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
