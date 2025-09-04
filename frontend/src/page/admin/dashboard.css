@@ -1,269 +1,245 @@
-/* ===== Wrapper / Header ===== */
-.container-xl {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 16px; /* เพิ่ม padding ด้านข้าง สำหรับมือถือ */
+/* ===== Layout Wrapper ===== */
+.content-wrapper {
+  padding: 24px;
+  min-height: 100vh;
+  background-color: #f4f7fb;
+  box-sizing: border-box;
 }
 
-.dashboard-title-header {
-  background: linear-gradient(90deg, #356768, #5AEEF0);
-  padding: 24px 28px;
+/* ===== Card Base ===== */
+.dashboard-graph-card, .dashboard-controls-card, .dashboard-alerts-card {
+  background: #ffffff;
   border-radius: 16px;
-  color: white;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  padding: 16px;
   margin-bottom: 16px;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.dashboard-graph-card:hover,
+.dashboard-controls-card:hover,
+.dashboard-alerts-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
 }
 
-.dashboard-title-header h1 {
-  font-size: 1.75rem;
-  font-weight: 600;
-  margin: 0 0 4px 0;
-  text-shadow: 0 4px 5px #0000005a;
-}
-
-.dashboard-title-header p {
-  font-size: 0.95rem;
-  margin: 0;
-  line-height: 1.3;
-  color: #e0f7f7;
-}
-
-/* ===== Controls Card ===== */
-.dashboard-controls-card {
-  border-radius: 16px;
-  padding: 14px 16px;
-  margin-bottom: 16px;
-}
-
-.dashboard-controls-row {
+/* ===== Section Head ===== */
+.dashboard-head-graph-card {
   display: flex;
-  flex-wrap: wrap; /* ให้ control row ยืดหยุ่น */
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
+  margin-bottom: 12px;
+}
+.dashboard-head-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #0f766e;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e6fffb, #ffffff);
+  flex: 1 1 auto;
+}
+
+/* ===== Labels / Inputs (ทั่วไป) ===== */
+.dashboard-label { font-size: 0.85rem; color: #516a6a; margin-bottom: 6px; font-weight: 600; }
+.dashboard-select, .dashboard-picker, .dashboard-segmented { width: 100% !important; }
+
+/* ===== Alerts ===== */
+.dashboard-alerts-list { display: flex; gap: 12px; overflow-x: auto; white-space: nowrap; padding-bottom: 4px; }
+.dashboard-alert-item {
+  flex: 0 0 auto; min-width: 240px; border: 1px solid #f5222d; background: #fff1f0;
+  padding: 12px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+/* ===== Donut Card ===== */
+.dashboard-donut-card {
+  border-radius: 16px; overflow: hidden; position: relative; color: #fff;
+  background: linear-gradient(180deg, #2abdbf 0%, #1f9a9c 70%, #138486 100%);
+  display: flex; align-items: center; justify-content: space-between; padding: 20px;
+}
+.dashboard-donut-card h3 { font-size: 18px; margin-bottom: 8px; }
+.dashboard-donut-card .donut-value { font-size: 36px; font-weight: 700; line-height: 1.1; }
+.dashboard-donut-card .donut-sub { font-size: 12px; opacity: .95; }
+
+/* ===== Utility ===== */
+.u-full { width: 100% !important; }
+
+/* ===== Sticky Glass Controls (option) ===== */
+.dash-controls.glass {
+  backdrop-filter: saturate(140%) blur(8px);
+  background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.85));
+  border: 1px solid rgba(20, 184, 166, .15);
+}
+.dash-controls.sticky { position: sticky; top: 16px; z-index: 8; }
+
+/* ------------------------------------------------------------------
+   ▶▶ Controls – “จัดวางแบบเดิมหลายแถว” แต่โทน teal
+   ใช้คลาส .controls-teal ครอบ + ภายในใช้ .controls-field แบบเดิม
+-------------------------------------------------------------------*/
+
+/* พื้นหลัง teal */
+.controls-teal {
+  background: linear-gradient(180deg, #2abdbf 0%, #1f9a9c 70%, #138486 100%);
+  border-radius: 12px;
+  padding: 14px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.controls-teal::after {
+  content: "";
+  position: absolute; right: 0; top: 0;
+  width: 55%; height: 55%;
+  border-bottom-left-radius: 100% 100%;
+  background: linear-gradient(135deg, rgba(219,218,218,0.35) 0%, rgba(255,255,255,0.18) 40%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+}
+
+/* ✅ เปลี่ยนจาก “บรรทัดเดียว” เป็น “กริดหลายแถว” เหมือนเลย์เอาต์เดิม */
+.controls-teal .controls-row {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 14px 16px;            /* row-gap | col-gap */
   align-items: end;
 }
 
-.dashboard-label {
+/* แต่ละฟิลด์ = คอลัมน์ (เหมือน span ใน Row/Col เดิม) */
+.controls-teal .controls-field { grid-column: span 3; min-width: 0; }
+@media (max-width: 1200px) { .controls-teal .controls-field { grid-column: span 4; } }
+@media (max-width: 992px)  { .controls-teal .controls-field { grid-column: span 6; } }
+@media (max-width: 640px)  { .controls-teal .controls-field { grid-column: span 12; } }
+
+/* ป้ายกำกับบนพื้น teal */
+.controls-teal .controls-field label {
   display: block;
-  font-size: 0.85rem;
-  color: #516a6a;
-  margin-bottom: 6px;
+  font-size: 12.5px;
+  color: #E6FFFB;
+  margin: 0 0 6px 0;
+  font-weight: 700;
+  letter-spacing: .2px;
 }
 
-.dashboard-select,
-.dashboard-picker {
-  width: 100% !important;
+/* ย่อคอมโพเนนต์ AntD ให้กระทัดรัด */
+.controls-teal .ant-select,
+.controls-teal .ant-picker,
+.controls-teal .ant-segmented { font-size: 12px; width: 100%; }
+
+.controls-teal .ant-select .ant-select-selector {
+  height: 32px !important;
+  padding: 0 10px !important;
+}
+.controls-teal .ant-select .ant-select-selection-item,
+.controls-teal .ant-select .ant-select-selection-placeholder {
+  line-height: 32px !important;
 }
 
-.dashboard-segmented {
-  width: 100%;
+.controls-teal .ant-picker { height: 32px; padding: 4px 10px; width: 100%; }
+.controls-teal .ant-picker-input > input { font-size: 12px; }
+
+.controls-teal .ant-segmented { height: 32px; }
+.controls-teal .ant-segmented .ant-segmented-item-label { padding: 4px 12px; }
+
+/* ไอคอน/ลูกศรบน teal ให้อ่านง่าย */
+.controls-teal .anticon,
+.controls-teal .ant-segmented,
+.controls-teal .ant-picker-suffix,
+.controls-teal .ant-select-arrow { color: #e6fffb; }
+
+/* ไม่ให้คอมโพเนนต์หลุดขอบ / ดันกัน */
+.controls-teal .ant-select,
+.controls-teal .ant-picker,
+.controls-teal .ant-segmented { min-width: 0; }
+
+/* ------------------------------------------------------------------ */
+
+/* ===== Cards / Head ===== */
+.dashboard-graph-card, .dashboard-alerts-card { border: 1px solid rgba(2, 132, 199, .08); }
+.dashboard-head-graph-card { gap: 10px; margin-bottom: 10px; }
+
+/* ===== ApexCharts width fix ===== */
+.apexcharts-canvas, .apexcharts-svg { width: 100% !important; }
+
+/* ===== Layout container ===== */
+.container-xl { max-width: 1280px; margin: 0 auto; padding: 0 12px; }
+
+/* ===== Responsive spacing ===== */
+@media (max-width: 768px) { .dash-controls.sticky { top: 8px; } }
+
+/* ===== Teal Surface (การ์ด/ชิปแจ้งเตือน) ===== */
+.teal-surface {
+  position: relative; border-radius: 14px; padding: 16px; color: #fff;
+  background: linear-gradient(180deg, #2abdbf 0%, #1f9a9c 70%, #138486 100%); overflow: hidden;
+}
+.teal-surface::after {
+  content: ""; position: absolute; right: 0; top: 0; width: 60%; height: 60%;
+  border-bottom-left-radius: 100% 100%;
+  background: linear-gradient(135deg, rgba(219,218,218,0.45) 0%, rgba(255,255,255,0.25) 40%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+}
+.teal-surface .teal-title {
+  font-weight: 600; font-size: 1rem; letter-spacing: .2px; margin: 0 0 10px 0; opacity: .95;
 }
 
-/* ===== Graph Cards ===== */
-.dashboard-graph-card {
-  background: #ffffff;
-  padding: 14px;
-  border-radius: 16px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-  display: flex;
-  flex-direction: column;
+/* Chip Alerts */
+.alert-chip-row { display: flex; gap: 12px; overflow-x: auto; white-space: nowrap; padding-bottom: 4px; }
+.alert-chip {
+  flex: 0 0 auto; min-width: 240px;
+  background: rgba(255,255,255,0.9); color: #0f3f40;
+  border: 1px solid rgba(42,189,191,0.35); border-left: 6px solid #2abdbf;
+  padding: 10px 12px; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+}
+.alert-chip .title { font-weight: 700; margin-bottom: 4px; }
+.alert-chip .desc { white-space: pre-line; font-size: 12.5px; opacity: .9; }
+
+/* Pie (teal) */
+.pie-teal-card { padding: 12px; }
+.pie-teal-card .legend-note { font-size: 12px; opacity: .95; }
+
+/* Card Bleed */
+.card-bleed { background: transparent !important; box-shadow: none !important; border: none !important; padding: 0 !important; }
+.card-bleed .ant-card-body { padding: 0 !important; }
+/* Disable hover lift on dashboard cards */
+.dashboard-graph-card:hover,
+.dashboard-controls-card:hover,
+.dashboard-alerts-card:hover {
+  transform: none !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05) !important; /* เท่า state ปกติ */
 }
 
-.dashboard-head-graph-card {
-  display: flex;
-  flex-wrap: wrap; /* ให้ responsive */
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.dashboard-head-title {
-  background-image: linear-gradient(to right, #5DDFE2, #ffffff);
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 1rem;
-  color: #1b4242;
-}
-
-.dashboard-head-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-/* ===== Alerts ===== */
+/* (ถ้าอยากให้ลื่นขึ้นอีก) ตัด transition ออกด้วย */
+.dashboard-graph-card,
+.dashboard-controls-card,
 .dashboard-alerts-card {
-  margin-top: 16px;
-  border-radius: 16px;
+  transition: none !important;
 }
-
-.dashboard-alerts-list {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  white-space: nowrap;
-  padding-bottom: 4px;
-}
-
-.dashboard-alert-item {
-  flex: 0 0 auto;
-  min-width: 240px;
-  border: 1px solid #f5222d;
-  background-color: #fff1f0;
-  padding: 12px;
-  border-radius: 10px;
-}
-
-/* ===== Responsive ===== */
-@media (max-width: 1024px) {
-  .dashboard-graph-card {
-    min-height: 400px;
-  }
-}
-
-@media (max-width: 768px) {
-  .dashboard-title-header h1 {
-    font-size: 1.4rem;
-    text-align: left;
-  }
-  .dashboard-title-header p {
-    font-size: 0.9rem;
-    text-align: left;
-  }
-  .dashboard-graph-card {
-    min-height: 350px;
-  }
-  .dashboard-controls-row {
-    flex-direction: column; /* stack controls */
-    align-items: stretch;
-  }
-  .dashboard-head-graph-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-}
-
-@media (max-width: 480px) {
-  .dashboard-title-header {
-    padding: 16px 16px;
-  }
-  .dashboard-graph-card {
-    min-height: 300px;
-  }
-  .dashboard-alert-item {
-    min-width: 180px;
-  }
-}
-@media (max-width: 768px) {
-  .dashboard-graph-card { height: 350px; }
-}
-/* ---------- Layout fundamentals ---------- */
-.container-xl {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 12px; /* กันชิดขอบจอเล็ก */
-}
-
-/* หัวกรอบ */
-.dashboard-head-graph-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;              /* 💡 สำคัญ: ให้หัว+คอนโทรลตะกายลงบรรทัดใหม่ได้ */
-}
-
-/* ป้ายหัวเรื่อง */
-.dashboard-head-title {
-  background-image: linear-gradient(to right, #5DDFE2, #ffffff);
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-weight: 600;
+/* ------------------------------------------------------------------ */
+/* Title ของกราฟวงกลมแบบ teal */
+.teal-title-chip {
+  display: inline-block;
+  font-weight: 700;
   font-size: 1rem;
-  color: #1b4242;
-  flex: 1 1 auto;               /* กินพื้นที่ที่เหลือได้ */
-  min-width: 180px;
+  color: #0f766e;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #2abdbf, #1f9a9c);
+  margin-bottom: 12px;
+  color: #ffffff;
 }
-
-/* ปุ่ม/ColorPicker ด้านขวา */
-.dashboard-head-controls {
+/* header ของกราฟโดนัท */
+.pie-header {
   display: flex;
+  justify-content: space-between; /* หัวข้อซ้าย - ปุ่มขวา */
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;              /* 💡 กันล้น */
+  margin-bottom: 12px;
 }
 
-/* การ์ดกราฟ – อย่าบังคับความสูงคงที่ */
-.dashboard-graph-card {
-  background: #ffffff;
-  padding: 14px;
-  border-radius: 16px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-  display: flex;
-  flex-direction: column;
-  min-height: unset;            /* ยกเลิกค่า fix เดิม */
-  height: auto;
+/* ทำให้ DatePicker สั้นลง */
+.month-picker-compact {
+  width: 120px !important;   /* ✅ ปรับความกว้าง */
+  font-size: 12px !important;
+  height: 28px !important;
 }
-
-/* จอเล็ก: อย่าบังคับความสูง */
-@media (max-width: 768px) {
-  .dashboard-graph-card { height: auto; }
+.month-picker-compact .ant-picker-input > input {
+  font-size: 12px !important;
 }
-
-/* ---------- AntD pickers/select ให้หดได้ ไม่ล้น ---------- */
-.dashboard-select,
-.dashboard-picker,
-.dashboard-segmented {
-  width: 100% !important;
-  min-width: 0;                 /* 💡 ให้ย่อได้ */
-}
-
-/* ---------- ApexCharts: ให้เต็มกว้าง บนจอเล็กลด label ---------- */
-.apexcharts-canvas, .apexcharts-svg {
-  max-width: 100% !important;
-  width: 100% !important;
-}
-
-/* ---------- Alerts row ให้เลื่อนแนวนอนได้ ---------- */
-.dashboard-alerts-list {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  white-space: nowrap;
-  padding-bottom: 4px;
-}
-
-/* ---------- Header block ---------- */
-.dashboard-title-header {
-  background: linear-gradient(90deg, #356768, #5AEEF0);
-  padding: 24px 28px;
-  border-radius: 16px;
-  color: white;
-  margin-bottom: 16px;
-}
-
-.dashboard-title-header h1 {
-  font-size: 1.75rem;
-  font-weight: 600;
-  margin: 0 0 4px 0;
-  text-shadow: 0 4px 5px #0000005a;
-}
-
-.dashboard-title-header p {
-  font-size: 0.95rem;
-  margin: 0;
-  line-height: 1.3;
-  color: #e0f7f7;
-}
-
-/* จอเล็ก: ลดฟอนต์, ให้เรียงแนวตั้ง */
-@media (max-width: 768px) {
-  .dashboard-title-header h1 { font-size: 1.4rem; text-align: left; }
-  .dashboard-title-header p  { font-size: 0.9rem; text-align: left; }
-}
-
-/* ⚠️ ลบ/รวม media เดิมที่ซ้ำกัน:
-   - เอาบรรทัด .dashboard-graph-card { height: 350px; } ออกเพื่อไม่ให้ fix สูงบนมือถือ */
