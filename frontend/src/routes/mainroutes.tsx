@@ -7,6 +7,7 @@ const Login = Loadable(lazy(() => import("../page/login")));
 // User Role
 const User = Loadable(lazy(() => import("../page/user/home")));
 const MainUser = Loadable(lazy(() => import("../component/user/Main")));
+const ProfileUser = Loadable(lazy(() => import("../component/user/navbar/profile/SocialProfile")));
 
 // Admin Role 
 const Admin = Loadable(lazy(() => import("../page/admin/")));
@@ -119,6 +120,10 @@ const UserRoutes = (): RouteObject[] => [
     children: [
       { index: true, element: <User /> },
     ],
+  },
+  {
+    path: "/Profile", 
+    element: <ProfileUser />,
   },
 ];
 

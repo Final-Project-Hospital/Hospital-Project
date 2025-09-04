@@ -2,7 +2,7 @@ import { Avatar } from "antd";
 import { useEffect, useState } from "react";
 import { GetUserDataByUserID } from "../../../../../services/httpLogin";
 import { UsersInterface } from "../../../../../interface/IUser";
-import avatarDefault from "../../../../assets/admin/avatar3.png";
+import avatarDefault from "../../../../../assets/admin/avatar3.png";
 
 export const AvatarWithInfo = ({ refreshKey = 0 }: { refreshKey?: number }) => {
   const [employee, setEmployee] = useState<UsersInterface | null>(null);
