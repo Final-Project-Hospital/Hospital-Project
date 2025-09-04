@@ -205,12 +205,12 @@ const EnvironmentBlock = () => {
 
   return (
     <div>
-      <div className="w-title-header mt-16 md:mt-0">
-        <div>
-          <h1>น้ำเสีย</h1>
-          <p>
-            โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม
-          </p>
+      <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-4 py-6 rounded-b-3xl mb-1 mt-16 md:mt-0">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">น้ำเสีย</h1>
+            <p className="text-sm">โรงพยาบาลมหาวิทยาลัยเทคโนโลยีสุรนารี ได้ดำเนินการตรวจวัดคุณภาพสิ่งแวดล้อม</p>
+          </div>
         </div>
       </div>
 
