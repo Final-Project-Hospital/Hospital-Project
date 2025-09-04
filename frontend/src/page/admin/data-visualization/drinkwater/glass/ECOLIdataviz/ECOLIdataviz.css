@@ -1,5 +1,5 @@
 .eco-title-header {
-  /* background: linear-gradient(90deg, #356768, #5AEEF0); */
+  /* background: linear-gradient(90deg, #115e59, #67e8f9); */
   background-color: #13b7b9;
   padding: 20px;
   border-radius: 0 0 20px 20px;
@@ -106,8 +106,8 @@
 }
 
 .eco-graph-card {
-  flex: 0 1 calc(50% - 10px);
-  max-width: calc(50% - 10px);
+    flex: 0 1 100%;   /* กว้างเต็ม container */
+  max-width: 100%;  /* จำกัดความกว้างไม่เกิน container */
   background-color: white;
   border-radius: 10px;
   min-height: 450px;

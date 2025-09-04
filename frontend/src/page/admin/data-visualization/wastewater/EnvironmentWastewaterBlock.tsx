@@ -149,6 +149,7 @@ const EnvironmentBlock = () => {
 
         const getDisplayStandard = (data: any) => {
           const { MinValue, MaxValue, MiddleValue } = data;
+          if (MiddleValue === 0 && MinValue === -1 && MaxValue === -1) return 'ไม่พบ';
           if (MinValue !== -1 || MaxValue !== -1) return `${MinValue} - ${MaxValue}`;
           if (MiddleValue !== -1) return `${MiddleValue}`;
           return '-';

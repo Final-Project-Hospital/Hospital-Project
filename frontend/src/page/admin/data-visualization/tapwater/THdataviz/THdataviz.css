@@ -124,6 +124,9 @@
 .th-width40 {
   width: 40%;
 }
+.th-width45 {
+  width: 45%;
+}
 
 .th-head-graph-card {
   display: flex;

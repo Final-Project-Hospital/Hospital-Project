@@ -149,7 +149,7 @@ func GetfirstChemical(c *gin.Context) {
 		Select(`garbages.id, garbages.date, garbages.quantity,garbages.aadc,garbages.monthly_garbage,garbages.average_daily_garbage,garbages.total_sale,garbages.note,garbages.environment_id,garbages.parameter_id,units.unit_name,units.id as unit_id`).
 		Joins("inner join units on garbages.unit_id = units.id").
 		Where("parameter_id = ?", parameter.ID).
-		Order("garbages.created_at desc").
+		Order("garbages.date desc").
 		Scan(&firstHaz)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด

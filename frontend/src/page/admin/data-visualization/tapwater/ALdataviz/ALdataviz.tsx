@@ -1,5 +1,5 @@
 //ใช้ทั้งกราฟและตาราง
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -8,9 +8,7 @@ import { useNavigate } from "react-router-dom";
 import './ALdataviz.css';
 import dayjs, { Dayjs } from "dayjs";
 import { GetlistAL, GetfirstAL, GetBeforeAfterAL } from "../../../../../services/tapwaterServices/al";
-import BeforeWater from "../../../../../assets/mineral.png"
 import AftereWater from "../../../../../assets/rain.png"
-import Efficiency from "../../../../../assets/productivity.png"
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -51,25 +49,25 @@ const ALdataviz: React.FC = () => {
   const [BeforeAfter, setBeforeAfter] = useState<{ before: any; after: any } | null>(null);
 
   //ใช้กับกราฟ
-  const [chartTypeBefore, setChartTypeBefore] = useState<'bar' | 'line'>('line');
   const [chartTypeAfter, setChartTypeAfter] = useState<'bar' | 'line'>('line');
-  const [chartTypeCompare, setChartTypeCompare] = useState<'bar' | 'line'>('line');
-  const [chartpercentChange, setpercentChange] = useState<'bar' | 'line'>('line');
-  const [compareData, setCompareData] = useState<{ date: string; before: number; after: number }[]>([]);
+  const [chartTypeMinMax, setChartTypeMinMax] = useState<'bar' | 'line'>('line');//
   const [beforeData, setBeforeData] = useState<{ unit: string; date: string; data: number }[]>([]);
   const [afterData, setAfterData] = useState<{ unit: string; date: string; data: number }[]>([]);
-  const [colorBefore, setColorBefore] = useState<string>("#2abdbf");
   const [colorAfter, setColorAfter] = useState<string>("#1a4b57");
-  const [colorCompareBefore, setColorCompareBefore] = useState<string>("#2abdbf");
-  const [colorCompareAfter, setColorCompareAfter] = useState<string>("#1a4b57");
+  const [colorMin, setColorMin] = useState<string>("#2abdbf");//
+  const [colorMax, setColorMax] = useState<string>("#1a4b57");//
   const [unit, setUnit] = useState<string>("-");
   const [middlestandard, setMiddleStandard] = useState<number | undefined>(undefined);
   const [minstandard, setMinStandard] = useState<number | undefined>(undefined);
   const [maxstandard, setMaxStandard] = useState<number | undefined>(undefined);
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalGraphType, setModalGraphType] = useState<"before" | "after" | "compare" | "percentChange" | null>(null);
-  const [percentChangeData, setPercentChangeData] = useState<{ date: string; percent: number }[]>([]);
-  const [colorPercentChange, setcolorPercentChange] = useState<string>("#FF6F61");
+  const [modalGraphType, setModalGraphType] = useState<"after" | "minmax" | null>(null);//modalGraphType
+  const [afterMaxMinData, setAfterMaxMinData] = useState<{date: string;max: number;min: number;maxDate?: string;minDate?: string;maxUnit?: string; minUnit?: string; }[]>([]);
+  const formatThaiDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const d = dayjs(dateStr).locale('th');
+    return `${d.date()} ${d.format('MMMM')} ${d.year() + 543}`;
+  };
 
   //ใช้กับตาราง
   const [search] = useState(""); //setSearch
@@ -89,16 +87,12 @@ const ALdataviz: React.FC = () => {
 
   //ใช้กับกราฟ ---โหลดสีจาก localStorage----
   useEffect(() => {
-    const storedColorBefore = localStorage.getItem('colorBefore');
     const storedColorAfter = localStorage.getItem('colorAfter');
-    const storedColorCompareBefore = localStorage.getItem('colorCompareBefore');
-    const storedColorCompareAfter = localStorage.getItem('colorCompareAfter');
-    const storedcolorPercentChange = localStorage.getItem('colorPercentChange');
-    if (storedColorBefore) setColorBefore(storedColorBefore);
+    const storedMin = localStorage.getItem('colorMin');
+    const storedMax = localStorage.getItem('colorMax');
     if (storedColorAfter) setColorAfter(storedColorAfter);
-    if (storedColorCompareBefore) setColorCompareBefore(storedColorCompareBefore);
-    if (storedColorCompareAfter) setColorCompareAfter(storedColorCompareAfter);
-    if (storedcolorPercentChange) setcolorPercentChange(storedcolorPercentChange);
+    if (storedMin) setColorMin(storedMin);
+    if (storedMax) setColorMax(storedMax);
   }, []);
 
   // ใช้กับกราฟ
@@ -224,20 +218,76 @@ const ALdataviz: React.FC = () => {
           setMaxStandard(lastal.data.MaxValue);
           setMinStandard(lastal.data.MinValue);
         }
+        // ================== คำนวณ Max/Min ==================
+        const afterMaxMin: typeof afterMaxMinData = [];
 
-        const percentageChangeData: { date: string; percent: number }[] = compare.map(item => {
-          const rawPercent = item.before !== 0
-            ? ((item.before - item.after) / item.before) * 100
-            : 0;
-          const percent = rawPercent < 0 ? 0 : rawPercent;
-          return { date: item.date, percent };
-        });
-        console.log(response.data);
+        const processGroups = (keyFunc: (dateStr: string) => string) => {
+          const groups: Record<string, { value: number; date: string }[]> = {};
+
+          allDates.forEach(dateStr => {
+            const key = keyFunc(dateStr);
+            if (!groups[key]) groups[key] = [];
+
+            response.data.forEach((item: any) => {
+              if (item.BeforeAfterTreatmentID === 2) {
+                const actualDate = dayjs(item.Date).format("YYYY-MM-DD");
+                if (
+                  (filterMode === "year" && dayjs(actualDate).year().toString() === key) ||
+                  (filterMode === "month" && dayjs(actualDate).format("YYYY-MM") === key) ||
+                  (filterMode === "dateRange" && actualDate === key)
+                ) {
+                  groups[key].push({ value: item.Data, date: actualDate });
+                }
+              }
+            });
+          });
+
+          Object.keys(groups).forEach(key => {
+            const entries = groups[key];
+            if (entries.length) {
+              const maxEntry = entries.reduce((prev, curr) => curr.value > prev.value ? curr : prev, entries[0]);
+              const minEntry = entries.reduce((prev, curr) => curr.value < prev.value ? curr : prev, entries[0]);
+
+              // หา unit ของ Max/Min
+              const maxUnit = response.data.find((i: any) =>
+                i.BeforeAfterTreatmentID === 2 &&
+                dayjs(i.Date).format("YYYY-MM-DD") === maxEntry.date &&
+                i.Data === maxEntry.value
+              )?.UnitName ?? "";
+
+              const minUnit = response.data.find((i: any) =>
+                i.BeforeAfterTreatmentID === 2 &&
+                dayjs(i.Date).format("YYYY-MM-DD") === minEntry.date &&
+                i.Data === minEntry.value
+              )?.UnitName ?? "";
+
+              afterMaxMin.push({
+                date: key,
+                max: maxEntry.value,
+                min: minEntry.value,
+                maxDate: formatThaiDate(maxEntry.date),
+                minDate: formatThaiDate(minEntry.date),
+                maxUnit,
+                minUnit
+              });
+            } else {
+              afterMaxMin.push({ date: key, max: 0, min: 0, maxUnit: "", minUnit: "" });
+            }
+          });
+        };
+
+        if (filterMode === "year") {
+          processGroups(dateStr => dayjs(dateStr).year().toString());
+        } else if (filterMode === "month") {
+          processGroups(dateStr => dayjs(dateStr).format("YYYY-MM"));
+        } else {
+          processGroups(dateStr => dateStr); // รายวัน
+        }
+
+        setAfterMaxMinData(afterMaxMin);
         setUnit(lastal.data.UnitName);
         setBeforeData(before);
         setAfterData(after);
-        setCompareData(compare);
-        setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterAL
         if (!alRes || !alRes.data || alRes.data.length === 0) {
           setBeforeAfter(null); // ✅ ตรงกับ type
@@ -260,6 +310,16 @@ const ALdataviz: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [dateRange, filterMode]);
+
+  const afterDataRef = useRef(afterData);
+  useEffect(() => {
+    afterDataRef.current = afterData;
+  }, [afterData]);
+  
+  const afterMaxMinRef = useRef(afterMaxMinData);
+  useEffect(() => {
+    afterMaxMinRef.current = afterMaxMinData;
+  }, [afterMaxMinData]);
 
   //ใช้กับตาราง
   const loadALTable = async () => {
@@ -318,7 +378,8 @@ const ALdataviz: React.FC = () => {
     isYearMode = false,
     dataSeries: number[],
     enableZoom = false, //ใช้บอกว่ากราฟนี้จะเปิดการซูมไหม
-    isPercentChart = false //ใช้บอกว่าคือกราฟประสิทธิภาพไหม
+    isPercentChart = false, //ใช้บอกว่าคือกราฟประสิทธิภาพไหม
+    isMaxMinPercent = false
   ): ApexOptions => {
     const categoriesFormatted = isYearMode
       ? categories.map((month) => formatMonthLabel(month))
@@ -340,48 +401,70 @@ const ALdataviz: React.FC = () => {
       annotations: {
         yaxis: isPercentChart
           ? []   //  ถ้าเป็นกราฟเปอร์เซ็นต์ จะไม่มีเส้นมาตรฐานเลย
-          : (isStandardRange
-            ? [
-              {
-                y: minstandard ?? 0,
-                borderWidth: 1.5,
-                strokeDashArray: 6,
-                borderColor: "rgba(255, 163, 24, 0.77)",
-                label: { text: `มาตรฐานต่ำสุด ${minstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
-              },
-              {
-                y: maxstandard ?? 0,
-                borderWidth: 1.5,
-                strokeDashArray: 6,
-                borderColor: "#035303ff",
-                label: { text: `มาตรฐานสูงสุด ${maxstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
-              },
-            ]
-            : middlestandard !== undefined && middlestandard !== -1
+          : (
+            // ✅ เงื่อนไขใหม่
+            (middlestandard === 0 && minstandard === -1 && maxstandard === -1)
               ? [
                 {
-                  y: middlestandard,
+                  y: 0,
                   borderColor: "#FF6F61",
                   borderWidth: 1.5,
                   strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middlestandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
+                  label: { text: "ไม่พบ", style: { background: "#ff6e61d4", color: "#fff" } },
                 },
               ]
-              : []
+              : (isStandardRange
+                ? [
+                  {
+                    y: minstandard ?? 0,
+                    borderWidth: 1.5,
+                    strokeDashArray: 6,
+                    borderColor: "rgba(255, 163, 24, 0.77)",
+                    label: { text: `มาตรฐานต่ำสุด ${minstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
+                  },
+                  {
+                    y: maxstandard ?? 0,
+                    borderWidth: 1.5,
+                    strokeDashArray: 6,
+                    borderColor: "#035303ff",
+                    label: { text: `มาตรฐานสูงสุด ${maxstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
+                  },
+                ]
+                : middlestandard !== undefined && middlestandard !== -1
+                  ? [
+                    {
+                      y: middlestandard,
+                      borderColor: "#FF6F61",
+                      borderWidth: 1.5,
+                      strokeDashArray: 6,
+                      label: { text: `มาตรฐาน ${middlestandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
+                    },
+                  ]
+                  : []
+              )
           )
       },
       xaxis: {
         categories: categoriesFormatted,
+        title: { text: "วัน/เดือน/ปี" },
         tickAmount: 6, // ให้แสดงประมาณ 6 จุดบนแกน X (ปรับได้ เช่น 4, 5)
         labels: {
           rotate: -45, // เอียงวันที่เล็กน้อยให้อ่านง่าย
           formatter: (value: string, _timestamp?: number) => {
+            if (isMaxMinPercent) {
+              // แสดงเฉพาะปีสำหรับ year mode
+              if (filterMode === "year") return dayjs(value).year().toString();
+              // แสดงเดือน+ปี สำหรับ month mode
+              if (filterMode === "month") return dayjs(value).format("MMM");
+              // แสดงวัน+เดือน สำหรับ day mode
+              return dayjs(value).format("D MMM");
+            }
             // ถ้าเป็น mode รายปี => แสดงเป็น เดือน ปี (เช่น ก.ค. 2568)
             if (filterMode === "year") {
               return value;
             }
             // ถ้าเป็น mode รายวัน => แสดงเฉพาะวัน/เดือนสั้น
-            return dayjs(value).format("D MMM");
+            return dayjs(value).format("D MMM ");
           },
         },
         tooltip: {
@@ -411,6 +494,20 @@ const ALdataviz: React.FC = () => {
               return `${val.toFixed(2)}%`;
             }
 
+            if (seriesName === "ค่าสูงสุด" && afterMaxMinRef.current && afterMaxMinRef.current.length > dataPointIndex) {
+              const item = afterMaxMinRef.current[dataPointIndex];
+              const unit = item.maxUnit || 'ไม่มีการตรวจวัด';
+              if (unit === 'ไม่มีการตรวจวัด') return unit;
+              return `${item.max.toFixed(2)} ${unit} (วันที่: ${item.maxDate})`;
+            }
+
+            if (seriesName === "ค่าต่ำสุด" && afterMaxMinRef.current && afterMaxMinRef.current.length > dataPointIndex) {
+              const item = afterMaxMinRef.current[dataPointIndex];
+              const unit = item.minUnit || 'ไม่มีการตรวจวัด';
+              if (unit === 'ไม่มีการตรวจวัด') return unit;
+              return `${item.min.toFixed(2)} ${unit} (วันที่: ${item.minDate})`;
+            }
+
             // กรณี beforeSeries หรือ compareSeries "ก่อนบำบัด"
             if ((seriesName === "ก่อนบำบัด" || seriesName === "AL") && beforeData && beforeData.length > dataPointIndex) {
               const unit = beforeData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดก่อนบำบัด';
@@ -419,11 +516,18 @@ const ALdataviz: React.FC = () => {
             }
 
             // กรณี afterSeries หรือ compareSeries "หลังบำบัด"
-            if ((seriesName === "หลังบำบัด" || seriesName === "AL") && afterData && afterData.length > dataPointIndex) {
-              const unit = afterData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดหลังบำบัด';
-              if (unit === 'ไม่มีการตรวจวัดหลังบำบัด') return unit;
+            if ((seriesName === "Aluminium" || seriesName === "AL") && afterDataRef.current && afterDataRef.current.length > dataPointIndex) {
+              const unit = afterDataRef.current[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด Aluminium';
+              if (unit === 'ไม่มีการตรวจวัด Aluminium') return unit;
               return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
             }
+
+            // // กรณี afterSeries หรือ compareSeries "หลังบำบัด"
+            // if ((seriesName === "หลังบำบัด" || seriesName === "AL") && afterData && afterData.length > dataPointIndex) {
+            //   const unit = afterData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดหลังบำบัด';
+            //   if (unit === 'ไม่มีการตรวจวัดหลังบำบัด') return unit;
+            //   return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
+            // }
 
             // กรณีอื่น ๆ
             return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -434,6 +538,7 @@ const ALdataviz: React.FC = () => {
       dataLabels: {
         enabled: false,
       },
+      legend: { show: true, showForSingleSeries: true,position: 'top', horizontalAlign: 'center' },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
       markers: chartType === "line"
         ? {
@@ -445,29 +550,23 @@ const ALdataviz: React.FC = () => {
 
     };
   };
-  const beforeSeries = [
-    { name: "ก่อนบำบัด", data: beforeData.map(item => item.data), color: colorBefore }
-  ];
   const afterSeries = [
-    { name: "หลังบำบัด", data: afterData.map(item => item.data), color: colorAfter }
+    { name: "Aluminium", data: afterData.map(item => item.data), color: colorAfter }
   ];
-  const compareSeries = [
-    { name: "ก่อนบำบัด", data: compareData.map(item => item.before), color: colorCompareBefore },
-    { name: "หลังบำบัด", data: compareData.map(item => item.after), color: colorCompareAfter },
-  ];
-  const combinedCompareData = [
-    ...compareSeries[0].data,
-    ...compareSeries[1].data,
-  ];
-  const percentChangeSeries = [
+  const afterMaxMinSeries = [
     {
-      name: "เปอร์เซ็นต์การเปลี่ยนแปลง",
-      data: percentChangeData.map(item => item.percent),
-      color: colorPercentChange,
+      name: "ค่าสูงสุด",
+      data: afterMaxMinData.map(item => item.max),
+      color: colorMax,
     },
+    {
+      name: "ค่าต่ำสุด",
+      data: afterMaxMinData.map(item => item.min),
+      color: colorMin,
+    }
   ];
   //ใช้กับกราฟ
-  const openModal = (type: "before" | "after" | "compare" | "percentChange") => {
+  const openModal = (type: "after" | "minmax") => {
     setModalGraphType(type);
     setModalVisible(true);
   };
@@ -711,84 +810,32 @@ const ALdataviz: React.FC = () => {
           <p>ธาตุอะลูมิเนียม ส่วนใหญ่พบจากสารส้มที่ใช้ในการตกตะกอน</p>
         </div>
         <div className="al-card">
-          <img src={BeforeWater} alt="Before Water" className="al-photo" />
-          <div>
-            <h4>น้ำก่อนบำบัดล่าสุด</h4>
-            <div className="al-main">
-              <span>{BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined ? (<><span className="al-value">{BeforeAfter.before.Data.toLocaleString()}</span>{" "}{BeforeAfter.before.UnitName || ""}</>) : "-"}</span>
-            </div>
-            {BeforeAfter ? (
-              <p>
-                มาตรฐาน{" "}
-                <span>
-                  {(BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== -1) || (BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== -1) || (BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== -1) || (BeforeAfter.before.UnitName && BeforeAfter.before.UnitName.trim() !== "")
-                    ? (BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== -1
-                      ? BeforeAfter.before.MiddleValue.toLocaleString() : `${(BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== -1 ? BeforeAfter.before.MinValue.toLocaleString() : "-")} - ${(BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== -1 ? BeforeAfter.before.MaxValue.toLocaleString() : "-")}`) : "-"
-                  }
-                </span>{" "}
-                {BeforeAfter.before.UnitName || ""}
-              </p>
-            ) : (
-              <p>Loading...</p>
-            )}
-          </div>
           <img src={AftereWater} alt="After Water" className="al-photo" />
           <div>
-            <h4>น้ำหลังบำบัดล่าสุด</h4>
+            <h4>ค่า Aluminium ล่าสุด</h4>
             <div className="al-main">
               <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="al-value">{BeforeAfter.after.Data.toLocaleString()}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
-              <span className="al-change">
-                {(() => {
-                  if (BeforeAfter?.after.Data != null && BeforeAfter?.before.Data != null) {
-                    const diff = BeforeAfter.after.Data - BeforeAfter.before.Data;
-                    const arrowStyle = { fontWeight: 'bold', fontSize: '17px', marginLeft: 4 };
-                    return (<> {diff >= 0 ? '+' : ''}{diff.toFixed(2)}{diff > 0 && <span style={{ ...arrowStyle, color: '#14C18B' }}>↑</span>}{diff < 0 && <span style={{ ...arrowStyle, color: '#EE404C' }}>↓</span>}{diff === 0 && null}</>);
-                  } return '-';
-                })()}
-              </span>
             </div>
             {BeforeAfter ? (
               <p>
                 มาตรฐาน{" "}
                 <span>
-                  {
-                    (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== -1) || (BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== -1) || (BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== -1) || (BeforeAfter.after.UnitName && BeforeAfter.after.UnitName.trim() !== "")
-                      ? (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== -1
-                        ? BeforeAfter.after.MiddleValue.toLocaleString() : `${(BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== -1 ? BeforeAfter.after.MinValue.toLocaleString() : "-")} - ${(BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== -1 ? BeforeAfter.after.MaxValue.toLocaleString() : "-")}`)
-                      : "-"
-                  }
+                  {(() => {
+                    const { MiddleValue, MinValue, MaxValue, UnitName } = BeforeAfter.after;
+                    if (MiddleValue === 0 && MinValue === -1 && MaxValue === -1) { return "ไม่พบ"; }
+                    // ✅ เงื่อนไขเดิม
+                    if ((MiddleValue !== null && MiddleValue !== -1) || (MinValue !== null && MinValue !== -1) || (MaxValue !== null && MaxValue !== -1) || (UnitName && UnitName.trim() !== "")
+                    ) {
+                      return MiddleValue !== null && MiddleValue !== -1 ? MiddleValue.toLocaleString() : `${MinValue !== null && MinValue !== -1 ? MinValue.toLocaleString() : "-"} - ${MaxValue !== null && MaxValue !== -1 ? MaxValue.toLocaleString() : "-"}`;
+                    }
+                    return "-";
+                  })()}
                 </span>{" "}
                 {BeforeAfter.after.UnitName || ""}
               </p>
             ) : (
               <p>Loading...</p>
             )}
-          </div>
-          <img src={Efficiency} alt="Before Water" className="al-photo" />
-          <div>
-            <h4>ประสิทธิภาพล่าสุด</h4>
-            <div className="al-main">
-              <span>
-                {BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined &&
-                  BeforeAfter.before.Data !== 0 &&
-                  BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined
-                  ? (
-                    <>
-                      <span className="al-value">
-                        {Math.max(
-                          0,
-                          ((BeforeAfter.before.Data - BeforeAfter.after.Data) / BeforeAfter.before.Data) * 100
-                        ).toFixed(2)}
-                      </span>{" "}
-                      %
-                    </>
-                  )
-                  : "-"
-                }
-              </span>
-
-            </div>
-            <br />
           </div>
         </div>
       </div>
@@ -885,62 +932,10 @@ const ALdataviz: React.FC = () => {
           </div>
         </div>
         <div className="al-graph-container">
-          {/* ตารางน้ำก่อนบำบัดนะจ๊ะ */}
           <div className="al-graph-card">
             <div className="al-head-graph-card">
               <div className="al-width25">
-                <h2 className="al-head-graph-card-text">น้ำก่อนบำบัด</h2>
-              </div>
-              <div>
-                <ColorPicker
-                  value={colorBefore}
-                  onChange={(color: Color) => {
-                    const hex = color.toHexString();
-                    setColorBefore(hex);
-                    localStorage.setItem('colorBefore', hex);
-                  }}
-                />
-                <Button className="al-expand-chat" onClick={() => openModal("before")}><Maximize2 /></Button>
-              </div>
-            </div>
-            <div className="al-right-select-graph">
-              <Select
-                value={chartTypeBefore}
-                onChange={val => setChartTypeBefore(val)}
-                style={{ marginBottom: 10 }}
-              >
-                <Select.Option value="line">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <LineChart size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟเส้น</span>
-                  </div>
-                </Select.Option>
-                <Select.Option value="bar">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <BarChart3 size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟแท่ง</span>
-                  </div>
-                </Select.Option>
-              </Select>
-            </div>
-            <ApexChart
-              key={chartTypeBefore}
-              options={getChartOptions(
-                beforeData.map(item => item.date),
-                chartTypeBefore,
-                filterMode === "year",
-                beforeSeries[0]?.data || [] //  ส่ง data เพื่อใช้หาค่าสูงสุด
-              )}
-              series={beforeSeries}
-              type={chartTypeBefore}
-              height={350}
-            />
-          </div>
-
-          <div className="al-graph-card">
-            <div className="al-head-graph-card">
-              <div className="al-width25">
-                <h2 className="al-head-graph-card-text">น้ำหลังบำบัด</h2>
+                <h2 className="al-head-graph-card-text">ค่า Aluminium</h2>
               </div>
               <div>
                 <ColorPicker
@@ -990,32 +985,32 @@ const ALdataviz: React.FC = () => {
           <div className="al-graph-card">
             <div className="al-head-graph-card">
               <div className="al-width40">
-                <h2 className="al-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
+                <h2 className="al-head-graph-card-text">ค่า Aluminium ต่ำสุด/สูงสุด</h2>
               </div>
               <div>
                 <ColorPicker
-                  value={colorCompareBefore}
+                  value={colorMin}
                   onChange={(color: Color) => {
                     const hex = color.toHexString();
-                    setColorCompareBefore(hex);
-                    localStorage.setItem('colorCompareBefore', hex);
+                    setColorMin(hex);
+                    localStorage.setItem('colorMin', hex);
                   }}
                 />
                 <ColorPicker
-                  value={colorCompareAfter}
+                  value={colorMax}
                   onChange={(color: Color) => {
                     const hex = color.toHexString();
-                    setColorCompareAfter(hex);
-                    localStorage.setItem('colorCompareAfter', hex);
+                    setColorMax(hex);
+                    localStorage.setItem('colorMax', hex);
                   }}
                 />
-                <Button className="al-expand-chat" onClick={() => openModal("compare")}><Maximize2 /></Button>
+                <Button className="al-expand-chat" onClick={() => openModal("minmax")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="al-right-select-graph">
               <Select
-                value={chartTypeCompare}
-                onChange={val => setChartTypeCompare(val)}
+                value={chartTypeMinMax}
+                onChange={val => setChartTypeMinMax(val)}
                 style={{ marginBottom: 10 }}
               >
                 <Select.Option value="line">
@@ -1033,65 +1028,21 @@ const ALdataviz: React.FC = () => {
               </Select>
             </div>
             <ApexChart
-              key={chartTypeCompare}
+              key={chartTypeMinMax}
               options={getChartOptions(
-                compareData.map(item => item.date),
-                chartTypeCompare,
+                afterMaxMinData.map(item => item.date),
+                chartTypeMinMax,
                 filterMode === "year",
-                combinedCompareData
-              )}
-              series={compareSeries}
-              type={chartTypeCompare}
-              height={350}
-            />
-          </div>
-          <div className="al-graph-card">
-            <div className="al-head-graph-card">
-              <div className="al-width25">
-                <h2 className="al-head-graph-card-text" >ประสิทธิภาพ</h2>
-              </div>
-              <div>
-                <ColorPicker
-                  value={colorPercentChange}
-                  onChange={(color: Color) => {
-                    const hex = color.toHexString();
-                    setcolorPercentChange(hex);
-                    localStorage.setItem('colorPercentChange', hex);
-                  }}
-                />
-              </div>
-            </div>
-            <div className="al-right-select-graph">
-              <Select
-                value={chartpercentChange}
-                onChange={val => setpercentChange(val)}
-                style={{ marginBottom: 10 }}
-              >
-                <Select.Option value="line">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <LineChart size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟเส้น</span>
-                  </div>
-                </Select.Option>
-                <Select.Option value="bar">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <BarChart3 size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟแท่ง</span>
-                  </div>
-                </Select.Option>
-              </Select>
-            </div>
-            <ApexChart
-              options={getChartOptions(
-                percentChangeData.map(item => item.date),
-                "line",
-                filterMode === "year",
-                percentChangeSeries[0].data,
+                [
+                  ...afterMaxMinData.map(item => item.max),
+                  ...afterMaxMinData.map(item => item.min),
+                ],
+                false,
                 false,
                 true
               )}
-              series={percentChangeSeries}
-              type={chartpercentChange}
+              series={afterMaxMinSeries}
+              type={chartTypeMinMax}
               height={350}
             />
           </div>
@@ -1306,55 +1257,11 @@ const ALdataviz: React.FC = () => {
           destroyOnClose
           maskClosable={true}
         >
-          {modalGraphType === "before" && (
-            <div className="al-chat-modal" >
-              <div className="al-head-graph-card">
-                <div className="al-width25">
-                  <h2 className="al-head-graph-card-text">น้ำก่อนบำบัด</h2>
-                </div>
-              </div>
-              <div className="al-right-select-graph">
-                <Select
-                  value={chartTypeBefore}
-                  onChange={val => setChartTypeBefore(val)}
-                  style={{ marginBottom: 10 }}
-                >
-                  <Select.Option value="line">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <LineChart size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟเส้น</span>
-                    </div>
-                  </Select.Option>
-                  <Select.Option value="bar">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <BarChart3 size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟแท่ง</span>
-                    </div>
-                  </Select.Option>
-                </Select>
-              </div>
-              <div className="al-chart-containner">
-                <ApexChart
-                  key={chartTypeBefore}
-                  options={getChartOptions(
-                    beforeData.map(item => item.date),
-                    chartTypeBefore,
-                    filterMode === "year",
-                    beforeSeries[0]?.data || [], //  ส่ง data เพื่อใช้หาค่าสูงสุด
-                    true
-                  )}
-                  series={beforeSeries}
-                  type={chartTypeBefore}
-                  height="100%"
-                />
-              </div>
-            </div>
-          )}
           {modalGraphType === "after" && (
             <div className="al-chat-modal">
               <div className="al-head-graph-card">
                 <div className="al-width25">
-                  <h2 className="al-head-graph-card-text">น้ำหลังบำบัด</h2>
+                  <h2 className="al-head-graph-card-text">ค่า Aluminium</h2>
                 </div>
               </div>
               <div className="al-right-select-graph">
@@ -1386,6 +1293,7 @@ const ALdataviz: React.FC = () => {
                     filterMode === "year",
                     afterSeries[0]?.data || [],
                     true
+
                   )}
                   series={afterSeries}
                   type={chartTypeAfter}
@@ -1394,17 +1302,17 @@ const ALdataviz: React.FC = () => {
               </div>
             </div>
           )}
-          {modalGraphType === "compare" && (
+          {modalGraphType === "minmax" && (
             <div className="al-chat-modal">
               <div className="al-head-graph-card" >
                 <div className="al-width40">
-                  <h2 className="al-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
+                  <h2 className="al-head-graph-card-text" >ค่า Aluminium ต่ำสุด/สูงสุด</h2>
                 </div>
               </div>
               <div className="al-right-select-graph">
                 <Select
-                  value={chartTypeCompare}
-                  onChange={val => setChartTypeCompare(val)}
+                  value={chartTypeMinMax}
+                  onChange={val => setChartTypeMinMax(val)}
                   style={{ marginBottom: 10 }}
                 >
                   <Select.Option value="line">
@@ -1423,16 +1331,21 @@ const ALdataviz: React.FC = () => {
               </div>
               <div className="al-chart-containner">
                 <ApexChart
-                  key={chartTypeCompare}
+                  key={chartTypeMinMax}
                   options={getChartOptions(
-                    compareData.map(item => item.date),
-                    chartTypeCompare,
+                    afterMaxMinData.map(item => item.date),
+                    chartTypeMinMax,
                     filterMode === "year",
-                    combinedCompareData,
+                    [
+                      ...afterMaxMinData.map(item => item.max),
+                      ...afterMaxMinData.map(item => item.min),
+                    ],
+                    true,
+                    false,
                     true
                   )}
-                  series={compareSeries}
-                  type={chartTypeCompare}
+                  series={afterMaxMinSeries}
+                  type={chartTypeMinMax}
                   height="100%"
                 />
               </div>
