@@ -49,7 +49,6 @@ import "./skydash-override.css";
 import "dayjs/locale/th";
 dayjs.locale("th");
 
-const { RangePicker } = DatePicker;
 
 /* =========================================================================
    TYPES
@@ -128,9 +127,22 @@ function dFix(n: any) {
 const norm = (s: string) => (s || "").replace(/\s+/g, " ").trim().toLowerCase();
 
 const getDefaultRangeFromLatest = (mode: FilterMode, latest: Dayjs | null): [Dayjs, Dayjs] => {
+  // ใช้วันที่ล่าสุดที่ "มีข้อมูลจริง" เป็นฐาน (ถ้าไม่มีให้ใช้วันนี้)
   const base = latest && latest.isValid() ? latest : dayjs();
-  if (mode === "year") return [base.startOf("year"), base.endOf("year")];
-  if (mode === "month") return [base.startOf("month"), base.endOf("month")];
+
+  if (mode === "year") {
+    // ✅ rolling 12 months จากข้อมูลล่าสุด
+    // เช่น latest = 2024-11-15  => 2023-12-01 ... 2024-11-30
+    const start = base.subtract(11, "month").startOf("month");
+    const end   = base.endOf("month");
+    return [start, end];
+  }
+
+  if (mode === "month") {
+    return [base.startOf("month"), base.endOf("month")];
+  }
+
+  // dateRange: ย้อนหลัง 7 วัน
   return [base.subtract(6, "day").startOf("day"), base.endOf("day")];
 };
 
@@ -156,7 +168,7 @@ const getValue     = (a: BellAlert) => a?.data?.Data ?? a?.data?.Quantity ?? 0;
 const AdminDashboard: React.FC = () => {
   // meta
   const [metas, setMetas] = useState<EnvMeta[]>([]);
-  const [metaLoading, setMetaLoading] = useState<boolean>(false); 
+  const [, setMetaLoading] = useState<boolean>(false);
   const [, setMetaError] = useState<string | null>(null);
 
   // selected
@@ -181,6 +193,7 @@ const AdminDashboard: React.FC = () => {
     dayjs().startOf("year"),
     dayjs().endOf("year"),
   ]);
+  const [autoRange, setAutoRange] = useState<boolean>(true); // ⭐ changed: โหมดช่วงเวลาอัตโนมัติ
 
   // ล่าสุดของกราฟหลัก
   const [latestGraphDate, setLatestGraphDate] = useState<Dayjs | null>(null);
@@ -188,11 +201,13 @@ const AdminDashboard: React.FC = () => {
   // colors
   const [chartColor, setChartColor] = useState({
     before: "#00C2C7",
-    after: "#33E944", // single-series (น้ำดื่ม/ประปา) ใช้สีนี้
+    after: "#33E944", // single-series (น้ำดื่ม/ประปา)
     compareBefore: "#00C2C7",
     compareAfter: "#7B61FF",
     efficiency: "#faad14",
-    garbage: "#3367e9ff",  // ✅ สีกราฟขยะ
+    garbage: "#3367e9ff",
+    tapMin: "#2abdbf",   // ✅ เพิ่มสำหรับกราฟต่ำสุด/สูงสุด (น้ำประปา)
+    tapMax: "#1a4b57",   // ✅ เพิ่มสำหรับกราฟต่ำสุด/สูงสุด (น้ำประปา)
   });
 
   // prediction
@@ -427,7 +442,7 @@ const AdminDashboard: React.FC = () => {
   }, [dateRange, wasteMonth]);
   useEffect(() => { reloadWaste(); }, [reloadWaste, wasteMonth]);
 
-  // ✅ ตั้ง wasteMonth เป็น “เดือนล่าสุดที่มีข้อมูล” อัตโนมัติ (คืนฟังก์ชันนี้)
+  // ✅ ตั้ง wasteMonth เป็น “เดือนล่าสุดที่มีข้อมูล” อัตโนมัติ
   useEffect(() => {
     let cancelled = false;
     const ensureLatestWasteMonth = async () => {
@@ -463,13 +478,9 @@ const AdminDashboard: React.FC = () => {
 
   const paramList = useMemo(() => {
     const list = selectedEnv?.params ?? [];
-    const seen = new Set<string>();
-    return list.filter((p) => {
-      const key = (p.name || "").replace(/\s+/g, " ").trim().toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+    return Array.from(
+      new Map(list.map((p) => [ (p.name || "").replace(/\s+/g, " ").trim().toLowerCase(), p ])).values()
+    );
   }, [selectedEnv]);
 
   const selectedParamMeta = useMemo(() => paramList.find((p) => p.id === selectedParamId) || null, [paramList, selectedParamId]);
@@ -487,32 +498,27 @@ const AdminDashboard: React.FC = () => {
   const stdMin    = !isGarbage ? (globalParamMeta?.std_min ?? selectedParamMeta?.std_min ?? -1) : -1;
   const stdMiddle = !isGarbage ? (globalParamMeta?.std_middle ?? selectedParamMeta?.std_middle ?? -1) : -1;
   const stdMax    = !isGarbage ? (globalParamMeta?.std_max ?? selectedParamMeta?.std_max ?? -1) : -1;
-  // เดิมเราตัดค่าที่เป็น 0 ทิ้ง -> แก้ให้รับ 0 ด้วย
-const hasVal = (v: any) => {
-  const n = Number(v);
-  return v !== null && v !== undefined && !Number.isNaN(n) && n !== -1;
-};
+  const hasVal = (v: any) => {
+    const n = Number(v);
+    return v !== null && v !== undefined && !Number.isNaN(n) && n !== -1;
+  };
   const { stdMode, stdLow, stdHigh, stdMid } = useMemo(() => {
-  if (isGarbage) return { stdMode: "none" as StandardMode, stdLow: 0, stdHigh: 0, stdMid: 0 };
-
-  // ถ้ามีค่า middle (รวมถึง 0) และไม่ได้เป็น -1 => เส้นเดียว
-  if (hasVal(stdMiddle)) {
-    return { stdMode: "middle" as StandardMode, stdLow: 0, stdHigh: 0, stdMid: Number(stdMiddle) };
-  }
-
-  // ถ้ามี min/max (ที่ไม่ใช่ -1) => ช่วง
-  const hasLow  = hasVal(stdMin);
-  const hasHigh = hasVal(stdMax);
-  if (hasLow || hasHigh) {
-    return {
-      stdMode: "range" as StandardMode,
-      stdLow: hasLow ? Number(stdMin) : 0,
-      stdHigh: hasHigh ? Number(stdMax) : 0,
-      stdMid: 0,
-    };
-  }
-  return { stdMode: "none" as StandardMode, stdLow: 0, stdHigh: 0, stdMid: 0 };
-}, [isGarbage, stdMin, stdMiddle, stdMax]);
+    if (isGarbage) return { stdMode: "none" as StandardMode, stdLow: 0, stdHigh: 0, stdMid: 0 };
+    if (hasVal(stdMiddle)) {
+      return { stdMode: "middle" as StandardMode, stdLow: 0, stdHigh: 0, stdMid: Number(stdMiddle) };
+    }
+    const hasLow  = hasVal(stdMin);
+    const hasHigh = hasVal(stdMax);
+    if (hasLow || hasHigh) {
+      return {
+        stdMode: "range" as StandardMode,
+        stdLow: hasLow ? Number(stdMin) : 0,
+        stdHigh: hasHigh ? Number(stdMax) : 0,
+        stdMid: 0,
+      };
+    }
+    return { stdMode: "none" as StandardMode, stdLow: 0, stdHigh: 0, stdMid: 0 };
+  }, [isGarbage, stdMin, stdMiddle, stdMax]);
 
   /* ======================= FILTERED DATA (น้ำ) ======================= */
   const filteredData = useMemo(() => {
@@ -565,12 +571,12 @@ const hasVal = (v: any) => {
     else if (hasBefore) setView("before");
   }, [isGarbage, isSingleEnv, selectedEnvId, selectedParamId, filteredData]);
 
+  // ⭐ changed: ซิงก์ช่วงเวลาใหม่ทุกครั้งที่ latestGraphDate หรือโหมดเปลี่ยน (ถ้ายังอยู่โหมดอัตโนมัติ)
   useEffect(() => {
-    if (!dateRange) {
-      const def = getDefaultRangeFromLatest(filterMode, latestGraphDate);
-      setDateRange(def);
-    }
-  }, [latestGraphDate, filterMode, dateRange]);
+    if (!autoRange) return;
+    const def = getDefaultRangeFromLatest(filterMode, latestGraphDate);
+    setDateRange(def);
+  }, [latestGraphDate, filterMode, autoRange]);
 
   /* ======================= LABELS/KEYS (น้ำ) ======================= */
   const { labelsKeys, labels } = useMemo(() => {
@@ -632,6 +638,39 @@ const hasVal = (v: any) => {
       return { x: labels[i], y: avg };
     });
   }, [isSingleEnv, filteredData, selectedParamName, filterMode, labelsKeys, labels]);
+
+  // ✅ น้ำประปา/น้ำดื่ม: ค่าสูงสุด/ต่ำสุด (ต่อช่วง)
+  const tapMinMaxPoints = useMemo(() => {
+    if (!isSingleEnv) return [] as Array<{ x: string; min: number; max: number }>;
+
+    const tdata = filteredData.filter((d) => d.parameter === selectedParamName);
+    const buckets: Record<string, number[]> = {};
+
+    tdata.forEach((d) => {
+      const k = keyFromDate(d.date, filterMode);
+      (buckets[k] ||= []).push(Number(dFix(d.value)));
+    });
+
+    return labelsKeys.map((k, i) => {
+      const arr = buckets[k] || [];
+      const min = arr.length ? Math.min(...arr) : 0;
+      const max = arr.length ? Math.max(...arr) : 0;
+      return { x: labels[i], min, max };
+    });
+  }, [isSingleEnv, filteredData, selectedParamName, filterMode, labelsKeys, labels]);
+
+  const tapMinMaxSeries = useMemo(
+    () => ([
+      { name: "ค่าสูงสุด", data: tapMinMaxPoints.map(p => ({ x: p.x, y: p.max })), color: chartColor.tapMax },
+      { name: "ค่าต่ำสุด", data: tapMinMaxPoints.map(p => ({ x: p.x, y: p.min })), color: chartColor.tapMin },
+    ]),
+    [tapMinMaxPoints, chartColor.tapMax, chartColor.tapMin]
+  );
+
+  const tapMinMaxYMax = useMemo(
+    () => tapMinMaxPoints.reduce((m, p) => Math.max(m, Number(p.max || 0)), 0),
+    [tapMinMaxPoints]
+  );
 
   const beforeSeriesPoints = useMemo(() => makeSeries("ก่อน"), [makeSeries]);
   const afterSeriesPoints = useMemo(() => makeSeries("หลัง"), [makeSeries]);
@@ -784,11 +823,11 @@ const hasVal = (v: any) => {
       }
 
       const stdCeil =
-  !isEfficiency && showStandard && !isGarbage
-    ? (stdMode === "middle"
-        ? (hasVal(stdMid) ? Number(stdMid) : 0)
-        : Math.max(hasVal(stdHigh) ? Number(stdHigh) : 0, hasVal(stdLow) ? Number(stdLow) : 0))
-    : 0;
+        !isEfficiency && showStandard && !isGarbage
+          ? (stdMode === "middle"
+              ? (hasVal(stdMid) ? Number(stdMid) : 0)
+              : Math.max(hasVal(stdHigh) ? Number(stdHigh) : 0, hasVal(stdLow) ? Number(stdLow) : 0))
+          : 0;
 
       const suggestedMax =
         Math.max(Number(yMaxHint || 0), stdCeil) > 0 ? Math.max(Number(yMaxHint || 0), stdCeil) * 1.1 : undefined;
@@ -805,7 +844,7 @@ const hasVal = (v: any) => {
           tickPlacement: "on",
           tickAmount: Math.min((isGarbage ? garbageSeries.length : (isSingleEnv ? singleSeriesPoints.length : labels.length)), 6),
           axisBorder: { show: false }, axisTicks: { show: false },
-          labels: { show: true, rotate: -45, trim: true, style: { fontSize: "12px", fontWeight: 500, colors: "#475467" } },
+          labels: { show: true, rotate: -45, trim: false, style: { fontSize: "12px", fontWeight: 500, colors: "#475467" },offsetX: -4 },
           tooltip: { enabled: false },
         },
         yaxis: {
@@ -828,7 +867,6 @@ const hasVal = (v: any) => {
           },
           y: {
             formatter: (v: number) => {
-              // ✅ น้ำดื่ม/ประปา: ถ้า 0 ให้ขึ้น "ไม่มีการตรวจวัด"
               if (isSingleEnv && Number(v) === 0) return "ไม่มีการตรวจวัด";
               return isEfficiency
                 ? `${v.toFixed(2)}%`
@@ -843,7 +881,6 @@ const hasVal = (v: any) => {
   );
 
   /* ========= WASTE PIE ========= */
-  /* ========= WASTE PIE (โดนัทโทน teal) – FIXED TYPES ========= */
   const wastePieSeries = useMemo(
     () => (wasteMix || []).map((w) => Number(dFix(w.total || 0))),
     [wasteMix]
@@ -1005,6 +1042,7 @@ const hasVal = (v: any) => {
                         return true;
                       });
                       setSelectedParamId(deduped.length ? deduped[0].id : null);
+                      setAutoRange(true); // ⭐ changed: รีเซ็ตให้ auto เมื่อเปลี่ยน environment
                     }}
                     options={metas.map((e) => ({ value: e.id, label: e.name }))}
                     dropdownMatchSelectWidth={false}
@@ -1017,7 +1055,7 @@ const hasVal = (v: any) => {
                     size="small"
                     style={{ width: 200 }}
                     value={selectedParamId ?? undefined}
-                    onChange={setSelectedParamId}
+                    onChange={(v) => { setSelectedParamId(v); setAutoRange(true); }} // ⭐ changed
                     options={paramList.map((p) => ({ value: p.id, label: p.name }))}
                     dropdownMatchSelectWidth={false}
                   />
@@ -1049,6 +1087,7 @@ const hasVal = (v: any) => {
                     value={filterMode}
                     onChange={(val) => {
                       setFilterMode(val as FilterMode);
+                      setAutoRange(true); // ⭐ changed: เปิดโหมด auto ทุกครั้งที่เปลี่ยนโหมดช่วงเวลา
                       const def = getDefaultRangeFromLatest(val as FilterMode, latestGraphDate);
                       setDateRange(def);
                     }}
@@ -1068,9 +1107,10 @@ const hasVal = (v: any) => {
                       size="small"
                       style={{ width: 210 }}
                       value={dateRange as [Dayjs, Dayjs] | undefined}
-                      onChange={(dates) =>
-                        setDateRange(dates && dates[0] && dates[1] ? [dates[0], dates[1]] : null)
-                      }
+                      onChange={(dates) => {
+                        setAutoRange(false); // ⭐ changed: ผู้ใช้เลือกเอง => ปิด auto
+                        setDateRange(dates && dates[0] && dates[1] ? [dates[0], dates[1]] : null);
+                      }}
                       locale={th_TH}
                       placeholder={["เริ่ม", "สิ้นสุด"]}
                       allowClear
@@ -1082,7 +1122,7 @@ const hasVal = (v: any) => {
                       style={{ width: 130 }}
                       picker="month"
                       value={dateRange ? dateRange[0] : null}
-                      onChange={(d) => setDateRange(d ? [d.startOf("month"), d.endOf("month")] : null)}
+                      onChange={(d) => { setAutoRange(false); setDateRange(d ? [d.startOf("month"), d.endOf("month")] : null); }} // ⭐ changed
                       locale={th_TH}
                       placeholder="เดือน"
                       allowClear
@@ -1094,13 +1134,14 @@ const hasVal = (v: any) => {
                       style={{ width: 170 }}
                       picker="year"
                       value={dateRange as [Dayjs, Dayjs] | undefined}
-                      onChange={(dates) =>
+                      onChange={(dates) => {
+                        setAutoRange(false); // ⭐ changed
                         setDateRange(
                           dates && dates[0] && dates[1]
                             ? [dates[0].startOf("year"), dates[1].endOf("year")]
                             : null
-                        )
-                      }
+                        );
+                      }}
                       locale={th_TH}
                       placeholder={["ปีต้น", "ปีท้าย"]}
                       allowClear
@@ -1218,6 +1259,33 @@ const hasVal = (v: any) => {
                 </div>
               </Col>
             )}
+
+            {/* ✅ น้ำประปา/น้ำดื่ม: กราฟค่าสูงสุด/ต่ำสุด */}
+            {isSingleEnv && (
+              <Col xs={24} lg={12}>
+                <div className="dashboard-graph-card card">
+                  <div className="dashboard-head-graph-card">
+                    <div className="dashboard-head-title">ค่าสูงสุด / ต่ำสุด</div>
+                    <div className="dashboard-head-controls">
+                      <ColorPicker
+                        value={chartColor.tapMax}
+                        onChange={(c) => setChartColor((s) => ({ ...s, tapMax: c.toHexString() }))}
+                      />
+                      <ColorPicker
+                        value={chartColor.tapMin}
+                        onChange={(c) => setChartColor((s) => ({ ...s, tapMin: c.toHexString() }))}
+                      />
+                    </div>
+                  </div>
+                  <ApexChart
+                    options={buildOpts("ค่าสูงสุด/ต่ำสุด", true, tapMinMaxYMax)}
+                    series={tapMinMaxSeries}
+                    type={chartType}
+                    height={graphHeight}
+                  />
+                </div>
+              </Col>
+            )}
           </Row>
 
           {/* Alerts – 4 ล่าสุด */}
@@ -1261,17 +1329,17 @@ const hasVal = (v: any) => {
             <Col xs={24} lg={12}>
               <div className="dashboard-graph-card card pie-clean-card">
                 <div className="pie-header">
-  <div className="teal-title-chip">สัดส่วนขยะ (ต่อเดือน)</div>
-  <DatePicker
-    picker="month"
-    value={wasteMonth}
-    onChange={(d) => setWasteMonth(d ? d.startOf("month") : null)}
-    locale={th_TH}
-    allowClear={false}
-    className="dashboard-picker month-picker-compact"
-    placeholder="เลือกเดือน"
-  />
-</div>
+                  <div className="teal-title-chip">สัดส่วนขยะ (ต่อเดือน)</div>
+                  <DatePicker
+                    picker="month"
+                    value={wasteMonth}
+                    onChange={(d) => setWasteMonth(d ? d.startOf("month") : null)}
+                    locale={th_TH}
+                    allowClear={false}
+                    className="dashboard-picker month-picker-compact"
+                    placeholder="เลือกเดือน"
+                  />
+                </div>
                 {wasteLoading ? (
                   <div>กำลังโหลด...</div>
                 ) : wasteError ? (
@@ -1281,7 +1349,7 @@ const hasVal = (v: any) => {
                     options={wastePieOptions}
                     series={wastePieSeries}
                     type="donut"
-                    height={320}
+                    height={287}
                   />
                 ) : (
                   <div style={{ background: "#fafafa", borderRadius: 12, padding: 16 }}>
