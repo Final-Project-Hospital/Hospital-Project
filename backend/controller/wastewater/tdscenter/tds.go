@@ -167,7 +167,7 @@ func GetfirstTDS(c *gin.Context) {
 		Joins("inner join standards on environmental_records.standard_id = standards.id").
 		Joins("inner join units on environmental_records.unit_id = units.id").
 		Where("parameter_id = ?", parameter.ID).
-		Order("environmental_records.created_at desc").
+		Order("environmental_records.date desc").
 		Scan(&firsttds)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด

@@ -381,6 +381,7 @@ const ChemicalWaste: React.FC = () => {
       },
       xaxis: {
         categories: categoriesFormatted,
+        title: { text: "วัน/เดือน/ปี" },
         // title: { text: filterMode === 'year' ? 'ปี' : filterMode === 'month' ? 'เดือน' : 'วันที่' },
         tickAmount: 6,
         labels: {
@@ -475,7 +476,7 @@ const ChemicalWaste: React.FC = () => {
       },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
       markers: chartType === "line" ? { size: 4.5, shape: ["circle", "triangle"], hover: { sizeOffset: 3 }, } : { size: 0 },
-      legend: { show: true, showForSingleSeries: true, position: 'bottom', horizontalAlign: 'center', },
+      legend: { show: true, showForSingleSeries: true, position: 'top', horizontalAlign: 'center', },
     };
   };
 

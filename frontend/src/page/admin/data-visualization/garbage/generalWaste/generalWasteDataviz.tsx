@@ -411,7 +411,8 @@ const GeneralWaste: React.FC = () => {
       },
       xaxis: {
         categories: categoriesFormatted,
-        // title: { text: filterMode === 'year' ? 'ปี' : filterMode === 'month' ? 'เดือน' : 'วันที่' },
+        title: { text: "วัน/เดือน/ปี" },
+        // title: {text: filterMode === 'year' ? 'ปี' : filterMode === 'month' ? 'เดือน' : 'วันที่', align: 'center'}as any,
         tickAmount: 6,
         labels: {
           rotate: -45, // เอียงวันที่เล็กน้อยให้อ่านง่าย

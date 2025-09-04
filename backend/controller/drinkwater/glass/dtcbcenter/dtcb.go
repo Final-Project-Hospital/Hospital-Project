@@ -86,7 +86,7 @@ func CreateDTCB(c *gin.Context) {
 	// ฟังก์ชันตรวจสอบสถานะ
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-		if standard.MiddleValue != 0 { // ค่าเดี่ยว
+		if standard.MiddleValue != -1 { // ค่าเดี่ยว
 			if value > float64(standard.MiddleValue) {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
@@ -179,7 +179,7 @@ func GetfirstDTCB(c *gin.Context) {
 		Joins("inner join standards on environmental_records.standard_id = standards.id").
 		Joins("inner join units on environmental_records.unit_id = units.id").
 		Where("parameter_id = ? AND environmental_records.environment_id = ?", parameter.ID, environment.ID).
-		Order("environmental_records.created_at desc").
+		Order("environmental_records.date desc").
 		Scan(&firstdtcb)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด
@@ -354,9 +354,9 @@ func GetDTCBTABLE(c *gin.Context) {
 		if err == nil && latestRec.StandardID != 0 {
 			var std entity.Standard
 			if db.First(&std, latestRec.StandardID).Error == nil {
-				if (std.MinValue != 0 || std.MaxValue != 0) && (std.MinValue < std.MaxValue) {
+				if (std.MinValue != -1 || std.MaxValue != -1) && (std.MinValue < std.MaxValue) {
 					stdVal = fmt.Sprintf("%.2f - %.2f", std.MinValue, std.MaxValue)
-				} else if std.MiddleValue > 0 {
+				} else if std.MiddleValue > -1 {
 					stdVal = fmt.Sprintf("%.2f", std.MiddleValue)
 				}
 			}
@@ -395,7 +395,7 @@ func GetDTCBTABLE(c *gin.Context) {
 			var std entity.Standard
 			if db.First(&std, latestRec.StandardID).Error == nil {
 				after := *dtcbMap[k].AfterValue
-				if std.MinValue != 0 || std.MaxValue != 0 {
+				if std.MinValue != -1 || std.MaxValue != -1 {
 					if after < float64(std.MinValue) || after > float64(std.MaxValue) {
 						dtcbMap[k].Status = "ไม่ผ่านเกณฑ์มาตรฐาน"
 					} else {
@@ -492,7 +492,13 @@ func UpdateOrCreateDTCB(c *gin.Context) {
 		}
 
 		if err := query.First(&existing).Error; errors.Is(err, gorm.ErrRecordNotFound) {
-			newStandard := entity.Standard{}
+			// กำหนดค่า default เป็น -1 ทุกตัว
+			newStandard := entity.Standard{
+				MiddleValue: -1,
+				MinValue:    -1,
+				MaxValue:    -1,
+			}
+
 			if input.CustomStandard.Type == "middle" && input.CustomStandard.Value != nil {
 				newStandard.MiddleValue = float32(*input.CustomStandard.Value)
 			} else if input.CustomStandard.Type == "range" {
@@ -523,7 +529,7 @@ func UpdateOrCreateDTCB(c *gin.Context) {
 	// ฟังก์ชันคำนวณ Status
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-		if standard.MiddleValue != 0 {
+		if standard.MiddleValue != -1 {
 			if value <= float64(standard.MiddleValue) {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
@@ -702,16 +708,9 @@ func GetBeforeAfterDTCB(c *gin.Context) {
 		return
 	}
 
-	// หา parameter ของ DTCB
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?", "Total Coliform Bacteria").First(&parameter).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid parameter"})
-		return
-	}
-
-	var Before entity.BeforeAfterTreatment
-	if err := db.Where("treatment_name = ?", "ก่อน").First(&Before).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
 		return
 	}
 
@@ -721,7 +720,7 @@ func GetBeforeAfterDTCB(c *gin.Context) {
 		return
 	}
 
-	type DTCBRecord struct {
+	type ECORecord struct {
 		ID                     *uint              `json:"ID"`
 		Date                   *time.Time         `json:"Date"`
 		Data                   *float64           `json:"Data"`
@@ -739,7 +738,7 @@ func GetBeforeAfterDTCB(c *gin.Context) {
 	}
 
 	// ค่าว่างเริ่มต้น
-	defaultEmpty := DTCBRecord{
+	defaultEmpty := ECORecord{
 		ID:                     nil,
 		Date:                   nil,
 		Data:                   nil,
@@ -756,21 +755,7 @@ func GetBeforeAfterDTCB(c *gin.Context) {
 		UnitName:               "",
 	}
 
-	var latestBefore DTCBRecord
-	var latestAfter DTCBRecord
-
-	// Query หา Before ล่าสุด
-	errBefore := db.Model(&entity.EnvironmentalRecord{}).
-		Select(`environmental_records.id, environmental_records.date, environmental_records.data, environmental_records.note,
-				environmental_records.before_after_treatment_id, environmental_records.environment_id,
-				environmental_records.parameter_id, environmental_records.standard_id, environmental_records.unit_id,
-				environmental_records.employee_id, standards.min_value, standards.middle_value, standards.max_value,
-				units.unit_name`).
-		Joins("INNER JOIN standards ON environmental_records.standard_id = standards.id").
-		Joins("INNER JOIN units ON environmental_records.unit_id = units.id").
-		Where("parameter_id = ? AND before_after_treatment_id = ? AND environment_id = ?", parameter.ID, Before.ID, environment.ID).
-		Order("environmental_records.date DESC").
-		First(&latestBefore).Error
+	var latestAfter ECORecord
 
 	// Query หา After ล่าสุด
 	errAfter := db.Model(&entity.EnvironmentalRecord{}).
@@ -785,35 +770,13 @@ func GetBeforeAfterDTCB(c *gin.Context) {
 		Order("environmental_records.date DESC").
 		First(&latestAfter).Error
 
-	// ถ้าไม่มีทั้ง Before และ After
-	if errBefore != nil && errAfter != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "No DTCB records found"})
+	if errAfter != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "No ECO records found"})
 		return
 	}
 
-	// ตรวจสอบวันที่
-	beforeRes := defaultEmpty
-	afterRes := defaultEmpty
-
-	if errBefore == nil && errAfter == nil {
-		if latestBefore.Date != nil && latestAfter.Date != nil &&
-			latestBefore.Date.Format("2006-01-02") == latestAfter.Date.Format("2006-01-02") {
-			// วันที่ตรงกัน
-			beforeRes = latestBefore
-			afterRes = latestAfter
-		} else {
-			// วันไม่ตรงกัน → เอาที่ล่าสุดกว่า
-			if latestBefore.Date != nil && (latestAfter.Date == nil || latestBefore.Date.After(*latestAfter.Date)) {
-				beforeRes = latestBefore
-			} else {
-				afterRes = latestAfter
-			}
-		}
-	} else if errBefore == nil {
-		beforeRes = latestBefore
-	} else if errAfter == nil {
-		afterRes = latestAfter
-	}
+	afterRes := latestAfter
+	beforeRes := defaultEmpty // ยังคงส่งเหมือนเดิมแต่เป็นค่าว่าง
 
 	c.JSON(http.StatusOK, gin.H{
 		"before": beforeRes,

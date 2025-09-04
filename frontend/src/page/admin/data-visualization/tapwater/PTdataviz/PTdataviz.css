@@ -124,6 +124,9 @@
 .pt-width40 {
   width: 40%;
 }
+.pt-width50 {
+  width: 50%;
+}
 
 .pt-head-graph-card {
   display: flex;
