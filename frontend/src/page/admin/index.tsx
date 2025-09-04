@@ -1,6 +1,5 @@
 // src/page/admin/AdminDashboard.tsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { ConfigProvider, theme as antdTheme } from "antd";
 import {
   Row,
   Col,
@@ -157,7 +156,7 @@ const getValue     = (a: BellAlert) => a?.data?.Data ?? a?.data?.Quantity ?? 0;
 const AdminDashboard: React.FC = () => {
   // meta
   const [metas, setMetas] = useState<EnvMeta[]>([]);
-  const [metaLoading, setMetaLoading] = useState<boolean>(false);
+  const [metaLoading, setMetaLoading] = useState<boolean>(false); 
   const [, setMetaError] = useState<string | null>(null);
 
   // selected
@@ -966,7 +965,7 @@ const hasVal = (v: any) => {
   return (
     <>
       {/* Header */}
-      <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-4 sm:px-6 lg:px-8 py-6 rounded-b-3xl mb-4 w-full">
+      <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-4 sm:px-6 lg:px-8 py-6 rounded-b-3xl mb-4 w-full mt-16 md:mt-0">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-semibold drop-shadow-md">การตรวจวัดคุณภาพสิ่งแวดล้อม</h1>
