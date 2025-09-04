@@ -576,6 +576,7 @@
 @media (max-width: 480px) {
   .dfcb-title-header {
     padding: 15px;
+    display: block;
   }
 
   .dfcb-title-header h1 {
@@ -586,6 +587,9 @@
   .dfcb-graph-card {
     min-height: 350px;
   }
+  .dfcb-title-text {
+  font-size: 1rem;
+}
 
   .dfcb-select-group {
     padding: 10px;
@@ -611,34 +615,24 @@
     width: 60%;
   }
 
-  /* .dfcb-table-data {
-    overflow-x: auto;
-    padding: 10px;
-  }
-  .dfcb-table-data .ant-table {
-    min-width: 600px !important;
-  }
-  .dfcb-table-data .ant-table-thead>tr>th,
-  .dfcb-table-data .ant-table-ttsy>tr>td {
-    white-space: nowrap !important;
-    padding: 8px !important;
-    font-size: 5px !important;
-  } */
   .dfcb-select-date {
     align-items: flex-start;
     gap: 10px;
     width: 100%;
   }
 
-  /* ปรับ Select filter ให้เต็มจอเล็ก */
   .dfcb-select-date .dfcb-select-filter {
     width: 50% !important;
   }
 
-  /* ปรับ DatePicker และ RangePicker ให้เต็มจอ */
   .dfcb-select-date .ant-picker {
     width: 100% !important;
   }
+
+  .dfcb-custom-modal {
+  width: 100% !important;
+  max-width: 350px !important;
+}
 
 }
 

@@ -585,6 +585,10 @@
   align-items: flex-start !important;
   /* บังคับ legend ชิดบน */
 }
+.apexcharts-legend {
+  scrollbar-width: thin;   
+  scrollbar-color: #ffffffd4 transparent; /* สีแท่ง #888, พื้นหลังโปร่งใส */
+}
 
 
 /* Responsive for tablets (max-width: 1024px) */

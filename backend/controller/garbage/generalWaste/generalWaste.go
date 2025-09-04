@@ -212,7 +212,7 @@ func GetfirstGeneral(c *gin.Context) {
 		Joins("inner join targets on garbages.target_id = targets.id").
 		Joins("inner join units on garbages.unit_id = units.id").
 		Where("parameter_id = ?", parameter.ID).
-		Order("garbages.created_at desc").
+		Order("garbages.date desc").
 		Scan(&firstgen)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด

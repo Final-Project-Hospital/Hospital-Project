@@ -341,38 +341,52 @@ const TCBdataviz: React.FC = () => {
       annotations: {
         yaxis: isPercentChart
           ? []   //  ถ้าเป็นกราฟเปอร์เซ็นต์ จะไม่มีเส้นมาตรฐานเลย
-          : (isStandardRange
-            ? [
-              {
-                y: minstandard ?? 0,
-                borderWidth: 1.5,
-                strokeDashArray: 6,
-                borderColor: "rgba(255, 163, 24, 0.77)",
-                label: { text: `มาตรฐานต่ำสุด ${minstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
-              },
-              {
-                y: maxstandard ?? 0,
-                borderWidth: 1.5,
-                strokeDashArray: 6,
-                borderColor: "#035303ff",
-                label: { text: `มาตรฐานสูงสุด ${maxstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
-              },
-            ]
-            : middlestandard !== undefined && middlestandard !== -1
+          : (
+            // ✅ เงื่อนไขใหม่
+            (middlestandard === 0 && minstandard === -1 && maxstandard === -1)
               ? [
                 {
-                  y: middlestandard,
+                  y: 0,
                   borderColor: "#FF6F61",
                   borderWidth: 1.5,
                   strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middlestandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
+                  label: { text: "ไม่พบ", style: { background: "#ff6e61d4", color: "#fff" } },
                 },
               ]
-              : []
+              : (isStandardRange
+                ? [
+                  {
+                    y: minstandard ?? 0,
+                    borderWidth: 1.5,
+                    strokeDashArray: 6,
+                    borderColor: "rgba(255, 163, 24, 0.77)",
+                    label: { text: `มาตรฐานต่ำสุด ${minstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
+                  },
+                  {
+                    y: maxstandard ?? 0,
+                    borderWidth: 1.5,
+                    strokeDashArray: 6,
+                    borderColor: "#035303ff",
+                    label: { text: `มาตรฐานสูงสุด ${maxstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
+                  },
+                ]
+                : middlestandard !== undefined && middlestandard !== -1
+                  ? [
+                    {
+                      y: middlestandard,
+                      borderColor: "#FF6F61",
+                      borderWidth: 1.5,
+                      strokeDashArray: 6,
+                      label: { text: `มาตรฐาน ${middlestandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
+                    },
+                  ]
+                  : []
+              )
           )
       },
       xaxis: {
         categories: categoriesFormatted,
+        title: { text: "วัน/เดือน/ปี" },
         tickAmount: 6, // ให้แสดงประมาณ 6 จุดบนแกน X (ปรับได้ เช่น 4, 5)
         labels: {
           rotate: -45, // เอียงวันที่เล็กน้อยให้อ่านง่าย
@@ -435,6 +449,7 @@ const TCBdataviz: React.FC = () => {
       dataLabels: {
         enabled: false,
       },
+      legend: { show: true, position: 'top', horizontalAlign: 'center' },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
       markers: chartType === "line"
         ? {

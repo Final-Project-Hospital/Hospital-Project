@@ -62,7 +62,7 @@ const UpdateDTCBCentralForm: React.FC<UpdateDTCBCentralFormProps> = ({
         if (initialValues && initialValues.length > 0) {
             const single = initialValues[0];
 
-            const stdType = single.MinValue === 0 && single.MaxValue === 0 ? 'middle' : 'range';
+            const stdType = single.MinValue === -1 && single.MaxValue === -1 ? 'middle' : 'range';
             setStandardType(stdType);
 
             form.setFieldsValue({

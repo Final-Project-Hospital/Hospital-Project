@@ -176,7 +176,7 @@ func GetfirstBOD(c *gin.Context) {
 		Joins("inner join standards on environmental_records.standard_id = standards.id").
 		Joins("inner join units on environmental_records.unit_id = units.id").
 		Where("parameter_id = ? AND environmental_records.environment_id = ?", parameter.ID, environment.ID).
-		Order("environmental_records.created_at desc").
+		Order("environmental_records.date desc").
 		Scan(&firstbod)
 
 	// จัดการกรณีที่เกิดข้อผิดพลาด

@@ -1,5 +1,5 @@
 //ใช้ทั้งกราฟและตาราง
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -8,9 +8,9 @@ import { useNavigate } from "react-router-dom";
 import './DFCBdataviz.css';
 import dayjs, { Dayjs } from "dayjs";
 import { GetlistDFCB, GetfirstDFCB, GetBeforeAfterDFCB } from "../../../../../../services/drinkwaterServices/glass/dfcb";
-import BeforeWater from "../../../../../../assets/mineral.png"
+// import BeforeWater from "../../../../../../assets/mineral.png"
 import AftereWater from "../../../../../../assets/rain.png"
-import Efficiency from "../../../../../../assets/productivity.png"
+// import Efficiency from "../../../../../../assets/productivity.png"
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -51,25 +51,25 @@ const DFCBdataviz: React.FC = () => {
   const [BeforeAfter, setBeforeAfter] = useState<{ before: any; after: any } | null>(null);
 
   //ใช้กับกราฟ
-  const [chartTypeBefore, setChartTypeBefore] = useState<'bar' | 'line'>('line');
+  // const [chartTypeBefore, setChartTypeBefore] = useState<'bar' | 'line'>('line');
   const [chartTypeAfter, setChartTypeAfter] = useState<'bar' | 'line'>('line');
-  const [chartTypeCompare, setChartTypeCompare] = useState<'bar' | 'line'>('line');
-  const [chartpercentChange, setpercentChange] = useState<'bar' | 'line'>('line');
-  const [compareData, setCompareData] = useState<{ date: string; before: number; after: number }[]>([]);
+  // const [chartTypeCompare, setChartTypeCompare] = useState<'bar' | 'line'>('line');
+  // const [chartpercentChange, setpercentChange] = useState<'bar' | 'line'>('line');
+  // const [compareData, setCompareData] = useState<{ date: string; before: number; after: number }[]>([]);
   const [beforeData, setBeforeData] = useState<{ unit: string; date: string; data: number }[]>([]);
   const [afterData, setAfterData] = useState<{ unit: string; date: string; data: number }[]>([]);
-  const [colorBefore, setColorBefore] = useState<string>("#2abdbf");
+  // const [colorBefore, setColorBefore] = useState<string>("#2abdbf");
   const [colorAfter, setColorAfter] = useState<string>("#1a4b57");
-  const [colorCompareBefore, setColorCompareBefore] = useState<string>("#2abdbf");
-  const [colorCompareAfter, setColorCompareAfter] = useState<string>("#1a4b57");
+  // const [colorCompareBefore, setColorCompareBefore] = useState<string>("#2abdbf");
+  // const [colorCompareAfter, setColorCompareAfter] = useState<string>("#1a4b57");
   const [unit, setUnit] = useState<string>("-");
   const [middlestandard, setMiddleStandard] = useState<number | undefined>(undefined);
   const [minstandard, setMinStandard] = useState<number | undefined>(undefined);
   const [maxstandard, setMaxStandard] = useState<number | undefined>(undefined);
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalGraphType, setModalGraphType] = useState<"before" | "after" | "compare" | "percentChange" | null>(null);
-  const [percentChangeData, setPercentChangeData] = useState<{ date: string; percent: number }[]>([]);
-  const [colorPercentChange, setcolorPercentChange] = useState<string>("#FF6F61");
+  const [, setModalGraphType] = useState<"before" | "after" | "compare" | "percentChange" | null>(null);//modalGraphType
+  // const [percentChangeData, setPercentChangeData] = useState<{ date: string; percent: number }[]>([]);
+  // const [colorPercentChange, setcolorPercentChange] = useState<string>("#FF6F61");
 
   //ใช้กับตาราง
   const [search] = useState(""); //setSearch
@@ -89,16 +89,16 @@ const DFCBdataviz: React.FC = () => {
 
   //ใช้กับกราฟ ---โหลดสีจาก localStorage----
   useEffect(() => {
-    const storedColorBefore = localStorage.getItem('colorBefore');
+    // const storedColorBefore = localStorage.getItem('colorBefore');
     const storedColorAfter = localStorage.getItem('colorAfter');
-    const storedColorCompareBefore = localStorage.getItem('colorCompareBefore');
-    const storedColorCompareAfter = localStorage.getItem('colorCompareAfter');
-    const storedcolorPercentChange = localStorage.getItem('colorPercentChange');
-    if (storedColorBefore) setColorBefore(storedColorBefore);
+    // const storedColorCompareBefore = localStorage.getItem('colorCompareBefore');
+    // const storedColorCompareAfter = localStorage.getItem('colorCompareAfter');
+    // const storedcolorPercentChange = localStorage.getItem('colorPercentChange');
+    // if (storedColorBefore) setColorBefore(storedColorBefore);
     if (storedColorAfter) setColorAfter(storedColorAfter);
-    if (storedColorCompareBefore) setColorCompareBefore(storedColorCompareBefore);
-    if (storedColorCompareAfter) setColorCompareAfter(storedColorCompareAfter);
-    if (storedcolorPercentChange) setcolorPercentChange(storedcolorPercentChange);
+    // if (storedColorCompareBefore) setColorCompareBefore(storedColorCompareBefore);
+    // if (storedColorCompareAfter) setColorCompareAfter(storedColorCompareAfter);
+    // if (storedcolorPercentChange) setcolorPercentChange(storedcolorPercentChange);
   }, []);
 
   // ใช้กับกราฟ
@@ -225,19 +225,19 @@ const DFCBdataviz: React.FC = () => {
           setMinStandard(lastdfcb.data.MinValue);
         }
 
-        const percentageChangeData: { date: string; percent: number }[] = compare.map(item => {
-          const rawPercent = item.before !== 0
-            ? ((item.before - item.after) / item.before) * 100
-            : 0;
-          const percent = rawPercent < 0 ? 0 : rawPercent;
-          return { date: item.date, percent };
-        });
-        console.log(response.data);
+        // const percentageChangeData: { date: string; percent: number }[] = compare.map(item => {
+        //   const rawPercent = item.before !== 0
+        //     ? ((item.before - item.after) / item.before) * 100
+        //     : 0;
+        //   const percent = rawPercent < 0 ? 0 : rawPercent;
+        //   return { date: item.date, percent };
+        // });
+        // console.log(response.data);
         setUnit(lastdfcb.data.UnitName);
         setBeforeData(before);
         setAfterData(after);
-        setCompareData(compare);
-        setPercentChangeData(percentageChangeData);
+        // setCompareData(compare);
+        // setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterDFCB
         if (!dfcbRes || !dfcbRes.data || dfcbRes.data.length === 0) {
           setBeforeAfter(null); // ✅ ตรงกับ type
@@ -260,6 +260,11 @@ const DFCBdataviz: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [dateRange, filterMode]);
+
+  const afterDataRef = useRef(afterData);
+  useEffect(() => {
+    afterDataRef.current = afterData;
+  }, [afterData]);
 
   //ใช้กับตาราง
   const loadDFCBTable = async () => {
@@ -340,38 +345,52 @@ const DFCBdataviz: React.FC = () => {
       annotations: {
         yaxis: isPercentChart
           ? []   //  ถ้าเป็นกราฟเปอร์เซ็นต์ จะไม่มีเส้นมาตรฐานเลย
-          : (isStandardRange
-            ? [
-              {
-                y: minstandard ?? 0,
-                borderWidth: 1.5,
-                strokeDashArray: 6,
-                borderColor: "rgba(255, 163, 24, 0.77)",
-                label: { text: `มาตรฐานต่ำสุด ${minstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
-              },
-              {
-                y: maxstandard ?? 0,
-                borderWidth: 1.5,
-                strokeDashArray: 6,
-                borderColor: "#035303ff",
-                label: { text: `มาตรฐานสูงสุด ${maxstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
-              },
-            ]
-            : middlestandard !== undefined && middlestandard !== -1
+          : (
+            // ✅ เงื่อนไขใหม่
+            (middlestandard === 0 && minstandard === -1 && maxstandard === -1)
               ? [
                 {
-                  y: middlestandard,
+                  y: 0,
                   borderColor: "#FF6F61",
                   borderWidth: 1.5,
                   strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middlestandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
+                  label: { text: "ไม่พบ", style: { background: "#ff6e61d4", color: "#fff" } },
                 },
               ]
-              : []
+              : (isStandardRange
+                ? [
+                  {
+                    y: minstandard ?? 0,
+                    borderWidth: 1.5,
+                    strokeDashArray: 6,
+                    borderColor: "rgba(255, 163, 24, 0.77)",
+                    label: { text: `มาตรฐานต่ำสุด ${minstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(255, 163, 24, 0.77)", color: "#fff" } },
+                  },
+                  {
+                    y: maxstandard ?? 0,
+                    borderWidth: 1.5,
+                    strokeDashArray: 6,
+                    borderColor: "#035303ff",
+                    label: { text: `มาตรฐานสูงสุด ${maxstandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 0}`, style: { background: "rgba(3, 83, 3, 0.6)", color: "#fff" } },
+                  },
+                ]
+                : middlestandard !== undefined && middlestandard !== -1
+                  ? [
+                    {
+                      y: middlestandard,
+                      borderColor: "#FF6F61",
+                      borderWidth: 1.5,
+                      strokeDashArray: 6,
+                      label: { text: `มาตรฐาน ${middlestandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
+                    },
+                  ]
+                  : []
+              )
           )
       },
       xaxis: {
         categories: categoriesFormatted,
+        title: { text: "วัน/เดือน/ปี" },
         tickAmount: 6, // ให้แสดงประมาณ 6 จุดบนแกน X (ปรับได้ เช่น 4, 5)
         labels: {
           rotate: -45, // เอียงวันที่เล็กน้อยให้อ่านง่าย
@@ -419,11 +438,18 @@ const DFCBdataviz: React.FC = () => {
             }
 
             // กรณี afterSeries หรือ compareSeries "หลังบำบัด"
-            if ((seriesName === "หลังบำบัด" || seriesName === "DFCB") && afterData && afterData.length > dataPointIndex) {
-              const unit = afterData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดหลังบำบัด';
+            if ((seriesName === "หลังบำบัด" || seriesName === "DFCB") && afterDataRef.current && afterDataRef.current.length > dataPointIndex) {
+              const unit = afterDataRef.current[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดหลังบำบัด';
               if (unit === 'ไม่มีการตรวจวัดหลังบำบัด') return unit;
               return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
             }
+
+            // // กรณี afterSeries หรือ compareSeries "หลังบำบัด"
+            // if ((seriesName === "หลังบำบัด" || seriesName === "DFCB") && afterData && afterData.length > dataPointIndex) {
+            //   const unit = afterData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดหลังบำบัด';
+            //   if (unit === 'ไม่มีการตรวจวัดหลังบำบัด') return unit;
+            //   return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
+            // }
 
             // กรณีอื่น ๆ
             return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -434,6 +460,7 @@ const DFCBdataviz: React.FC = () => {
       dataLabels: {
         enabled: false,
       },
+      legend: { show: true, position: 'top', horizontalAlign: 'center' },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
       markers: chartType === "line"
         ? {
@@ -445,27 +472,27 @@ const DFCBdataviz: React.FC = () => {
 
     };
   };
-  const beforeSeries = [
-    { name: "ก่อนบำบัด", data: beforeData.map(item => item.data), color: colorBefore }
-  ];
+  // const beforeSeries = [
+  //   { name: "ก่อนบำบัด", data: beforeData.map(item => item.data), color: colorBefore }
+  // ];
   const afterSeries = [
     { name: "หลังบำบัด", data: afterData.map(item => item.data), color: colorAfter }
   ];
-  const compareSeries = [
-    { name: "ก่อนบำบัด", data: compareData.map(item => item.before), color: colorCompareBefore },
-    { name: "หลังบำบัด", data: compareData.map(item => item.after), color: colorCompareAfter },
-  ];
-  const combinedCompareData = [
-    ...compareSeries[0].data,
-    ...compareSeries[1].data,
-  ];
-  const percentChangeSeries = [
-    {
-      name: "เปอร์เซ็นต์การเปลี่ยนแปลง",
-      data: percentChangeData.map(item => item.percent),
-      color: colorPercentChange,
-    },
-  ];
+  // const compareSeries = [
+  //   { name: "ก่อนบำบัด", data: compareData.map(item => item.before), color: colorCompareBefore },
+  //   { name: "หลังบำบัด", data: compareData.map(item => item.after), color: colorCompareAfter },
+  // ];
+  // const combinedCompareData = [
+  //   ...compareSeries[0].data,
+  //   ...compareSeries[1].data,
+  // ];
+  // const percentChangeSeries = [
+  //   {
+  //     name: "เปอร์เซ็นต์การเปลี่ยนแปลง",
+  //     data: percentChangeData.map(item => item.percent),
+  //     color: colorPercentChange,
+  //   },
+  // ];
   //ใช้กับกราฟ
   const openModal = (type: "before" | "after" | "compare" | "percentChange") => {
     setModalGraphType(type);
@@ -711,7 +738,7 @@ const DFCBdataviz: React.FC = () => {
           <p>ค่าแบคทีเรียจากอุจจาระใช้บ่งชี้การปนเปื้อนน้ำ</p>
         </div>
         <div className="dfcb-card">
-          <img src={BeforeWater} alt="Before Water" className="dfcb-photo" />
+          {/* <img src={BeforeWater} alt="Before Water" className="dfcb-photo" />
           <div>
             <h4>น้ำก่อนบำบัดล่าสุด</h4>
             <div className="dfcb-main">
@@ -731,13 +758,13 @@ const DFCBdataviz: React.FC = () => {
             ) : (
               <p>Loading...</p>
             )}
-          </div>
+          </div> */}
           <img src={AftereWater} alt="After Water" className="dfcb-photo" />
           <div>
             <h4>น้ำหลังบำบัดล่าสุด</h4>
             <div className="dfcb-main">
               <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="dfcb-value">{BeforeAfter.after.Data.toLocaleString()}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
-              <span className="dfcb-change">
+              {/* <span className="dfcb-change">
                 {(() => {
                   if (BeforeAfter?.after.Data != null && BeforeAfter?.before.Data != null) {
                     const diff = BeforeAfter.after.Data - BeforeAfter.before.Data;
@@ -745,18 +772,21 @@ const DFCBdataviz: React.FC = () => {
                     return (<> {diff >= 0 ? '+' : ''}{diff.toFixed(2)}{diff > 0 && <span style={{ ...arrowStyle, color: '#14C18B' }}>↑</span>}{diff < 0 && <span style={{ ...arrowStyle, color: '#EE404C' }}>↓</span>}{diff === 0 && null}</>);
                   } return '-';
                 })()}
-              </span>
+              </span> */}
             </div>
             {BeforeAfter ? (
               <p>
                 มาตรฐาน{" "}
                 <span>
-                  {
-                    (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== -1) || (BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== -1) || (BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== -1) || (BeforeAfter.after.UnitName && BeforeAfter.after.UnitName.trim() !== "")
-                      ? (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== -1
-                        ? BeforeAfter.after.MiddleValue.toLocaleString() : `${(BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== -1 ? BeforeAfter.after.MinValue.toLocaleString() : "-")} - ${(BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== -1 ? BeforeAfter.after.MaxValue.toLocaleString() : "-")}`)
-                      : "-"
-                  }
+                  {(() => {const { MiddleValue, MinValue, MaxValue, UnitName } = BeforeAfter.after;
+                    if (MiddleValue === 0 && MinValue === -1 && MaxValue === -1) {return "ไม่พบ";}
+                    // ✅ เงื่อนไขเดิม
+                    if ((MiddleValue !== null && MiddleValue !== -1) ||(MinValue !== null && MinValue !== -1) ||(MaxValue !== null && MaxValue !== -1) ||(UnitName && UnitName.trim() !== "")
+                    ) {
+                      return MiddleValue !== null && MiddleValue !== -1? MiddleValue.toLocaleString(): `${MinValue !== null && MinValue !== -1 ? MinValue.toLocaleString() : "-"} - ${MaxValue !== null && MaxValue !== -1 ? MaxValue.toLocaleString() : "-"}`;
+                    }
+                    return "-";
+                  })()}
                 </span>{" "}
                 {BeforeAfter.after.UnitName || ""}
               </p>
@@ -764,7 +794,7 @@ const DFCBdataviz: React.FC = () => {
               <p>Loading...</p>
             )}
           </div>
-          <img src={Efficiency} alt="Before Water" className="dfcb-photo" />
+          {/* <img src={Efficiency} alt="Before Water" className="dfcb-photo" />
           <div>
             <h4>ประสิทธิภาพล่าสุด</h4>
             <div className="dfcb-main">
@@ -789,7 +819,7 @@ const DFCBdataviz: React.FC = () => {
 
             </div>
             <br />
-          </div>
+          </div> */}
         </div>
       </div>
       <div style={{ padding: "20px", backgroundColor: "#F8F9FA" }}>
@@ -886,7 +916,7 @@ const DFCBdataviz: React.FC = () => {
         </div>
         <div className="dfcb-graph-container">
           {/* ตารางน้ำก่อนบำบัดนะจ๊ะ */}
-          <div className="dfcb-graph-card">
+          {/* <div className="dfcb-graph-card">
             <div className="dfcb-head-graph-card">
               <div className="dfcb-width25">
                 <h2 className="dfcb-head-graph-card-text">น้ำก่อนบำบัด</h2>
@@ -935,8 +965,7 @@ const DFCBdataviz: React.FC = () => {
               type={chartTypeBefore}
               height={350}
             />
-          </div>
-
+          </div> */}
           <div className="dfcb-graph-card">
             <div className="dfcb-head-graph-card">
               <div className="dfcb-width25">
@@ -987,7 +1016,7 @@ const DFCBdataviz: React.FC = () => {
               height={350}
             />
           </div>
-          <div className="dfcb-graph-card">
+          {/* <div className="dfcb-graph-card">
             <div className="dfcb-head-graph-card">
               <div className="dfcb-width40">
                 <h2 className="dfcb-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
@@ -1044,8 +1073,8 @@ const DFCBdataviz: React.FC = () => {
               type={chartTypeCompare}
               height={350}
             />
-          </div>
-          <div className="dfcb-graph-card">
+          </div> */}
+          {/* <div className="dfcb-graph-card">
             <div className="dfcb-head-graph-card">
               <div className="dfcb-width25">
                 <h2 className="dfcb-head-graph-card-text" >ประสิทธิภาพ</h2>
@@ -1094,7 +1123,7 @@ const DFCBdataviz: React.FC = () => {
               type={chartpercentChange}
               height={350}
             />
-          </div>
+          </div> */}
         </div>
         <div className="dfcb-header-vis">
           <h1 className="dfcb-title-text-vis">ข้อมูล Fecal Coliform Bacteria of Glass</h1>
@@ -1306,7 +1335,7 @@ const DFCBdataviz: React.FC = () => {
           destroyOnClose
           maskClosable={true}
         >
-          {modalGraphType === "before" && (
+          {/* {modalGraphType === "before" && (
             <div className="dfcb-chat-modal" >
               <div className="dfcb-head-graph-card">
                 <div className="dfcb-width25">
@@ -1350,50 +1379,50 @@ const DFCBdataviz: React.FC = () => {
               </div>
             </div>
           )}
-          {modalGraphType === "after" && (
-            <div className="dfcb-chat-modal">
-              <div className="dfcb-head-graph-card">
-                <div className="dfcb-width25">
-                  <h2 className="dfcb-head-graph-card-text">น้ำหลังบำบัด</h2>
-                </div>
-              </div>
-              <div className="dfcb-right-select-graph">
-                <Select
-                  value={chartTypeAfter}
-                  onChange={val => setChartTypeAfter(val)}
-                  style={{ marginBottom: 10 }}
-                >
-                  <Select.Option value="line">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <LineChart size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟเส้น</span>
-                    </div>
-                  </Select.Option>
-                  <Select.Option value="bar">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <BarChart3 size={16} style={{ marginRight: 6 }} />
-                      <span>กราฟแท่ง</span>
-                    </div>
-                  </Select.Option>
-                </Select>
-              </div>
-              <div className="dfcb-chart-containner">
-                <ApexChart
-                  key={chartTypeAfter}
-                  options={getChartOptions(
-                    afterData.map(item => item.date),
-                    chartTypeAfter,
-                    filterMode === "year",
-                    afterSeries[0]?.data || [],
-                    true
-                  )}
-                  series={afterSeries}
-                  type={chartTypeAfter}
-                  height="100%"
-                />
+          {modalGraphType === "after" && ( */}
+          <div className="dfcb-chat-modal">
+            <div className="dfcb-head-graph-card">
+              <div className="dfcb-width25">
+                <h2 className="dfcb-head-graph-card-text">น้ำหลังบำบัด</h2>
               </div>
             </div>
-          )}
+            <div className="dfcb-right-select-graph">
+              <Select
+                value={chartTypeAfter}
+                onChange={val => setChartTypeAfter(val)}
+                style={{ marginBottom: 10 }}
+              >
+                <Select.Option value="line">
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <LineChart size={16} style={{ marginRight: 6 }} />
+                    <span>กราฟเส้น</span>
+                  </div>
+                </Select.Option>
+                <Select.Option value="bar">
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <BarChart3 size={16} style={{ marginRight: 6 }} />
+                    <span>กราฟแท่ง</span>
+                  </div>
+                </Select.Option>
+              </Select>
+            </div>
+            <div className="dfcb-chart-containner">
+              <ApexChart
+                key={chartTypeAfter}
+                options={getChartOptions(
+                  afterData.map(item => item.date),
+                  chartTypeAfter,
+                  filterMode === "year",
+                  afterSeries[0]?.data || [],
+                  true
+                )}
+                series={afterSeries}
+                type={chartTypeAfter}
+                height="100%"
+              />
+            </div>
+          </div>
+          {/* )}
           {modalGraphType === "compare" && (
             <div className="dfcb-chat-modal">
               <div className="dfcb-head-graph-card" >
@@ -1437,7 +1466,7 @@ const DFCBdataviz: React.FC = () => {
                 />
               </div>
             </div>
-          )}
+          )} */}
         </Modal>
 
       </div>

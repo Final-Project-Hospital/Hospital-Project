@@ -386,6 +386,7 @@ const Recycleddataviz: React.FC = () => {
       },
       xaxis: {
         categories: categoriesFormatted,
+        title: { text: "วัน/เดือน/ปี" },
         tickAmount: 6,
         labels: {
           rotate: -45, // เอียงวันที่เล็กน้อยให้อ่านง่าย
@@ -450,7 +451,7 @@ const Recycleddataviz: React.FC = () => {
             }
 
             // ค่า TotalSale
-            if (seriesName === "ค่า TotalSale" && TotalSaleData && TotalSaleData.length > dataPointIndex) {
+            if (seriesName === "ยอดขายขยะรีไซเคิล" && TotalSaleData && TotalSaleData.length > dataPointIndex) {
               const unit = TotalSaleData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัด';
               if (unit === 'ไม่มีการตรวจวัด') return unit;
               return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`;
@@ -476,12 +477,12 @@ const Recycleddataviz: React.FC = () => {
       },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
       markers: chartType === "line" ? { size: 4.5, shape: ["circle", "triangle"], hover: { sizeOffset: 3 }, } : { size: 0 },
-      legend: { show: true, showForSingleSeries: true, position: 'bottom', horizontalAlign: 'center', },
+      legend: { show: true, showForSingleSeries: true, position: 'top', horizontalAlign: 'center', },
     };
   };
 
   const series = [{ name: "ค่าขยะรีไซเคิล", data: listdata.map(item => item.avgValue), color: colorGarbage }];
-  const seriesTotalSale = [{ name: "ค่า TotalSale", data: TotalSaleData.map(item => item.avgValue), color: colorAadc }];
+  const seriesTotalSale = [{ name: "ยอดขายขยะรีไซเคิล", data: TotalSaleData.map(item => item.avgValue), color: colorAadc }];
   const seriesMonthlyGarbageQuantity = [
     { name: "ค่าขยะรีไซเคิล", data: compareMonthlyGarbageQuantity.map(item => item.monthlyGarbage), color: colorCompareMonthlyGarbage, yAxis: 0, },
     { name: "จำนวนคน", data: compareMonthlyGarbageQuantity.map(item => item.quantity), color: colorCompareQuantity, yAxis: 1, },
@@ -507,16 +508,11 @@ const Recycleddataviz: React.FC = () => {
       position: "right",
       horizontalAlign: "left",
       offsetY: -23,  // ปรับค่าลบเพื่อดันขึ้น (ลองปรับจนเสมอ donut)
-      markers: {
-        size: 5,
-      },
-      itemMargin: {
-        horizontal: 8,
-        vertical: 4,
-      },
+      markers: { size: 5, },
+      itemMargin: { horizontal: 8, vertical: 4, },
       fontSize: "10px",
+      labels: { colors: "#ffffffff", },
     },
-
     stroke: {
       show: false, // ปิดขอบ
     },
@@ -1024,8 +1020,8 @@ const Recycleddataviz: React.FC = () => {
           </div>
           <div className="recycled-graph-card">
             <div className="recycled-head-graph-card">
-              <div className="recycled-width25">
-                <h2 className="recycled-head-graph-card-text">ยอดขาย</h2>
+              <div className="recycled-width40">
+                <h2 className="recycled-head-graph-card-text">ยอดขายขยะรีไซเคิล</h2>
               </div>
               <div>
                 <ColorPicker
@@ -1114,7 +1110,7 @@ const Recycleddataviz: React.FC = () => {
               <span className="recycled-box-date">Date per 29 June 2024</span>
             </div>
             <div className="recycled-box">
-              <div className="recycled-box-title">จำนวนยอดขายรวมปี {latestYear}</div>
+              <div className="recycled-box-title">จำนวนยอดขายขยะรีไซเคิลรวมปี {latestYear}</div>
               <div className="recycled-box-number">
                 <div>
                   <div >

@@ -68,9 +68,16 @@ const EnvironmentBlock = () => {
           GetfirstDTCBtank(),
           GetfirstECOtank(),
         ]);
+        console.log(dfcbRes.data)
+        console.log(dtcbRes.data)
+        console.log(ecoRes.data)
+        console.log(dfcbTRes.data)
+        console.log(dtcbTRes.data)
+        console.log(ecoTRes.data)
 
         const getDisplayStandard = (data: any) => {
           const { MinValue, MaxValue, MiddleValue } = data;
+          if (MiddleValue === 0 && MinValue === -1 && MaxValue === -1) return 'ไม่พบ';
           if (MinValue !== -1 || MaxValue !== -1) return `${MinValue} - ${MaxValue}`;
           if (MiddleValue !== -1) return `${MiddleValue}`;
           return '-';
