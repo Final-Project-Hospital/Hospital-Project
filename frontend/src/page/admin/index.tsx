@@ -906,7 +906,10 @@ const AdminDashboard: React.FC = () => {
       },
       dataLabels: {
         enabled: true,
-        formatter: (val) => `${val.toFixed(0)}%`,
+        formatter: (val: number | string) => {
+          const num = typeof val === "number" ? val : Number(val);
+          return `${num.toFixed(0)}%`;
+        },
         style: { fontSize: "12px", fontWeight: 700, colors: ["#FFFFFF"] },
         dropShadow: { enabled: false },
       },
