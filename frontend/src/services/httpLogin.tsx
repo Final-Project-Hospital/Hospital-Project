@@ -3,6 +3,7 @@ import { LoginInterface } from "../interface/Login"
 import { UsersInterface } from "../interface/IUser";
 import { EmployeeInterface } from "../interface/IEmployee";
 import { RoleInterface } from "../interface/IRole";
+import { PositionInterface } from "../interface/IPosition";
 import {apiUrl} from "./index"
 
 export interface SignupInput {
@@ -206,6 +207,48 @@ export const ResetPassword = async (
   } catch (error) {
     console.error("Error resetting password:", error);
     return false;
+  }
+};
+
+export const UpdateManageEmployeeByID = (id: number, formData: FormData) => {
+  return axios.put(`${apiUrl}/api/employees/${id}`, formData, {
+    headers: {
+      ...getAuthHeader(), 
+    },
+  });
+};
+
+export const CreateEmployee = (formData: FormData) => {
+  return axios.post(`${apiUrl}/api/employees`, formData, {
+    headers: {
+      ...getAuthHeader(),
+    },
+  });
+};
+
+export const ListPositions = async (): Promise<PositionInterface[] | null> => {
+  try {
+    const response = await axios.get(`${apiUrl}/api/positions`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(), 
+      },
+    });
+
+    if (response.status === 200) {
+      const payload = response.data?.data ?? response.data;
+      if (Array.isArray(payload)) {
+        return payload as PositionInterface[];
+      }
+      console.error("Unexpected payload shape:", payload);
+      return null;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching positions:", error);
+    return null;
   }
 };
 
