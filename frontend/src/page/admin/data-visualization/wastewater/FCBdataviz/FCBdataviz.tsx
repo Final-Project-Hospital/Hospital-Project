@@ -449,7 +449,7 @@ const FCBdataviz: React.FC = () => {
       dataLabels: {
         enabled: false,
       },
-      legend: { show: true, position: 'top', horizontalAlign: 'center' },
+      legend: { show: true,showForSingleSeries: true, position: 'top', horizontalAlign: 'center' },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
       markers: chartType === "line"
         ? {
@@ -477,7 +477,7 @@ const FCBdataviz: React.FC = () => {
   ];
   const percentChangeSeries = [
     {
-      name: "เปอร์เซ็นต์การเปลี่ยนแปลง",
+      name: "ประสิทธิภาพ",
       data: percentChangeData.map(item => item.percent),
       color: colorPercentChange,
     },

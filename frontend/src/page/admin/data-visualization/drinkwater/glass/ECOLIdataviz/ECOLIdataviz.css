@@ -106,8 +106,8 @@
 }
 
 .eco-graph-card {
-    flex: 0 1 100%;   /* กว้างเต็ม container */
-  max-width: 100%;  /* จำกัดความกว้างไม่เกิน container */
+   flex: 0 1 calc(50% - 10px);
+  max-width: calc(50% - 10px);
   background-color: white;
   border-radius: 10px;
   min-height: 450px;
@@ -123,6 +123,10 @@
 
 .eco-width40 {
   width: 40%;
+}
+
+.eco-width50 {
+  width: 50%;
 }
 
 .eco-head-graph-card {
@@ -481,7 +485,7 @@
 
 .eco-chart-containner {
   flex: 1;
-  min-height: 400px;
+  min-height: 500px;
 }
 
 .eco-chart-containner .apexcharts-canvas {

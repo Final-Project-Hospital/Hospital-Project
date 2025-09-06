@@ -481,7 +481,7 @@
 
 .ttcb-chart-containner {
   flex: 1;
-  min-height: 400px;
+  min-height: 500px;
 }
 
 .ttcb-chart-containner .apexcharts-canvas {

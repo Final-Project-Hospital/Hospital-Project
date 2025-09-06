@@ -481,7 +481,7 @@
 
 .tds-chart-containner {
   flex: 1;
-  min-height: 400px;
+  min-height: 500px;
 }
 
 .tds-chart-containner .apexcharts-canvas {

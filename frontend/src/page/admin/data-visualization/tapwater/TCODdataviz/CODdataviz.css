@@ -481,7 +481,7 @@
 
 .tcod-chart-containner {
   flex: 1;
-  min-height: 400px;
+  min-height: 500px;
 }
 
 .tcod-chart-containner .apexcharts-canvas {

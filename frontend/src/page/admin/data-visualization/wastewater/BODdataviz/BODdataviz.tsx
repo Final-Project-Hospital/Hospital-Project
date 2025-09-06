@@ -479,7 +479,7 @@ const BODdataviz: React.FC = () => {
       dataLabels: {
         enabled: false,
       },
-      legend: { show: true, position: 'top', horizontalAlign: 'center' },
+      legend: { show: true,showForSingleSeries: true, position: 'top', horizontalAlign: 'center' },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
       markers: chartType === "line"
         ? {
@@ -507,7 +507,7 @@ const BODdataviz: React.FC = () => {
   ];
   const percentChangeSeries = [
     {
-      name: "เปอร์เซ็นต์การเปลี่ยนแปลง",
+      name: "ประสิทธิภาพ",
       data: percentChangeData.map(item => item.percent),
       color: colorPercentChange,
     },
@@ -1421,7 +1421,7 @@ const BODdataviz: React.FC = () => {
                   </Select.Option>
                 </Select>
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="bod-chart-containner">
                 <ApexChart
                   key={chartTypeBefore}
                   options={getChartOptions(
@@ -1465,7 +1465,7 @@ const BODdataviz: React.FC = () => {
                   </Select.Option>
                 </Select>
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="bod-chart-containner">
                 <ApexChart
                   key={chartTypeAfter}
                   options={getChartOptions(
@@ -1509,7 +1509,7 @@ const BODdataviz: React.FC = () => {
                   </Select.Option>
                 </Select>
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="bod-chart-containner">
                 <ApexChart
                   key={chartTypeCompare}
                   options={getChartOptions(

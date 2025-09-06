@@ -125,6 +125,10 @@
   width: 40%;
 }
 
+.dfcb-width50 {
+  width: 50%;
+}
+
 .dfcb-head-graph-card {
   display: flex;
   justify-content: space-between;
@@ -481,7 +485,7 @@
 
 .dfcb-chart-containner {
   flex: 1;
-  min-height: 400px;
+  min-height: 500px;
 }
 
 .dfcb-chart-containner .apexcharts-canvas {

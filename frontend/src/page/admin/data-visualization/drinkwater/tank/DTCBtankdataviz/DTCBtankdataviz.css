@@ -124,6 +124,9 @@
 .dtcb-width40 {
   width: 40%;
 }
+.dtcb-width50 {
+  width: 50%;
+}
 
 .dtcb-head-graph-card {
   display: flex;
@@ -481,7 +484,7 @@
 
 .dtcb-chart-containner {
   flex: 1;
-  min-height: 400px;
+  min-height: 500px;
 }
 
 .dtcb-chart-containner .apexcharts-canvas {
