@@ -223,7 +223,7 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                 setCustomMaxValue(undefined);
                 await GetfirstrowBOD();
                 await fetchInitialData();
-                await delay(1500);  // หน่วงเวลา 1.5 วินาที
+                await delay(500);  // หน่วงเวลา 1.5 วินาที
                 if (onSuccess) await onSuccess();
                 onCancel?.(); // ปิด modal
                 // setTimeout(() => {
@@ -258,7 +258,7 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                 setCustomMaxValue(undefined);
                 await GetfirstrowBOD();
                 await fetchInitialData();
-                await delay(1500);  // หน่วงเวลา 1.5 วินาที
+                await delay(500);  // หน่วงเวลา 1.5 วินาที
                 if (onSuccess) await onSuccess();
                 onCancel?.();// ปิด modal
                 // setTimeout(() => {

@@ -17,7 +17,8 @@ import { useNotificationContext } from "../NotificationContext";
 import {
   GetLineMasterFirst,
   UpdateLineMasterByID,
-  CreateNotification
+  CreateNotification,
+  IsEmployeePasswordValid, // ✅ ใช้จาก services/hardware ตามที่ให้มา
 } from "../../../../services/hardware";
 import { LineMasterInterface } from "../../../../interface/ILineMaster";
 import { GetUserDataByUserID } from "../../../../services/httpLogin"; 
@@ -34,6 +35,8 @@ import {
 
 const { TextArea } = Input;
 
+const EMPLOYEE_ID_FOR_VERIFY = 1; // ✅ ตรวจรหัสด้วยพนักงาน id = 1
+
 const Account = () => {
   const { t } = useTranslation();
   const [notifications, setNotifications] = useState<NotificationInterface[]>([]);
@@ -45,6 +48,7 @@ const Account = () => {
   const [loadingToken, setLoadingToken] = useState<boolean>(false);
   const [newToken, setNewToken] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
+  const [tokenPassword, setTokenPassword] = useState<string>(""); // ✅ รหัสยืนยันใต้ช่อง Token
 
   // ✅ Modal Create Notification
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -58,22 +62,17 @@ const Account = () => {
   useEffect(() => {
     const fetchUserRole = async () => {
       try {
-        // สมมุติว่า userID เก็บใน localStorage
         const userId = localStorage.getItem("employeeid");
         if (userId) {
           const user: UsersInterface | false = await GetUserDataByUserID(userId);
-          if (user && user.Role?.RoleName === "Admin") {
-            setIsAdmin(true);
-          } else {
-            setIsAdmin(false);
-          }
+          if (user && user.Role?.RoleName === "Admin") setIsAdmin(true);
+          else setIsAdmin(false);
         }
       } catch (error) {
         console.error("Error fetching user role:", error);
         setIsAdmin(false);
       }
     };
-
     fetchUserRole();
   }, []);
 
@@ -81,20 +80,18 @@ const Account = () => {
     const fetchNotifications = async () => {
       setLoading(true);
       const res = await ListNotification();
-      if (res) {
-        setNotifications(res);
-      }
+      if (res) setNotifications(res);
       setLoading(false);
     };
-
     fetchNotifications();
   }, [reloadKey]);
 
-  // ✅ Show Token Modal
+  // ✅ เปิด Modal Token และโหลดค่า
   const showLineToken = async () => {
     if (!isAdmin) return;
     setIsModalOpen(true);
     setLoadingToken(true);
+    setTokenPassword(""); // ล้างรหัสเดิมทุกครั้ง
     const res = await GetLineMasterFirst();
     if (res) {
       setLineMaster(res);
@@ -103,19 +100,39 @@ const Account = () => {
     setLoadingToken(false);
   };
 
-  // ✅ Save Token
+  // ✅ Save Token (ตรวจรหัสผ่านก่อน)
   const handleSaveToken = async () => {
     if (!lineMaster || !isAdmin) return;
-    setSaving(true);
-    const res = await UpdateLineMasterByID(lineMaster.ID, { Token: newToken });
-    if (res) {
-      setLineMaster(res);
-      message.success("อัปเดต Token สำเร็จ");
-      setIsModalOpen(false);
-    } else {
-      message.error("ไม่สามารถอัปเดต Token ได้");
+
+    if (!tokenPassword) {
+      message.error("กรุณากรอกรหัสผ่านเพื่อยืนยันการเปลี่ยนแปลง");
+      return;
     }
-    setSaving(false);
+
+    setSaving(true);
+    try {
+      const ok = await IsEmployeePasswordValid(EMPLOYEE_ID_FOR_VERIFY, tokenPassword);
+      if (!ok) {
+        message.warning("รหัสผ่านไม่ถูกต้อง");
+        setSaving(false);
+        return;
+      }
+
+      const res = await UpdateLineMasterByID(lineMaster.ID, { Token: newToken });
+      if (res) {
+        setLineMaster(res);
+        message.success("อัปเดต Token สำเร็จ");
+        setIsModalOpen(false);
+        setTokenPassword("");
+      } else {
+        message.error("ไม่สามารถอัปเดต Token ได้");
+      }
+    } catch (err) {
+      console.error(err);
+      message.error("เกิดข้อผิดพลาดขณะบันทึก");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ✅ Create Notification
@@ -129,12 +146,12 @@ const Account = () => {
         Alert: false,
       });
       if (res) {
-        message.success("สร้าง ข้อมูลผู้ได้รับการเเจ้งเตื่อน สำเร็จ");
+        message.success("สร้าง ข้อมูลผู้ได้รับการเเจ้งเตือน สำเร็จ");
         setIsCreateModalOpen(false);
         form.resetFields();
-        triggerReload(); // ✅ refresh list
+        triggerReload();
       } else {
-        message.error("ไม่สามารถสร้าง ข้อมูลผู้ได้รับการเเจ้งเตื่อน ได้");
+        message.error("ไม่สามารถสร้าง ข้อมูลผู้ได้รับการเเจ้งเตือน ได้");
       }
     } catch (err) {
       console.error(err);
@@ -144,23 +161,36 @@ const Account = () => {
   return (
     <>
       <Card
-        title={t("บัญชีทั้งหมด")}
+        title={<span className="flex items-center gap-2 text-teal-600 font-semibold">{t("บัญชีทั้งหมด")}</span>}
         style={{ height: "100%" }}
         extra={
-          isAdmin && ( // ✅ แสดงเฉพาะ Admin
+          isAdmin && (
             <>
               <Button
+                size="small"
                 style={{
                   background: "linear-gradient(to right, #14b8a6, #0d9488)",
                   color: "white",
                   border: "none",
+                  fontSize: 12,
+                  height: 28,
+                  padding: "0 10px",
                 }}
-                icon={<PlusOutlined />}
+                icon={<PlusOutlined style={{ fontSize: 12 }} />}
                 onClick={() => setIsCreateModalOpen(true)}
               >
                 เพิ่มผู้เเจ้งเตือน
               </Button>
-              <Button type="link" onClick={showLineToken}>
+              <Button
+                type="link"
+                size="small"
+                onClick={showLineToken}
+                style={{
+                  fontSize: 12,
+                  paddingInline: 4,
+                  height: 28,
+                }}
+              >
                 LINE Token
               </Button>
             </>
@@ -179,7 +209,7 @@ const Account = () => {
               split={false}
               dataSource={notifications}
               renderItem={(item) => (
-                <AccountItem item={item} isAdmin={isAdmin} /> // ✅ ส่งไปที่ AccountItem เพื่อควบคุมปุ่ม แก้ไข/ลบ/Toggle
+                <AccountItem item={item} isAdmin={isAdmin} />
               )}
               className="[&_.ant-list-item-meta-title]:font-normal"
             />
@@ -191,7 +221,7 @@ const Account = () => {
       <Modal
         title={
           <span className="text-teal-600 font-bold text-lg flex items-center gap-2">
-            <BellOutlined /> สร้างผู้ได้รับการเเจ้งเตื่อน
+            <BellOutlined /> สร้างผู้ได้รับการเเจ้งเตือน
           </span>
         }
         open={isCreateModalOpen}
@@ -199,7 +229,7 @@ const Account = () => {
         centered
         width="500px"
         footer={
-          isAdmin ? ( // ✅ ปุ่มบันทึกเฉพาะ Admin
+          isAdmin ? (
             [
               <Button key="cancel" onClick={() => setIsCreateModalOpen(false)}>
                 ยกเลิก
@@ -252,7 +282,7 @@ const Account = () => {
         {!isAdmin && <p className="text-red-500">คุณไม่มีสิทธิ์สร้างข้อมูลนี้</p>}
       </Modal>
 
-      {/* ✅ Modal LINE Token */}
+      {/* ✅ Modal LINE Token (มีช่องยืนยันรหัสใต้ Token) */}
       <Modal
         title={
           <span className="text-teal-600 font-bold text-lg flex items-center gap-2">
@@ -260,7 +290,10 @@ const Account = () => {
           </span>
         }
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
+        onCancel={() => {
+          setIsModalOpen(false);
+          setTokenPassword("");
+        }}
         centered
         width="600px"
         footer={
@@ -296,16 +329,32 @@ const Account = () => {
           </div>
         ) : (
           isAdmin && (
-            <div className="space-y-1">
-              <span className="flex items-center gap-1 font-semibold text-gray-700">
-                <EditOutlined /> Token
-              </span>
-              <TextArea
-                value={newToken}
-                onChange={(e) => setNewToken(e.target.value)}
-                placeholder="กรอก Line Token"
-                autoSize={{ minRows: 3, maxRows: 6 }}
-              />
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <span className="flex items-center gap-1 font-semibold text-gray-700">
+                  <EditOutlined /> Token
+                </span>
+                <TextArea
+                  value={newToken}
+                  onChange={(e) => setNewToken(e.target.value)}
+                  placeholder="กรอก Line Token"
+                  autoSize={{ minRows: 3, maxRows: 6 }}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <span className="flex items-center gap-1 font-semibold text-gray-700">
+                  <KeyOutlined /> รหัสผ่านยืนยันการเปลี่ยนแปลง
+                </span>
+                <Input.Password
+                  value={tokenPassword}
+                  onChange={(e) => setTokenPassword(e.target.value)}
+                  placeholder="กรอกรหัสผ่านของคุณ"
+                />
+                <p className="text-xs text-gray-500">
+                  ต้องกรอกรหัสผ่านเพื่อยืนยันก่อนบันทึกการเปลี่ยนแปลง Token
+                </p>
+              </div>
             </div>
           )
         )}

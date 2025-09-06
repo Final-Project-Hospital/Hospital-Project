@@ -79,7 +79,7 @@ const EnvironmentBlock = () => {
       case 'PT Center':
         return (
           <>
-            Total Phosphorus (TP)<br />
+            Total Phosphorus (PT)<br />
             คือ ฟอสฟอรัสรวม<br />เป็นธาตุอาหารที่กระตุ้นการเกิดสาหร่าย
           </>
         );

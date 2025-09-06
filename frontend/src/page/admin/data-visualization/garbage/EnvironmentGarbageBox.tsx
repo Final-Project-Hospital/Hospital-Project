@@ -29,7 +29,7 @@ const EnvironmentBlock = () => {
       case 'Chemical Waste':
         return (
           <>
-            <b>ขยะเคมี (Chemical Waste)</b><br />
+            <b>ขยะเคมีบำบัด (Chemical Waste)</b><br />
             คือ ของเสียที่เกิดจากสารเคมีต่าง ๆ<br />ไม่ว่าจะอยู่ในรูปของแข็ง ของเหลว หรือก๊าซ
           </>
         );
