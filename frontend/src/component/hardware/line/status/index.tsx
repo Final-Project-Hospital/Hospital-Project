@@ -6,7 +6,7 @@ const Status = () => {
   const { t } = useTranslation();
   return (
     <Card
-      title={t("สถานะโดยรวมของบัญชีที่เเจ้งเตื่อน")}
+      title={<span className=" gap-2 text-teal-600 font-semibold">{t("สถานะโดยรวมของบัญชีที่เเจ้งเตือน")}</span>}
       className="text-center"
       classNames={{
         body: "pt-0",

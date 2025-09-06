@@ -1,45 +1,82 @@
 // 📁 components/employees/EmployeeEditModal.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Modal, Form, Input, message, Row, Col, Select } from "antd";
 import { CameraOutlined, FormOutlined } from "@ant-design/icons";
-import axios from "axios";
 import { EmployeeInterface } from "../../interface/IEmployee";
 import { PositionInterface } from "../../interface/IPosition";
 import { RoleInterface } from "../../interface/IRole";
-import { ListRole } from "../../services/httpLogin";
+import { ListRole, UpdateManageEmployeeByID,ListPositions } from "../../services/httpLogin";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   employee: EmployeeInterface | null;
-  positions: PositionInterface[];
+  /** เดิมส่งมาจาก parent ได้ แต่ตอนนี้จะพยายามดึงจาก service เองก่อน */
+  positions?: PositionInterface[];
   isSelf?: boolean;
 };
-
-const { Option } = Select;
 
 const EmployeeEditModal: React.FC<Props> = ({
   open,
   onClose,
   onSuccess,
   employee,
-  positions,
+  positions = [],
   isSelf = false,
 }) => {
   const [form] = Form.useForm();
   const [uploadFile, setUploadFile] = useState<File | undefined>();
   const [loading, setLoading] = useState(false);
+
   const [roles, setRoles] = useState<RoleInterface[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+
+  const [positionsState, setPositionsState] = useState<PositionInterface[]>([]);
+  const [positionsLoading, setPositionsLoading] = useState(false);
 
   const previewUrl = useMemo(() => {
     if (uploadFile) return URL.createObjectURL(uploadFile);
     return employee?.Profile || "";
   }, [uploadFile, employee]);
 
+  const loadRoles = useCallback(async () => {
+    try {
+      setRolesLoading(true);
+      const res = await ListRole(); // ต้องคืน role ทั้ง "ทุกอัน" จากตาราง Role
+      setRoles(Array.isArray(res) ? res : []);
+    } catch (e: any) {
+      console.error(e);
+      message.error("โหลดรายการสิทธิ์ไม่สำเร็จ");
+      setRoles([]);
+    } finally {
+      setRolesLoading(false);
+    }
+  }, []);
+
+  const loadPositions = useCallback(async () => {
+    try {
+      setPositionsLoading(true);
+      const res = await ListPositions(); // GET /api/positions
+      if (res && Array.isArray(res)) {
+        setPositionsState(res);
+      } else {
+        // เผื่อกรณี service ล้มเหลว → fallback ใช้ props ที่ส่งเข้ามา
+        setPositionsState(positions);
+      }
+    } catch (e) {
+      console.error(e);
+      message.error("โหลดรายการตำแหน่งไม่สำเร็จ");
+      setPositionsState(positions);
+    } finally {
+      setPositionsLoading(false);
+    }
+  }, [positions]);
+
   useEffect(() => {
     if (!open || !employee) return;
 
+    // เซ็ตค่าเริ่มต้นของฟอร์ม
     form.setFieldsValue({
       firstName: employee.FirstName ?? "",
       lastName: employee.LastName ?? "",
@@ -50,10 +87,10 @@ const EmployeeEditModal: React.FC<Props> = ({
     });
     setUploadFile(undefined);
 
-    ListRole().then((res) => {
-      if (res) setRoles(res);
-    });
-  }, [open, employee, form]);
+    // โหลด roles/positions ทุกครั้งที่เปิด modal เพื่อให้รายการล่าสุด
+    loadRoles();
+    loadPositions();
+  }, [open, employee, form, loadRoles, loadPositions]);
 
   const handleFileChange = (file?: File) => {
     if (!file) {
@@ -99,29 +136,23 @@ const EmployeeEditModal: React.FC<Props> = ({
         formData.append("positionID", String(values.positionID));
       }
 
-      // ✅ เพิ่ม roleID เสมอ
+      // ✅ แนบ roleID ตามเงื่อนไข
       if (isSelf) {
+        // แก้ไขข้อมูลตัวเอง → ไม่ให้เปลี่ยนสิทธิ์ เลยยึดตาม role ปัจจุบัน
         if (employee?.Role?.ID != null) {
           formData.append("roleID", String(employee.Role.ID));
         }
       } else {
-        if (values.roleID) {
+        // แก้ไขโดยผู้ดูแล → ใช้ค่าที่เลือกจาก Select
+        if (values.roleID != null) {
           formData.append("roleID", String(values.roleID));
         }
       }
 
       if (uploadFile) formData.append("profile", uploadFile);
 
-      // ✅ debug ค่า FormData ก่อนส่ง
-      for (const [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-      }
-
       setLoading(true);
-      await axios.put(`/api/employees/${employee.ID}`, formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      await UpdateManageEmployeeByID(employee.ID, formData);
       message.success("แก้ไขข้อมูลสำเร็จ");
       onSuccess();
       onClose();
@@ -129,6 +160,7 @@ const EmployeeEditModal: React.FC<Props> = ({
       if (err?.errorFields) return;
 
       const status = err?.response?.status;
+
       if (status === 409 && err?.response?.data?.errors) {
         const fieldErrors = Object.entries(err.response.data.errors).map(
           ([field, msg]) => ({
@@ -140,12 +172,36 @@ const EmployeeEditModal: React.FC<Props> = ({
         return;
       }
 
-      const msg = err?.response?.data?.error || "แก้ไขข้อมูลไม่สำเร็จ";
+      const msg =
+        err?.response?.data?.error || err?.message || "แก้ไขข้อมูลไม่สำเร็จ";
       message.error(msg);
     } finally {
       setLoading(false);
     }
   };
+
+  // ✅ antd v5: ใช้ options เพื่อความเสถียร (+ search)
+  const roleOptions = useMemo(
+    () =>
+      (roles ?? [])
+        .filter((r) => r?.ID != null)
+        .map((r) => ({
+          label: r.RoleName,
+          value: r.ID,
+        })),
+    [roles]
+  );
+
+  const positionOptions = useMemo(() => {
+    const source =
+      positionsState && positionsState.length > 0 ? positionsState : positions;
+    return (source ?? [])
+      .filter((p) => p?.ID != null)
+      .map((p) => ({
+        label: p.Position,
+        value: p.ID,
+      }));
+  }, [positionsState, positions]);
 
   const TitleNode = (
     <div className="flex items-center gap-2">
@@ -251,13 +307,15 @@ const EmployeeEditModal: React.FC<Props> = ({
               label="ตำแหน่ง"
               rules={[{ required: true, message: "กรุณาเลือกตำแหน่ง" }]}
             >
-              <Select placeholder="เลือกตำแหน่ง">
-                {positions.map((p) => (
-                  <Option key={p.ID} value={p.ID}>
-                    {p.Position}
-                  </Option>
-                ))}
-              </Select>
+              <Select
+                placeholder="เลือกตำแหน่ง"
+                options={positionOptions}
+                loading={positionsLoading}
+                showSearch
+                optionFilterProp="label"
+                allowClear
+                getPopupContainer={(trigger) => trigger.parentElement || document.body}
+              />
             </Form.Item>
           </Col>
         </Row>
@@ -281,13 +339,15 @@ const EmployeeEditModal: React.FC<Props> = ({
             label="สิทธิ์"
             rules={[{ required: true, message: "กรุณากำหนดสิทธิการใช้งาน" }]}
           >
-            <Select placeholder="เลือกสิทธิ์">
-              {roles.map((r) => (
-                <Option key={r.ID} value={r.ID}>
-                  {r.RoleName}
-                </Option>
-              ))}
-            </Select>
+            <Select
+              placeholder="เลือกสิทธิ์"
+              options={roleOptions}
+              loading={rolesLoading}
+              showSearch
+              optionFilterProp="label"
+              allowClear
+              getPopupContainer={(trigger) => trigger.parentElement || document.body}
+            />
           </Form.Item>
         )}
       </Form>
