@@ -8,9 +8,7 @@ import { useNavigate } from "react-router-dom";
 import './DFCBtankdataviz.css';
 import dayjs, { Dayjs } from "dayjs";
 import { GetlistDFCBtank, GetfirstDFCBtank, GetBeforeAfterDFCBtank } from "../../../../../../services/drinkwaterServices/tank/dfcbT";
-// import BeforeWater from "../../../../../../assets/mineral.png"
 import AftereWater from "../../../../../../assets/rain.png"
-// import Efficiency from "../../../../../../assets/productivity.png"
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -51,25 +49,25 @@ const DFCBtankdataviz: React.FC = () => {
   const [BeforeAfter, setBeforeAfter] = useState<{ before: any; after: any } | null>(null);
 
   //ใช้กับกราฟ
-  // const [chartTypeBefore, setChartTypeBefore] = useState<'bar' | 'line'>('line');
   const [chartTypeAfter, setChartTypeAfter] = useState<'bar' | 'line'>('line');
-  // const [chartTypeCompare, setChartTypeCompare] = useState<'bar' | 'line'>('line');
-  // const [chartpercentChange, setpercentChange] = useState<'bar' | 'line'>('line');
-  // const [compareData, setCompareData] = useState<{ date: string; before: number; after: number }[]>([]);
+  const [chartTypeMinMax, setChartTypeMinMax] = useState<'bar' | 'line'>('line');
   const [beforeData, setBeforeData] = useState<{ unit: string; date: string; data: number }[]>([]);
   const [afterData, setAfterData] = useState<{ unit: string; date: string; data: number }[]>([]);
-  // const [colorBefore, setColorBefore] = useState<string>("#2abdbf");
   const [colorAfter, setColorAfter] = useState<string>("#1a4b57");
-  // const [colorCompareBefore, setColorCompareBefore] = useState<string>("#2abdbf");
-  // const [colorCompareAfter, setColorCompareAfter] = useState<string>("#1a4b57");
+  const [colorMin, setColorMin] = useState<string>("#2abdbf");//
+  const [colorMax, setColorMax] = useState<string>("#1a4b57");//
   const [unit, setUnit] = useState<string>("-");
   const [middlestandard, setMiddleStandard] = useState<number | undefined>(undefined);
   const [minstandard, setMinStandard] = useState<number | undefined>(undefined);
   const [maxstandard, setMaxStandard] = useState<number | undefined>(undefined);
   const [modalVisible, setModalVisible] = useState(false);
-  const [, setModalGraphType] = useState<"before" | "after" | "compare" | "percentChange" | null>(null);//modalGraphType
-  // const [percentChangeData, setPercentChangeData] = useState<{ date: string; percent: number }[]>([]);
-  // const [colorPercentChange, setcolorPercentChange] = useState<string>("#FF6F61");
+  const [modalGraphType, setModalGraphType] = useState<"after" | "minmax" | null>(null);//
+  const [afterMaxMinData, setAfterMaxMinData] = useState<{ date: string; max: number; min: number; maxDate?: string; minDate?: string; maxUnit?: string; minUnit?: string; }[]>([]);
+  const formatThaiDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const d = dayjs(dateStr).locale('th');
+    return `${d.date()} ${d.format('MMMM')} ${d.year() + 543}`;
+  };
 
   //ใช้กับตาราง
   const [search] = useState(""); //setSearch
@@ -89,16 +87,12 @@ const DFCBtankdataviz: React.FC = () => {
 
   //ใช้กับกราฟ ---โหลดสีจาก localStorage----
   useEffect(() => {
-    // const storedColorBefore = localStorage.getItem('colorBefore');
     const storedColorAfter = localStorage.getItem('colorAfter');
-    // const storedColorCompareBefore = localStorage.getItem('colorCompareBefore');
-    // const storedColorCompareAfter = localStorage.getItem('colorCompareAfter');
-    // const storedcolorPercentChange = localStorage.getItem('colorPercentChange');
-    // if (storedColorBefore) setColorBefore(storedColorBefore);
+    const storedMin = localStorage.getItem('colorMin');
+    const storedMax = localStorage.getItem('colorMax');
     if (storedColorAfter) setColorAfter(storedColorAfter);
-    // if (storedColorCompareBefore) setColorCompareBefore(storedColorCompareBefore);
-    // if (storedColorCompareAfter) setColorCompareAfter(storedColorCompareAfter);
-    // if (storedcolorPercentChange) setcolorPercentChange(storedcolorPercentChange);
+    if (storedMin) setColorMin(storedMin);
+    if (storedMax) setColorMax(storedMax);
   }, []);
 
   // ใช้กับกราฟ
@@ -224,20 +218,76 @@ const DFCBtankdataviz: React.FC = () => {
           setMaxStandard(lastdfcb.data.MaxValue);
           setMinStandard(lastdfcb.data.MinValue);
         }
+        // ================== คำนวณ Max/Min ==================
+        const afterMaxMin: typeof afterMaxMinData = [];
 
-        // const percentageChangeData: { date: string; percent: number }[] = compare.map(item => {
-        //   const rawPercent = item.before !== 0
-        //     ? ((item.before - item.after) / item.before) * 100
-        //     : 0;
-        //   const percent = rawPercent < 0 ? 0 : rawPercent;
-        //   return { date: item.date, percent };
-        // });
-        console.log(response.data);
+        const processGroups = (keyFunc: (dateStr: string) => string) => {
+          const groups: Record<string, { value: number; date: string }[]> = {};
+
+          allDates.forEach(dateStr => {
+            const key = keyFunc(dateStr);
+            if (!groups[key]) groups[key] = [];
+
+            response.data.forEach((item: any) => {
+              if (item.BeforeAfterTreatmentID === 2) {
+                const actualDate = dayjs(item.Date).format("YYYY-MM-DD");
+                if (
+                  (filterMode === "year" && dayjs(actualDate).year().toString() === key) ||
+                  (filterMode === "month" && dayjs(actualDate).format("YYYY-MM") === key) ||
+                  (filterMode === "dateRange" && actualDate === key)
+                ) {
+                  groups[key].push({ value: item.Data, date: actualDate });
+                }
+              }
+            });
+          });
+
+          Object.keys(groups).forEach(key => {
+            const entries = groups[key];
+            if (entries.length) {
+              const maxEntry = entries.reduce((prev, curr) => curr.value > prev.value ? curr : prev, entries[0]);
+              const minEntry = entries.reduce((prev, curr) => curr.value < prev.value ? curr : prev, entries[0]);
+
+              // หา unit ของ Max/Min
+              const maxUnit = response.data.find((i: any) =>
+                i.BeforeAfterTreatmentID === 2 &&
+                dayjs(i.Date).format("YYYY-MM-DD") === maxEntry.date &&
+                i.Data === maxEntry.value
+              )?.UnitName ?? "";
+
+              const minUnit = response.data.find((i: any) =>
+                i.BeforeAfterTreatmentID === 2 &&
+                dayjs(i.Date).format("YYYY-MM-DD") === minEntry.date &&
+                i.Data === minEntry.value
+              )?.UnitName ?? "";
+
+              afterMaxMin.push({
+                date: key,
+                max: maxEntry.value,
+                min: minEntry.value,
+                maxDate: formatThaiDate(maxEntry.date),
+                minDate: formatThaiDate(minEntry.date),
+                maxUnit,
+                minUnit
+              });
+            } else {
+              afterMaxMin.push({ date: key, max: 0, min: 0, maxUnit: "", minUnit: "" });
+            }
+          });
+        };
+
+        if (filterMode === "year") {
+          processGroups(dateStr => dayjs(dateStr).year().toString());
+        } else if (filterMode === "month") {
+          processGroups(dateStr => dayjs(dateStr).format("YYYY-MM"));
+        } else {
+          processGroups(dateStr => dateStr); // รายวัน
+        }
+
+        setAfterMaxMinData(afterMaxMin);
         setUnit(lastdfcb.data.UnitName);
         setBeforeData(before);
         setAfterData(after);
-        // setCompareData(compare);
-        // setPercentChangeData(percentageChangeData);
         // เซ็ตข้อมูลจาก GetBeforeAfterDFCBtank
         if (!dfcbRes || !dfcbRes.data || dfcbRes.data.length === 0) {
           setBeforeAfter(null); // ✅ ตรงกับ type
@@ -265,6 +315,11 @@ const DFCBtankdataviz: React.FC = () => {
   useEffect(() => {
     afterDataRef.current = afterData;
   }, [afterData]);
+
+  const afterMaxMinRef = useRef(afterMaxMinData);
+  useEffect(() => {
+    afterMaxMinRef.current = afterMaxMinData;
+  }, [afterMaxMinData]);
 
   //ใช้กับตาราง
   const loadDFCBtankTable = async () => {
@@ -323,7 +378,8 @@ const DFCBtankdataviz: React.FC = () => {
     isYearMode = false,
     dataSeries: number[],
     enableZoom = false, //ใช้บอกว่ากราฟนี้จะเปิดการซูมไหม
-    isPercentChart = false //ใช้บอกว่าคือกราฟประสิทธิภาพไหม
+    isPercentChart = false, //ใช้บอกว่าคือกราฟประสิทธิภาพไหม
+    isMaxMinPercent = false
   ): ApexOptions => {
     const categoriesFormatted = isYearMode
       ? categories.map((month) => formatMonthLabel(month))
@@ -395,6 +451,14 @@ const DFCBtankdataviz: React.FC = () => {
         labels: {
           rotate: -45, // เอียงวันที่เล็กน้อยให้อ่านง่าย
           formatter: (value: string, _timestamp?: number) => {
+            if (isMaxMinPercent) {
+              // แสดงเฉพาะปีสำหรับ year mode
+              if (filterMode === "year") return dayjs(value).year().toString();
+              // แสดงเดือน+ปี สำหรับ month mode
+              if (filterMode === "month") return dayjs(value).format("MMM");
+              // แสดงวัน+เดือน สำหรับ day mode
+              return dayjs(value).format("D MMM");
+            }
             // ถ้าเป็น mode รายปี => แสดงเป็น เดือน ปี (เช่น ก.ค. 2568)
             if (filterMode === "year") {
               return value;
@@ -430,6 +494,20 @@ const DFCBtankdataviz: React.FC = () => {
               return `${val.toFixed(2)}%`;
             }
 
+            if (seriesName === "ค่าสูงสุด" && afterMaxMinRef.current && afterMaxMinRef.current.length > dataPointIndex) {
+              const item = afterMaxMinRef.current[dataPointIndex];
+              const unit = item.maxUnit || 'ไม่มีการตรวจวัด';
+              if (unit === 'ไม่มีการตรวจวัด') return unit;
+              return `${item.max.toFixed(2)} ${unit} (วันที่: ${item.maxDate})`;
+            }
+
+            if (seriesName === "ค่าต่ำสุด" && afterMaxMinRef.current && afterMaxMinRef.current.length > dataPointIndex) {
+              const item = afterMaxMinRef.current[dataPointIndex];
+              const unit = item.minUnit || 'ไม่มีการตรวจวัด';
+              if (unit === 'ไม่มีการตรวจวัด') return unit;
+              return `${item.min.toFixed(2)} ${unit} (วันที่: ${item.minDate})`;
+            }
+
             // กรณี beforeSeries หรือ compareSeries "ก่อนบำบัด"
             if ((seriesName === "ก่อนบำบัด" || seriesName === "DFCBtank") && beforeData && beforeData.length > dataPointIndex) {
               const unit = beforeData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดก่อนบำบัด';
@@ -438,9 +516,9 @@ const DFCBtankdataviz: React.FC = () => {
             }
 
             // กรณี afterSeries หรือ compareSeries "หลังบำบัด"
-            if ((seriesName === "หลังบำบัด" || seriesName === "DFCBtank") && afterDataRef.current && afterDataRef.current.length > dataPointIndex) {
-              const unit = afterDataRef.current[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดหลังบำบัด';
-              if (unit === 'ไม่มีการตรวจวัดหลังบำบัด') return unit;
+            if ((seriesName === "FCB of Tank" || seriesName === "DFCBtank") && afterDataRef.current && afterDataRef.current.length > dataPointIndex) {
+              const unit = afterDataRef.current[dataPointIndex]?.unit || 'ไม่มีการตรวจ FCB of Tank';
+              if (unit === 'ไม่มีการตรวจวัด FCB of Tank') return unit;
               return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
             }
 
@@ -460,7 +538,7 @@ const DFCBtankdataviz: React.FC = () => {
       dataLabels: {
         enabled: false,
       },
-      legend: { show: true, position: 'top', horizontalAlign: 'center' },
+      legend: { show: true,showForSingleSeries: true, position: 'top', horizontalAlign: 'center' },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
       markers: chartType === "line"
         ? {
@@ -472,29 +550,23 @@ const DFCBtankdataviz: React.FC = () => {
 
     };
   };
-  // const beforeSeries = [
-  //   { name: "ก่อนบำบัด", data: beforeData.map(item => item.data), color: colorBefore }
-  // ];
   const afterSeries = [
-    { name: "หลังบำบัด", data: afterData.map(item => item.data), color: colorAfter }
+    { name: "FCB of Tank", data: afterData.map(item => item.data), color: colorAfter }
   ];
-  // const compareSeries = [
-  //   { name: "ก่อนบำบัด", data: compareData.map(item => item.before), color: colorCompareBefore },
-  //   { name: "หลังบำบัด", data: compareData.map(item => item.after), color: colorCompareAfter },
-  // ];
-  // const combinedCompareData = [
-  //   ...compareSeries[0].data,
-  //   ...compareSeries[1].data,
-  // ];
-  // const percentChangeSeries = [
-  //   {
-  //     name: "เปอร์เซ็นต์การเปลี่ยนแปลง",
-  //     data: percentChangeData.map(item => item.percent),
-  //     color: colorPercentChange,
-  //   },
-  // ];
+  const afterMaxMinSeries = [
+    {
+      name: "ค่าสูงสุด",
+      data: afterMaxMinData.map(item => item.max),
+      color: colorMax,
+    },
+    {
+      name: "ค่าต่ำสุด",
+      data: afterMaxMinData.map(item => item.min),
+      color: colorMin,
+    }
+  ];
   //ใช้กับกราฟ
-  const openModal = (type: "before" | "after" | "compare" | "percentChange") => {
+  const openModal = (type: "after" | "minmax") => {
     setModalGraphType(type);
     setModalVisible(true);
   };
@@ -738,41 +810,11 @@ const DFCBtankdataviz: React.FC = () => {
           <p>ค่าแบคทีเรียจากอุจจาระใช้บ่งชี้การปนเปื้อนน้ำ</p>
         </div>
         <div className="dfcb-card">
-          {/* <img src={BeforeWater} alt="Before Water" className="dfcb-photo" />
-          <div>
-            <h4>น้ำก่อนบำบัดล่าสุด</h4>
-            <div className="dfcb-main">
-              <span>{BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined ? (<><span className="dfcb-value">{BeforeAfter.before.Data.toLocaleString()}</span>{" "}{BeforeAfter.before.UnitName || ""}</>) : "-"}</span>
-            </div>
-            {BeforeAfter ? (
-              <p>
-                มาตรฐาน{" "}
-                <span>
-                  {(BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== -1) || (BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== -1) || (BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== -1) || (BeforeAfter.before.UnitName && BeforeAfter.before.UnitName.trim() !== "")
-                    ? (BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== -1
-                      ? BeforeAfter.before.MiddleValue.toLocaleString() : `${(BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== -1 ? BeforeAfter.before.MinValue.toLocaleString() : "-")} - ${(BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== -1 ? BeforeAfter.before.MaxValue.toLocaleString() : "-")}`) : "-"
-                  }
-                </span>{" "}
-                {BeforeAfter.before.UnitName || ""}
-              </p>
-            ) : (
-              <p>Loading...</p>
-            )}
-          </div> */}
           <img src={AftereWater} alt="After Water" className="dfcb-photo" />
           <div>
-            <h4>น้ำหลังบำบัดล่าสุด</h4>
+            <h4>ค่า FCB of Tank ล่าสุด</h4>
             <div className="dfcb-main">
               <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="dfcb-value">{BeforeAfter.after.Data.toLocaleString()}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
-              {/* <span className="dfcb-change">
-                {(() => {
-                  if (BeforeAfter?.after.Data != null && BeforeAfter?.before.Data != null) {
-                    const diff = BeforeAfter.after.Data - BeforeAfter.before.Data;
-                    const arrowStyle = { fontWeight: 'bold', fontSize: '17px', marginLeft: 4 };
-                    return (<> {diff >= 0 ? '+' : ''}{diff.toFixed(2)}{diff > 0 && <span style={{ ...arrowStyle, color: '#14C18B' }}>↑</span>}{diff < 0 && <span style={{ ...arrowStyle, color: '#EE404C' }}>↓</span>}{diff === 0 && null}</>);
-                  } return '-';
-                })()}
-              </span> */}
             </div>
             {BeforeAfter ? (
               <p>
@@ -795,32 +837,6 @@ const DFCBtankdataviz: React.FC = () => {
               <p>Loading...</p>
             )}
           </div>
-          {/* <img src={Efficiency} alt="Before Water" className="dfcb-photo" />
-          <div>
-            <h4>ประสิทธิภาพล่าสุด</h4>
-            <div className="dfcb-main">
-              <span>
-                {BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined &&
-                  BeforeAfter.before.Data !== 0 &&
-                  BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined
-                  ? (
-                    <>
-                      <span className="dfcb-value">
-                        {Math.max(
-                          0,
-                          ((BeforeAfter.before.Data - BeforeAfter.after.Data) / BeforeAfter.before.Data) * 100
-                        ).toFixed(2)}
-                      </span>{" "}
-                      %
-                    </>
-                  )
-                  : "-"
-                }
-              </span>
-
-            </div>
-            <br />
-          </div> */}
         </div>
       </div>
       <div style={{ padding: "20px", backgroundColor: "#F8F9FA" }}>
@@ -916,61 +932,10 @@ const DFCBtankdataviz: React.FC = () => {
           </div>
         </div>
         <div className="dfcb-graph-container">
-          {/* ตารางน้ำก่อนบำบัดนะจ๊ะ */}
-          {/* <div className="dfcb-graph-card">
-            <div className="dfcb-head-graph-card">
-              <div className="dfcb-width25">
-                <h2 className="dfcb-head-graph-card-text">น้ำก่อนบำบัด</h2>
-              </div>
-              <div>
-                <ColorPicker
-                  value={colorBefore}
-                  onChange={(color: Color) => {
-                    const hex = color.toHexString();
-                    setColorBefore(hex);
-                    localStorage.setItem('colorBefore', hex);
-                  }}
-                />
-                <Button className="dfcb-expand-chat" onClick={() => openModal("before")}><Maximize2 /></Button>
-              </div>
-            </div>
-            <div className="dfcb-right-select-graph">
-              <Select
-                value={chartTypeBefore}
-                onChange={val => setChartTypeBefore(val)}
-                style={{ marginBottom: 10 }}
-              >
-                <Select.Option value="line">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <LineChart size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟเส้น</span>
-                  </div>
-                </Select.Option>
-                <Select.Option value="bar">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <BarChart3 size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟแท่ง</span>
-                  </div>
-                </Select.Option>
-              </Select>
-            </div>
-            <ApexChart
-              key={chartTypeBefore}
-              options={getChartOptions(
-                beforeData.map(item => item.date),
-                chartTypeBefore,
-                filterMode === "year",
-                beforeSeries[0]?.data || [] //  ส่ง data เพื่อใช้หาค่าสูงสุด
-              )}
-              series={beforeSeries}
-              type={chartTypeBefore}
-              height={350}
-            />
-          </div> */}
           <div className="dfcb-graph-card">
             <div className="dfcb-head-graph-card">
               <div className="dfcb-width25">
-                <h2 className="dfcb-head-graph-card-text">น้ำหลังบำบัด</h2>
+                <h2 className="dfcb-head-graph-card-text">ค่า FCB of Tank</h2>
               </div>
               <div>
                 <ColorPicker
@@ -1017,35 +982,35 @@ const DFCBtankdataviz: React.FC = () => {
               height={350}
             />
           </div>
-          {/* <div className="dfcb-graph-card">
+          <div className="dfcb-graph-card">
             <div className="dfcb-head-graph-card">
-              <div className="dfcb-width40">
-                <h2 className="dfcb-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
+              <div className="dfcb-width50">
+                <h2 className="dfcb-head-graph-card-text">ค่า FCB of Tank ต่ำสุด/สูงสุด</h2>
               </div>
               <div>
                 <ColorPicker
-                  value={colorCompareBefore}
+                  value={colorMin}
                   onChange={(color: Color) => {
                     const hex = color.toHexString();
-                    setColorCompareBefore(hex);
-                    localStorage.setItem('colorCompareBefore', hex);
+                    setColorMin(hex);
+                    localStorage.setItem('colorMin', hex);
                   }}
                 />
                 <ColorPicker
-                  value={colorCompareAfter}
+                  value={colorMax}
                   onChange={(color: Color) => {
                     const hex = color.toHexString();
-                    setColorCompareAfter(hex);
-                    localStorage.setItem('colorCompareAfter', hex);
+                    setColorMax(hex);
+                    localStorage.setItem('colorMax', hex);
                   }}
                 />
-                <Button className="dfcb-expand-chat" onClick={() => openModal("compare")}><Maximize2 /></Button>
+                <Button className="dfcb-expand-chat" onClick={() => openModal("minmax")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="dfcb-right-select-graph">
               <Select
-                value={chartTypeCompare}
-                onChange={val => setChartTypeCompare(val)}
+                value={chartTypeMinMax}
+                onChange={val => setChartTypeMinMax(val)}
                 style={{ marginBottom: 10 }}
               >
                 <Select.Option value="line">
@@ -1063,68 +1028,24 @@ const DFCBtankdataviz: React.FC = () => {
               </Select>
             </div>
             <ApexChart
-              key={chartTypeCompare}
+              key={chartTypeMinMax}
               options={getChartOptions(
-                compareData.map(item => item.date),
-                chartTypeCompare,
+                afterMaxMinData.map(item => item.date),
+                chartTypeMinMax,
                 filterMode === "year",
-                combinedCompareData
-              )}
-              series={compareSeries}
-              type={chartTypeCompare}
-              height={350}
-            />
-          </div> */}
-          {/* <div className="dfcb-graph-card">
-            <div className="dfcb-head-graph-card">
-              <div className="dfcb-width25">
-                <h2 className="dfcb-head-graph-card-text" >ประสิทธิภาพ</h2>
-              </div>
-              <div>
-                <ColorPicker
-                  value={colorPercentChange}
-                  onChange={(color: Color) => {
-                    const hex = color.toHexString();
-                    setcolorPercentChange(hex);
-                    localStorage.setItem('colorPercentChange', hex);
-                  }}
-                />
-              </div>
-            </div>
-            <div className="dfcb-right-select-graph">
-              <Select
-                value={chartpercentChange}
-                onChange={val => setpercentChange(val)}
-                style={{ marginBottom: 10 }}
-              >
-                <Select.Option value="line">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <LineChart size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟเส้น</span>
-                  </div>
-                </Select.Option>
-                <Select.Option value="bar">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <BarChart3 size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟแท่ง</span>
-                  </div>
-                </Select.Option>
-              </Select>
-            </div>
-            <ApexChart
-              options={getChartOptions(
-                percentChangeData.map(item => item.date),
-                "line",
-                filterMode === "year",
-                percentChangeSeries[0].data,
+                [
+                  ...afterMaxMinData.map(item => item.max),
+                  ...afterMaxMinData.map(item => item.min),
+                ],
+                false,
                 false,
                 true
               )}
-              series={percentChangeSeries}
-              type={chartpercentChange}
+              series={afterMaxMinSeries}
+              type={chartTypeMinMax}
               height={350}
             />
-          </div> */}
+          </div>
         </div>
         <div className="dfcb-header-vis">
           <h1 className="dfcb-title-text-vis">ข้อมูล Fecal Coliform Bacteria of Tank</h1>
@@ -1336,17 +1257,18 @@ const DFCBtankdataviz: React.FC = () => {
           destroyOnClose
           maskClosable={true}
         >
-          {/* {modalGraphType === "before" && (
-            <div className="dfcb-chat-modal" >
+
+          {modalGraphType === "after" && (
+            <div className="dfcb-chat-modal">
               <div className="dfcb-head-graph-card">
                 <div className="dfcb-width25">
-                  <h2 className="dfcb-head-graph-card-text">น้ำก่อนบำบัด</h2>
+                  <h2 className="dfcb-head-graph-card-text">ค่า FCB of Tank</h2>
                 </div>
               </div>
               <div className="dfcb-right-select-graph">
                 <Select
-                  value={chartTypeBefore}
-                  onChange={val => setChartTypeBefore(val)}
+                  value={chartTypeAfter}
+                  onChange={val => setChartTypeAfter(val)}
                   style={{ marginBottom: 10 }}
                 >
                   <Select.Option value="line">
@@ -1365,76 +1287,32 @@ const DFCBtankdataviz: React.FC = () => {
               </div>
               <div className="dfcb-chart-containner">
                 <ApexChart
-                  key={chartTypeBefore}
+                  key={chartTypeAfter}
                   options={getChartOptions(
-                    beforeData.map(item => item.date),
-                    chartTypeBefore,
+                    afterData.map(item => item.date),
+                    chartTypeAfter,
                     filterMode === "year",
-                    beforeSeries[0]?.data || [], //  ส่ง data เพื่อใช้หาค่าสูงสุด
+                    afterSeries[0]?.data || [],
                     true
                   )}
-                  series={beforeSeries}
-                  type={chartTypeBefore}
+                  series={afterSeries}
+                  type={chartTypeAfter}
                   height="100%"
                 />
               </div>
             </div>
           )}
-          {modalGraphType === "after" && ( */}
-          <div className="dfcb-chat-modal">
-            <div className="dfcb-head-graph-card">
-              <div className="dfcb-width25">
-                <h2 className="dfcb-head-graph-card-text">น้ำหลังบำบัด</h2>
-              </div>
-            </div>
-            <div className="dfcb-right-select-graph">
-              <Select
-                value={chartTypeAfter}
-                onChange={val => setChartTypeAfter(val)}
-                style={{ marginBottom: 10 }}
-              >
-                <Select.Option value="line">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <LineChart size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟเส้น</span>
-                  </div>
-                </Select.Option>
-                <Select.Option value="bar">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <BarChart3 size={16} style={{ marginRight: 6 }} />
-                    <span>กราฟแท่ง</span>
-                  </div>
-                </Select.Option>
-              </Select>
-            </div>
-            <div className="dfcb-chart-containner">
-              <ApexChart
-                key={chartTypeAfter}
-                options={getChartOptions(
-                  afterData.map(item => item.date),
-                  chartTypeAfter,
-                  filterMode === "year",
-                  afterSeries[0]?.data || [],
-                  true
-                )}
-                series={afterSeries}
-                type={chartTypeAfter}
-                height="100%"
-              />
-            </div>
-          </div>
-          {/* )}
-          {modalGraphType === "compare" && (
+          {modalGraphType === "minmax" && (
             <div className="dfcb-chat-modal">
               <div className="dfcb-head-graph-card" >
-                <div className="dfcb-width40">
-                  <h2 className="dfcb-head-graph-card-text" >เปรียบเทียบก่อน-หลังบำบัด</h2>
+                <div className="dfcb-width25">
+                  <h2 className="dfcb-head-graph-card-text" >ค่า FCB of Tank ต่ำสุด/สูงสุด</h2>
                 </div>
               </div>
               <div className="dfcb-right-select-graph">
                 <Select
-                  value={chartTypeCompare}
-                  onChange={val => setChartTypeCompare(val)}
+                  value={chartTypeMinMax}
+                  onChange={val => setChartTypeMinMax(val)}
                   style={{ marginBottom: 10 }}
                 >
                   <Select.Option value="line">
@@ -1453,21 +1331,26 @@ const DFCBtankdataviz: React.FC = () => {
               </div>
               <div className="dfcb-chart-containner">
                 <ApexChart
-                  key={chartTypeCompare}
+                  key={chartTypeMinMax}
                   options={getChartOptions(
-                    compareData.map(item => item.date),
-                    chartTypeCompare,
+                    afterMaxMinData.map(item => item.date),
+                    chartTypeMinMax,
                     filterMode === "year",
-                    combinedCompareData,
+                    [
+                      ...afterMaxMinData.map(item => item.max),
+                      ...afterMaxMinData.map(item => item.min),
+                    ],
+                    true,
+                    false,
                     true
                   )}
-                  series={compareSeries}
-                  type={chartTypeCompare}
+                  series={afterMaxMinSeries}
+                  type={chartTypeMinMax}
                   height="100%"
                 />
               </div>
             </div>
-          )} */}
+          )}
         </Modal>
 
       </div>

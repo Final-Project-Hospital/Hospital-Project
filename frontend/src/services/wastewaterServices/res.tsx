@@ -97,7 +97,7 @@ export const GetRESTABLE = async () => {
 export const UpdateOrCreateRES = async (payload: any) => {
   try {
     let response;
-
+console.log(payload.ID)
     if (payload.ID) {
       const url = `${apiUrl}/update-or-create-res/${payload.ID}`;
       console.log("PATCH URL:", url);

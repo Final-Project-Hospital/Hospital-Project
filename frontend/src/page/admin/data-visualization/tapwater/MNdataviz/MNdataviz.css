@@ -481,7 +481,7 @@
 
 .mn-chart-containner {
   flex: 1;
-  min-height: 400px;
+  min-height: 500px;
 }
 
 .mn-chart-containner .apexcharts-canvas {

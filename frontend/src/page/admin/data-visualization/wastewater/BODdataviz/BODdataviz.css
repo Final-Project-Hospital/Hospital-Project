@@ -475,10 +475,17 @@
   max-width: 1200px !important;
 }
 
-.bod-custom-modal .ant-modal-body {
+.bod-custom-modal .ant-modal-tsy {
   height: 80vh;
 }
+.bod-chart-containner {
+  flex: 1;
+  min-height: 500px;
+}
 
+.bod-chart-containner .apexcharts-canvas {
+  height: 100%;
+}
 
 
 /* Responsive for tablets (max-width: 1024px) */

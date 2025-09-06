@@ -481,7 +481,7 @@
 
 .iron-chart-containner {
   flex: 1;
-  min-height: 400px;
+  min-height: 500px;
 }
 
 .iron-chart-containner .apexcharts-canvas {

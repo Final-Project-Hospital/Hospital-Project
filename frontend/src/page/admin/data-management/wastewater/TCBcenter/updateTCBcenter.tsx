@@ -227,15 +227,15 @@ const UpdateTCBCentralForm: React.FC<UpdateTCBCentralFormProps> = ({
             } else if (values.beforeAfterTreatmentID === 2) {
                 await UpdateOrCreateTCB({
                     ...basePayload,
-                    ID: initialValues[1]?.ID ?? null,
+                    ID: initialValues[0]?.ID ?? null,
                     Data: values.valueAfter ?? values.data,
                     Note: values.afterNote ?? "",
                     BeforeAfterTreatmentID: 2,
-                    ParameterID: initialValues[1]?.ParameterID,
+                    ParameterID: initialValues[0]?.ParameterID,
                 });
 
-                if (initialValues[0]?.ID) {
-                    deletes.push(initialValues[0].ID);
+                if (initialValues[1]?.ID) {
+                    deletes.push(initialValues[1].ID);
                 }
             }
 

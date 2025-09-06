@@ -540,7 +540,7 @@
 
 .general-chart-containner {
   flex: 1;
-  min-height: 400px;
+  min-height: 500px;
 }
 
 .general-chart-containner .apexcharts-canvas {
