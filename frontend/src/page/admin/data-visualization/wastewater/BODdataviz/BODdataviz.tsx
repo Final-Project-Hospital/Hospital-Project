@@ -1285,12 +1285,12 @@ const BODdataviz: React.FC = () => {
             <div className="bod-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="bod-task-stats">
               <div className="bod-task-item">
-                <div className="bod-task-number">{doneTasks}</div>
+                <div className="bod-task-number status-good">{doneTasks}</div>
                 <div className="bod-task-label">ผ่านเกณฑ์มาตรฐาน</div>
               </div>
               <div className="bod-task-divider" />
               <div className="bod-task-item">
-                <div className="bod-task-number">{inProgressTasks}</div>
+                <div className="bod-task-number status-high">{inProgressTasks}</div>
                 <div className="bod-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
               </div>
             </div>

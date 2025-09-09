@@ -1256,12 +1256,12 @@ const CODdataviz: React.FC = () => {
             <div className="cod-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="cod-task-stats">
               <div className="cod-task-item">
-                <div className="cod-task-number">{doneTasks}</div>
+                <div className="cod-task-number status-good">{doneTasks}</div>
                 <div className="cod-task-label">ผ่านเกณฑ์มาตรฐาน</div>
               </div>
               <div className="cod-task-divider" />
               <div className="cod-task-item">
-                <div className="cod-task-number">{inProgressTasks}</div>
+                <div className="cod-task-number status-high">{inProgressTasks}</div>
                 <div className="cod-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
               </div>
             </div>

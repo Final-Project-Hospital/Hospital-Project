@@ -1255,12 +1255,12 @@ const RESdataviz: React.FC = () => {
             <div className="res-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="res-task-stats">
               <div className="res-task-item">
-                <div className="res-task-number">{doneTasks}</div>
+                <div className="res-task-number status-good">{doneTasks}</div>
                 <div className="res-task-label">ผ่านเกณฑ์มาตรฐาน</div>
               </div>
               <div className="res-task-divider" />
               <div className="res-task-item">
-                <div className="res-task-number">{inProgressTasks}</div>
+                <div className="res-task-number status-high">{inProgressTasks}</div>
                 <div className="res-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
               </div>
             </div>

@@ -1256,12 +1256,12 @@ const SULdataviz: React.FC = () => {
             <div className="sul-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="sul-task-stats">
               <div className="sul-task-item">
-                <div className="sul-task-number">{doneTasks}</div>
+                <div className="sul-task-number status-good">{doneTasks}</div>
                 <div className="sul-task-label">ผ่านเกณฑ์มาตรฐาน</div>
               </div>
               <div className="sul-task-divider" />
               <div className="sul-task-item">
-                <div className="sul-task-number">{inProgressTasks}</div>
+                <div className="sul-task-number status-high">{inProgressTasks}</div>
                 <div className="sul-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
               </div>
             </div>
