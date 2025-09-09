@@ -1,4 +1,4 @@
-/* ===== Layout Wrapper ===== */
+/* ===== Layout Wrapper ===== */ 
 .content-wrapper {
   padding: 24px;
   min-height: 100vh;
@@ -75,10 +75,7 @@
 
 /* ------------------------------------------------------------------
    ▶▶ Controls – “จัดวางแบบเดิมหลายแถว” แต่โทน teal
-   ใช้คลาส .controls-teal ครอบ + ภายในใช้ .controls-field แบบเดิม
 -------------------------------------------------------------------*/
-
-/* พื้นหลัง teal */
 .controls-teal {
   background: linear-gradient(180deg, #2abdbf 0%, #1f9a9c 70%, #138486 100%);
   border-radius: 12px;
@@ -95,22 +92,17 @@
   background: linear-gradient(135deg, rgba(219,218,218,0.35) 0%, rgba(255,255,255,0.18) 40%, rgba(255,255,255,0) 100%);
   pointer-events: none;
 }
-
-/* ✅ เปลี่ยนจาก “บรรทัดเดียว” เป็น “กริดหลายแถว” เหมือนเลย์เอาต์เดิม */
 .controls-teal .controls-row {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 14px 16px;            /* row-gap | col-gap */
+  gap: 14px 16px;
   align-items: end;
 }
-
-/* แต่ละฟิลด์ = คอลัมน์ (เหมือน span ใน Row/Col เดิม) */
 .controls-teal .controls-field { grid-column: span 3; min-width: 0; }
 @media (max-width: 1200px) { .controls-teal .controls-field { grid-column: span 4; } }
 @media (max-width: 992px)  { .controls-teal .controls-field { grid-column: span 6; } }
 @media (max-width: 640px)  { .controls-teal .controls-field { grid-column: span 12; } }
 
-/* ป้ายกำกับบนพื้น teal */
 .controls-teal .controls-field label {
   display: block;
   font-size: 12.5px;
@@ -120,19 +112,13 @@
   letter-spacing: .2px;
 }
 
-/* ย่อคอมโพเนนต์ AntD ให้กระทัดรัด */
 .controls-teal .ant-select,
 .controls-teal .ant-picker,
 .controls-teal .ant-segmented { font-size: 12px; width: 100%; }
 
-.controls-teal .ant-select .ant-select-selector {
-  height: 32px !important;
-  padding: 0 10px !important;
-}
+.controls-teal .ant-select .ant-select-selector { height: 32px !important; padding: 0 10px !important; }
 .controls-teal .ant-select .ant-select-selection-item,
-.controls-teal .ant-select .ant-select-selection-placeholder {
-  line-height: 32px !important;
-}
+.controls-teal .ant-select .ant-select-selection-placeholder { line-height: 32px !important; }
 
 .controls-teal .ant-picker { height: 32px; padding: 4px 10px; width: 100%; }
 .controls-teal .ant-picker-input > input { font-size: 12px; }
@@ -140,18 +126,14 @@
 .controls-teal .ant-segmented { height: 32px; }
 .controls-teal .ant-segmented .ant-segmented-item-label { padding: 4px 12px; }
 
-/* ไอคอน/ลูกศรบน teal ให้อ่านง่าย */
 .controls-teal .anticon,
 .controls-teal .ant-segmented,
 .controls-teal .ant-picker-suffix,
 .controls-teal .ant-select-arrow { color: #e6fffb; }
 
-/* ไม่ให้คอมโพเนนต์หลุดขอบ / ดันกัน */
 .controls-teal .ant-select,
 .controls-teal .ant-picker,
 .controls-teal .ant-segmented { min-width: 0; }
-
-/* ------------------------------------------------------------------ */
 
 /* ===== Cards / Head ===== */
 .dashboard-graph-card, .dashboard-alerts-card { border: 1px solid rgba(2, 132, 199, .08); }
@@ -199,21 +181,16 @@
 /* Card Bleed */
 .card-bleed { background: transparent !important; box-shadow: none !important; border: none !important; padding: 0 !important; }
 .card-bleed .ant-card-body { padding: 0 !important; }
-/* Disable hover lift on dashboard cards */
 .dashboard-graph-card:hover,
 .dashboard-controls-card:hover,
 .dashboard-alerts-card:hover {
   transform: none !important;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.05) !important; /* เท่า state ปกติ */
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05) !important;
 }
-
-/* (ถ้าอยากให้ลื่นขึ้นอีก) ตัด transition ออกด้วย */
 .dashboard-graph-card,
 .dashboard-controls-card,
-.dashboard-alerts-card {
-  transition: none !important;
-}
-/* ------------------------------------------------------------------ */
+.dashboard-alerts-card { transition: none !important; }
+
 /* Title ของกราฟวงกลมแบบ teal */
 .teal-title-chip {
   display: inline-block;
@@ -226,20 +203,168 @@
   margin-bottom: 12px;
   color: #ffffff;
 }
+
 /* header ของกราฟโดนัท */
 .pie-header {
   display: flex;
-  justify-content: space-between; /* หัวข้อซ้าย - ปุ่มขวา */
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
 }
 
 /* ทำให้ DatePicker สั้นลง */
-.month-picker-compact {
-  width: 120px !important;   /* ✅ ปรับความกว้าง */
-  font-size: 12px !important;
-  height: 28px !important;
+.month-picker-compact { width: 120px !important; font-size: 12px !important; height: 28px !important; }
+.month-picker-compact .ant-picker-input > input { font-size: 12px !important; }
+
+/* ป้ายกำกับ */
+.controls-teal .controls-field label { color: #000000 !important; }
+
+.controls-teal .ant-segmented,
+.controls-teal .ant-segmented .ant-segmented-item-label { color: #000000 !important; }
+.controls-teal .ant-segmented .ant-segmented-item-selected .ant-segmented-item-label { color: #000000 !important; }
+
+/* --- Compact variant ------------------------------------------------ */
+.controls-teal.compact { padding: 10px; border-radius: 12px; }
+.controls-teal.compact { position: relative; }
+.controls-teal.compact::after { z-index: 0; opacity: .25; }
+.controls-teal.compact .controls-row { position: relative; z-index: 1; }
+.controls-teal.compact .controls-row { display: grid; grid-template-columns: repeat(12, minmax(0,1fr)); gap: 8px 12px; align-items: end; }
+.controls-teal.compact .controls-field { grid-column: span 2; min-width: 0; }
+@media (max-width: 1280px) { .controls-teal.compact .controls-field { grid-column: span 3; } }
+@media (max-width: 992px)  { .controls-teal.compact .controls-field { grid-column: span 4; } }
+@media (max-width: 640px)  { .controls-teal.compact .controls-field { grid-column: span 12; } }
+.controls-teal.compact .controls-field label {
+  margin: 0 0 4px 0; font-size: 13px; font-weight: 700; color: #ffffff !important; letter-spacing: .1px;
 }
-.month-picker-compact .ant-picker-input > input {
-  font-size: 12px !important;
+.controls-teal.compact .ant-select,
+.controls-teal.compact .ant-picker,
+.controls-teal.compact .ant-segmented { width: 100%; font-size: 12px; min-width: 0; }
+.controls-teal.compact .ant-select .ant-select-selector { height: 28px !important; padding: 0 8px !important; }
+.controls-teal.compact .ant-select .ant-select-selection-item,
+.controls-teal.compact .ant-select .ant-select-selection-placeholder { line-height: 28px !important; }
+.controls-teal.compact .ant-picker { height: 28px; padding: 2px 8px; }
+.controls-teal.compact .ant-picker-input > input { font-size: 12px; }
+.controls-teal.compact .ant-segmented { height: 28px; }
+.controls-teal.compact .ant-segmented .ant-segmented-item-label { padding: 2px 10px; }
+.controls-teal.compact .ant-segmented,
+.controls-teal.compact .ant-segmented .ant-segmented-item-label,
+.controls-teal.compact .ant-segmented .ant-segmented-item-selected .ant-segmented-item-label { color: #000 !important; }
+.controls-teal.compact .ant-select-arrow, .controls-teal.compact .ant-picker-suffix { color: #000 !important; }
+.dashboard-controls-card { box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+
+/* ===== Alert cards: สีพื้นชัดขึ้น + หัวข้อเด่น ===== */
+.alert-chip{
+  background: linear-gradient(180deg,#F0FEFD 0%,#E6FAF8 100%);
+  border: 1px solid rgba(14,165,233,.22);
+  box-shadow: 0 10px 22px rgba(2,132,199,.10), 0 2px 6px rgba(0,0,0,.04);
+  transition: box-shadow .15s ease, background-color .15s ease;
+  transform: none !important;
+}
+.alert-chip:hover{ box-shadow: 0 14px 28px rgba(2,132,199,.14), 0 3px 8px rgba(0,0,0,.06); }
+
+.alert-chip .title{
+  position: relative;
+  font-weight: 800;
+  color: #065f46;
+  padding: 2px 10px 3px 28px;
+  border-radius: 8px;
+  line-height: 1.25;
+  display: inline-block;
+  background: linear-gradient(90deg, rgba(20,184,166,.18), rgba(20,184,166,0));
+}
+.alert-chip .title{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  color: #e31c1c;
+  padding: 4px 12px;
+  border-radius: 8px;
+  line-height: 1.25;
+  background: linear-gradient(90deg, rgba(20,184,166,.65), rgba(20,184,166,0));
+}
+.alert-chip .title::before { content: "⚠️"; font-size: 14px; position: static; }
+
+/* กำหนดให้แนวสกอลล์ไม่เด้ง */
+.alert-chip-row{ scrollbar-gutter: stable both-edges; }
+
+/* พื้นหลังแถบแจ้งเตือนเป็นเขียว และขยับด้านใน */
+.teal-surface { color: #fff; border-radius: 14px; padding: 16px 24px; }
+.teal-surface .teal-title { margin-left: 4px; font-weight: 700; font-size: 1.05rem; }
+/* ขยับการ์ดเล็ก ๆ ไปทางขวา (desktop) */
+.alert-chip-row { margin-left: 24px; gap: 16px; }
+
+/* =========================================================
+   RESPONSIVE – ทั้งหน้า (Desktop → Tablet → Mobile)
+   =======================================================*/
+
+/* ≤1200px (Laptop/Small desktop) */
+@media (max-width: 1200px) {
+  .container-xl { max-width: 100%; padding: 0 20px; }
+
+  /* คอนโทรลแบบกริดกว้างขึ้นนิด */
+  .controls-teal .controls-row { gap: 12px 14px; }
+  .teal-surface { padding: 14px 18px; }
+  .alert-chip-row { margin-left: 16px; gap: 12px; }
+}
+
+/* ≤1024px (Tablet แนวนอน / iPad landscape) */
+@media (max-width: 1024px) {
+  .container-xl { padding: 0 16px; }
+
+  /* การ์ดหลักให้กินเต็มแถว */
+  .dashboard-graph-card,
+  .dashboard-controls-card,
+  .dashboard-alerts-card { flex: 1 1 100%; width: 100%; }
+
+  .teal-surface { padding: 12px 16px; }
+  .teal-surface .teal-title { margin-left: 8px; font-size: 1rem; }
+
+  /* การ์ดแจ้งเตือน: ขยับเข้ามา */
+  .alert-chip-row { margin-left: 8px; gap: 10px; }
+  .alert-chip { min-width: 260px; }
+}
+
+/* ≤834px (Tablet แนวตั้ง / iPad portrait) */
+@media (max-width: 834px) {
+  .content-wrapper { padding: 20px; }
+  .teal-surface .teal-title { margin-left: 6px; font-size: .98rem; }
+
+  /* การ์ดแจ้งเตือนเรียงเต็มความกว้าง */
+  .alert-chip-row { margin-left: 0; gap: 10px; }
+  /*.alert-chip { min-width: 100%; }*/
+}
+
+/* ≤768px (Mobile ใหญ่) */
+@media (max-width: 768px) {
+  .content-wrapper { padding: 12px; }
+
+  .dashboard-graph-card,
+  .dashboard-controls-card,
+  .dashboard-alerts-card { width: 100%; margin-bottom: 12px; }
+
+  .teal-surface { padding: 10px 12px; }
+  .teal-surface .teal-title { margin-left: 0; font-size: .95rem; }
+
+  /* กราฟ/โดนัทในการ์ดให้พอดีจอ */
+  .dashboard-donut-card { padding: 14px; }
+  .dashboard-donut-card .donut-value { font-size: 28px; }
+}
+
+/* ≤640px (Mobile กลาง) */
+@media (max-width: 640px) {
+  /* คอนโทรลแบบ compact ทั้งหมด 1 คอลัมน์ */
+  .controls-teal .controls-field,
+  .controls-teal.compact .controls-field { grid-column: span 12; }
+
+  .alert-chip { padding: 10px 12px; }
+}
+
+/* ≤480px (Mobile เล็ก) */
+@media (max-width: 480px) {
+  .content-wrapper { padding: 8px; }
+  .dashboard-head-title { font-size: .9rem; }
+  .alert-chip .title { font-size: .9rem; }
+  .alert-chip .desc { font-size: 12px; }
+  .dashboard-donut-card .donut-value { font-size: 24px; }
 }
