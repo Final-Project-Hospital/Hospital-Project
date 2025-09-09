@@ -20,17 +20,17 @@ func DB() *gorm.DB {
 }
 
 func ConnectionDB() {
-    dsn := os.Getenv("postgresql://postgres:tSJlIYHEZuRDpvXdpLFzNuAdAcmCGBMi@postgres.railway.internal:5432/railway") // ใช้ Railway Env Var
+    dsn := os.Getenv("postgresql://postgres:tSJlIYHEZuRDpvXdpLFzNuAdAcmCGBMi@postgres.railway.internal:5432/railway") // ← ต้องเป็นชื่อ ENV VAR
     if dsn == "" {
         log.Fatal("DATABASE_URL is not set")
     }
 
-    db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
     if err != nil {
         log.Fatalf("failed to connect to PostgreSQL: %v", err)
     }
 
-    DB = db
+    db = database // ← assign ให้ตัวแปร db ไม่ใช่ DB()
     fmt.Println("✅ Database connected successfully")
 }
 
