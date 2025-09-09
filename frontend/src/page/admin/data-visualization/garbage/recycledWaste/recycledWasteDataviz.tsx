@@ -406,17 +406,12 @@ const Recycleddataviz: React.FC = () => {
       yaxis: isDualAxis
         ? [
           {
-            title: { text: `ค่าขยะรีไซเคิล (${unit || ""})` },
             min: 0,
-            max: adjustedMax,
-            labels: { formatter: (v: number) => `${(v / 1000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}k` },
-          },
-          {
-            opposite: true,
-            title: { text: "จำนวนคน (คน)" },
-            min: 0,
-            max: adjustedMax,
-            labels: { formatter: (v: number) => `${v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` },
+            max: 1,
+            labels: {
+              formatter: (val) => val.toFixed(2)  // แสดง 0.00, 0.25, 0.50 ...
+            },
+            title: { text: "Normalized" }
           },
         ]
         : {
@@ -457,16 +452,22 @@ const Recycleddataviz: React.FC = () => {
               return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`;
             }
 
-            // MonthlyGarbage / Quantity
-            if (["ค่าขยะรีไซเคิล", "จำนวนคน"].includes(seriesName)
+            // MonthlyGarbage / Quantity (normalized แต่ tooltip ต้องแสดงค่าจริง)
+            if (["ค่าขยะรีไซเคิล (Normalize)", "จำนวนคน (Normalize)"].includes(seriesName)
               && compareRef.current.length > dataPointIndex) {
-              if (seriesName === "ค่าขยะรีไซเคิล") {
+
+              if (seriesName === "ค่าขยะรีไซเคิล (Normalize)") {
+                const realVal = compareRef.current[dataPointIndex]?.monthlyGarbage ?? 0;
                 const unit = compareRef.current[dataPointIndex]?.unit;
-                return unit ? `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}` : 'ไม่มีการตรวจวัด';
-              } else if (seriesName === "จำนวนคน") {
+                return unit
+                  ? `${realVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`
+                  : 'ไม่มีการตรวจวัด';
+              }
+
+              if (seriesName === "จำนวนคน (Normalize)") {
+                const realVal = compareRef.current[dataPointIndex]?.quantity ?? 0;
                 const unit = compareRef.current[dataPointIndex]?.unit;
-                const quantity = compareRef.current[dataPointIndex]?.quantity;
-                return unit ? `${quantity.toLocaleString()} คน` : 'ไม่มีการตรวจวัด';
+                return unit ? `${realVal.toLocaleString()} คน` : 'ไม่มีการตรวจวัด';
               }
             }
 
@@ -483,14 +484,51 @@ const Recycleddataviz: React.FC = () => {
 
   const series = [{ name: "ค่าขยะรีไซเคิล", data: listdata.map(item => item.avgValue), color: colorGarbage }];
   const seriesTotalSale = [{ name: "ยอดขายขยะรีไซเคิล", data: TotalSaleData.map(item => item.avgValue), color: colorAadc }];
-  const seriesMonthlyGarbageQuantity = [
-    { name: "ค่าขยะรีไซเคิล", data: compareMonthlyGarbageQuantity.map(item => item.monthlyGarbage), color: colorCompareMonthlyGarbage, yAxis: 0, },
-    { name: "จำนวนคน", data: compareMonthlyGarbageQuantity.map(item => item.quantity), color: colorCompareQuantity, yAxis: 1, },
+  // ฟังก์ชัน Normalize (Min-Max)
+  const normalizeData = (data: number[]): number[] => {
+    if (data.length === 0) return [];
+
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+
+    if (min === max) {
+      if (min === 0) {
+        return data.map(() => 0);      // ทุกค่า = 0 → normalize เป็น 0
+      } else {
+        return data.map(() => 0.5);    // ทุกค่าเท่ากัน แต่ไม่ใช่ 0 → normalize เป็น 0.5
+      }
+    }
+
+    return data.map(val => (val - min) / (max - min));
+  };
+
+  // ดึงข้อมูลดิบ
+  const garbageRaw = compareMonthlyGarbageQuantity.map(item => item.monthlyGarbage);
+  const quantityRaw = compareMonthlyGarbageQuantity.map(item => item.quantity);
+
+  // Normalize
+  const garbageNormalized = normalizeData(garbageRaw);
+  const quantityNormalized = normalizeData(quantityRaw);
+
+  // สร้าง series แบบ normalize
+  const seriesMonthlyGarbageQuantityNormalized = [
+    { name: "ค่าขยะรีไซเคิล (Normalize)", data: garbageNormalized, color: colorCompareMonthlyGarbage },
+    { name: "จำนวนคน (Normalize)", data: quantityNormalized, color: colorCompareQuantity },
   ];
+
+  // ✅ ใช้ normalized มาคำนวณ combinedCompareData
   const combinedCompareData = [
-    ...seriesMonthlyGarbageQuantity[0].data,
-    ...seriesMonthlyGarbageQuantity[1].data,
+    ...garbageNormalized,
+    ...quantityNormalized,
   ];
+  // const seriesMonthlyGarbageQuantity = [
+  //   { name: "ค่าขยะรีไซเคิล", data: compareMonthlyGarbageQuantity.map(item => item.monthlyGarbage), color: colorCompareMonthlyGarbage, yAxis: 0, },
+  //   { name: "จำนวนคน", data: compareMonthlyGarbageQuantity.map(item => item.quantity), color: colorCompareQuantity, yAxis: 1, },
+  // ];
+  // const combinedCompareData = [
+  //   ...seriesMonthlyGarbageQuantity[0].data,
+  //   ...seriesMonthlyGarbageQuantity[1].data,
+  // ];
 
   const getPieOptions = (isQuantityChart = false, isTotalSaleChart = false): ApexCharts.ApexOptions => ({
     labels: monthlyDataLatestYear.map(d => d.month),
@@ -1013,7 +1051,7 @@ const Recycleddataviz: React.FC = () => {
                 false,          // array ของตัวเลข
                 false,
                 true            // isPercentChart (true/false)
-              )} series={seriesMonthlyGarbageQuantity}
+              )} series={seriesMonthlyGarbageQuantityNormalized}
               type={chartTypeCompareMonthlyGarbageQuantity}
               style={{ flex: 1 }}
             />

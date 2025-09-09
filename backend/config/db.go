@@ -818,6 +818,7 @@ func SetupDatabase() {
 	infectiousWastePerMonth := []float64{24622.00, 25780.00, 228472.00, 211520.00, 181008.00}
 	infectiousWastePerAADC := []float64{0.02, 0.77, 5.67, 5.04, 3.89}
 	// infectiousWastetargetAADC := []float64{0.70, 0.70, 0.70, 0.70, 0.70}
+	infectiousWastePerQuantity := []uint{1200, 1200, 1300, 1400, 1500}
 	infectiousWastedates := []string{"2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"}
 	for i := 0; i < len(infectiousWastePerMonth); i++ {
 		date, err := time.Parse("2006-01-02", infectiousWastedates[i])
@@ -838,7 +839,7 @@ func SetupDatabase() {
 		infectiousWaste := entity.Garbage{
 			Date:                date,
 			MonthlyGarbage:      infectiousWastePerMonth[i],
-			Quantity:            1200,
+			Quantity:            infectiousWastePerQuantity[i],
 			AverageDailyGarbage: infectiousWastePerDay[i],
 			AADC:                infectiousWastePerAADC[i],
 			EnvironmentID:       Garbage.ID,

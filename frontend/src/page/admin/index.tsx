@@ -48,11 +48,12 @@ import "./skydash-override.css";
 // ===== dayjs thai =====
 import "dayjs/locale/th";
 dayjs.locale("th");
+// ===== dayjs thai =====
+import "dayjs/locale/th";
+import buddhistEra from "dayjs/plugin/buddhistEra";   // ⬅️ เพิ่มบรรทัดนี้
+dayjs.locale("th");
+dayjs.extend(buddhistEra);                             // ⬅️ และบรรทัดนี้
 
-
-/* =========================================================================
-   TYPES
-   ========================================================================= */
 interface ParamMeta {
   id: number;
   name: string;
@@ -73,10 +74,6 @@ type StandardMode = "none" | "middle" | "range";
 
 // แจ้งเตือนจากกระดิ่ง
 type BellAlert = { type: "environmental" | "garbage"; data: any };
-
-/* =========================================================================
-   HELPERS
-   ========================================================================= */
 
 const keyFromDate = (iso: string, mode: FilterMode) => {
   const d = dayjs(iso);
@@ -124,6 +121,15 @@ function dFix(n: any) {
   return +f.toFixed(3);
 }
 
+// ===== helper แสดงเลขแบบไทย 2 ตำแหน่งเสมอ =====
+const fmt2 = (n: any) =>
+  Number(n ?? 0).toLocaleString("th-TH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+const fmt0 = (n: any) =>
+  Number(n ?? 0).toLocaleString("th-TH", { maximumFractionDigits: 0 });
+
 const norm = (s: string) => (s || "").replace(/\s+/g, " ").trim().toLowerCase();
 
 const getDefaultRangeFromLatest = (mode: FilterMode, latest: Dayjs | null): [Dayjs, Dayjs] => {
@@ -162,9 +168,6 @@ const getStatusName = (a: BellAlert) => a?.data?.Status?.StatusName ?? "-";
 const getUnitName = (a: BellAlert) => a?.data?.Unit?.UnitName ?? "-";
 const getValue     = (a: BellAlert) => a?.data?.Data ?? a?.data?.Quantity ?? 0;
 
-/* =========================================================================
-   MAIN
-   ========================================================================= */
 const AdminDashboard: React.FC = () => {
   // meta
   const [metas, setMetas] = useState<EnvMeta[]>([]);
@@ -289,7 +292,7 @@ const AdminDashboard: React.FC = () => {
           (a: BellAlert, b: BellAlert) =>
             new Date(b?.data?.Date).getTime() - new Date(a?.data?.Date).getTime()
         );
-        if (!cancel) setBellAlerts(sorted.slice(0, 4));
+        if (!cancel) setBellAlerts(sorted.slice(0, 3));
       } catch (e: any) {
         if (!cancel) {
           setBellAlerts([]);
@@ -850,8 +853,10 @@ const AdminDashboard: React.FC = () => {
         yaxis: {
           forceNiceScale: true, min: 0, max: isEfficiency ? 100 : suggestedMax,
           title: { text: isEfficiency ? "เปอร์เซ็น ( % )" : (isGarbage ? "หน่วย: kg" : (selectedParamUnit ? `หน่วย: ${selectedParamUnit}` : "")) },
-          labels: { show: true, style: { fontSize: "12px", fontWeight: 500, colors: "#475467" },
-            formatter: (v: number) => isEfficiency ? `${v.toFixed(2)}%` : v.toLocaleString("th-TH", { maximumFractionDigits: 2 }),
+          labels: {
+            show: true,
+            style: { fontSize: "12px", fontWeight: 500, colors: "#475467" },
+            formatter: (v: number) => (isEfficiency ? `${v.toFixed(2)}%` : fmt2(v)),
           },
         },
         annotations: baseAnnotations,
@@ -870,7 +875,7 @@ const AdminDashboard: React.FC = () => {
               if (isSingleEnv && Number(v) === 0) return "ไม่มีการตรวจวัด";
               return isEfficiency
                 ? `${v.toFixed(2)}%`
-                : `${Number(v).toLocaleString("th-TH", { maximumFractionDigits: 2 })}${isGarbage ? " kg" : (selectedParamUnit ? " " + selectedParamUnit : "")}`;
+                : `${fmt2(v)}${isGarbage ? " kg" : (selectedParamUnit ? " " + selectedParamUnit : "")}`;
             },
           },
         },
@@ -886,90 +891,104 @@ const AdminDashboard: React.FC = () => {
     [wasteMix]
   );
 
-  const wastePieOptions: ApexOptions = useMemo(
-    () => ({
-      chart: {
-        type: "donut",
-        fontFamily: "Prompt, 'Prompt', sans-serif",
-        foreColor: "#000000",
-        background: "transparent",
+ const wastePieOptions: ApexOptions = useMemo(
+  () => ({
+    chart: {
+      type: "donut",
+      fontFamily: "Prompt, 'Prompt', sans-serif",
+      foreColor: "#000000",
+      background: "transparent",
+    },
+    labels: (wasteMix || []).map((w) => w.parameter),
+    legend: {
+      position: "right",
+      horizontalAlign: "left",
+      offsetY: 0,
+      markers: { size: 10, strokeWidth: 0 },
+      fontSize: "11px",
+      labels: { colors: "#000000" },
+      itemMargin: { vertical: 2, horizontal: 10 },
+      // ✅ โชว์ % ทุกชิ้นใน legend เสมอ
+      formatter: (seriesName, opts) => {
+        const pct =
+          (opts?.w?.globals?.seriesPercent?.[opts.seriesIndex]?.[0] as number) || 0;
+        return `${seriesName} — ${pct.toFixed(2)}%`;
       },
-      labels: (wasteMix || []).map((w) => w.parameter),
-      legend: {
-        position: "right",
-        horizontalAlign: "left",
-        offsetY: 0,
-        markers: { size: 10, strokeWidth: 0 },
-        fontSize: "11px",
-        labels: { colors: "#000000" },
-        itemMargin: { vertical: 2, horizontal: 10 },
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: (val: number | string) => {
+        const num = typeof val === "number" ? val : Number(val);
+        return `${num.toFixed(2)}%`;
       },
-      dataLabels: {
-        enabled: true,
-        formatter: (val: number | string) => {
-          const num = typeof val === "number" ? val : Number(val);
-          return `${num.toFixed(0)}%`;
+      style: { fontSize: "12px", fontWeight: 700, colors: ["#FFFFFF"] },
+      dropShadow: { enabled: false },
+    },
+    stroke: { width: 0 },
+    tooltip: {
+      theme: "dark",
+      y: {
+        formatter: (val: number, opts) =>
+          `${fmt2(val)} ${(wasteMix[opts.seriesIndex] as any)?.unit || "kg"}`,
+      },
+    },
+    plotOptions: {
+      pie: {
+        // ✅ ช่วยให้ label ไม่ถูกซ่อนแม้ชิ้นเล็ก และขยับตำแหน่งเข้าไปด้านในนิดหน่อย
+        dataLabels: {
+          offset: -6,
+          // บางเวอร์ชันของ ApexCharts มี option นี้
+          // ถ้าโปรเจกต์คุณรองรับ ให้คงไว้เพื่อ “บังคับ” ให้โชว์ทุกชิ้น
+          // ถ้าเกิด TypeScript ฟ้อง ก็แค่ลบบรรทัดนี้ออกได้
+          // @ts-ignore
+          minAngleToShowLabel: 0,
         },
-        style: { fontSize: "12px", fontWeight: 700, colors: ["#FFFFFF"] },
-        dropShadow: { enabled: false },
-      },
-      stroke: { width: 0 },
-      tooltip: {
-        theme: "dark",
-        y: {
-          formatter: (val: number, opts) =>
-            `${val.toLocaleString("th-TH", { maximumFractionDigits: 2 })} ${
-              (wasteMix[opts.seriesIndex] as any)?.unit || "kg"
-            }`,
-        },
-      },
-      plotOptions: {
-        pie: {
-          donut: {
-            size: "64%",
-            labels: {
+        donut: {
+          size: "64%",
+          labels: {
+            show: true,
+            name: { show: true, fontSize: "14px", fontWeight: 600 },
+            value: {
               show: true,
-              name: { show: true, fontSize: "14px", fontWeight: 600 },
-              value: {
-                show: true,
-                fontSize: "22px",
-                fontWeight: 800,
-                formatter: (v: string) =>
-                  Number(v || 0).toLocaleString("th-TH", { maximumFractionDigits: 0 }),
-              },
-              total: {
-                show: true,
-                label: "รวม",
-                fontSize: "13px",
-                color: "##000000",
-                formatter: (w) => {
-                  const s =
-                    (w?.globals?.seriesTotals as number[] | undefined)?.reduce((a, b) => a + b, 0) || 0;
-                  return s.toLocaleString("th-TH", { maximumFractionDigits: 0 });
-                },
+              fontSize: "22px",
+              fontWeight: 800,
+              formatter: (v: string) => fmt2(v),
+            },
+            total: {
+              show: true,
+              label: "รวม",
+              fontSize: "13px",
+              color: "##000000",
+              formatter: (w) => {
+                const s =
+                  (w?.globals?.seriesTotals as number[] | undefined)?.reduce(
+                    (a, b) => a + b,
+                    0
+                  ) || 0;
+                return fmt2(s);
               },
             },
           },
         },
       },
-      colors: [
-        "#0d9484ff",
-        "#F59E0B",
-        "#EF4444",
-        "#22C55E",
-        "#7C3AED",
-        "#06B6D4",
-        "#D946EF",
-        "#E11D48",
-      ],
-      states: {
-        hover: { filter: { type: "lighten", value: 0.02 } },
-        active: { filter: { type: "darken", value: 0.04 } },
-      },
-    }),
-    [wasteMix]
-  );
-
+    },
+    colors: [
+      "#8a6c12ff",
+      "#ff2121ff",
+      "#4452efff",
+      "#22C55E",
+      "#35cdd5ff",
+      "#06B6D4",
+      "#D946EF",
+      "#E11D48",
+    ],
+    states: {
+      hover: { filter: { type: "lighten", value: 0.02 } },
+      active: { filter: { type: "darken", value: 0.04 } },
+    },
+  }),
+  [wasteMix]
+);
   /* ========= DONUT (ปีล่าสุด): ยอดขาย ========= */
   const donutOptions: ApexOptions = useMemo(
     () => ({
@@ -978,7 +997,7 @@ const AdminDashboard: React.FC = () => {
       legend: { position: "right", horizontalAlign: "left", offsetY: -10, markers: { size: 6 }, fontSize: "11px" },
       dataLabels: { enabled: false },
       stroke: { show: false },
-      tooltip: { y: { formatter: (val: number) => `${val.toLocaleString("th-TH", { maximumFractionDigits: 1 })} บาท` } },
+      tooltip: { y: { formatter: (val: number) => `${fmt2(val)} บาท` } },
       colors: ["#99d4fdff","#fcf080ff","#8ae98dff","#fd8591ff","#f8ae89ff","#b497ecff","#80CBC4","#CE93D8","#FFCC80","#A5D6A7","#EF9A9A","#90CAF9"],
     }),
     [donutMonths]
@@ -992,7 +1011,7 @@ const AdminDashboard: React.FC = () => {
       legend: { position: "right", horizontalAlign: "left", offsetY: -10, markers: { size: 6 }, fontSize: "11px" },
       dataLabels: { enabled: false },
       stroke: { show: false },
-      tooltip: { y: { formatter: (val: number) => `${val.toLocaleString("th-TH")} คน` } },
+      tooltip: { y: { formatter: (val: number) => `${fmt0(val)} คน` } },
       colors: ["#A3F7BF","#A3E0FF","#FFE29A","#FFADB0","#D5B8FF","#9AD1B9","#FFCC80","#90CAF9","#CE93D8","#A5D6A7","#EF9A9A","#80CBC4"],
     }),
     [qtyMonths]
@@ -1005,7 +1024,7 @@ const AdminDashboard: React.FC = () => {
   return (
     <>
       {/* Header */}
-      <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-4 sm:px-6 lg:px-8 py-6 rounded-b-3xl mb-4 w-full mt-16 md:mt-0">
+      <div className="bg-gradient-to-r from-teal-700 to-cyan-400 text-white px-4 sm:px-6 lg:px-8 py-6 rounded-b-3xl w-full mt-16 md:mt-0">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-semibold drop-shadow-md">การตรวจวัดคุณภาพสิ่งแวดล้อม</h1>
@@ -1016,7 +1035,9 @@ const AdminDashboard: React.FC = () => {
             <h3 className="text-base font-medium text-cyan-800 mb-2 leading-snug">ค่า TDS น้ำเสียหลังบำบัด (คาดการณ์เดือนถัดไป)</h3>
             {predictionLoading ? <p className="text-gray-600 m-0">กำลังคำนวณ...</p>
               : predictionError ? <p className="text-red-600 m-0">ไม่สามารถดึงค่าทำนายได้: {predictionError}</p>
-              : <div className="text-2xl font-bold text-cyan-900">{predictionData?.prediction.toFixed(3)}</div>}
+              : <div className="text-2xl font-bold text-cyan-900">
+                  {predictionData ? Number(predictionData.prediction).toFixed(2) : "-"}
+                </div>}
           </div>
         </div>
       </div>
@@ -1025,14 +1046,14 @@ const AdminDashboard: React.FC = () => {
       <div className="content-wrapper">
         <div className="container-xl">
           {/* Controls (Teal, Compact, Single-line) */}
-          <Card className="dashboard-controls-card card-bleed controls-teal controls-grid" bordered={false}>
-            <div className="controls-teal">
+          <Card className="dashboard-controls-card card-bleed" bordered={false}>
+            <div className="controls-teal compact">
               <div className="controls-row">
                 <div className="controls-field">
                   <label>สภาพแวดล้อม</label>
                   <Select
-                    size="small"
-                    style={{ width: 160 }}
+                    size="small"  
+                    style={{ width: 120}}
                     value={selectedEnvId ?? undefined}
                     onChange={(v) => {
                       setSelectedEnvId(v);
@@ -1056,7 +1077,7 @@ const AdminDashboard: React.FC = () => {
                   <label>พารามิเตอร์</label>
                   <Select
                     size="small"
-                    style={{ width: 200 }}
+                    style={{ width: 180 , marginRight: 4}}
                     value={selectedParamId ?? undefined}
                     onChange={(v) => { setSelectedParamId(v); setAutoRange(true); }} // ⭐ changed
                     options={paramList.map((p) => ({ value: p.id, label: p.name }))}
@@ -1069,7 +1090,7 @@ const AdminDashboard: React.FC = () => {
                     <label>มุมมอง</label>
                     <Select
                       size="small"
-                      style={{ width: 150 }}
+                      style={{ width: 150 , marginLeft: 4}}
                       value={view}
                       onChange={setView}
                       options={[
@@ -1086,7 +1107,7 @@ const AdminDashboard: React.FC = () => {
                   <label>ช่วงเวลา</label>
                   <Select
                     size="small"
-                    style={{ width: 120 }}
+                    style={{ width: 100 }}
                     value={filterMode}
                     onChange={(val) => {
                       setFilterMode(val as FilterMode);
@@ -1148,6 +1169,8 @@ const AdminDashboard: React.FC = () => {
                       locale={th_TH}
                       placeholder={["ปีต้น", "ปีท้าย"]}
                       allowClear
+                      format="BBBB"          // แสดงปีเป็น พ.ศ.
+                      inputReadOnly          // กันการพิมพ์ (ไม่บังคับ แต่ช่วยให้เสถียร)
                     />
                   )}
                 </div>
@@ -1156,6 +1179,7 @@ const AdminDashboard: React.FC = () => {
                   <label>ประเภทกราฟ</label>
                   <Segmented
                     size="small"
+                    style={{ width: 85 }}
                     value={chartType}
                     onChange={(v) => setChartType(v as "line" | "bar")}
                     options={[{ label: "เส้น", value: "line" }, { label: "แท่ง", value: "bar" }]}
@@ -1312,7 +1336,7 @@ const AdminDashboard: React.FC = () => {
                       item.type === "garbage"
                         ? `${getParamName(item)} ${getStatusName(item)}`
                         : `${getParamName(item)} ของ${getEnvName(item)} ${getStatusName(item)}`;
-                    const desc = `ค่าที่ตรวจพบ: ${getValue(item)} ${getUnitName(item)}\nวันที่บันทึก: ${date} เวลา: ${time}`;
+                    const desc = `ค่าที่ตรวจพบ: ${fmt2(getValue(item))} ${getUnitName(item)}\nวันที่บันทึก: ${date} เวลา: ${time} น.`;
 
                     return (
                       <div key={idx} className="alert-chip">
@@ -1381,9 +1405,9 @@ const AdminDashboard: React.FC = () => {
                   }}
                 >
                   <div style={{ zIndex: 1 }}>
-                    <div style={{ fontSize: 18, opacity: .95, marginBottom: 8 }}>จำนวนยอดขายรวมปี {donutYearThai ?? "-"}</div>
+                    <div style={{ fontSize: 18, opacity: .95, marginBottom: 8 }}>จำนวนยอดขายรวมขยะรีไซเคิลปี {donutYearThai ?? "-"}</div>
                     <div style={{ fontSize: 36, fontWeight: 700, lineHeight: 1.1 }}>
-                      {totalSaleYear.toLocaleString("th-TH", { maximumFractionDigits: 1 })} บาท
+                      {fmt2(totalSaleYear)} บาท
                     </div>
                     <div style={{ fontSize: 12, marginTop: 6, opacity: .95 }}>{lastRecordDate ? `Date per ${lastRecordDate}` : ""}</div>
                   </div>
@@ -1426,7 +1450,7 @@ const AdminDashboard: React.FC = () => {
                       จำนวนคนที่เข้าใช้บริการรวมปี {donutYearThai ?? "-"}
                     </div>
                     <div style={{ fontSize: 36, fontWeight: 700, lineHeight: 1.1 }}>
-                      {totalQtyYear.toLocaleString("th-TH")} คน
+                      {fmt0(totalQtyYear)} คน
                     </div>
                     <div style={{ fontSize: 12, marginTop: 6, opacity: .95 }}>
                       {lastRecordDate ? `Date per ${lastRecordDate}` : ""}
@@ -1467,8 +1491,8 @@ const AdminDashboard: React.FC = () => {
               columns={[
                 { title: "เดือน", dataIndex: "month_year" },
                 { title: "พารามิเตอร์", dataIndex: "parameter" },
-                { title: "ค่าเฉลี่ย", dataIndex: "average", render: (v: number, r) => `${v.toFixed(2)} ${r.unit || ""}`.trim() },
-                { title: "มาตรฐานสูงสุด", dataIndex: "max_value", render: (v: number, r) => `${v.toFixed(2)} ${r.unit || ""}`.trim() },
+                { title: "ค่าเฉลี่ย", dataIndex: "average", render: (v: number, r) => `${fmt2(v)} ${r.unit || ""}`.trim() },
+                { title: "มาตรฐานสูงสุด", dataIndex: "max_value", render: (v: number, r) => `${fmt2(v)} ${r.unit || ""}`.trim() },
                 { title: "สถานะ", dataIndex: "exceed" },
               ]}
             />

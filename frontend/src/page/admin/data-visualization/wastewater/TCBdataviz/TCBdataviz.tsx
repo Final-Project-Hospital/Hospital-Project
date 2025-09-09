@@ -1255,12 +1255,12 @@ const TCBdataviz: React.FC = () => {
             <div className="tcb-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="tcb-task-stats">
               <div className="tcb-task-item">
-                <div className="tcb-task-number">{doneTasks}</div>
+                <div className="tcb-task-number status-good">{doneTasks}</div>
                 <div className="tcb-task-label">ผ่านเกณฑ์มาตรฐาน</div>
               </div>
               <div className="tcb-task-divider" />
               <div className="tcb-task-item">
-                <div className="tcb-task-number">{inProgressTasks}</div>
+                <div className="tcb-task-number status-high">{inProgressTasks}</div>
                 <div className="tcb-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
               </div>
             </div>
