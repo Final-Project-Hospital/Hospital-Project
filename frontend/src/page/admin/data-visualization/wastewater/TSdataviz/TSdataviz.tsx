@@ -1255,12 +1255,12 @@ const TSdataviz: React.FC = () => {
                         <div className="ts-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
                         <div className="ts-task-stats">
                             <div className="ts-task-item">
-                                <div className="ts-task-number">{doneTasks}</div>
+                                <div className="ts-task-number status-good">{doneTasks}</div>
                                 <div className="ts-task-label">ผ่านเกณฑ์มาตรฐาน</div>
                             </div>
                             <div className="ts-task-divider" />
                             <div className="ts-task-item">
-                                <div className="ts-task-number">{inProgressTasks}</div>
+                                <div className="ts-task-number status-high">{inProgressTasks}</div>
                                 <div className="ts-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
                             </div>
                         </div>

@@ -54,19 +54,20 @@ const THdataviz: React.FC = () => {
   const [beforeData, setBeforeData] = useState<{ unit: string; date: string; data: number }[]>([]);
   const [afterData, setAfterData] = useState<{ unit: string; date: string; data: number }[]>([]);
   const [colorAfter, setColorAfter] = useState<string>("#1a4b57");
-  const [colorMin, setColorMin] = useState<string>("#2abdbf");//
-  const [colorMax, setColorMax] = useState<string>("#1a4b57");//
+  const [colorMin, setColorMin] = useState<string>("#2abdbf");
+  const [colorMax, setColorMax] = useState<string>("#1a4b57");
+  const [colorAvg, setColorAvg] = useState<string>("#f39c12");
   const [unit, setUnit] = useState<string>("-");
   const [middlestandard, setMiddleStandard] = useState<number | undefined>(undefined);
   const [minstandard, setMinStandard] = useState<number | undefined>(undefined);
   const [maxstandard, setMaxStandard] = useState<number | undefined>(undefined);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalGraphType, setModalGraphType] = useState<"after" | "minmax" | null>(null);//
-  const [afterMaxMinData, setAfterMaxMinData] = useState<{ date: string; max: number; min: number; maxDate?: string; minDate?: string; maxUnit?: string; minUnit?: string; }[]>([]);
+  const [afterMaxMinData, setAfterMaxMinData] = useState<{ date: string; max: number; min: number; avg?: number; maxDate?: string; minDate?: string; avgYear?: string; maxUnit?: string; minUnit?: string; avgUnit?: string; }[]>([]);
   const formatThaiDate = (dateStr: string) => {
     if (!dateStr) return '';
     const d = dayjs(dateStr).locale('th');
-    return `${d.date()} ${d.format('MMMM')} ${d.year() + 543}`;
+    return `${d.date()} ${d.format('MMM')} ${d.year() + 543}`;
   };
   //ใช้กับตาราง
   const [search] = useState(""); //setSearch
@@ -247,6 +248,7 @@ const THdataviz: React.FC = () => {
             if (entries.length) {
               const maxEntry = entries.reduce((prev, curr) => curr.value > prev.value ? curr : prev, entries[0]);
               const minEntry = entries.reduce((prev, curr) => curr.value < prev.value ? curr : prev, entries[0]);
+              const avgValue = entries.reduce((sum, curr) => sum + curr.value, 0) / entries.length;
 
               // หา unit ของ Max/Min
               const maxUnit = response.data.find((i: any) =>
@@ -261,17 +263,29 @@ const THdataviz: React.FC = () => {
                 i.Data === minEntry.value
               )?.UnitName ?? "";
 
+              // เก็บปีของค่าเฉลี่ย
+              const avgYear = dayjs(entries[0].date).format("YYYY"); // ✅ เก็บเฉพาะปี
+
+              // หา unit ของค่าเฉลี่ย ใช้ปีตรงกับ avgYear
+              const avgUnit = response.data.find((i: any) =>
+                i.BeforeAfterTreatmentID === 2 &&
+                dayjs(i.Date).format("YYYY") === avgYear
+              )?.UnitName ?? "";
+
               afterMaxMin.push({
                 date: key,
                 max: maxEntry.value,
                 min: minEntry.value,
+                avg: avgValue,   //  เพิ่มค่าเฉลี่ยเก็บไว้ใน object
+                avgYear,       //  เพิ่ม field avgYear
+                avgUnit,       //  เพิ่ม field avgUnit
                 maxDate: formatThaiDate(maxEntry.date),
                 minDate: formatThaiDate(minEntry.date),
                 maxUnit,
                 minUnit
               });
             } else {
-              afterMaxMin.push({ date: key, max: 0, min: 0, maxUnit: "", minUnit: "" });
+              afterMaxMin.push({ date: key, max: 0, min: 0, avg: 0, maxDate: "", minDate: "", avgYear: "", maxUnit: "", minUnit: "", avgUnit: "", });
             }
           });
         };
@@ -508,6 +522,14 @@ const THdataviz: React.FC = () => {
               return `${item.min.toFixed(2)} ${unit} (วันที่: ${item.minDate})`;
             }
 
+            if (seriesName === "ค่าเฉลี่ย" && afterMaxMinRef.current && afterMaxMinRef.current.length > dataPointIndex) {
+              const item = afterMaxMinRef.current[dataPointIndex];
+              const unit = item.avgUnit || 'ไม่มีการตรวจวัด';
+              if (unit === 'ไม่มีการตรวจวัด') return unit;
+              const thaiYear = item.avgYear ? (parseInt(item.avgYear) + 543) : "";
+              return `${item.avg?.toFixed(2)} ${unit} (ปี: ${thaiYear})`; // ✅ แสดงปี + ค่า + หน่วย
+            }
+
             // กรณี beforeSeries หรือ compareSeries "ก่อนบำบัด"
             if ((seriesName === "ก่อนบำบัด" || seriesName === "TH") && beforeData && beforeData.length > dataPointIndex) {
               const unit = beforeData[dataPointIndex]?.unit || 'ไม่มีการตรวจวัดก่อนบำบัด';
@@ -538,12 +560,12 @@ const THdataviz: React.FC = () => {
       dataLabels: {
         enabled: false,
       },
-      legend: { show: true,showForSingleSeries: true, position: 'top', horizontalAlign: 'center' },
+      legend: { show: true, showForSingleSeries: true, position: 'top', horizontalAlign: 'center' },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
       markers: chartType === "line"
         ? {
           size: 4.5,
-          shape: ["circle", "triangle"],
+          shape: ["circle", "triangle", "diamond"],
           hover: { sizeOffset: 3 },
         }
         : { size: 0 },
@@ -563,6 +585,11 @@ const THdataviz: React.FC = () => {
       name: "ค่าต่ำสุด",
       data: afterMaxMinData.map(item => item.min),
       color: colorMin,
+    },
+    {
+      name: "ค่าเฉลี่ย", //  เพิ่ม series ใหม่
+      data: afterMaxMinData.map(item => item.avg ?? 0),
+      color: colorAvg,  // สีต่างจาก min/max
     }
   ];
   //ใช้กับกราฟ
@@ -980,8 +1007,8 @@ const THdataviz: React.FC = () => {
           </div>
           <div className="th-graph-card">
             <div className="th-head-graph-card">
-              <div className="th-width45">
-                <h2 className="th-head-graph-card-text">ค่า Total Hardness ต่ำสุด/สูงสุด</h2>
+              <div className="th-width60">
+                <h2 className="th-head-graph-card-text">ค่า Total Hardness ต่ำสุด/สูงสุด/เฉลี่ย</h2>
               </div>
               <div>
                 <ColorPicker
@@ -998,6 +1025,14 @@ const THdataviz: React.FC = () => {
                     const hex = color.toHexString();
                     setColorMax(hex);
                     localStorage.setItem('colorMax', hex);
+                  }}
+                />
+                <ColorPicker
+                  value={colorAvg}
+                  onChange={(color: Color) => {
+                    const hex = color.toHexString();
+                    setColorAvg(hex);
+                    localStorage.setItem('colorAvg', hex);
                   }}
                 />
                 <Button className="th-expand-chat" onClick={() => openModal("minmax")}><Maximize2 /></Button>
@@ -1152,12 +1187,12 @@ const THdataviz: React.FC = () => {
             <div className="th-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="th-task-stats">
               <div className="th-task-item">
-                <div className="th-task-number">{doneTasks}</div>
+                <div className="th-task-number status-good">{doneTasks}</div>
                 <div className="th-task-label">ผ่านเกณฑ์มาตรฐาน</div>
               </div>
               <div className="th-task-divider" />
               <div className="th-task-item">
-                <div className="th-task-number">{inProgressTasks}</div>
+                <div className="th-task-number status-high">{inProgressTasks}</div>
                 <div className="th-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
               </div>
             </div>
@@ -1302,7 +1337,7 @@ const THdataviz: React.FC = () => {
             <div className="th-chat-modal">
               <div className="th-head-graph-card" >
                 <div className="th-width40">
-                  <h2 className="th-head-graph-card-text" >ค่า Total Hardness ต่ำสุด/สูงสุด</h2>
+                  <h2 className="th-head-graph-card-text" >ค่า Total Hardness ต่ำสุด/สูงสุด/เฉลี่ย</h2>
                 </div>
               </div>
               <div className="th-right-select-graph">

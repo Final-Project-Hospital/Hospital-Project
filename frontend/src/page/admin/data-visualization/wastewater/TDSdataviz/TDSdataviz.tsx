@@ -1255,12 +1255,12 @@ const TDSdataviz: React.FC = () => {
             <div className="tds-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="tds-task-stats">
               <div className="tds-task-item">
-                <div className="tds-task-number">{doneTasks}</div>
+                <div className="tds-task-number status-good">{doneTasks}</div>
                 <div className="tds-task-label">ผ่านเกณฑ์มาตรฐาน</div>
               </div>
               <div className="tds-task-divider" />
               <div className="tds-task-item">
-                <div className="tds-task-number">{inProgressTasks}</div>
+                <div className="tds-task-number status-high">{inProgressTasks}</div>
                 <div className="tds-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
               </div>
             </div>

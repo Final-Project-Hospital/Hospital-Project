@@ -1255,12 +1255,12 @@ const TKNdataviz: React.FC = () => {
             <div className="tkn-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="tkn-task-stats">
               <div className="tkn-task-item">
-                <div className="tkn-task-number">{doneTasks}</div>
+                <div className="tkn-task-number status-good">{doneTasks}</div>
                 <div className="tkn-task-label">ผ่านเกณฑ์มาตรฐาน</div>
               </div>
               <div className="tkn-task-divider" />
               <div className="tkn-task-item">
-                <div className="tkn-task-number">{inProgressTasks}</div>
+                <div className="tkn-task-number status-high">{inProgressTasks}</div>
                 <div className="tkn-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
               </div>
             </div>
