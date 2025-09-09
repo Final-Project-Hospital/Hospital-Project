@@ -9,7 +9,8 @@ import { ListMiddleStandardInterface, ListRangeStandardInterface, ListStandardIn
 
 //export const apiUrl = "http://10.0.14.228:8000";
 //export const apiUrl = "http://10.1.151.69:8000";
-export const apiUrl = "http://localhost:8000";
+// export const apiUrl = "http://localhost:8000";
+import { apiUrl } from './config';
 
 const Authorization = localStorage.getItem("token");
 
@@ -360,7 +361,7 @@ export const ListStatusGarbage = async (): Promise<ListStatusInterface[] | null>
   }
 };
 
-export { GetUsers, getAuthHeader, };
+export { GetUsers, getAuthHeader, apiUrl, };
 
 
 
