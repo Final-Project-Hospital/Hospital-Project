@@ -20,7 +20,7 @@ func DB() *gorm.DB {
 }
 
 func ConnectionDB() {
-    dsn := os.Getenv("postgresql://postgres:tSJlIYHEZuRDpvXdpLFzNuAdAcmCGBMi@postgres.railway.internal:5432/railway") // ← ต้องเป็นชื่อ ENV VAR
+    dsn := os.Getenv("DATABASE_URL") // ← ต้องเป็นชื่อ ENV VAR
     if dsn == "" {
         log.Fatal("DATABASE_URL is not set")
     }
