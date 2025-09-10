@@ -6,6 +6,7 @@ import (
 
 type UnitHardware struct {
 	gorm.Model
-	Unit	string
-	HardwareParameter	[]HardwareParameter `gorm:"foreignKey: UnitHardwareID"`
+	Unit string `valid:"required~Unit is required"`
+
+	HardwareParameter []HardwareParameter `gorm:"foreignKey:UnitHardwareID" valid:"-"`
 }

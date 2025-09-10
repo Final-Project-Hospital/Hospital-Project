@@ -18,7 +18,7 @@ import {
   GetLineMasterFirst,
   UpdateLineMasterByID,
   CreateNotification,
-  IsEmployeePasswordValid, // ✅ ใช้จาก services/hardware ตามที่ให้มา
+  IsEmployeePasswordValid,
 } from "../../../../services/hardware";
 import { LineMasterInterface } from "../../../../interface/ILineMaster";
 import { GetUserDataByUserID } from "../../../../services/httpLogin"; 
@@ -35,8 +35,6 @@ import {
 
 const { TextArea } = Input;
 
-const EMPLOYEE_ID_FOR_VERIFY = 1; // ✅ ตรวจรหัสด้วยพนักงาน id = 1
-
 const Account = () => {
   const { t } = useTranslation();
   const [notifications, setNotifications] = useState<NotificationInterface[]>([]);
@@ -49,6 +47,12 @@ const Account = () => {
   const [newToken, setNewToken] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
   const [tokenPassword, setTokenPassword] = useState<string>(""); // ✅ รหัสยืนยันใต้ช่อง Token
+
+  // ✅ เก็บ employee id ปัจจุบัน (จาก localStorage)
+  const [currentEmployeeId, setCurrentEmployeeId] = useState<number | null>(null);
+    const [employeeid, setEmployeeid] = useState<number>(
+    Number(localStorage.getItem("employeeid")) || 0
+  );
 
   // ✅ Modal Create Notification
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -64,15 +68,24 @@ const Account = () => {
       try {
         const userId = localStorage.getItem("employeeid");
         if (userId) {
+          // เก็บ employee id ปัจจุบันไว้ใช้ส่งขึ้น backend
+          const parsedId = Number(userId);
+          setCurrentEmployeeId(Number.isFinite(parsedId) ? parsedId : null);
+
           const user: UsersInterface | false = await GetUserDataByUserID(userId);
           if (user && user.Role?.RoleName === "Admin") setIsAdmin(true);
           else setIsAdmin(false);
+        } else {
+          setCurrentEmployeeId(null);
+          setIsAdmin(false);
         }
       } catch (error) {
         console.error("Error fetching user role:", error);
         setIsAdmin(false);
+        setCurrentEmployeeId(null);
       }
     };
+    setEmployeeid(Number(localStorage.getItem("employeeid")));
     fetchUserRole();
   }, []);
 
@@ -100,7 +113,7 @@ const Account = () => {
     setLoadingToken(false);
   };
 
-  // ✅ Save Token (ตรวจรหัสผ่านก่อน)
+  // ✅ Save Token (ตรวจรหัสผ่านก่อน) + ส่ง employee_id ไปด้วย
   const handleSaveToken = async () => {
     if (!lineMaster || !isAdmin) return;
 
@@ -118,7 +131,13 @@ const Account = () => {
         return;
       }
 
-      const res = await UpdateLineMasterByID(lineMaster.ID, { Token: newToken });
+      // ❗ ส่งคีย์เป็นตัวพิมพ์เล็กให้ตรงกับ json tag ของ backend
+      const payload = {
+        token: newToken,
+        employee_id: employeeid,
+      } as any;
+
+      const res = await UpdateLineMasterByID(lineMaster.ID, payload);
       if (res) {
         setLineMaster(res);
         message.success("อัปเดต Token สำเร็จ");
@@ -157,6 +176,8 @@ const Account = () => {
       console.error(err);
     }
   };
+
+  const EMPLOYEE_ID_FOR_VERIFY = employeeid; 
 
   return (
     <>
@@ -354,6 +375,14 @@ const Account = () => {
                 <p className="text-xs text-gray-500">
                   ต้องกรอกรหัสผ่านเพื่อยืนยันก่อนบันทึกการเปลี่ยนแปลง Token
                 </p>
+
+                {/* แสดง employee id ที่จะส่ง (ออปชัน) */}
+                {isAdmin && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    จะผูกการแก้ไขกับ EmployeeID:{" "}
+                    <b>{currentEmployeeId ?? EMPLOYEE_ID_FOR_VERIFY}</b>
+                  </p>
+                )}
               </div>
             </div>
           )

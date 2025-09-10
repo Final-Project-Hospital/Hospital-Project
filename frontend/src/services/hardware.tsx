@@ -160,12 +160,17 @@ export const ListBuilding = async (): Promise<BuildingInterface[] | null> => {
   }
 };
 
-// ✅ Create Building
+// ✅ Create (map -> snake_case)
 export const CreateBuilding = async (
-  data: BuildingInterface
+  data: { BuildingName: string; EmployeeID?: number | null }
 ): Promise<BuildingInterface | null> => {
+  const payload: any = {
+    building_name: data.BuildingName,
+  };
+  if (data.EmployeeID !== undefined) payload.employee_id = data.EmployeeID;
+
   try {
-    const response = await axios.post(`${apiUrl}/create-buildings`, data, {
+    const response = await axios.post(`${apiUrl}/create-buildings`, payload, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -173,24 +178,32 @@ export const CreateBuilding = async (
     });
 
     if (response.status === 200 || response.status === 201) {
-      return response.data;
+      return response.data as BuildingInterface;
     } else {
-      console.error("Unexpected status:", response.status);
+      console.error("Unexpected status:", response.status, response.data);
       return null;
     }
-  } catch (error) {
-    console.error("Error creating building:", error);
+  } catch (error: any) {
+    if (error.response) {
+      console.error("Error creating building:", error.response.status, error.response.data);
+    } else {
+      console.error("Error creating building:", error.message);
+    }
     return null;
   }
 };
 
-// ✅ Update Building by ID
+// ✅ Update (partial + map -> snake_case)
 export const UpdateBuildingByID = async (
   id: number,
-  data: BuildingInterface
+  data: { BuildingName?: string; EmployeeID?: number | null }
 ): Promise<BuildingInterface | null> => {
+  const payload: any = {};
+  if (data.BuildingName !== undefined) payload.building_name = data.BuildingName;
+  if (data.EmployeeID !== undefined) payload.employee_id = data.EmployeeID;
+
   try {
-    const response = await axios.put(`${apiUrl}/update-buildings/${id}`, data, {
+    const response = await axios.put(`${apiUrl}/update-buildings/${id}`, payload, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -198,13 +211,17 @@ export const UpdateBuildingByID = async (
     });
 
     if (response.status === 200) {
-      return response.data;
+      return response.data as BuildingInterface;
     } else {
-      console.error("Unexpected status:", response.status);
+      console.error("Unexpected status:", response.status, response.data);
       return null;
     }
-  } catch (error) {
-    console.error("Error updating building:", error);
+  } catch (error: any) {
+    if (error.response) {
+      console.error("Error updating building:", error.response.status, error.response.data);
+    } else {
+      console.error("Error updating building:", error.message);
+    }
     return null;
   }
 };
