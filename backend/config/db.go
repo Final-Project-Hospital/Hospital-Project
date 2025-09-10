@@ -2,10 +2,14 @@ package config
 
 import (
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/Tawunchai/hospital-project/entity"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+
+	// "gorm.io/gorm/logger"
 	"time"
 )
 
@@ -16,17 +20,18 @@ func DB() *gorm.DB {
 }
 
 func ConnectionDB() {
-	dsn := "host=localhost user=postgres password=1234 dbname=hospital port=5432 sslmode=disable TimeZone=Asia/Bangkok"
+    dsn := os.Getenv("DATABASE_URL") // ← ต้องเป็นชื่อ ENV VAR
+    if dsn == "" {
+        log.Fatal("DATABASE_URL is not set")
+    }
 
-	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Error),
-	})
-	if err != nil {
-		panic("failed to connect to PostgreSQL database")
-	}
+    database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    if err != nil {
+        log.Fatalf("failed to connect to PostgreSQL: %v", err)
+    }
 
-	fmt.Println("✅ connected to PostgreSQL database")
-	db = database
+    db = database // ← assign ให้ตัวแปร db ไม่ใช่ DB()
+    fmt.Println("✅ Database connected successfully")
 }
 
 func SetupDatabase() {
