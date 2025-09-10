@@ -9,8 +9,9 @@ import { ListMiddleStandardInterface, ListRangeStandardInterface, ListStandardIn
 
 //export const apiUrl = "http://10.0.14.228:8000";
 //export const apiUrl = "http://10.1.151.69:8000";
-// export const apiUrl = "http://localhost:8000";
-import { apiUrl } from './config';
+//export const apiUrl = "http://localhost:8000";
+// export const apiUrl = import.meta.env.VITE_API_URL
+export const apiUrl = "https://hospital-project-production-965f.up.railway.app/"
 
 const Authorization = localStorage.getItem("token");
 
@@ -361,7 +362,7 @@ export const ListStatusGarbage = async (): Promise<ListStatusInterface[] | null>
   }
 };
 
-export { GetUsers, getAuthHeader, apiUrl, };
+export { GetUsers, getAuthHeader, };
 
 
 
