@@ -6,7 +6,7 @@ import (
 
 type Position struct {
 	gorm.Model
-	Position	string
-	
-	Employee []Employee `gorm:"foreignKey: PositionID"`
+	Position string `valid:"required~Position is required"`
+
+	Employee []Employee `gorm:"foreignKey:PositionID" valid:"-"`
 }
