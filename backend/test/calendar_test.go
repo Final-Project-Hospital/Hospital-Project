@@ -1,4 +1,4 @@
-// file: calendar_test.go /
+// file: calendar_test.go
 package unit
 
 import (

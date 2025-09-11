@@ -1,5 +1,5 @@
 package sensordata
-//
+
 import (
 	"net/http"
 	"strconv"

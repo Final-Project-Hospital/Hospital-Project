@@ -1,5 +1,5 @@
 package line
-//
+
 import (
 	"bytes"
 	"encoding/json"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
+	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
 )
 
@@ -206,20 +207,30 @@ func ListRoomNotification(c *gin.Context) {
 }
 
 type CreateRoomNotificationInput struct {
-	RoomID         uint `json:"room_id" binding:"required"`
-	NotificationID uint `json:"notification_id" binding:"required"`
+	RoomID         uint `json:"room_id"`
+	NotificationID uint `json:"notification_id"`
 }
 
 func CreateRoomNotification(c *gin.Context) {
 	var input CreateRoomNotificationInput
+
+	// ✅ Bind JSON
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON: " + err.Error()})
 		return
 	}
 
+	// ✅ เตรียม entity สำหรับ validate
 	roomNotification := entity.RoomNotification{
 		RoomID:         input.RoomID,
 		NotificationID: input.NotificationID,
+	}
+
+	// ✅ Validate struct ตาม tag ใน entity.RoomNotification
+	ok, err := govalidator.ValidateStruct(roomNotification)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	db := config.DB()
@@ -228,6 +239,7 @@ func CreateRoomNotification(c *gin.Context) {
 		return
 	}
 
+	// ✅ preload เพื่อส่งข้อมูลครบ
 	if err := db.Preload("Room").Preload("Notification").First(&roomNotification, roomNotification.ID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -235,6 +247,7 @@ func CreateRoomNotification(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, roomNotification)
 }
+
 
 // Update NotificationID ของ RoomNotification ตาม RoomID
 func UpdateNotificationIDByRoomID(c *gin.Context) {
@@ -257,8 +270,20 @@ func UpdateNotificationIDByRoomID(c *gin.Context) {
 		return
 	}
 
+	// ✅ เตรียม entity สำหรับ validate
+	roomNotification := entity.RoomNotification{
+		RoomID:         uint(roomID),
+		NotificationID: requestBody.NotificationID,
+	}
+
+	// ✅ validate ด้วย govalidator
+	ok, err := govalidator.ValidateStruct(roomNotification)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	// ค้นหา RoomNotification ของ RoomID นี้
-	var roomNotification entity.RoomNotification
 	if err := db.Where("room_id = ?", roomID).First(&roomNotification).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "RoomNotification not found"})
 		return
@@ -300,17 +325,33 @@ func UpdateLineMasterByID(c *gin.Context) {
 		return
 	}
 
-	// struct สำหรับรับ JSON จาก request body
+	// struct สำหรับรับ JSON
 	var input struct {
-		Token string `json:"token"`
+		Token      string `json:"token"`
+		EmployeeID *uint  `json:"employee_id"`
 	}
+
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	lineMaster.Token = input.Token
+	// update fields ชั่วคราว
+	if input.Token != "" {
+		lineMaster.Token = input.Token
+	}
+	if input.EmployeeID != nil {
+		lineMaster.EmployeeID = input.EmployeeID
+	}
 
+	// ✅ Validate struct ตาม tag
+	ok, err := govalidator.ValidateStruct(lineMaster)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// ✅ Save
 	if err := db.Save(&lineMaster).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -319,13 +360,19 @@ func UpdateLineMasterByID(c *gin.Context) {
 	c.JSON(http.StatusOK, &lineMaster)
 }
 
-
 // ✅ Create Notification
 func CreateNotification(c *gin.Context) {
 	var notification entity.Notification
 
 	// Bind JSON จาก request
 	if err := c.ShouldBindJSON(&notification); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// ✅ Validate struct ด้วย govalidator
+	ok, err := govalidator.ValidateStruct(notification)
+	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -365,6 +412,12 @@ func UpdateNotificationByID(c *gin.Context) {
 	// อัปเดตเฉพาะ Name, UserID
 	notification.Name = input.Name
 	notification.UserID = input.UserID
+
+	ok, err := govalidator.ValidateStruct(notification)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	if err := db.Save(&notification).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

@@ -8,16 +8,26 @@ import {
   UpdateBuildingByID,
 } from "../../../../services/hardware";
 import { BuildingInterface } from "../../../../interface/IBuilding";
-import { EditOutlined, DeleteOutlined, PlusOutlined, ExclamationCircleOutlined, ApartmentOutlined, HomeOutlined } from "@ant-design/icons";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  ExclamationCircleOutlined,
+  ApartmentOutlined,
+  HomeOutlined,
+} from "@ant-design/icons";
 import { FaBuilding } from "react-icons/fa";
-import { useNotificationContext } from "../../line/NotificationContext"; // ✅ ใช้ context
+import { useNotificationContext } from "../../line/NotificationContext";
 
 const BuildingALL = () => {
   const { t } = useTranslation();
-  const { triggerReload } = useNotificationContext(); // ✅ ดึงฟังก์ชันมาใช้
+  const { triggerReload } = useNotificationContext();
 
   const [buildings, setBuildings] = useState<BuildingInterface[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // employee id (จาก localStorage), ถ้าไม่มีหรือผิด ให้ fallback เป็น 1
+  const [employeeid, setEmployeeid] = useState<number>(1);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,7 +42,6 @@ const BuildingALL = () => {
   const [editBuilding, setEditBuilding] = useState<BuildingInterface | null>(null);
   const [editName, setEditName] = useState("");
 
-  // โหลดข้อมูลอาคาร
   const fetchBuildings = async () => {
     setLoading(true);
     const res = await ListBuilding();
@@ -41,22 +50,28 @@ const BuildingALL = () => {
   };
 
   useEffect(() => {
+    const raw = localStorage.getItem("employeeid");
+    const parsed = raw ? Number(raw) : NaN;
+    setEmployeeid(Number.isFinite(parsed) && parsed > 0 ? parsed : 1);
     fetchBuildings();
   }, []);
 
-  // ✅ Create building
+  // ✅ Create building (แนบ employee id เสมอ)
   const handleCreateBuilding = async () => {
     if (!newBuildingName.trim()) {
       message.warning("กรุณากรอกชื่ออาคาร");
       return;
     }
-    const res = await CreateBuilding({ BuildingName: newBuildingName });
+    const res = await CreateBuilding({
+      BuildingName: newBuildingName,
+      EmployeeID: employeeid,
+    });
     if (res) {
       message.success("เพิ่มข้อมูลอาคารสำเร็จ");
       setIsModalOpen(false);
       setNewBuildingName("");
       fetchBuildings();
-      triggerReload(); // ✅ แจ้งให้ Building รีโหลด
+      triggerReload();
     } else {
       message.error("ไม่สามารถเพิ่มข้อมูลอาคารได้");
     }
@@ -64,20 +79,20 @@ const BuildingALL = () => {
 
   // ✅ Delete building
   const handleDeleteBuilding = async () => {
-    if (!selectedBuilding) return;
-    const res = await DeleteBuildingByID(selectedBuilding.ID!);
-    if (res) {
+    if (!selectedBuilding?.ID) return;
+    const ok = await DeleteBuildingByID(selectedBuilding.ID);
+    if (ok) {
       message.success("ลบข้อมูลอาคารสำเร็จ");
       setDeleteModalVisible(false);
       setSelectedBuilding(null);
       fetchBuildings();
-      triggerReload(); // ✅ แจ้งให้ Building รีโหลด
+      triggerReload();
     } else {
       message.error("ไม่สามารถลบข้อมูลอาคารได้");
     }
   };
 
-  // ✅ Edit building
+  // ✅ Edit building (แนบ employee id เสมอ)
   const handleEditBuilding = async () => {
     if (!editName.trim()) {
       message.warning("กรุณากรอกชื่ออาคาร");
@@ -85,20 +100,22 @@ const BuildingALL = () => {
     }
     if (!editBuilding?.ID) return;
 
-    const res = await UpdateBuildingByID(editBuilding.ID, { BuildingName: editName });
+    const res = await UpdateBuildingByID(editBuilding.ID, {
+      BuildingName: editName,
+      EmployeeID: employeeid,
+    });
     if (res) {
       message.success("แก้ไขข้อมูลอาคารสำเร็จ");
       setEditModalVisible(false);
       setEditBuilding(null);
       setEditName("");
       fetchBuildings();
-      triggerReload(); // ✅ แจ้งให้ Building รีโหลด
+      triggerReload();
     } else {
       message.error("ไม่สามารถแก้ไขข้อมูลอาคารได้");
     }
   };
 
-  // ✅ columns
   const columns = [
     {
       title: "ลำดับ",
@@ -112,9 +129,7 @@ const BuildingALL = () => {
       title: "ชื่ออาคาร",
       dataIndex: "BuildingName",
       ellipsis: true,
-      render: (text: string) => (
-        <span className="text-sm text-gray-700">{text}</span>
-      ),
+      render: (text: string) => <span className="text-sm text-gray-700">{text}</span>,
     },
     {
       title: "การจัดการ",
@@ -192,7 +207,7 @@ const BuildingALL = () => {
       <Modal
         title={
           <span className="text-teal-600 font-bold text-lg flex items-center gap-2">
-            <ApartmentOutlined  /> เพิ่มข้อมูลอาคาร
+            <ApartmentOutlined /> เพิ่มข้อมูลอาคาร
           </span>
         }
         open={isModalOpen}
@@ -216,6 +231,9 @@ const BuildingALL = () => {
           value={newBuildingName}
           onChange={(e) => setNewBuildingName(e.target.value)}
         />
+        <p className="text-xs text-gray-500 mt-2">
+          ระบบจะผูกอาคารนี้กับพนักงานรหัส <b>{employeeid}</b> โดยอัตโนมัติ
+        </p>
       </Modal>
 
       {/* Modal ลบ */}
@@ -247,7 +265,7 @@ const BuildingALL = () => {
       <Modal
         title={
           <span className="text-teal-600 font-bold text-lg flex items-center gap-2">
-            <EditOutlined  /> แก้ไขข้อมูลอาคาร
+            <EditOutlined /> แก้ไขข้อมูลอาคาร
           </span>
         }
         open={editModalVisible}
@@ -259,7 +277,7 @@ const BuildingALL = () => {
         okButtonProps={{
           style: {
             background: "linear-gradient(to right, #14b8a6, #0d9488)",
-            borderColor: "#0d9488",
+            borderColor: "#0d9488)",
           },
         }}
       >
@@ -271,6 +289,9 @@ const BuildingALL = () => {
           value={editName}
           onChange={(e) => setEditName(e.target.value)}
         />
+        <p className="text-xs text-gray-500 mt-2">
+          ระบบจะผูกการแก้ไขนี้กับพนักงานรหัส <b>{employeeid}</b> โดยอัตโนมัติ
+        </p>
       </Modal>
     </Card>
   );

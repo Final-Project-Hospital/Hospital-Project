@@ -6,10 +6,9 @@ import (
 
 type Hardware struct {
 	gorm.Model
-	Name string
-	MacAddress	string
+	Name       string `valid:"required~Name is required"`
+	MacAddress string `valid:"required~MacAddress is required"`
 
-	Room []Room `gorm:"foreignKey: HardwareID"`
-
-	SensorData []SensorData `gorm:"foreignKey: HardwareID"`
+	Room []Room `gorm:"foreignKey:HardwareID" valid:"-"`
+	SensorData []SensorData `gorm:"foreignKey:HardwareID" valid:"-"`
 }
