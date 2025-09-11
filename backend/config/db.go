@@ -33,20 +33,20 @@ func ConnectionDB() {
 	db = database
 }
 // deploy
-func ConnectionDB() {
-    dsn := os.Getenv("DATABASE_URL") // ← ต้องเป็นชื่อ ENV VAR
-    if dsn == "" {
-        log.Fatal("DATABASE_URL is not set")
-    }
+// func ConnectionDB() {
+//     dsn := os.Getenv("DATABASE_URL") // ← ต้องเป็นชื่อ ENV VAR
+//     if dsn == "" {
+//         log.Fatal("DATABASE_URL is not set")
+//     }
 
-    database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-    if err != nil {
-        log.Fatalf("failed to connect to PostgreSQL: %v", err)
-    }
+//     database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+//     if err != nil {
+//         log.Fatalf("failed to connect to PostgreSQL: %v", err)
+//     }
 
-    db = database // ← assign ให้ตัวแปร db ไม่ใช่ DB()
-    fmt.Println("✅ Database connected successfully")
-}
+//     db = database // ← assign ให้ตัวแปร db ไม่ใช่ DB()
+//     fmt.Println("✅ Database connected successfully")
+// }
 
 func SetupDatabase() {
 	if db.Migrator().HasTable(&entity.Employee{}) {
