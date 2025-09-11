@@ -8,7 +8,6 @@ import (
 	"github.com/Tawunchai/hospital-project/entity"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-
 	// "gorm.io/gorm/logger"
 	"time"
 )
@@ -19,34 +18,34 @@ func DB() *gorm.DB {
 	return db
 }
 //locolhost
-func ConnectionDB() {
-	dsn := "host=localhost user=postgres password=1234 dbname=hospital port=5432 sslmode=disable TimeZone=Asia/Bangkok"
-
-	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Error),
-	})
-	if err != nil {
-		panic("failed to connect to PostgreSQL database")
-	}
-
-	fmt.Println("✅ connected to PostgreSQL database")
-	db = database
-}
-// deploy
 // func ConnectionDB() {
-//     dsn := os.Getenv("DATABASE_URL") // ← ต้องเป็นชื่อ ENV VAR
-//     if dsn == "" {
-//         log.Fatal("DATABASE_URL is not set")
-//     }
+// 	dsn := "host=localhost user=postgres password=1234 dbname=hospital port=5432 sslmode=disable TimeZone=Asia/Bangkok"
 
-//     database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-//     if err != nil {
-//         log.Fatalf("failed to connect to PostgreSQL: %v", err)
-//     }
+// 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+// 		Logger: logger.Default.LogMode(logger.Error),
+// 	})
+// 	if err != nil {
+// 		panic("failed to connect to PostgreSQL database")
+// 	}
 
-//     db = database // ← assign ให้ตัวแปร db ไม่ใช่ DB()
-//     fmt.Println("✅ Database connected successfully")
+// 	fmt.Println("✅ connected to PostgreSQL database")
+// 	db = database
 // }
+// deploy
+func ConnectionDB() {
+    dsn := os.Getenv("DATABASE_URL") // ← ต้องเป็นชื่อ ENV VAR
+    if dsn == "" {
+        log.Fatal("DATABASE_URL is not set")
+    }
+
+    database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    if err != nil {
+        log.Fatalf("failed to connect to PostgreSQL: %v", err)
+    }
+
+    db = database // ← assign ให้ตัวแปร db ไม่ใช่ DB()
+    fmt.Println("✅ Database connected successfully")
+}
 
 func SetupDatabase() {
 	if db.Migrator().HasTable(&entity.Employee{}) {
