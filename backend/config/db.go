@@ -18,7 +18,21 @@ var db *gorm.DB
 func DB() *gorm.DB {
 	return db
 }
+//locolhost
+func ConnectionDB() {
+	dsn := "host=localhost user=postgres password=1234 dbname=hospital port=5432 sslmode=disable TimeZone=Asia/Bangkok"
 
+	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Error),
+	})
+	if err != nil {
+		panic("failed to connect to PostgreSQL database")
+	}
+
+	fmt.Println("✅ connected to PostgreSQL database")
+	db = database
+}
+// deploy
 func ConnectionDB() {
     dsn := os.Getenv("DATABASE_URL") // ← ต้องเป็นชื่อ ENV VAR
     if dsn == "" {
