@@ -368,3 +368,14 @@
   .alert-chip .desc { font-size: 12px; }
   .dashboard-donut-card .donut-value { font-size: 24px; }
 }
+/* header ของกราฟโดนัท */
+.pie-header { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+@media (max-width:768px){
+  .pie-header { flex-direction: column; align-items: flex-start; }
+  .month-picker-compact { width: 100% !important; }
+}
+
+/* กันตัวเลขกลางโดนัทชนขอบ – เผื่อกรณีพิเศษ */
+@media (max-width:480px){
+  .apexcharts-datalabels-group text { font-size: 10px !important; }
+}
