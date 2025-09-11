@@ -21,6 +21,14 @@ dayjs.locale("th"); dayjs.extend(buddhistEra);
 
 interface ParamMeta { id: number; name: string; unit: string; std_min?: number | null; std_middle?: number | null; std_max?: number | null; }
 interface EnvMeta { id: number; name: string; params: ParamMeta[]; }
+interface AlertRow {
+  month_year: string;
+  parameter: string;
+  average: number;
+  max_value: number;
+  unit?: string;
+  exceed: string;
+}
 type ViewType = "before" | "after" | "compare";
 type FilterMode = "dateRange" | "month" | "year";
 type StandardMode = "none" | "middle" | "range";
@@ -48,7 +56,7 @@ const dFix = (n: any) => { const f = Number(n); return Number.isFinite(f) ? +f.t
 const fmt2 = (n: any) => Number(n ?? 0).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmt0 = (n: any) => Number(n ?? 0).toLocaleString("th-TH", { maximumFractionDigits: 0 });
 const norm = (s: string) => (s || "").replace(/\s+/g, " ").trim().toLowerCase();
-const normalizeMinMax = (arr: number[]) => { if (!arr.length) return []; const min = Math.min(...arr), max = Math.max(...arr); return min === max ? arr.map(v => (min === 0 ? 0 : 0.5)) : arr.map(v => (v - min) / (max - min)); };
+const normalizeMinMax = (arr: number[]) => { if (!arr.length) return []; const min = Math.min(...arr), max = Math.max(...arr); return min === max ? arr.map(() => (min === 0 ? 0 : 0.5)) : arr.map(v => (v - min) / (max - min)); };
 
 const AdminDashboard: React.FC = () => {
   const [metas, setMetas] = useState<EnvMeta[]>([]); const [, setMetaLoading] = useState(false); const [, setMetaError] = useState<string | null>(null);
@@ -82,8 +90,13 @@ const AdminDashboard: React.FC = () => {
         const m = await GetEnvironmentalMeta(); if (cancelled) return;
         if (Array.isArray(m) && m.length > 0) {
           const envWithParams = m.find(e => (e.params ?? []).length > 0) ?? m[0];
-          const dedupedParams = Array.from(new Map((envWithParams.params ?? []).map(p => [norm(p.name || ""), p])).values());
-          setMetas(m); setSelectedEnvId(envWithParams.id); setSelectedParamId(dedupedParams[0]?.id ?? null); setAutoRange(true);
+          const dedupedParams = Array.from(new Map((envWithParams.params ?? []).map((p: { name: any; }) => [norm(p.name || ""), p])
+            ).values()
+          )as ParamMeta[];
+          setMetas(m); 
+          setSelectedEnvId(envWithParams.id); 
+          setSelectedParamId(dedupedParams[0]?.id ?? null); 
+          setAutoRange(true);
         } else { setMetas([]); setSelectedEnvId(null); setSelectedParamId(null); }
       } catch (e: any) { if (!cancelled) setMetaError(e?.message || "โหลดเมตาไม่สำเร็จ"); } finally { if (!cancelled) setMetaLoading(false); }
     })();
@@ -905,7 +918,7 @@ const wastePieOptions: ApexOptions = useMemo(
           </Row>
 
           <Modal open={showAllAlerts} title="ประวัติการแจ้งเตือนทั้งหมด" footer={null} onCancel={() => setShowAllAlerts(false)} width={900}>
-            <Table rowKey={(_, i) => String(i)} dataSource={[]} pagination={{ pageSize: 10 }} columns={[
+            <Table <AlertRow>rowKey={(_, i) => String(i)} dataSource={[]} pagination={{ pageSize: 10 }} columns={[
               { title: "เดือน", dataIndex: "month_year" },
               { title: "พารามิเตอร์", dataIndex: "parameter" },
               { title: "ค่าเฉลี่ย", dataIndex: "average", render: (v: number, r) => `${fmt2(v)} ${r.unit || ""}`.trim() },
