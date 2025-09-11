@@ -1,5 +1,5 @@
 package line
-
+//
 import (
 	"bytes"
 	"encoding/json"

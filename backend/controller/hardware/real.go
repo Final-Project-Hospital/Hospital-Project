@@ -1,5 +1,5 @@
 package hardware
-
+//
 import (
 	"bytes"
 	"context"
