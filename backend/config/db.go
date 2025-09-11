@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 	"log"
-	"os"
+	//"os"
 
 	"github.com/Tawunchai/hospital-project/entity"
 	"gorm.io/driver/postgres"
@@ -17,23 +17,10 @@ var db *gorm.DB
 func DB() *gorm.DB {
 	return db
 }
-//locolhost
-// func ConnectionDB() {
-// 	dsn := "host=localhost user=postgres password=1234 dbname=hospital port=5432 sslmode=disable TimeZone=Asia/Bangkok"
 
-// 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-// 		Logger: logger.Default.LogMode(logger.Error),
-// 	})
-// 	if err != nil {
-// 		panic("failed to connect to PostgreSQL database")
-// 	}
-
-// 	fmt.Println("✅ connected to PostgreSQL database")
-// 	db = database
-// }
-// deploy
 func ConnectionDB() {
-    dsn := os.Getenv("DATABASE_URL") // ← ต้องเป็นชื่อ ENV VAR
+    //dsn := os.Getenv("DATABASE_URL") // ← ต้องเป็นชื่อ ENV VAR
+	dsn := "host=localhost user=postgres password=1234 dbname=hospital port=5432 sslmode=disable TimeZone=Asia/Bangkok"
     if dsn == "" {
         log.Fatal("DATABASE_URL is not set")
     }
@@ -191,14 +178,6 @@ func SetupDatabase() {
 	db.FirstOrCreate(&Position2, &entity.Position{Position: "Doctor"})
 	db.FirstOrCreate(&Position3, &entity.Position{Position: "unknown"})
 
-	// Building
-	Building1 := entity.Building{BuildingName: "รัตนเวชพัฒน์"}
-	Building2 := entity.Building{BuildingName: "ศูนย์ความเป็นเลิศทางการแพทย์"}
-	Building3 := entity.Building{BuildingName: "อาคารทันตกรรม"}
-
-	db.FirstOrCreate(&Building1, &entity.Building{BuildingName: "รัตนเวชพัฒน์"})
-	db.FirstOrCreate(&Building2, &entity.Building{BuildingName: "ศูนย์ความเป็นเลิศทางการแพทย์"})
-	db.FirstOrCreate(&Building3, &entity.Building{BuildingName: "อาคารทันตกรรม"})
 
 	hashedPassword, err := HashPassword("123")
 	if err != nil {
@@ -243,6 +222,16 @@ func SetupDatabase() {
 		RoleID:     1,
 	}
 	db.FirstOrCreate(&Admin, entity.Employee{Email: "admin@gmail.com"})
+
+	// Building
+	adminid := uint(1)
+	Building1 := entity.Building{BuildingName: "รัตนเวชพัฒน์", EmployeeID: &adminid}
+	Building2 := entity.Building{BuildingName: "ศูนย์ความเป็นเลิศทางการแพทย์", EmployeeID: &adminid}
+	Building3 := entity.Building{BuildingName: "อาคารทันตกรรม", EmployeeID: &adminid}
+
+	db.FirstOrCreate(&Building1, &entity.Building{BuildingName: "รัตนเวชพัฒน์"})
+	db.FirstOrCreate(&Building2, &entity.Building{BuildingName: "ศูนย์ความเป็นเลิศทางการแพทย์"})
+	db.FirstOrCreate(&Building3, &entity.Building{BuildingName: "อาคารทันตกรรม"})
 
 	// เช็คว่ามีข้อมูลอยู่หรือยัง
 	var colorCount, graphCount, paramCount, unitCount int64
@@ -297,7 +286,7 @@ func SetupDatabase() {
 		db.FirstOrCreate(&unitPercent, entity.UnitHardware{Unit: "%"})
 
 		//Token Line Master
-		lineMaster := entity.LineMaster{Token: "qNf5S5s+Rkqr0gFDW++ObPJzfhUbCbWwbEdCeDzVIzhsSqe3R1HyycZOtY2+NSuBCZ8NIWO9jhx/a2cmUA+kbuL3GNfyp5Ze+4sj5lBY403ndhyoEqlpI90eaV/Kp0sc92opJl5uAYH9QSIKIWpq1wdB04t89/1O/w1cDnyilFU="}
+		lineMaster := entity.LineMaster{Token: "qNf5S5s+Rkqr0gFDW++ObPJzfhUbCbWwbEdCeDzVIzhsSqe3R1HyycZOtY2+NSuBCZ8NIWO9jhx/a2cmUA+kbuL3GNfyp5Ze+4sj5lBY403ndhyoEqlpI90eaV/Kp0sc92opJl5uAYH9QSIKIWpq1wdB04t89/1O/w1cDnyilFU=",EmployeeID: &adminid}
 		db.FirstOrCreate(&lineMaster, entity.LineMaster{Token: "qNf5S5s+Rkqr0gFDW++ObPJzfhUbCbWwbEdCeDzVIzhsSqe3R1HyycZOtY2+NSuBCZ8NIWO9jhx/a2cmUA+kbuL3GNfyp5Ze+4sj5lBY403ndhyoEqlpI90eaV/Kp0sc92opJl5uAYH9QSIKIWpq1wdB04t89/1O/w1cDnyilFU="})
 
 		// ----- สร้าง Parameter พร้อมผูก StandardHardwareID และ UnitHardwareID -----

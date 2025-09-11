@@ -611,11 +611,11 @@ func main() {
 		c.String(http.StatusOK, "API RUNNING... PORT: %s", PORT)
 	})
 
-	// r.Run("localhost:" + PORT)
-	r.Run("0.0.0.0:" + PORT)
+	r.Run("localhost:" + PORT)
+	// r.Run("0.0.0.0:" + PORT)
 
 }
-//locolhost
+
 // func CORSMiddleware() gin.HandlerFunc {
 // 	return func(c *gin.Context) {
 // 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
