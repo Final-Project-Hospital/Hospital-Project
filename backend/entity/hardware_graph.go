@@ -6,7 +6,7 @@ import (
 
 type HardwareGraph struct {
 	gorm.Model
-	Graph string `valid:"required~Graph is required"`
+	Graph	string
 
-	HardwareParameter []HardwareParameter `gorm:"foreignKey:HardwareGraphID" valid:"-"`
+	HardwareParameter []HardwareParameter `gorm:"foreignKey: HardwareGraphID"`
 }

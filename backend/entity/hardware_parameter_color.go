@@ -6,7 +6,7 @@ import (
 
 type HardwareParameterColor struct {
 	gorm.Model
-	Code string `valid:"required~Code is required"`
+	Code  string 
 
-	HardwareParameter []HardwareParameter `gorm:"foreignKey:HardwareParameterColorID" valid:"-"`
+	HardwareParameter []HardwareParameter `gorm:"foreignKey:HardwareParameterColorID"`
 }

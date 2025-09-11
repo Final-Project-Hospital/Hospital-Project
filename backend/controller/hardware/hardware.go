@@ -7,7 +7,6 @@ import (
 
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
-	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -239,6 +238,7 @@ func ListColors(c *gin.Context) {
 
 func UpdateUnitHardwareByID(c *gin.Context) {
 	id := c.Param("id")
+
 	db := config.DB()
 
 	// 1) หา UnitHardware ก่อน
@@ -250,31 +250,22 @@ func UpdateUnitHardwareByID(c *gin.Context) {
 
 	// 2) รับ payload
 	var input struct {
-		Unit       string `json:"unit"`
+		Unit       string `json:"unit" binding:"required"`
 		EmployeeID *uint  `json:"employee_id"` // optional
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
-		return
-	}
-
-	// 3) อัปเดตค่า unit (merge เข้ากับ entity)
-	unit.Unit = input.Unit
-
-	// ✅ Validate struct หลัง merge
-	ok, err := govalidator.ValidateStruct(unit)
-	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 4) Save UnitHardware
+	// 3) อัปเดตค่า unit
+	unit.Unit = input.Unit
 	if err := db.Save(&unit).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update UnitHardware: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 5) ถ้ามี employee_id → อัปเดต HardwareParameter.EmployeeID
+	// 4) ถ้ามี employee_id → อัปเดต HardwareParameter.EmployeeID
 	var rowsAffected int64 = 0
 	if input.EmployeeID != nil {
 		tx := db.Model(&entity.HardwareParameter{}).
@@ -288,13 +279,12 @@ func UpdateUnitHardwareByID(c *gin.Context) {
 		rowsAffected = tx.RowsAffected
 	}
 
-	// 6) ตอบกลับ
+	// 5) ตอบกลับ
 	c.JSON(http.StatusOK, gin.H{
 		"unit":         unit,
-		"updated_rows": rowsAffected,
+		"updated_rows": rowsAffected, // จำนวน HardwareParameter ที่ถูกอัปเดต employee_id
 	})
 }
-
 
 func UpdateStandardHardwareByID(c *gin.Context) {
 	id := c.Param("id")
@@ -313,11 +303,11 @@ func UpdateStandardHardwareByID(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// ✅ merge ค่าใหม่เข้ากับ entity
+	// ✅ อัปเดตค่าที่รับมา
 	if input.MaxValueStandard != nil {
 		standard.MaxValueStandard = *input.MaxValueStandard
 	}
@@ -325,16 +315,8 @@ func UpdateStandardHardwareByID(c *gin.Context) {
 		standard.MinValueStandard = *input.MinValueStandard
 	}
 
-	// ✅ Validate struct ตาม tag ใน entity.StandardHardware
-	ok, err := govalidator.ValidateStruct(standard)
-	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// ✅ Save
 	if err := db.Save(&standard).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update StandardHardware: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -708,10 +690,10 @@ func UpdateHardwareParameterColorByID(c *gin.Context) {
 
 	var req struct {
 		Code       *string `json:"code"`
-		EmployeeID *uint   `json:"employee_id"`
+		EmployeeID *uint   `json:"employee_id"` // ✅ เพิ่ม field optional สำหรับอัปเดตพนักงานผู้รับผิดชอบ
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -722,22 +704,18 @@ func UpdateHardwareParameterColorByID(c *gin.Context) {
 		return
 	}
 
-	// 4) อัปเดตค่าใหม่
+	// 4) เตรียม fields ที่จะ update เฉพาะในตารางสี
+	updateFields := map[string]interface{}{}
 	if req.Code != nil {
-		color.Code = *req.Code
+		updateFields["code"] = *req.Code
 	}
 
-	// ✅ Validate struct หลัง merge
-	ok, err := govalidator.ValidateStruct(color)
-	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// 5) Save
-	if err := config.DB().Save(&color).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update HardwareParameterColor: " + err.Error()})
-		return
+	// 5) Update สี (ถ้ามี field ให้แก้)
+	if len(updateFields) > 0 {
+		if err := config.DB().Model(&color).Updates(updateFields).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	// 6) ถ้ามี employee_id ให้ไปอัปเดต HardwareParameter.EmployeeID
@@ -749,12 +727,11 @@ func UpdateHardwareParameterColorByID(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": tx.Error.Error()})
 			return
 		}
+
 	}
 
-	// 7) ตอบกลับ
 	c.JSON(http.StatusOK, color)
 }
-
 
 type checkPasswordRequest struct {
 	Password string `json:"password" binding:"required"`

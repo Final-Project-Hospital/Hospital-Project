@@ -15,7 +15,6 @@ import (
 
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
-	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
 )
 
@@ -44,6 +43,7 @@ func getLineToken() (string, error) {
 	}
 	return lm.Token, nil
 }
+
 
 func SendWarningToLINE(userID string, message string) error {
 	url := "https://api.line.me/v2/bot/message/push"
@@ -101,13 +101,6 @@ func ReadDataForHardware(c *gin.Context) {
 			Name:       input.Name,
 			MacAddress: input.MacAddress,
 		}
-
-		ok, err := govalidator.ValidateStruct(hardware)
-		if !ok {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
 		if err := db.Create(&hardware).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create hardware"})
 			return
@@ -140,8 +133,8 @@ func ReadDataForHardware(c *gin.Context) {
 	var createdParamIDs []uint
 
 	// กลุ่มข้อความแจ้งเตือน
-	var overParts []string      // เกิน Max
-	var underParts []string     // ต่ำกว่า Min
+	var overParts []string     // เกิน Max
+	var underParts []string    // ต่ำกว่า Min
 	var nearUnderParts []string // ใกล้ต่ำกว่า Min
 
 	for _, p := range input.Parameters {
@@ -184,11 +177,11 @@ func ReadDataForHardware(c *gin.Context) {
 				HardwareParameterColorID: 1,
 				Icon:                     "GiChemicalDrop",
 				Alert:                    false,
-				Right:                    true,
-				GroupDisplay:             false,
-				LayoutDisplay:            false,
-				EmployeeID:               1,
-				Index:                    1,
+				Right: true,
+				GroupDisplay: false,
+				LayoutDisplay: false,
+				EmployeeID: 1,
+				Index: 1,
 			}
 			if err := db.Create(&hp).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create hardware parameter"})
@@ -204,14 +197,6 @@ func ReadDataForHardware(c *gin.Context) {
 			SensorDataID:        sensorData.ID,
 			HardwareParameterID: hp.ID,
 		}
-
-		// ✅ Validate struct ก่อนบันทึก
-		ok, err := govalidator.ValidateStruct(sdp)
-		if !ok {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		
 		if err := db.Create(&sdp).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create sensor data parameter"})
 			return
@@ -327,6 +312,7 @@ func safeInt(i int) string {
 	return strconv.Itoa(i)
 }
 
+
 // WebhookPayload จาก LINE
 type WebhookPayload struct {
 	Events []struct {
@@ -348,8 +334,8 @@ var (
 	// userId → {count, expiresAt}
 	userRateLimit   = make(map[string]*rateInfo)
 	rateLimitMu     sync.Mutex
-	rateLimitMax    = 10          // จำกัด 10 ข้อความ
-	rateLimitWindow = time.Minute // ต่อ 1 นาที
+	rateLimitMax    = 10              // จำกัด 10 ข้อความ
+	rateLimitWindow = time.Minute     // ต่อ 1 นาที
 )
 
 type rateInfo struct {

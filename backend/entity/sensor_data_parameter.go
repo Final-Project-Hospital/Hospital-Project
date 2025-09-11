@@ -8,13 +8,13 @@ import (
 
 type SensorDataParameter struct {
 	gorm.Model
-	Date time.Time `valid:"required~Date is required"`
-	Data float64   `valid:"required~Data is required"`
-	Note string    // ไม่ต้อง validate
+	Date time.Time
+	Data	float64
+	Note string
 
-	SensorDataID uint        `valid:"required~SensorDataID is required"`
-	SensorData   *SensorData `gorm:"foreignKey:SensorDataID" valid:"-"`
+	SensorDataID	uint
+	SensorData	*SensorData `gorm:"foreignKey: SensorDataID"`
 
-	HardwareParameterID uint               `valid:"required~HardwareParameterID is required"`
-	HardwareParameter   *HardwareParameter `gorm:"foreignKey:HardwareParameterID" valid:"-"`
+	HardwareParameterID	uint
+	HardwareParameter	*HardwareParameter `gorm:"foreignKey: HardwareParameterID"`
 }

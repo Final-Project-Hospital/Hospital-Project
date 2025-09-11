@@ -3,10 +3,9 @@ package room
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/Tawunchai/hospital-project/config"
 	"github.com/Tawunchai/hospital-project/entity"
-	"github.com/asaskevich/govalidator"
-	"github.com/gin-gonic/gin"
 )
 
 func ListRoom(c *gin.Context) {
@@ -25,28 +24,18 @@ func ListRoom(c *gin.Context) {
 func CreateRoom(c *gin.Context) {
 	var room entity.Room
 
-	// Bind JSON
 	if err := c.ShouldBindJSON(&room); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: " + err.Error()})
-		return
-	}
-
-	// ✅ Validate struct ตาม tag ใน entity.Room
-	ok, err := govalidator.ValidateStruct(room)
-	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// ✅ Save ลง DB
 	if err := config.DB().Create(&room).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create room: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusCreated, room)
 }
-
 
 func UpdateRoom(c *gin.Context) {
 	var room entity.Room
@@ -58,7 +47,7 @@ func UpdateRoom(c *gin.Context) {
 		return
 	}
 
-	// รับข้อมูล JSON
+	// รับข้อมูล JSON และรวม Icon ด้วย
 	var input struct {
 		RoomName   *string `json:"RoomName"`
 		Floor      *int    `json:"Floor"`
@@ -69,11 +58,11 @@ func UpdateRoom(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// ✅ อัปเดตเฉพาะค่าที่ไม่เป็น nil
+	// อัปเดตเฉพาะค่าที่ไม่เป็น nil
 	if input.RoomName != nil {
 		room.RoomName = *input.RoomName
 	}
@@ -93,21 +82,15 @@ func UpdateRoom(c *gin.Context) {
 		room.HardwareID = *input.HardwareID
 	}
 
-	// ✅ Validate struct หลังจาก merge
-	ok, err := govalidator.ValidateStruct(room)
-	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
 	// Save
 	if err := config.DB().Save(&room).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update room: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, room)
 }
+
 
 func DeleteRoomById(c *gin.Context) {
 	id := c.Param("id")

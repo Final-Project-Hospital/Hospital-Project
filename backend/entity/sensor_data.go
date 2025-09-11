@@ -7,10 +7,10 @@ import (
 
 type SensorData struct {
 	gorm.Model
-	Date time.Time `valid:"required~Date is required"`
+	Date	time.Time
 
-	HardwareID uint      `valid:"required~HardwareID is required"`
-	Hardware   *Hardware `gorm:"foreignKey:HardwareID" valid:"-"`
+	HardwareID	uint
+	Hardware	*Hardware `gorm:"foreignKey: HardwareID"`
 
-	SensorDataParameter []SensorDataParameter `gorm:"foreignKey:SensorDataID" valid:"-"`
+	SensorDataParameter	[]SensorDataParameter `gorm:"foreignKey: SensorDataID"`
 }

@@ -7,12 +7,12 @@ import (
 
 type Calendar struct {
 	gorm.Model
-	Title       string `valid:"required~Title is required,length(1|100)~Title must be between 1 and 100 characters"`
-	Location    string `valid:"required~Location is required"`
-	Description string `valid:"required~Description is required"`
-	StartDate   time.Time `valid:"required~Start date is required"`
-	EndDate     time.Time `valid:"required~End date is required"`
+	Title       string
+	Location    string
+	Description string
+	StartDate   time.Time
+	EndDate     time.Time
 
-	EmployeeID *uint `valid:"required~EmployeeID is required"`
-	Employee   Employee `gorm:"foreignKey:EmployeeID" valid:"-"`
+	EmployeeID *uint
+	Employee   Employee `gorm:"foreignKey:EmployeeID"`
 }

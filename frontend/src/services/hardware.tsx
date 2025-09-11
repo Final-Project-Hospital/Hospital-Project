@@ -160,17 +160,12 @@ export const ListBuilding = async (): Promise<BuildingInterface[] | null> => {
   }
 };
 
-// ✅ Create (map -> snake_case)
+// ✅ Create Building
 export const CreateBuilding = async (
-  data: { BuildingName: string; EmployeeID?: number | null }
+  data: BuildingInterface
 ): Promise<BuildingInterface | null> => {
-  const payload: any = {
-    building_name: data.BuildingName,
-  };
-  if (data.EmployeeID !== undefined) payload.employee_id = data.EmployeeID;
-
   try {
-    const response = await axios.post(`${apiUrl}/create-buildings`, payload, {
+    const response = await axios.post(`${apiUrl}/create-buildings`, data, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -178,32 +173,24 @@ export const CreateBuilding = async (
     });
 
     if (response.status === 200 || response.status === 201) {
-      return response.data as BuildingInterface;
+      return response.data;
     } else {
-      console.error("Unexpected status:", response.status, response.data);
+      console.error("Unexpected status:", response.status);
       return null;
     }
-  } catch (error: any) {
-    if (error.response) {
-      console.error("Error creating building:", error.response.status, error.response.data);
-    } else {
-      console.error("Error creating building:", error.message);
-    }
+  } catch (error) {
+    console.error("Error creating building:", error);
     return null;
   }
 };
 
-// ✅ Update (partial + map -> snake_case)
+// ✅ Update Building by ID
 export const UpdateBuildingByID = async (
   id: number,
-  data: { BuildingName?: string; EmployeeID?: number | null }
+  data: BuildingInterface
 ): Promise<BuildingInterface | null> => {
-  const payload: any = {};
-  if (data.BuildingName !== undefined) payload.building_name = data.BuildingName;
-  if (data.EmployeeID !== undefined) payload.employee_id = data.EmployeeID;
-
   try {
-    const response = await axios.put(`${apiUrl}/update-buildings/${id}`, payload, {
+    const response = await axios.put(`${apiUrl}/update-buildings/${id}`, data, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -211,17 +198,13 @@ export const UpdateBuildingByID = async (
     });
 
     if (response.status === 200) {
-      return response.data as BuildingInterface;
+      return response.data;
     } else {
-      console.error("Unexpected status:", response.status, response.data);
+      console.error("Unexpected status:", response.status);
       return null;
     }
-  } catch (error: any) {
-    if (error.response) {
-      console.error("Error updating building:", error.response.status, error.response.data);
-    } else {
-      console.error("Error updating building:", error.message);
-    }
+  } catch (error) {
+    console.error("Error updating building:", error);
     return null;
   }
 };

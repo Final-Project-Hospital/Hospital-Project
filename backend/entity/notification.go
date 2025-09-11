@@ -6,9 +6,9 @@ import (
 
 type Notification struct {
 	gorm.Model
-	Name   string `valid:"required~Name is required"`
-	UserID string `valid:"required~UserID is required"`
-	Alert  bool   
+	Name string
+	UserID string
+	Alert bool
 
-	RoomNotification []RoomNotification `gorm:"foreignKey:NotificationID" valid:"-"`
+	RoomNotification []RoomNotification `gorm:"foreignKey: NotificationID"`
 }
