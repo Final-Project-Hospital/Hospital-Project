@@ -139,6 +139,60 @@ export const ListHardware = async (): Promise<HardwareInterface[] | null> => {
   }
 };
 
+export const UpdateHardwareByID = async (
+  id: number,
+  name: string
+): Promise<HardwareInterface | null> => {
+  try {
+    const response = await axios.put(
+      `${apiUrl}/update-hardware/${id}`,
+      { name }, 
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error updating hardware:", error);
+    return null;
+  }
+};
+
+export const DeleteHardwareByID = async (
+  id: number
+): Promise<boolean> => {
+  try {
+    const response = await axios.delete(
+      `${apiUrl}/delete-hardware/${id}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      return true;
+    } else {
+      console.error("Unexpected status:", response.status);
+      return false;
+    }
+  } catch (error) {
+    console.error("Error deleting hardware:", error);
+    return false;
+  }
+};
+
 export const ListBuilding = async (): Promise<BuildingInterface[] | null> => {
   try {
     const response = await axios.get(`${apiUrl}/buildings`, {
