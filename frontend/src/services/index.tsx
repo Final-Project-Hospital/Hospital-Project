@@ -7,11 +7,11 @@ import { ListStatusInterface } from "../interface/IStatus";
 import { ListMiddleTargetInterface, ListRangeTargetInterface, ListTargetInterface, AddMiddleTargetInterface, AddRangeTargetInterface } from "../interface/ITarget";
 import { ListMiddleStandardInterface, ListRangeStandardInterface, ListStandardInterface, AddMiddleStandardInterface, AddRangeStandardInterface } from "../interface/IStandard";
 
-//export const apiUrl = "http://10.0.14.228:8000";
+//export const apiUrl = "http://10.0.3.231:8000";
 //export const apiUrl = "http://10.1.151.69:8000";
-// export const apiUrl = "http://localhost:8000";
+ export const apiUrl = "http://localhost:8000";
 // export const apiUrl = import.meta.env.VITE_API_URL
-export const apiUrl = "https://hospital-project-production-965f.up.railway.app"
+//export const apiUrl = "https://hospital-project-production-965f.up.railway.app"
 // export const apiUrl = "http://159.89.206.150:8000"
 
 const Authorization = localStorage.getItem("token");
