@@ -151,6 +151,18 @@ const AdminDashboard: React.FC = () => {
   const [autoRange, setAutoRange] = useState(true);
   const [latestGraphDate, setLatestGraphDate] = useState<Dayjs | null>(null);
 
+  // --- Responsive helpers (ช่วงจอใหม่: mobile <768, iPad 768–1280) ---
+  const [vw, setVw] = useState<number>(() => window.innerWidth);
+  useEffect(() => {
+    const onResize = () => setVw(window.innerWidth);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const isMobile = vw < 768; // มือถือ
+  const isTablet = vw >= 768 && vw <= 1200; // iPad/Tablet
+
   const [chartColor, setChartColor] = useState({
     before: "#00C2C7",
     after: "#33E944",
@@ -200,7 +212,13 @@ const AdminDashboard: React.FC = () => {
   >("line");
   const [compareMonthlyGarbageQuantity, setCompareMonthlyGarbageQuantity] =
     useState<
-      { label: string; monthKey: string; waste: number; people: number; unit: string }[]
+      {
+        label: string;
+        monthKey: string;
+        waste: number;
+        people: number;
+        unit: string;
+      }[]
     >([]);
 
   useEffect(() => {
@@ -212,7 +230,8 @@ const AdminDashboard: React.FC = () => {
         const m = await GetEnvironmentalMeta();
         if (cancelled) return;
         if (Array.isArray(m) && m.length > 0) {
-          const envWithParams = m.find((e) => (e.params ?? []).length > 0) ?? m[0];
+          const envWithParams =
+            m.find((e) => (e.params ?? []).length > 0) ?? m[0];
           const dedupedParams = Array.from(
             new Map(
               (envWithParams.params ?? []).map((p: { name: any }) => [
@@ -256,7 +275,8 @@ const AdminDashboard: React.FC = () => {
         );
         const sorted = filtered.sort(
           (a: any, b: any) =>
-            new Date(b?.data?.Date).getTime() - new Date(a?.data?.Date).getTime()
+            new Date(b?.data?.Date).getTime() -
+            new Date(a?.data?.Date).getTime()
         );
         if (!cancel) setBellAlerts(sorted.slice(0, 3));
       } catch (e: any) {
@@ -772,7 +792,8 @@ const AdminDashboard: React.FC = () => {
     if (filterMode === "year") {
       const y0 = dateRange?.[0]?.year() ?? dayjs().year();
       const y1 = dateRange?.[1]?.year() ?? dayjs().year();
-      for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) keys.push(String(y));
+      for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++)
+        keys.push(String(y));
       labelsLocal = keys.map((y) => String(Number(y) + 543));
     } else {
       keys = labelsKeys;
@@ -858,7 +879,9 @@ const AdminDashboard: React.FC = () => {
         setGarbageLoading(true);
         setGarbageError(null);
         const keys = monthKeysForGarbage;
-        const results = await Promise.all(keys.map((m) => fetchWasteMixMonthSafe(m)));
+        const results = await Promise.all(
+          keys.map((m) => fetchWasteMixMonthSafe(m))
+        );
         if (cancelled) return;
 
         const pts: Array<{ x: string; y: number }> = [];
@@ -915,7 +938,9 @@ const AdminDashboard: React.FC = () => {
     });
     (async () => {
       const keys = monthKeysForGarbage;
-      const results = await Promise.all(keys.map((m) => fetchWasteMixMonthSafe(m)));
+      const results = await Promise.all(
+        keys.map((m) => fetchWasteMixMonthSafe(m))
+      );
       const rows: {
         label: string;
         monthKey: string;
@@ -1038,7 +1063,8 @@ const AdminDashboard: React.FC = () => {
       const avgAfter = aArr.length
         ? aArr.reduce((s, x) => s + x, 0) / aArr.length
         : 0;
-      const pct = avgBefore > 0 ? Math.max(0, ((avgBefore - avgAfter) / avgBefore) * 100) : 0;
+      const pct =
+        avgBefore > 0 ? Math.max(0, ((avgBefore - avgAfter) / avgBefore) * 100) : 0;
       return +pct.toFixed(2);
     });
 
@@ -1259,6 +1285,7 @@ const AdminDashboard: React.FC = () => {
         background: "transparent",
       },
       labels: (wasteMix || []).map((w) => w.parameter),
+
       legend: {
         position: "right",
         horizontalAlign: "left",
@@ -1274,6 +1301,7 @@ const AdminDashboard: React.FC = () => {
           return `${seriesName} — ${pct.toFixed(2)}%`;
         },
       },
+
       dataLabels: {
         enabled: true,
         formatter: (val: number | string) =>
@@ -1281,6 +1309,7 @@ const AdminDashboard: React.FC = () => {
         style: { fontSize: "12px", fontWeight: 700, colors: ["#FFFFFF"] },
         dropShadow: { enabled: false },
       },
+
       stroke: { width: 0 },
       tooltip: {
         theme: "dark",
@@ -1289,6 +1318,7 @@ const AdminDashboard: React.FC = () => {
             `${fmt2(val)} ${(wasteMix[opts.seriesIndex] as any)?.unit || "kg"}`,
         },
       },
+
       plotOptions: {
         pie: {
           dataLabels: { offset: -6, minAngleToShowLabel: 0 },
@@ -1305,9 +1335,9 @@ const AdminDashboard: React.FC = () => {
               },
               total: {
                 show: true,
-                label: "รวม",
-                fontSize: "13px",
-                color: "##000000",
+                label: "รวมทั้งหมด",
+                fontSize: "11px",
+                color: "#000000",
                 formatter: (w) => {
                   const s =
                     (w?.globals?.seriesTotals as number[] | undefined)?.reduce(
@@ -1321,6 +1351,7 @@ const AdminDashboard: React.FC = () => {
           },
         },
       },
+
       colors: [
         "#8a6c12ff",
         "#ff2121ff",
@@ -1335,13 +1366,63 @@ const AdminDashboard: React.FC = () => {
         hover: { filter: { type: "lighten", value: 0.02 } },
         active: { filter: { type: "darken", value: 0.04 } },
       },
+
       responsive: [
         {
-          breakpoint: 640,
+          // iPad/Tablet (<= 1280px)
+          breakpoint: 1280,
           options: {
-            dataLabels: { style: { fontSize: "10px" } },
-            plotOptions: { pie: { dataLabels: { offset: -4 } } },
-            legend: { fontSize: "10px" },
+            legend: {
+              position: "bottom",
+              horizontalAlign: "center",
+              fontSize: "8px",
+              markers: { size: 5 },
+              itemMargin: { vertical: 4, horizontal: 10 },
+            },
+            plotOptions: {
+              pie: {
+                dataLabels: { offset: -6 },
+                donut: {
+                  size: "65%",
+                  labels: {
+                    name: { fontSize: "12px" },
+                    value: { fontSize: "19px" },
+                    total: { fontSize: "12px" },
+                  },
+                },
+              },
+            },
+            dataLabels: {
+              style: { fontSize: "10px", fontWeight: 700 },
+            },
+          },
+        },
+        {
+          // Mobile (<= 768px)
+          breakpoint: 768,
+          options: {
+            legend: {
+              position: "bottom",
+              horizontalAlign: "center",
+              fontSize: "10px",
+              markers: { size: 5 },
+            },
+            plotOptions: {
+              pie: {
+                dataLabels: { offset: -4 },
+                donut: {
+                  size: "65%",
+                  labels: {
+                    name: { fontSize: "12px" },
+                    value: { fontSize: "18px" },
+                    total: { fontSize: "14px" },
+                  },
+                },
+              },
+            },
+            dataLabels: {
+              style: { fontSize: "10px", fontWeight: 700, colors: ["#FFFFFF"] },
+            },
           },
         },
       ],
@@ -1377,6 +1458,21 @@ const AdminDashboard: React.FC = () => {
         "#EF9A9A",
         "#90CAF9",
       ],
+      // ★ CHANGED: ป้องกันชนบนมือถือ – ย้าย legend ลงล่าง + ลด donut size
+      responsive: [
+        {
+          breakpoint: 768,
+          options: {
+            legend: {
+              position: "bottom",
+              horizontalAlign: "center",
+              fontSize: "9px",
+              markers: { size: 6 },
+            },
+            plotOptions: { pie: { donut: { size: "70%" } } },
+          },
+        },
+      ],
     }),
     [donutMonths]
   );
@@ -1409,11 +1505,30 @@ const AdminDashboard: React.FC = () => {
         "#EF9A9A",
         "#80CBC4",
       ],
+      // ★ CHANGED: แบบเดียวกับยอดขาย – บนมือถือ
+      responsive: [
+        {
+          breakpoint: 768,
+          options: {
+            legend: {
+              position: "bottom",
+              horizontalAlign: "center",
+              fontSize: "9px",
+              markers: { size: 6 },
+            },
+            plotOptions: { pie: { donut: { size: "70%" } } },
+          },
+        },
+      ],
     }),
     [qtyMonths]
   );
 
   const graphHeight = !isGarbage && bellAlerts.length > 0 ? 350 : 400;
+  const wasteDonutHeight = isMobile ? 340 : isTablet ? 290 : 287;
+
+  // ★ CHANGED: ขนาดโดนัทในการ์ดขวา (สองใบ) ตามหน้าจอ
+  const cardDonutSize = isMobile ? 170 : isTablet ? 190 : 210;
 
   return (
     <>
@@ -1461,9 +1576,7 @@ const AdminDashboard: React.FC = () => {
                       setSelectedEnvId(v);
                       const all = metas.find((e) => e.id === v)?.params ?? [];
                       const deduped = Array.from(
-                        new Map(
-                          all.map((p) => [norm(p.name || ""), p])
-                        ).values()
+                        new Map(all.map((p) => [norm(p.name || ""), p])).values()
                       );
                       setSelectedParamId(deduped.length ? deduped[0].id : null);
                       setAutoRange(true);
@@ -1522,16 +1635,14 @@ const AdminDashboard: React.FC = () => {
                       const def =
                         val === "year"
                           ? ([
-                              base
-                                .subtract(11, "month")
-                                .startOf("month"),
+                              base.subtract(11, "month").startOf("month"),
                               base.endOf("month"),
                             ] as [Dayjs, Dayjs])
                           : val === "month"
-                          ? ([
-                              base.startOf("month"),
-                              base.endOf("month"),
-                            ] as [Dayjs, Dayjs])
+                          ? ([base.startOf("month"), base.endOf("month")] as [
+                              Dayjs,
+                              Dayjs
+                            ])
                           : ([
                               base.subtract(6, "day").startOf("day"),
                               base.endOf("day"),
@@ -1594,10 +1705,7 @@ const AdminDashboard: React.FC = () => {
                         setAutoRange(false);
                         setDateRange(
                           dates && dates[0] && dates[1]
-                            ? [
-                                dates[0].startOf("year"),
-                                dates[1].endOf("year"),
-                              ]
+                            ? [dates[0].startOf("year"), dates[1].endOf("year")]
                             : null
                         );
                       }}
@@ -1651,21 +1759,22 @@ const AdminDashboard: React.FC = () => {
                         }
                       />
                     )}
-                    {!isGarbage && (isSingleEnv || view === "before" || view === "after") && (
-                      <ColorPicker
-                        value={
-                          isSingleEnv || view === "after"
-                            ? chartColor.after
-                            : chartColor.before
-                        }
-                        onChange={(c: Color) => {
-                          const hex = c.toHexString();
-                          if (isSingleEnv || view === "after")
-                            setChartColor({ ...chartColor, after: hex });
-                          else setChartColor({ ...chartColor, before: hex });
-                        }}
-                      />
-                    )}
+                    {!isGarbage &&
+                      (isSingleEnv || view === "before" || view === "after") && (
+                        <ColorPicker
+                          value={
+                            isSingleEnv || view === "after"
+                              ? chartColor.after
+                              : chartColor.before
+                          }
+                          onChange={(c: Color) => {
+                            const hex = c.toHexString();
+                            if (isSingleEnv || view === "after")
+                              setChartColor({ ...chartColor, after: hex });
+                            else setChartColor({ ...chartColor, before: hex });
+                          }}
+                        />
+                      )}
                     {!isGarbage && !isSingleEnv && view === "compare" && (
                       <>
                         <ColorPicker
@@ -1702,7 +1811,12 @@ const AdminDashboard: React.FC = () => {
                   <div style={{ padding: 16, color: "red" }}>{garbageError}</div>
                 ) : (
                   <ApexChart
-                    key={String(selectedEnvId) + String(selectedParamId) + view + chartType}
+                    key={
+                      String(selectedEnvId) +
+                      String(selectedParamId) +
+                      view +
+                      chartType
+                    }
                     options={buildOpts("", true, mainYMaxHint)}
                     series={
                       isGarbage
@@ -1862,7 +1976,12 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                   <ApexChart
-                    options={buildOpts("ค่าสูงสุด/ต่ำสุด/เฉลี่ย", true, tapMinMaxYMax, tapAggLabels)}
+                    options={buildOpts(
+                      "ค่าสูงสุด/ต่ำสุด/เฉลี่ย",
+                      true,
+                      tapMinMaxYMax,
+                      tapAggLabels
+                    )}
                     series={tapMinMaxSeries}
                     type={chartType}
                     height={graphHeight}
@@ -1872,6 +1991,7 @@ const AdminDashboard: React.FC = () => {
             )}
           </Row>
 
+          {/*Component: Dashboard Alerts*/}
           <Card className="dashboard-alerts-card card-bleed" bordered={false}>
             <div className="teal-surface">
               <div className="teal-title">การแจ้งเตือนล่าสุด</div>
@@ -1884,7 +2004,7 @@ const AdminDashboard: React.FC = () => {
               ) : bellAlerts.length === 0 ? (
                 <div style={{ opacity: 0.95 }}>ไม่มีการแจ้งเตือน</div>
               ) : (
-                <div className="alert-chip-row">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 w-full">
                   {bellAlerts.map((item, idx) => {
                     const dt = new Date(item?.data?.Date);
                     const date = dt.toLocaleDateString("th-TH", {
@@ -1943,10 +2063,16 @@ const AdminDashboard: React.FC = () => {
                     options={wastePieOptions}
                     series={wastePieSeries}
                     type="donut"
-                    height={287}
+                    height={wasteDonutHeight}
                   />
                 ) : (
-                  <div style={{ background: "#fafafa", borderRadius: 12, padding: 16 }}>
+                  <div
+                    style={{
+                      background: "#fafafa",
+                      borderRadius: 12,
+                      padding: 16,
+                    }}
+                  >
                     <Empty description="ไม่มีข้อมูลสัดส่วนขยะของเดือนนี้" />
                   </div>
                 )}
@@ -1954,110 +2080,95 @@ const AdminDashboard: React.FC = () => {
             </Col>
 
             <Col xs={24} lg={12}>
-              <div className="dashboard-graph-card card card-bleed" style={{ overflow: "hidden" }}>
+              {/* การ์ด: ยอดขายรีไซเคิลรวมปี */}
+              <div className="dashboard-graph-card card card-bleed overflow-hidden">
                 <div
-                  style={{
-                    position: "relative",
-                    width: "100%",
-                    borderRadius: 12,
-                    color: "#fff",
-                    overflow: "hidden",
-                    background:
-                      "linear-gradient(180deg, #2abdbf 0%, #1f9a9c 70%, #138486 100%)",
-                    padding: 16,
-                    minHeight: 180,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
+                  className={
+                    // ★ CHANGED: flex-col บนมือถือ + เพิ่ม gap กันชน
+                    "relative w-full rounded-xl text-white overflow-hidden bg-gradient-to-b from-[#2abdbf] via-[#1f9a9c] to-[#138486] p-4 min-h-[160px] md:min-h-[180px] flex flex-col md:flex-row items-center md:items-center justify-between gap-2"
+                  }
                 >
-                  <div style={{ zIndex: 1 }}>
-                    <div style={{ fontSize: 18, opacity: 0.95, marginBottom: 8 }}>
+                  <div className="z-10">
+                    <div className="opacity-95 mb-2 text-sm sm:text-base md:text-[18px]">
                       จำนวนยอดขายรวมขยะรีไซเคิลปี {donutYearThai ?? "-"}
                     </div>
-                    <div style={{ fontSize: 36, fontWeight: 700, lineHeight: 1.1 }}>
+
+                    <div
+                      className={`font-bold leading-tight ${
+                        isMobile ? "text-2xl" : isTablet ? "text-2xl" : "text-4xl"
+                      }`}
+                    >
                       {fmt2(totalSaleYear)} บาท
                     </div>
-                    <div style={{ fontSize: 12, marginTop: 6, opacity: 0.95 }}>
+
+                    <div className="mt-1 opacity-95 text-[10px] sm:text-[11px] md:text-xs">
                       {lastRecordDate ? `Date per ${lastRecordDate}` : ""}
                     </div>
                   </div>
-                  <div style={{ zIndex: 1 }}>
+
+                  {/* ★ CHANGED: ตัด scale ออก กำหนดขนาดตามจอ */}
+                  <div className="z-10 origin-center">
                     <ApexChart
                       options={donutOptions}
                       series={donutSeries}
                       type="donut"
-                      width={180}
-                      height={180}
+                      width={cardDonutSize}
+                      height={cardDonutSize}
                     />
                   </div>
+
                   <div
+                    className="absolute right-0 top-0 w-[60%] h-[60%] rounded-bl-full pointer-events-none"
                     style={{
-                      position: "absolute",
-                      right: 0,
-                      top: 0,
-                      width: "60%",
-                      height: "60%",
-                      borderBottomLeftRadius: "100% 100%",
                       background:
                         "linear-gradient(135deg, rgba(219,218,218,0.45) 0%, rgba(255,255,255,0.25) 40%, rgba(255,255,255,0) 100%)",
-                      pointerEvents: "none",
                     }}
                   />
                 </div>
               </div>
 
-              <div
-                className="dashboard-graph-card card card-bleed"
-                style={{ overflow: "hidden", marginTop: 16 }}
-              >
+              {/* การ์ด: จำนวนผู้ใช้บริการรวมปี */}
+              <div className="dashboard-graph-card card card-bleed overflow-hidden mt-4">
                 <div
-                  style={{
-                    position: "relative",
-                    width: "100%",
-                    borderRadius: 12,
-                    color: "#fff",
-                    overflow: "hidden",
-                    background:
-                      "linear-gradient(180deg, #2abdbf 0%, #1f9a9c 70%, #138486 100%)",
-                    padding: 16,
-                    minHeight: 180,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
+                  className={
+                    // ★ CHANGED: flex-col บนมือถือ + เพิ่ม gap กันชน
+                    "relative w-full rounded-xl text-white overflow-hidden bg-gradient-to-b from-[#2abdbf] via-[#1f9a9c] to-[#138486] p-4 min-h-[160px] md:min-h-[180px] flex flex-col md:flex-row items-center md:items-center justify-between gap-2"
+                  }
                 >
-                  <div style={{ zIndex: 1 }}>
-                    <div style={{ fontSize: 18, opacity: 0.95, marginBottom: 8 }}>
+                  <div className="z-10">
+                    <div className="opacity-95 mb-2 text-sm sm:text-base md:text-[18px]">
                       จำนวนคนที่เข้าใช้บริการรวมปี {donutYearThai ?? "-"}
                     </div>
-                    <div style={{ fontSize: 36, fontWeight: 700, lineHeight: 1.1 }}>
+
+                    <div
+                      className={`font-bold leading-tight ${
+                        isMobile ? "text-2xl" : isTablet ? "text-2xl" : "text-4xl"
+                      }`}
+                    >
                       {fmt0(totalQtyYear)} คน
                     </div>
-                    <div style={{ fontSize: 12, marginTop: 6, opacity: 0.95 }}>
+
+                    <div className="mt-1 opacity-95 text-[10px] sm:text-[11px] md:text-xs">
                       {lastRecordDate ? `Date per ${lastRecordDate}` : ""}
                     </div>
                   </div>
-                  <div style={{ zIndex: 1 }}>
+
+                  {/* ★ CHANGED: ขนาดกราฟตามจอ */}
+                  <div className="z-10 origin-center">
                     <ApexChart
                       options={qtyDonutOptions}
                       series={qtySeries}
                       type="donut"
-                      width={180}
-                      height={180}
+                      width={cardDonutSize}
+                      height={cardDonutSize}
                     />
                   </div>
+
                   <div
+                    className="absolute right-0 top-0 w-[60%] h-[60%] rounded-bl-full pointer-events-none"
                     style={{
-                      position: "absolute",
-                      right: 0,
-                      top: 0,
-                      width: "60%",
-                      height: "60%",
-                      borderBottomLeftRadius: "100% 100%",
                       background:
                         "linear-gradient(135deg, rgba(219,218,218,0.45) 0%, rgba(255,255,255,0.25) 40%, rgba(255,255,255,0) 100%)",
-                      pointerEvents: "none",
                     }}
                   />
                 </div>
