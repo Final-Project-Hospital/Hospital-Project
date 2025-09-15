@@ -1,5 +1,5 @@
 // src/page/admin/AdminDashboard.tsx
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useTransition } from "react";
 import {
   Row,
   Col,
@@ -12,6 +12,7 @@ import {
   Segmented,
   Table,
   Empty,
+  Spin
 } from "antd";
 import type { Color } from "antd/es/color-picker";
 import type { Dayjs } from "dayjs";
@@ -94,15 +95,15 @@ const keyFromDate = (iso: string, mode: FilterMode) =>
 const labelFromKey = (key: string, mode: FilterMode) =>
   mode === "year"
     ? dayjs(key + "-01")
-        .toDate()
-        .toLocaleDateString("th-TH", { month: "short", year: "numeric" })
+      .toDate()
+      .toLocaleDateString("th-TH", { month: "short", year: "numeric" })
     : dayjs(key)
-        .toDate()
-        .toLocaleDateString("th-TH", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        });
+      .toDate()
+      .toLocaleDateString("th-TH", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
 
 const dFix = (n: any) => {
   const f = Number(n);
@@ -127,7 +128,7 @@ const normalizeMinMax = (arr: number[]) => {
 
 const AdminDashboard: React.FC = () => {
   const [metas, setMetas] = useState<EnvMeta[]>([]);
-  const [, setMetaLoading] = useState(false);
+  const [metaLoading, setMetaLoading] = useState(false);
   const [, setMetaError] = useState<string | null>(null);
 
   const [selectedEnvId, setSelectedEnvId] = useState<number | null>(null);
@@ -135,13 +136,16 @@ const AdminDashboard: React.FC = () => {
 
   const [rawData, setRawData] = useState<RecordItem[]>([]);
   const [, setEfficiency] = useState<EfficiencyItem[] | null>(null);
-  const [, setDataLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false);
   const [, setDataError] = useState<string | null>(null);
 
   const [view, setView] = useState<ViewType>("compare");
   const [chartType, setChartType] = useState<"line" | "bar">("line");
   const [showModal, setShowModal] = useState(false);
   const [showAllAlerts, setShowAllAlerts] = useState(false);
+
+  const [isParamPending, startParamTransition] = useTransition();
+  
 
   const [filterMode, setFilterMode] = useState<FilterMode>("year");
   const [dateRange, setDateRange] = useState<Dayjs[] | null>([
@@ -649,12 +653,12 @@ const AdminDashboard: React.FC = () => {
     const def =
       filterMode === "year"
         ? ([
-            base.subtract(11, "month").startOf("month"),
-            base.endOf("month"),
-          ] as [Dayjs, Dayjs])
+          base.subtract(11, "month").startOf("month"),
+          base.endOf("month"),
+        ] as [Dayjs, Dayjs])
         : filterMode === "month"
-        ? ([base.startOf("month"), base.endOf("month")] as [Dayjs, Dayjs])
-        : ([
+          ? ([base.startOf("month"), base.endOf("month")] as [Dayjs, Dayjs])
+          : ([
             base.subtract(6, "day").startOf("day"),
             base.endOf("day"),
           ] as [Dayjs, Dayjs]);
@@ -741,6 +745,9 @@ const AdminDashboard: React.FC = () => {
   );
 
   const isGarbageEnv = envName === "ขยะ";
+
+  const chartsLoading = metaLoading || dataLoading || (isGarbageEnv && garbageLoading) || isParamPending;
+
 
   const singleSeriesPoints = useMemo(() => {
     if (!SINGLE_ENV_NAMES.has(envName)) return [];
@@ -1163,9 +1170,9 @@ const AdminDashboard: React.FC = () => {
               ? Number(stdMid)
               : 0
             : Math.max(
-                hasVal(stdHigh) ? Number(stdHigh) : 0,
-                hasVal(stdLow) ? Number(stdLow) : 0
-              )
+              hasVal(stdHigh) ? Number(stdHigh) : 0,
+              hasVal(stdLow) ? Number(stdLow) : 0
+            )
           : 0;
 
       const suggestedMax =
@@ -1191,14 +1198,14 @@ const AdminDashboard: React.FC = () => {
             (isGarbage
               ? garbageSeries.map((p) => p.x)
               : isSingleEnv
-              ? singleSeriesPoints.map((p) => p.x)
-              : labels),
+                ? singleSeriesPoints.map((p) => p.x)
+                : labels),
           tickPlacement: "on",
           tickAmount: Math.min(
             categoriesOverride?.length ??
-              (isGarbage
-                ? garbageSeries.length
-                : isSingleEnv
+            (isGarbage
+              ? garbageSeries.length
+              : isSingleEnv
                 ? singleSeriesPoints.length
                 : labels.length),
             6
@@ -1222,10 +1229,10 @@ const AdminDashboard: React.FC = () => {
             text: isEfficiency
               ? "เปอร์เซ็น ( % )"
               : isGarbage
-              ? "หน่วย: kg"
-              : unitClean
-              ? `หน่วย: ${unitClean}`
-              : "",
+                ? "หน่วย: kg"
+                : unitClean
+                  ? `หน่วย: ${unitClean}`
+                  : "",
           },
           labels: {
             show: true,
@@ -1242,16 +1249,15 @@ const AdminDashboard: React.FC = () => {
               isGarbage
                 ? garbageSeries?.[opt?.dataPointIndex]?.x ?? ""
                 : isSingleEnv
-                ? singleSeriesPoints?.[opt?.dataPointIndex]?.x ?? ""
-                : opt?.w?.globals?.categoryLabels?.[opt?.dataPointIndex] ?? "",
+                  ? singleSeriesPoints?.[opt?.dataPointIndex]?.x ?? ""
+                  : opt?.w?.globals?.categoryLabels?.[opt?.dataPointIndex] ?? "",
           },
           y: {
             formatter: (v: number) =>
               isEfficiency
                 ? `${v.toFixed(2)}%`
-                : `${fmt2(v)}${
-                    isGarbage ? " kg" : unitClean ? " " + unitClean : ""
-                  }`,
+                : `${fmt2(v)}${isGarbage ? " kg" : unitClean ? " " + unitClean : ""
+                }`,
           },
         },
         legend: { position: "top" },
@@ -1593,9 +1599,13 @@ const AdminDashboard: React.FC = () => {
                     style={{ width: 180, marginRight: 4 }}
                     value={selectedParamId ?? undefined}
                     onChange={(v) => {
-                      setSelectedParamId(v);
-                      setAutoRange(true);
+                      startParamTransition(() => {
+                        setSelectedParamId(v);
+                        setAutoRange(true);
+                      });
                     }}
+                    loading={isParamPending}
+                    disabled={isParamPending}
                     options={paramList.map((p) => ({ value: p.id, label: p.name }))}
                     dropdownMatchSelectWidth={false}
                   />
@@ -1635,15 +1645,15 @@ const AdminDashboard: React.FC = () => {
                       const def =
                         val === "year"
                           ? ([
-                              base.subtract(11, "month").startOf("month"),
-                              base.endOf("month"),
-                            ] as [Dayjs, Dayjs])
+                            base.subtract(11, "month").startOf("month"),
+                            base.endOf("month"),
+                          ] as [Dayjs, Dayjs])
                           : val === "month"
-                          ? ([base.startOf("month"), base.endOf("month")] as [
+                            ? ([base.startOf("month"), base.endOf("month")] as [
                               Dayjs,
                               Dayjs
                             ])
-                          : ([
+                            : ([
                               base.subtract(6, "day").startOf("day"),
                               base.endOf("day"),
                             ] as [Dayjs, Dayjs]);
@@ -1735,261 +1745,265 @@ const AdminDashboard: React.FC = () => {
             </div>
           </Card>
 
-          <Row gutter={[16, 16]}>
-            <Col xs={24} lg={12}>
-              <div className="dashboard-graph-card card">
-                <div className="dashboard-head-graph-card">
-                  <div className="dashboard-head-title">
-                    {isGarbage
-                      ? selectedParamName || "ปริมาณขยะ"
-                      : isSingleEnv
-                      ? selectedParamName || envName
-                      : view === "before"
-                      ? "น้ำก่อนบำบัด"
-                      : view === "after"
-                      ? "น้ำหลังบำบัด"
-                      : "เปรียบเทียบก่อน-หลัง"}
-                  </div>
-                  <div className="dashboard-head-controls">
-                    {isGarbage && (
-                      <ColorPicker
-                        value={chartColor.garbage}
-                        onChange={(c: Color) =>
-                          setChartColor({ ...chartColor, garbage: c.toHexString() })
-                        }
-                      />
-                    )}
-                    {!isGarbage &&
-                      (isSingleEnv || view === "before" || view === "after") && (
+          <Spin spinning={chartsLoading} tip="กำลังโหลดข้อมูล..." size="large">
+
+
+            <Row gutter={[16, 16]}>
+              <Col xs={24} lg={12}>
+                <div className="dashboard-graph-card card">
+                  <div className="dashboard-head-graph-card">
+                    <div className="dashboard-head-title">
+                      {isGarbage
+                        ? selectedParamName || "ปริมาณขยะ"
+                        : isSingleEnv
+                          ? selectedParamName || envName
+                          : view === "before"
+                            ? "น้ำก่อนบำบัด"
+                            : view === "after"
+                              ? "น้ำหลังบำบัด"
+                              : "เปรียบเทียบก่อน-หลัง"}
+                    </div>
+                    <div className="dashboard-head-controls">
+                      {isGarbage && (
                         <ColorPicker
-                          value={
-                            isSingleEnv || view === "after"
-                              ? chartColor.after
-                              : chartColor.before
+                          value={chartColor.garbage}
+                          onChange={(c: Color) =>
+                            setChartColor({ ...chartColor, garbage: c.toHexString() })
                           }
-                          onChange={(c: Color) => {
-                            const hex = c.toHexString();
-                            if (isSingleEnv || view === "after")
-                              setChartColor({ ...chartColor, after: hex });
-                            else setChartColor({ ...chartColor, before: hex });
-                          }}
                         />
                       )}
-                    {!isGarbage && !isSingleEnv && view === "compare" && (
-                      <>
-                        <ColorPicker
-                          value={chartColor.compareBefore}
-                          onChange={(c) =>
-                            setChartColor({
-                              ...chartColor,
-                              compareBefore: c.toHexString(),
-                            })
-                          }
-                        />
-                        <ColorPicker
-                          value={chartColor.compareAfter}
-                          onChange={(c) =>
-                            setChartColor({
-                              ...chartColor,
-                              compareAfter: c.toHexString(),
-                            })
-                          }
-                        />
-                      </>
-                    )}
-                    <Button
-                      type="text"
-                      icon={<Maximize2 size={18} />}
-                      onClick={() => setShowModal(true)}
-                    />
+                      {!isGarbage &&
+                        (isSingleEnv || view === "before" || view === "after") && (
+                          <ColorPicker
+                            value={
+                              isSingleEnv || view === "after"
+                                ? chartColor.after
+                                : chartColor.before
+                            }
+                            onChange={(c: Color) => {
+                              const hex = c.toHexString();
+                              if (isSingleEnv || view === "after")
+                                setChartColor({ ...chartColor, after: hex });
+                              else setChartColor({ ...chartColor, before: hex });
+                            }}
+                          />
+                        )}
+                      {!isGarbage && !isSingleEnv && view === "compare" && (
+                        <>
+                          <ColorPicker
+                            value={chartColor.compareBefore}
+                            onChange={(c) =>
+                              setChartColor({
+                                ...chartColor,
+                                compareBefore: c.toHexString(),
+                              })
+                            }
+                          />
+                          <ColorPicker
+                            value={chartColor.compareAfter}
+                            onChange={(c) =>
+                              setChartColor({
+                                ...chartColor,
+                                compareAfter: c.toHexString(),
+                              })
+                            }
+                          />
+                        </>
+                      )}
+                      <Button
+                        type="text"
+                        icon={<Maximize2 size={18} />}
+                        onClick={() => setShowModal(true)}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                {isGarbage && garbageLoading ? (
-                  <div style={{ padding: 16 }}>กำลังโหลด...</div>
-                ) : isGarbage && garbageError ? (
-                  <div style={{ padding: 16, color: "red" }}>{garbageError}</div>
-                ) : (
-                  <ApexChart
-                    key={
-                      String(selectedEnvId) +
-                      String(selectedParamId) +
-                      view +
-                      chartType
-                    }
-                    options={buildOpts("", true, mainYMaxHint)}
-                    series={
-                      isGarbage
-                        ? [
+                  {isGarbage && garbageLoading ? (
+                    <div style={{ padding: 16 }}>กำลังโหลด...</div>
+                  ) : isGarbage && garbageError ? (
+                    <div style={{ padding: 16, color: "red" }}>{garbageError}</div>
+                  ) : (
+                    <ApexChart
+                      key={
+                        String(selectedEnvId) +
+                        String(selectedParamId) +
+                        view +
+                        chartType
+                      }
+                      options={buildOpts("", true, mainYMaxHint)}
+                      series={
+                        isGarbage
+                          ? [
                             {
                               name: selectedParamName || "ปริมาณ",
                               data: garbageSeries,
                               color: chartColor.garbage,
                             },
                           ]
-                        : isSingleEnv
-                        ? [
-                            {
-                              name: selectedParamName || envName,
-                              data: singleSeriesPoints,
-                              color: chartColor.after,
-                            },
-                          ]
-                        : view === "before"
-                        ? [
-                            {
-                              name: "ก่อน",
-                              data: beforeSeriesPoints,
-                              color: chartColor.before,
-                            },
-                          ]
-                        : view === "after"
-                        ? [
-                            {
-                              name: "หลัง",
-                              data: afterSeriesPoints,
-                              color: chartColor.after,
-                            },
-                          ]
-                        : [
-                            {
-                              name: "ก่อน",
-                              data: beforeSeriesPoints,
-                              color: chartColor.compareBefore,
-                            },
-                            {
-                              name: "หลัง",
-                              data: afterSeriesPoints,
-                              color: chartColor.compareAfter,
-                            },
-                          ]
-                    }
-                    type={chartType}
-                    height={graphHeight}
-                  />
-                )}
-              </div>
-            </Col>
-
-            {isGarbage && (
-              <Col xs={24} lg={12}>
-                <div className="dashboard-graph-card card">
-                  <div className="dashboard-head-graph-card">
-                    <div className="dashboard-head-title">
-                      ขยะต่อคนที่เข้าใช้บริการ (Normalize)
-                    </div>
-                    <div
-                      className="dashboard-head-controls"
-                      style={{ gap: 8, display: "flex" }}
-                    >
-                      <ColorPicker
-                        value={chartColor.garbageNormWaste}
-                        onChange={(c) =>
-                          setChartColor((s) => ({
-                            ...s,
-                            garbageNormWaste: c.toHexString(),
-                          }))
-                        }
-                      />
-                      <ColorPicker
-                        value={chartColor.garbageNormPeople}
-                        onChange={(c) =>
-                          setChartColor((s) => ({
-                            ...s,
-                            garbageNormPeople: c.toHexString(),
-                          }))
-                        }
-                      />
-                      <Segmented
-                        size="small"
-                        style={{ width: 85 }}
-                        value={garbageNormChartType}
-                        onChange={(v) =>
-                          setGarbageNormChartType(v as "line" | "bar")
-                        }
-                        options={[
-                          { label: "เส้น", value: "line" },
-                          { label: "แท่ง", value: "bar" },
-                        ]}
-                      />
-                    </div>
-                  </div>
-                  <ApexChart
-                    key={`norm-${selectedParamName}-${garbageNormChartType}`}
-                    options={garbageNormOptions}
-                    series={garbageNormSeries}
-                    type={garbageNormChartType}
-                    height={graphHeight}
-                  />
+                          : isSingleEnv
+                            ? [
+                              {
+                                name: selectedParamName || envName,
+                                data: singleSeriesPoints,
+                                color: chartColor.after,
+                              },
+                            ]
+                            : view === "before"
+                              ? [
+                                {
+                                  name: "ก่อน",
+                                  data: beforeSeriesPoints,
+                                  color: chartColor.before,
+                                },
+                              ]
+                              : view === "after"
+                                ? [
+                                  {
+                                    name: "หลัง",
+                                    data: afterSeriesPoints,
+                                    color: chartColor.after,
+                                  },
+                                ]
+                                : [
+                                  {
+                                    name: "ก่อน",
+                                    data: beforeSeriesPoints,
+                                    color: chartColor.compareBefore,
+                                  },
+                                  {
+                                    name: "หลัง",
+                                    data: afterSeriesPoints,
+                                    color: chartColor.compareAfter,
+                                  },
+                                ]
+                      }
+                      type={chartType}
+                      height={graphHeight}
+                    />
+                  )}
                 </div>
               </Col>
-            )}
 
-            {!isGarbage && isWastewater && (
-              <Col xs={24} lg={12}>
-                <div className="dashboard-graph-card card">
-                  <div className="dashboard-head-graph-card">
-                    <div className="dashboard-head-title">ประสิทธิภาพ (%)</div>
-                    <div className="dashboard-head-controls">
-                      <ColorPicker
-                        value={chartColor.efficiency}
-                        onChange={(c) =>
-                          setChartColor({ ...chartColor, efficiency: c.toHexString() })
-                        }
-                      />
+              {isGarbage && (
+                <Col xs={24} lg={12}>
+                  <div className="dashboard-graph-card card">
+                    <div className="dashboard-head-graph-card">
+                      <div className="dashboard-head-title">
+                        ขยะต่อคนที่เข้าใช้บริการ (Normalize)
+                      </div>
+                      <div
+                        className="dashboard-head-controls"
+                        style={{ gap: 8, display: "flex" }}
+                      >
+                        <ColorPicker
+                          value={chartColor.garbageNormWaste}
+                          onChange={(c) =>
+                            setChartColor((s) => ({
+                              ...s,
+                              garbageNormWaste: c.toHexString(),
+                            }))
+                          }
+                        />
+                        <ColorPicker
+                          value={chartColor.garbageNormPeople}
+                          onChange={(c) =>
+                            setChartColor((s) => ({
+                              ...s,
+                              garbageNormPeople: c.toHexString(),
+                            }))
+                          }
+                        />
+                        <Segmented
+                          size="small"
+                          style={{ width: 85 }}
+                          value={garbageNormChartType}
+                          onChange={(v) =>
+                            setGarbageNormChartType(v as "line" | "bar")
+                          }
+                          options={[
+                            { label: "เส้น", value: "line" },
+                            { label: "แท่ง", value: "bar" },
+                          ]}
+                        />
+                      </div>
                     </div>
+                    <ApexChart
+                      key={`norm-1`}
+                      options={garbageNormOptions}
+                      series={garbageNormSeries}
+                      type={garbageNormChartType}
+                      height={graphHeight}
+                    />
                   </div>
-                  <ApexChart
-                    options={buildOpts("Efficiency (%)", false)}
-                    series={effSeriesData}
-                    type="bar"
-                    height={graphHeight}
-                  />
-                </div>
-              </Col>
-            )}
+                </Col>
+              )}
 
-            {isSingleEnv && (
-              <Col xs={24} lg={12}>
-                <div className="dashboard-graph-card card">
-                  <div className="dashboard-head-graph-card">
-                    <div className="dashboard-head-title">ค่าสูงสุด / ต่ำสุด</div>
-                    <div className="dashboard-head-controls">
-                      <ColorPicker
-                        value={chartColor.tapMax}
-                        onChange={(c) =>
-                          setChartColor((s) => ({ ...s, tapMax: c.toHexString() }))
-                        }
-                      />
-                      <ColorPicker
-                        value={chartColor.tapMin}
-                        onChange={(c) =>
-                          setChartColor((s) => ({ ...s, tapMin: c.toHexString() }))
-                        }
-                      />
-                      <ColorPicker
-                        value={chartColor.tapAvg}
-                        onChange={(c) =>
-                          setChartColor((s) => ({ ...s, tapAvg: c.toHexString() }))
-                        }
-                      />
+              {!isGarbage && isWastewater && (
+                <Col xs={24} lg={12}>
+                  <div className="dashboard-graph-card card">
+                    <div className="dashboard-head-graph-card">
+                      <div className="dashboard-head-title">ประสิทธิภาพ (%)</div>
+                      <div className="dashboard-head-controls">
+                        <ColorPicker
+                          value={chartColor.efficiency}
+                          onChange={(c) =>
+                            setChartColor({ ...chartColor, efficiency: c.toHexString() })
+                          }
+                        />
+                      </div>
                     </div>
+                    <ApexChart
+                      options={buildOpts("Efficiency (%)", false)}
+                      series={effSeriesData}
+                      type="bar"
+                      height={graphHeight}
+                    />
                   </div>
-                  <ApexChart
-                    options={buildOpts(
-                      "ค่าสูงสุด/ต่ำสุด/เฉลี่ย",
-                      true,
-                      tapMinMaxYMax,
-                      tapAggLabels
-                    )}
-                    series={tapMinMaxSeries}
-                    type={chartType}
-                    height={graphHeight}
-                  />
-                </div>
-              </Col>
-            )}
-          </Row>
+                </Col>
+              )}
+
+              {isSingleEnv && (
+                <Col xs={24} lg={12}>
+                  <div className="dashboard-graph-card card">
+                    <div className="dashboard-head-graph-card">
+                      <div className="dashboard-head-title">ค่าสูงสุด / ต่ำสุด</div>
+                      <div className="dashboard-head-controls">
+                        <ColorPicker
+                          value={chartColor.tapMax}
+                          onChange={(c) =>
+                            setChartColor((s) => ({ ...s, tapMax: c.toHexString() }))
+                          }
+                        />
+                        <ColorPicker
+                          value={chartColor.tapMin}
+                          onChange={(c) =>
+                            setChartColor((s) => ({ ...s, tapMin: c.toHexString() }))
+                          }
+                        />
+                        <ColorPicker
+                          value={chartColor.tapAvg}
+                          onChange={(c) =>
+                            setChartColor((s) => ({ ...s, tapAvg: c.toHexString() }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <ApexChart
+                      options={buildOpts(
+                        "ค่าสูงสุด/ต่ำสุด/เฉลี่ย",
+                        true,
+                        tapMinMaxYMax,
+                        tapAggLabels
+                      )}
+                      series={tapMinMaxSeries}
+                      type={chartType}
+                      height={graphHeight}
+                    />
+                  </div>
+                </Col>
+              )}
+            </Row>
+          </Spin>
 
           {/*Component: Dashboard Alerts*/}
           <Card className="dashboard-alerts-card card-bleed" bordered={false}>
@@ -2018,12 +2032,10 @@ const AdminDashboard: React.FC = () => {
                     });
                     const title =
                       item.type === "garbage"
-                        ? `${item?.data?.Parameter?.ParameterName ?? "-"} ${
-                            item?.data?.Status?.StatusName ?? "-"
-                          }`
-                        : `${item?.data?.Parameter?.ParameterName ?? "-"} ของ${
-                            item?.data?.Environment?.EnvironmentName ?? "-"
-                          } ${item?.data?.Status?.StatusName ?? "-"}`;
+                        ? `${item?.data?.Parameter?.ParameterName ?? "-"} ${item?.data?.Status?.StatusName ?? "-"
+                        }`
+                        : `${item?.data?.Parameter?.ParameterName ?? "-"} ของ${item?.data?.Environment?.EnvironmentName ?? "-"
+                        } ${item?.data?.Status?.StatusName ?? "-"}`;
                     const desc = `ค่าที่ตรวจพบ: ${fmt2(
                       item?.data?.Data ?? item?.data?.Quantity ?? 0
                     )} ${item?.data?.Unit?.UnitName ?? "-"}\nวันที่บันทึก: ${date} เวลา: ${time} น.`;
@@ -2094,9 +2106,8 @@ const AdminDashboard: React.FC = () => {
                     </div>
 
                     <div
-                      className={`font-bold leading-tight ${
-                        isMobile ? "text-2xl" : isTablet ? "text-2xl" : "text-4xl"
-                      }`}
+                      className={`font-bold leading-tight ${isMobile ? "text-2xl" : isTablet ? "text-2xl" : "text-4xl"
+                        }`}
                     >
                       {fmt2(totalSaleYear)} บาท
                     </div>
@@ -2141,9 +2152,8 @@ const AdminDashboard: React.FC = () => {
                     </div>
 
                     <div
-                      className={`font-bold leading-tight ${
-                        isMobile ? "text-2xl" : isTablet ? "text-2xl" : "text-4xl"
-                      }`}
+                      className={`font-bold leading-tight ${isMobile ? "text-2xl" : isTablet ? "text-2xl" : "text-4xl"
+                        }`}
                     >
                       {fmt0(totalQtyYear)} คน
                     </div>
@@ -2217,48 +2227,48 @@ const AdminDashboard: React.FC = () => {
               series={
                 isGarbage
                   ? [
-                      {
-                        name: selectedParamName || "ปริมาณ",
-                        data: garbageSeries,
-                        color: chartColor.garbage,
-                      },
-                    ]
+                    {
+                      name: selectedParamName || "ปริมาณ",
+                      data: garbageSeries,
+                      color: chartColor.garbage,
+                    },
+                  ]
                   : isSingleEnv
-                  ? [
+                    ? [
                       {
                         name: selectedParamName || envName,
                         data: singleSeriesPoints,
                         color: chartColor.after,
                       },
                     ]
-                  : view === "before"
-                  ? [
-                      {
-                        name: "ก่อน",
-                        data: beforeSeriesPoints,
-                        color: chartColor.before,
-                      },
-                    ]
-                  : view === "after"
-                  ? [
-                      {
-                        name: "หลัง",
-                        data: afterSeriesPoints,
-                        color: chartColor.after,
-                      },
-                    ]
-                  : [
-                      {
-                        name: "ก่อน",
-                        data: beforeSeriesPoints,
-                        color: chartColor.compareBefore,
-                      },
-                      {
-                        name: "หลัง",
-                        data: afterSeriesPoints,
-                        color: chartColor.compareAfter,
-                      },
-                    ]
+                    : view === "before"
+                      ? [
+                        {
+                          name: "ก่อน",
+                          data: beforeSeriesPoints,
+                          color: chartColor.before,
+                        },
+                      ]
+                      : view === "after"
+                        ? [
+                          {
+                            name: "หลัง",
+                            data: afterSeriesPoints,
+                            color: chartColor.after,
+                          },
+                        ]
+                        : [
+                          {
+                            name: "ก่อน",
+                            data: beforeSeriesPoints,
+                            color: chartColor.compareBefore,
+                          },
+                          {
+                            name: "หลัง",
+                            data: afterSeriesPoints,
+                            color: chartColor.compareAfter,
+                          },
+                        ]
               }
               type={chartType}
               height={600}
