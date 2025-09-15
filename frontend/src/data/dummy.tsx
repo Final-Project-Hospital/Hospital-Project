@@ -7,7 +7,7 @@ import { BiCube } from "react-icons/bi";
 import { AiOutlineSetting } from "react-icons/ai";
 import { TiTick } from 'react-icons/ti';
 import { GrLocation } from 'react-icons/gr';
- import { FaTrash } from 'react-icons/fa';
+import { FaTrash } from 'react-icons/fa';
 import { AxisModel } from '@syncfusion/ej2-react-charts';
 import type { EdgeLabelPlacement } from '@syncfusion/ej2-react-charts';
 import { ContextMenuItem } from '@syncfusion/ej2-react-grids';
@@ -22,7 +22,7 @@ import product4 from '../assets/admin/product4.jpg';
 import product5 from '../assets/admin/product5.jpg';
 import product6 from '../assets/admin/product6.jpg';
 import product7 from '../assets/admin/product7.jpg';
-import { GetUserDataByUserID } from "../services/httpLogin"; 
+import { GetUserDataByUserID } from "../services/httpLogin";
 import { UsersInterface } from "../interface/IUser";
 
 export const getLinks = async () => {
@@ -32,6 +32,12 @@ export const getLinks = async () => {
     const userId = localStorage.getItem("employeeid");
     if (userId) {
       const user: UsersInterface | false = await GetUserDataByUserID(userId);
+
+      if (!user) {
+        window.location.href = "/login";
+        return;
+      }
+
       if (user && user.Role?.RoleName === "Admin") {
         isAdmin = true;
       }

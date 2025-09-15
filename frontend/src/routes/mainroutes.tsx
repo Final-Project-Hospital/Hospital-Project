@@ -9,9 +9,6 @@ import type { UsersInterface } from "../interface/IUser";
 // ----------------- Lazy Pages -----------------
 const Login = Loadable(lazy(() => import("../page/login")));
 
-// User Role
-const User = Loadable(lazy(() => import("../page/user/")));
-
 // Admin Role
 const Admin = Loadable(lazy(() => import("../page/admin/")));
 const MainLayout = Loadable(lazy(() => import("../component/admin/MainLayout")));
@@ -157,17 +154,6 @@ const HAZ = Loadable(lazy(() => import("../page/admin/data-management/garbage/ha
 const INF = Loadable(lazy(() => import("../page/admin/data-management/garbage/infectiousWaste/infectiousWaste")));
 const REC = Loadable(lazy(() => import("../page/admin/data-management/garbage/recycledWaste/recycledWaste")));
 
-// ----------------- Route Builders -----------------
-const UserRoutes = (): RouteObject[] => [
-  {
-    path: "/",
-    element: <User />,
-  },
-  {
-    path: "/guest",
-    children: [{ index: true, element: <User /> }],
-  },
-];
 
 // ✅ ปรับ AdminRoutes ให้รับ isAdmin และ “เพิ่ม people เฉพาะเมื่อ isAdmin = true”
 const AdminRoutes = (isAdmin: boolean): RouteObject[] => [
@@ -382,9 +368,8 @@ function ConfigRoutes() {
     };
   }, [isLoggedIn, roleName]);
 
-  // กันกระพริบหน้า admin ตอนรอเช็คสิทธิ์
   if (isLoggedIn && roleName !== "Guest" && !ready) {
-    return <div style={{ padding: 24, fontWeight: 600 }}>กำลังตรวจสิทธิ์...</div>;
+    return <div style={{ padding: 24, fontWeight: 600 }}></div>;
   }
 
   let routes: RouteObject[] = [];
@@ -396,9 +381,6 @@ function ConfigRoutes() {
         break;
       case "Employee":
         routes = AdminRoutes(isAdmin); // ✅ Employee ไม่มี people
-        break;
-      case "Guest":
-        routes = UserRoutes();
         break;
       default:
         routes = MainRoutes();
