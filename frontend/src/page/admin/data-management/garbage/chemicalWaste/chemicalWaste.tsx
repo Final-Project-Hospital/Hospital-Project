@@ -191,17 +191,21 @@ const ChemicalWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
               <Form.Item
                 label="จำนวนคนที่เข้าใช้บริการโรงพยาบาล"
                 name="quantity"
-                rules={[{ required: true, message: 'กรุณากรอกจำนวนคน' },
-                {
-                  validator: async (_, value) => {
-                    if (value === undefined || value === null) return Promise.resolve();
-                    if (typeof value !== "number" || isNaN(value)) {
-                      return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                    }
-                    return Promise.resolve();
-                  },
-                }
-
+                rules={[
+                  { required: true, message: 'กรุณากรอกจำนวนคน' },
+                  {
+                    validator: async (_, value) => {
+                      if (value === undefined || value === null) return Promise.resolve();
+                      // ตรวจว่าต้องเป็นจำนวนเต็ม
+                      if (!Number.isInteger(value)) {
+                        return Promise.reject("กรุณากรอกเป็นจำนวนเต็มเท่านั้น");
+                      }
+                      if (value !== undefined && value < 0) {
+                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                      }
+                      return Promise.resolve();
+                    },
+                  }
                 ]}
               >
                 <InputNumber style={{ width: '100%' }} placeholder="กรอกจำนวนคน" />
@@ -221,6 +225,9 @@ const ChemicalWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                       if (value === undefined || value === null) return Promise.resolve();
                       if (typeof value !== "number" || isNaN(value)) {
                         return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                      }
+                      if (value !== undefined && value < 0) {
+                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
                       }
                       return Promise.resolve();
                     },
@@ -251,7 +258,9 @@ const ChemicalWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
             <div className="chem-from-mini">
               <Form.Item label="ปริมาณขยะต่อวัน (คำนวณอัตโนมัติ)" name="average_daily_garbage">
-                <InputNumber style={{ width: "100%" }} disabled placeholder="คำนวณอัตโนมัติ" />
+                <InputNumber style={{ width: "100%" }} disabled placeholder="คำนวณอัตโนมัติ"
+                  formatter={(value) => value !== undefined && value !== null ? Number(value).toFixed(2) : ""}
+                  parser={(value) => value ? parseFloat(value) : 0} />
               </Form.Item>
             </div>
           </div>

@@ -61,24 +61,19 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
     }, []);
 
     useEffect(() => {
-        if (!initialValues || initialValues.length === 0) return;
+        if (!initialValues?.length) return;
 
         const single = initialValues[0];
 
-        // ฟังก์ชันเฉพาะ useEffect นี้: ปัดทศนิยม 2 ตำแหน่งแบบ round-half-up
+        // ฟังก์ชันปัดขึ้น 2 ตำแหน่ง
         const toTwoDecimal = (value: any) => {
             if (value === null || value === undefined) return undefined;
-            const num = Number(value);
-            if (isNaN(num)) return undefined;
-            return Math.round((num + Number.EPSILON) * 100) / 100;
+            return Math.ceil(Number(value) * 100) / 100;
         };
 
-        // กำหนดประเภท Target
-        const stdType = single.MinTarget === 0 && single.MaxTarget === 0 ? "middle" : "range";
+        const stdType = (single.MinTarget === 0 && single.MaxTarget === 0) ? "middle" : "range";
         setTargetType(stdType);
-        console.log(selectedTreatmentID);
 
-        // ตั้งค่าในฟอร์ม
         form.setFieldsValue({
             id: single.ID,
             date: dayjs(single.Date),
@@ -92,12 +87,13 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
             unit: single.UnitID ?? "other",
             employeeID: single.EmployeeID,
             targetType: stdType,
-            customSingle: stdType === "middle" ? single.MiddleTarget : undefined,
-            customMin: stdType === "range" ? single.MinTarget : undefined,
-            customMax: stdType === "range" ? single.MaxTarget : undefined,
+            customSingle: stdType === "middle" ? toTwoDecimal(single.MiddleTarget ?? 0) : undefined,
+            customMin: stdType === "range" ? toTwoDecimal(single.MinTarget ?? 0) : undefined,
+            customMax: stdType === "range" ? toTwoDecimal(single.MaxTarget ?? 0) : undefined,
         });
 
         setSelectedTreatmentID(single.BeforeAfterTreatmentID);
+        console.log(selectedTreatmentID);
     }, [initialValues]);
 
     const handleTargetGroupChange = (value: string) => {
@@ -126,9 +122,10 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
         const monthlyGarbage = form.getFieldValue("monthlyGarbage");
 
         if (quantity && monthlyGarbage && quantity > 0) {
-            const aadc = monthlyGarbage / (quantity * quantity);
+            let aadc = monthlyGarbage / (quantity * quantity);
+
             form.setFieldsValue({
-                aadc: parseFloat(aadc.toFixed(2)),
+                aadc,
             });
         } else {
             form.setFieldsValue({ aadc: null });
@@ -298,6 +295,9 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
                                             if (typeof value !== "number" || isNaN(value)) {
                                                 return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
                                             }
+                                            if (value !== undefined && value < 0) {
+                                                return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                            }
                                             const data = await CheckTarget("middle", value);
                                             if (!data) return Promise.reject("ไม่สามารถตรวจสอบค่า Target ได้");
                                             if (data.exists) return Promise.reject("ค่า Target นี้มีอยู่แล้วในระบบ");
@@ -307,7 +307,7 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
                                     ]}
                                 >
                                     <InputNumber
-                                        placeholder="กรอกค่ากลาง"
+                                        placeholder="กรอกค่าเดี่ยว"
                                         style={{ width: '100%' }}
                                         value={customSingleTarget}
                                         onChange={(value) => setCustomSingleTarget(value ?? undefined)}
@@ -344,6 +344,9 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
                                             validator: (_, val) => {
                                                 const max = getFieldValue("customMax");
                                                 if (val >= max) return Promise.reject("Min ต้องน้อยกว่า Max");
+                                                if (val !== undefined && val < 0) {
+                                                    return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                                }
                                                 return Promise.resolve();
                                             },
                                         }),
@@ -352,7 +355,7 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
                                         style={{ flex: 1 }}
                                     >
                                         <InputNumber
-                                            placeholder="ค่าต่ำสุด"
+                                            placeholder="กรอกค่าต่ำสุด"
                                             style={{ width: '100%' }}
                                             value={customMinTarget}
                                             onChange={(value) => setCustomMinTarget(value ?? undefined)}
@@ -365,6 +368,9 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
                                         rules={[{ required: true, message: 'กรุณากรอกค่าสูงสุด' },
                                         ({ getFieldValue }) => ({
                                             validator: async (_, value) => {
+                                                if (value !== undefined && value < 0) {
+                                                    return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                                }
                                                 const min = getFieldValue("customMin");
                                                 if (min !== undefined && value <= min) {
                                                     return Promise.reject("Max ต้องมากกว่า Min");
@@ -380,7 +386,7 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
                                         style={{ flex: 1 }}
                                     >
                                         <InputNumber
-                                            placeholder="ค่าสูงสุด"
+                                            placeholder="กรอกค่าสูงสุด"
                                             style={{ width: '100%' }}
                                             value={customMaxTarget}
                                             onChange={(value) => setCustomMaxTarget(value ?? undefined)}
@@ -406,6 +412,9 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
                                     if (!Number.isInteger(value)) {
                                         return Promise.reject("กรุณากรอกเป็นจำนวนเต็มเท่านั้น");
                                     }
+                                    if (value !== undefined && value < 0) {
+                                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                    }
                                     return Promise.resolve();
                                 },
                             }
@@ -428,6 +437,9 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
                                     if (value === undefined || value === null) return Promise.resolve();
                                     if (typeof value !== "number" || isNaN(value)) {
                                         return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                                    }
+                                    if (value !== undefined && value < 0) {
+                                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
                                     }
                                     return Promise.resolve();
                                 },
@@ -463,11 +475,15 @@ const UpdateInfectiousCentralForm: React.FC<UpdateInfectiousCentralFormProps> = 
                     <Form.Item
                         label="ค่า AADC (คำนวณอัตโนมัติ)"
                         name="aadc">
-                        <InputNumber style={{ width: '100%' }} placeholder="คำนวณอัตโนมัติ" step={0.01} disabled />
+                        <InputNumber style={{ width: '100%' }} placeholder="คำนวณอัตโนมัติ" step={0.01} disabled
+                            formatter={(value) => value !== undefined && value !== null ? Number(value).toFixed(2) : ""}
+                            parser={(value) => value ? parseFloat(value) : 0} />
                     </Form.Item>
 
                     <Form.Item label="ปริมาณขยะต่อวัน (คำนวณอัตโนมัติ)" name="average_daily_garbage">
-                        <InputNumber style={{ width: "100%" }} disabled placeholder="คำนวณอัตโนมัติ" />
+                        <InputNumber style={{ width: "100%" }} disabled placeholder="คำนวณอัตโนมัติ"
+                            formatter={(value) => value !== undefined && value !== null ? Number(value).toFixed(2) : ""}
+                            parser={(value) => value ? parseFloat(value) : 0} />
                     </Form.Item>
                 </div>
 

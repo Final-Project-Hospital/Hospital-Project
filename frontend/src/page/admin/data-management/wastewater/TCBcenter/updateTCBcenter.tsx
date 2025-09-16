@@ -74,43 +74,55 @@ const UpdateTCBCentralForm: React.FC<UpdateTCBCentralFormProps> = ({
     }, []);
 
     useEffect(() => {
+        // ฟังก์ชันปัดขึ้น 2 ตำแหน่ง
+        const toTwoDecimal = (value: any) => {
+            if (value === null || value === undefined) return undefined;
+            return Math.ceil(Number(value) * 100) / 100;
+        };
+
         if (initialValues && initialValues.length > 0) {
             if (initialValues.length === 2) {
                 const before = initialValues[0];
                 const after = initialValues[1];
 
-                const stdType = before.MinValue === -1 && before.MaxValue === -1 ? 'middle' : 'range';
+                const stdType =
+                    before.MinValue === -1 && before.MaxValue === -1
+                        ? "middle"
+                        : "range";
                 setStandardType(stdType);
 
                 form.setFieldsValue({
                     date: dayjs(before.Date),
                     time: dayjs(),
-                    unit: before.UnitID ?? 'other',
+                    unit: before.UnitID ?? "other",
                     standardType: stdType,
                     standardID: before.StandardID,
                     beforeAfterTreatmentID: 3,
-                    valueBefore: before?.Data ?? undefined, // ✅ map เข้ากับ name="valueBefore"
-                    valueAfter: after?.Data ?? undefined,   // ✅ map เข้ากับ name="valueAfter"
-                    beforeNote: before?.Note || '',
-                    afterNote: after?.Note || ''
+                    valueBefore: toTwoDecimal(before?.Data),
+                    valueAfter: toTwoDecimal(after?.Data),
+                    beforeNote: before?.Note || "",
+                    afterNote: after?.Note || "",
                 });
 
                 setSelectedTreatmentID(3);
             } else if (initialValues.length === 1) {
                 const single = initialValues[0];
-                const stdType = single.MinValue === -1 && single.MaxValue === -1 ? 'middle' : 'range';
+                const stdType =
+                    single.MinValue === -1 && single.MaxValue === -1
+                        ? "middle"
+                        : "range";
                 setStandardType(stdType);
 
                 form.setFieldsValue({
                     date: dayjs(single.Date),
                     time: dayjs(single.Date),
-                    unit: single.UnitID ?? 'other',
+                    unit: single.UnitID ?? "other",
                     standardType: stdType,
                     standardID: single.StandardID,
                     beforeAfterTreatmentID: single.BeforeAfterTreatmentID,
-                    data: single?.Data ?? undefined, // ✅ map เข้ากับ name="data"
-                    beforeNote: single.BeforeAfterTreatmentID === 1 ? single.Note || '' : '',
-                    afterNote: single.BeforeAfterTreatmentID === 2 ? single.Note || '' : ''
+                    data: toTwoDecimal(single?.Data),
+                    beforeNote: single.BeforeAfterTreatmentID === 1 ? single.Note || "" : "",
+                    afterNote: single.BeforeAfterTreatmentID === 2 ? single.Note || "" : "",
                 });
 
                 setSelectedTreatmentID(single.BeforeAfterTreatmentID);
@@ -250,7 +262,7 @@ const UpdateTCBCentralForm: React.FC<UpdateTCBCentralFormProps> = ({
             if (onSuccess) onSuccess();
         } catch (error: any) {
             console.error("Error updating TCB:", error?.response?.data || error);
-            message.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล handfinish Update");
+            message.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
         }
     };
 
@@ -362,28 +374,31 @@ const UpdateTCBCentralForm: React.FC<UpdateTCBCentralFormProps> = ({
                                 <Form.Item
                                     label="กำหนดเอง (ค่าเดี่ยว)"
                                     name="customSingle"
-                                    rules={[
-                                        { required: true, message: "กรุณากรอกค่ามาตรฐาน" },
-                                        {
-                                            validator: async (_, value) => {
-                                                if (value === undefined || value === null) return Promise.resolve();
-                                                if (typeof value !== "number" || isNaN(value)) {
-                                                    return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                                }
-                                                const data = await CheckStandard("middle", value);
-                                                if (!data) return Promise.reject("ไม่สามารถตรวจสอบมาตรฐานได้");
-                                                if (data.exists) return Promise.reject("ค่ามาตรฐานนี้มีอยู่แล้วในระบบ");
-                                                return Promise.resolve();
-                                            },
+                                    rules={[{ required: true, message: 'กรุณากรอกค่ามาตรฐาน' },
+                                    {
+                                        validator: async (_, value) => {
+                                            if (value === undefined || value === null) return Promise.resolve();
+                                            // ถ้าใส่ "-" หรือค่าติดลบ ให้เตือนเลย
+                                            if (value === '-' || Number(value) < 0) {
+                                                return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                            }
+                                            if (typeof value !== "number" || isNaN(value)) {
+                                                return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                                            }
+                                            const data = await CheckStandard("middle", value);
+                                            if (!data) return Promise.reject("ไม่สามารถตรวจสอบมาตรฐานได้");
+                                            if (data.exists) return Promise.reject("ค่ามาตรฐานนี้มีอยู่แล้วในระบบ");
+                                            return Promise.resolve();
                                         },
+                                    },
+
                                     ]}
                                 >
                                     <InputNumber
-                                        placeholder="กรอกค่ากลาง"
+                                        placeholder="กรอกค่าเดี่ยว"
                                         style={{ width: '100%' }}
                                         value={customSingleValue}
                                         onChange={(value) => setCustomSingleValue(value ?? undefined)}
-                                        min={0}
                                         step={0.01}
                                     />
                                 </Form.Item>
@@ -413,20 +428,25 @@ const UpdateTCBCentralForm: React.FC<UpdateTCBCentralFormProps> = ({
                                     <Form.Item
                                         label="ค่าต่ำสุด (Min)"
                                         name="customMin"
-                                        rules={[
-                                            { required: true, message: "กรุณากรอกค่าต่ำสุด" },
-                                            ({ getFieldValue }) => ({
-                                                validator: (_, val) => {
-                                                    const max = getFieldValue("customMax");
-                                                    if (val >= max) return Promise.reject("Min ต้องน้อยกว่า Max");
-                                                    return Promise.resolve();
-                                                },
-                                            }),
+                                        dependencies={['customMax']} // เมื่อ Max เปลี่ยน ให้ validate Min ใหม
+                                        rules={[{ required: true, message: 'กรุณากรอกค่าต่ำสุด' },
+                                        ({ getFieldValue }) => ({
+                                            validator: (_, val) => {
+                                                const max = getFieldValue("customMax");
+                                                // เช็คค่าติดลบ
+                                                if (val !== undefined && val < 0) {
+                                                    return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                                }
+                                                if (val >= max) return Promise.reject("Min ต้องน้อยกว่า Max");
+                                                return Promise.resolve();
+                                            },
+                                        }),
+
                                         ]}
                                         style={{ flex: 1 }}
                                     >
                                         <InputNumber
-                                            placeholder="ค่าต่ำสุด"
+                                            placeholder="กรอกค่าต่ำสุด"
                                             style={{ width: '100%' }}
                                             value={customMinValue}
                                             onChange={(value) => setCustomMinValue(value ?? undefined)}
@@ -436,26 +456,31 @@ const UpdateTCBCentralForm: React.FC<UpdateTCBCentralFormProps> = ({
                                     <Form.Item
                                         label="ค่าสูงสุด (Max)"
                                         name="customMax"
-                                        rules={[
-                                            { required: true, message: "กรุณากรอกค่าสูงสุด" },
-                                            ({ getFieldValue }) => ({
-                                                validator: async (_, value) => {
-                                                    const min = getFieldValue("customMin");
-                                                    if (min !== undefined && value <= min) {
-                                                        return Promise.reject("Max ต้องมากกว่า Min");
-                                                    }
-                                                    // เรียก CheckStandard
-                                                    const data = await CheckStandard("range", { min, max: value });
-                                                    if (!data) return Promise.reject("ไม่สามารถตรวจสอบมาตรฐานได้");
-                                                    if (data.exists) return Promise.reject("ช่วงมาตรฐานนี้มีอยู่แล้วในระบบ");
-                                                    return Promise.resolve();
-                                                },
-                                            }),
+                                        dependencies={['customMin']}
+                                        rules={[{ required: true, message: 'กรุณากรอกค่าสูงสุด' },
+                                        ({ getFieldValue }) => ({
+                                            validator: async (_, value) => {
+                                                const min = getFieldValue("customMin");
+                                                // เช็คค่าติดลบ
+                                                if (value !== undefined && value < 0) {
+                                                    return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                                }
+                                                if (min !== undefined && value <= min) {
+                                                    return Promise.reject("Max ต้องมากกว่า Min");
+                                                }
+                                                // เรียก CheckStandard
+                                                const data = await CheckStandard("range", { min, max: value });
+                                                if (!data) return Promise.reject("ไม่สามารถตรวจสอบมาตรฐานได้");
+                                                if (data.exists) return Promise.reject("ช่วงมาตรฐานนี้มีอยู่แล้วในระบบ");
+                                                return Promise.resolve();
+                                            },
+                                        }),
+
                                         ]}
                                         style={{ flex: 1 }}
                                     >
                                         <InputNumber
-                                            placeholder="ค่าสูงสุด"
+                                            placeholder="กรอกค่าสูงสุด"
                                             style={{ width: '100%' }}
                                             value={customMaxValue}
                                             onChange={(value) => setCustomMaxValue(value ?? undefined)}
@@ -491,62 +516,70 @@ const UpdateTCBCentralForm: React.FC<UpdateTCBCentralFormProps> = ({
                                 <Form.Item
                                     label="ค่าที่วัดได้ก่อนบำบัด"
                                     name="valueBefore"
-                                    rules={[
-                                        { required: true, message: 'กรุณากรอกค่าก่อนบำบัด' },
-                                        {
-                                            validator: async (_, value) => {
-                                                if (value === undefined || value === null) return Promise.resolve();
-                                                if (typeof value !== "number" || isNaN(value)) {
-                                                    return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                                }
-                                                return Promise.resolve();
-                                            },
-                                        }
+                                    rules={[{ required: true, message: 'กรุณากรอกค่าก่อนบำบัด' },
+                                    {
+                                        validator: async (_, value) => {
+                                            if (value === undefined || value === null || value === '') return Promise.resolve();
+                                            // เช็คถ้าเป็นแค่ "-" ก็ให้เตือนเลย
+                                            if (value === '-' || Number(value) < 0) {
+                                                return Promise.reject('กรุณาไม่กรอกค่าติดลบ');
+                                            }
+                                            if (isNaN(Number(value))) {
+                                                return Promise.reject('กรุณากรอกเป็นตัวเลขเท่านั้น');
+                                            }
+                                            return Promise.resolve();
+                                        },
+                                    },
                                     ]}
                                     style={{ flex: 1 }}
                                 >
-                                    <InputNumber style={{ width: '100%' }} placeholder="ค่าก่อนบำบัด" step={0.01} />
+                                    <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าก่อนบำบัด" step={0.01} />
                                 </Form.Item>
 
                                 <Form.Item
                                     label="ค่าที่วัดได้หลังบำบัด"
                                     name="valueAfter"
-                                    rules={[
-                                        { required: true, message: 'กรุณากรอกค่าหลังบำบัด' },
-                                        {
-                                            validator: async (_, value) => {
-                                                if (value === undefined || value === null) return Promise.resolve();
-                                                if (typeof value !== "number" || isNaN(value)) {
-                                                    return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                                }
-                                                return Promise.resolve();
-                                            },
-                                        }
+                                    rules={[{ required: true, message: 'กรุณากรอกค่าหลังบำบัด' },
+                                    {
+                                        validator: async (_, value) => {
+                                            if (value === undefined || value === null || value === '') return Promise.resolve();
+                                            // เช็คถ้าเป็นแค่ "-" ก็ให้เตือนเลย
+                                            if (value === '-' || Number(value) < 0) {
+                                                return Promise.reject('กรุณาไม่กรอกค่าติดลบ');
+                                            }
+                                            if (isNaN(Number(value))) {
+                                                return Promise.reject('กรุณากรอกเป็นตัวเลขเท่านั้น');
+                                            }
+                                            return Promise.resolve();
+                                        },
+                                    },
                                     ]}
                                     style={{ flex: 1 }}
                                 >
-                                    <InputNumber style={{ width: '100%' }} placeholder="ค่าหลังบำบัด" step={0.01} />
+                                    <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าหลังบำบัด" step={0.01} />
                                 </Form.Item>
                             </div>
                         ) : (
                             <Form.Item
                                 label="ค่าที่วัดได้"
                                 name="data"
-                                rules={[
-                                    { required: true, message: 'กรุณากรอกค่าที่วัดได้' },
-                                    {
-                                        validator: async (_, value) => {
-                                            if (value === undefined || value === null) return Promise.resolve();
-                                            if (typeof value !== "number" || isNaN(value)) {
-                                                return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                            }
-                                            return Promise.resolve();
-                                        },
-                                    }
+                                rules={[{ required: true, message: 'กรุณากรอกค่าที่วัดได้' },
+                                {
+                                    validator: async (_, value) => {
+                                        if (value === undefined || value === null || value === '') return Promise.resolve();
+                                        // เช็คถ้าเป็นแค่ "-" ก็ให้เตือนเลย
+                                        if (value === '-' || Number(value) < 0) {
+                                            return Promise.reject('กรุณาไม่กรอกค่าติดลบ');
+                                        }
+                                        if (isNaN(Number(value))) {
+                                            return Promise.reject('กรุณากรอกเป็นตัวเลขเท่านั้น');
+                                        }
+                                        return Promise.resolve();
+                                    },
+                                },
                                 ]}
-                                style={{ flex: 1 }}
                             >
-                                <InputNumber style={{ width: '100%' }} placeholder="ค่าที่วัดได้" step={0.01} />
+                                <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าที่วัดได้" step={0.01} />
                             </Form.Item>
                         )}
                     </div>

@@ -62,24 +62,24 @@ const UpdateNICentralForm: React.FC<UpdateNICentralFormProps> = ({
         if (initialValues && initialValues.length > 0) {
             const single = initialValues[0];
 
-            // ฟังก์ชันปัดทศนิยม 2 ตำแหน่ง
-            const toTwoDecimal = (value: any) => {
+            // ฟังก์ชันปัดขึ้น 2 ตำแหน่ง
+            const toTwoDecimalCeil = (value: any) => {
                 if (value === null || value === undefined) return undefined;
-                return Math.round(Number(value) * 100) / 100;
+                return Math.ceil(Number(value) * 100) / 100;
             };
-
-            const stdType = single.MinValue === -1 && single.MaxValue === -1 ? 'middle' : 'range';
+            const stdType =
+                single.MinValue === -1 && single.MaxValue === -1 ? "middle" : "range";
             setStandardType(stdType);
 
             form.setFieldsValue({
                 date: dayjs(single.Date),
                 time: dayjs(single.Date),
-                unit: single.UnitID ?? 'other',
+                unit: single.UnitID ?? "other",
                 standardType: stdType,
                 standardID: single.StandardID,
                 beforeAfterTreatmentID: single.BeforeAfterTreatmentID,
-                data: toTwoDecimal(single?.Data),
-                note: single.Note || '',
+                data: toTwoDecimalCeil(single?.Data),
+                note: single.Note || "",
             });
         }
     }, [initialValues]);
@@ -270,28 +270,31 @@ const UpdateNICentralForm: React.FC<UpdateNICentralFormProps> = ({
                                 <Form.Item
                                     label="กำหนดเอง (ค่าเดี่ยว)"
                                     name="customSingle"
-                                    rules={[
-                                        { required: true, message: "กรุณากรอกค่ามาตรฐาน" },
-                                        {
-                                            validator: async (_, value) => {
-                                                if (value === undefined || value === null) return Promise.resolve();
-                                                if (typeof value !== "number" || isNaN(value)) {
-                                                    return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                                }
-                                                const data = await CheckStandard("middle", value);
-                                                if (!data) return Promise.reject("ไม่สามารถตรวจสอบมาตรฐานได้");
-                                                if (data.exists) return Promise.reject("ค่ามาตรฐานนี้มีอยู่แล้วในระบบ");
-                                                return Promise.resolve();
-                                            },
+                                    rules={[{ required: true, message: 'กรุณากรอกค่ามาตรฐาน' },
+                                    {
+                                        validator: async (_, value) => {
+                                            if (value === undefined || value === null) return Promise.resolve();
+                                            // ถ้าใส่ "-" หรือค่าติดลบ ให้เตือนเลย
+                                            if (value === '-' || Number(value) < 0) {
+                                                return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                            }
+                                            if (typeof value !== "number" || isNaN(value)) {
+                                                return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                                            }
+                                            const data = await CheckStandard("middle", value);
+                                            if (!data) return Promise.reject("ไม่สามารถตรวจสอบมาตรฐานได้");
+                                            if (data.exists) return Promise.reject("ค่ามาตรฐานนี้มีอยู่แล้วในระบบ");
+                                            return Promise.resolve();
                                         },
+                                    },
+
                                     ]}
                                 >
                                     <InputNumber
-                                        placeholder="กรอกค่ากลาง"
+                                        placeholder="กรอกค่าเดี่ยว"
                                         style={{ width: '100%' }}
                                         value={customSingleValue}
                                         onChange={(value) => setCustomSingleValue(value ?? undefined)}
-                                        min={0}
                                         step={0.01}
                                     />
                                 </Form.Item>
@@ -321,20 +324,25 @@ const UpdateNICentralForm: React.FC<UpdateNICentralFormProps> = ({
                                     <Form.Item
                                         label="ค่าต่ำสุด (Min)"
                                         name="customMin"
-                                        rules={[
-                                            { required: true, message: "กรุณากรอกค่าต่ำสุด" },
-                                            ({ getFieldValue }) => ({
-                                                validator: (_, val) => {
-                                                    const max = getFieldValue("customMax");
-                                                    if (val >= max) return Promise.reject("Min ต้องน้อยกว่า Max");
-                                                    return Promise.resolve();
-                                                },
-                                            }),
+                                        dependencies={['customMax']} // เมื่อ Max เปลี่ยน ให้ validate Min ใหม
+                                        rules={[{ required: true, message: 'กรุณากรอกค่าต่ำสุด' },
+                                        ({ getFieldValue }) => ({
+                                            validator: (_, val) => {
+                                                const max = getFieldValue("customMax");
+                                                // เช็คค่าติดลบ
+                                                if (val !== undefined && val < 0) {
+                                                    return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                                }
+                                                if (val >= max) return Promise.reject("Min ต้องน้อยกว่า Max");
+                                                return Promise.resolve();
+                                            },
+                                        }),
+
                                         ]}
                                         style={{ flex: 1 }}
                                     >
                                         <InputNumber
-                                            placeholder="ค่าต่ำสุด"
+                                            placeholder="กรอกค่าต่ำสุด"
                                             style={{ width: '100%' }}
                                             value={customMinValue}
                                             onChange={(value) => setCustomMinValue(value ?? undefined)}
@@ -344,26 +352,31 @@ const UpdateNICentralForm: React.FC<UpdateNICentralFormProps> = ({
                                     <Form.Item
                                         label="ค่าสูงสุด (Max)"
                                         name="customMax"
-                                        rules={[
-                                            { required: true, message: "กรุณากรอกค่าสูงสุด" },
-                                            ({ getFieldValue }) => ({
-                                                validator: async (_, value) => {
-                                                    const min = getFieldValue("customMin");
-                                                    if (min !== undefined && value <= min) {
-                                                        return Promise.reject("Max ต้องมากกว่า Min");
-                                                    }
-                                                    // เรียก CheckStandard
-                                                    const data = await CheckStandard("range", { min, max: value });
-                                                    if (!data) return Promise.reject("ไม่สามารถตรวจสอบมาตรฐานได้");
-                                                    if (data.exists) return Promise.reject("ช่วงมาตรฐานนี้มีอยู่แล้วในระบบ");
-                                                    return Promise.resolve();
-                                                },
-                                            }),
+                                        dependencies={['customMin']}
+                                        rules={[{ required: true, message: 'กรุณากรอกค่าสูงสุด' },
+                                        ({ getFieldValue }) => ({
+                                            validator: async (_, value) => {
+                                                const min = getFieldValue("customMin");
+                                                // เช็คค่าติดลบ
+                                                if (value !== undefined && value < 0) {
+                                                    return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                                }
+                                                if (min !== undefined && value <= min) {
+                                                    return Promise.reject("Max ต้องมากกว่า Min");
+                                                }
+                                                // เรียก CheckStandard
+                                                const data = await CheckStandard("range", { min, max: value });
+                                                if (!data) return Promise.reject("ไม่สามารถตรวจสอบมาตรฐานได้");
+                                                if (data.exists) return Promise.reject("ช่วงมาตรฐานนี้มีอยู่แล้วในระบบ");
+                                                return Promise.resolve();
+                                            },
+                                        }),
+
                                         ]}
                                         style={{ flex: 1 }}
                                     >
                                         <InputNumber
-                                            placeholder="ค่าสูงสุด"
+                                            placeholder="กรอกค่าสูงสุด"
                                             style={{ width: '100%' }}
                                             value={customMaxValue}
                                             onChange={(value) => setCustomMaxValue(value ?? undefined)}
@@ -385,13 +398,17 @@ const UpdateNICentralForm: React.FC<UpdateNICentralFormProps> = ({
                             { required: true, message: 'กรุณากรอกค่าที่วัดได้' },
                             {
                                 validator: async (_, value) => {
-                                    if (value === undefined || value === null) return Promise.resolve();
-                                    if (typeof value !== "number" || isNaN(value)) {
-                                        return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                                    if (value === undefined || value === null || value === '') return Promise.resolve();
+                                    // เช็คถ้าเป็นแค่ "-" ก็ให้เตือนเลย
+                                    if (value === '-' || Number(value) < 0) {
+                                        return Promise.reject('กรุณาไม่กรอกค่าติดลบ');
+                                    }
+                                    if (isNaN(Number(value))) {
+                                        return Promise.reject('กรุณากรอกเป็นตัวเลขเท่านั้น');
                                     }
                                     return Promise.resolve();
                                 },
-                            }
+                            },
                         ]}
                     >
                         <InputNumber

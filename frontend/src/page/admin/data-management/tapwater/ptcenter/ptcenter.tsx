@@ -316,7 +316,7 @@ const PTCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                         ]}
                                     >
                                         <InputNumber
-                                            placeholder="กรอกค่ากลาง"
+                                            placeholder="กรอกค่าเดี่ยว"
                                             style={{ width: '100%' }}
                                             value={customSingleValue}
                                             onChange={(value) => setCustomSingleValue(value ?? undefined)}
@@ -366,7 +366,7 @@ const PTCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                             style={{ flex: 1 }}
                                         >
                                             <InputNumber
-                                                placeholder="ค่าต่ำสุด"
+                                                placeholder="กรอกค่าต่ำสุด"
                                                 style={{ width: '100%' }}
                                                 value={customMinValue}
                                                 onChange={(value) => setCustomMinValue(value ?? undefined)}
@@ -400,7 +400,7 @@ const PTCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                             style={{ flex: 1 }}
                                         >
                                             <InputNumber
-                                                placeholder="ค่าสูงสุด"
+                                                placeholder="กรอกค่าสูงสุด"
                                                 style={{ width: '100%' }}
                                                 value={customMaxValue}
                                                 onChange={(value) => setCustomMaxValue(value ?? undefined)}

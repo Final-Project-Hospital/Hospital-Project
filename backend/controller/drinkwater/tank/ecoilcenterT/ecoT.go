@@ -86,14 +86,24 @@ func CreateECOtank(c *gin.Context) {
 	// ฟังก์ชันตรวจสอบสถานะ
 	getStatusID := func(value float64) uint {
 		var status entity.Status
+
+		// ฟังก์ชันช่วยปัด 2 ตำแหน่ง
+		round2 := func(f float64) float64 {
+			return math.Round(f*100) / 100
+		}
+		value = round2(value)
+		middle := round2(float64(standard.MiddleValue))
+		min := round2(float64(standard.MinValue))
+		max := round2(float64(standard.MaxValue))
+
 		if standard.MiddleValue != -1 { // ค่าเดี่ยว
-			if value > float64(standard.MiddleValue) {
+			if value > middle {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		} else { // ค่าเป็นช่วง
-			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
+			if value >= min && value <= max {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
@@ -529,14 +539,24 @@ func UpdateOrCreateECOtank(c *gin.Context) {
 	// ฟังก์ชันคำนวณ Status
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-		if standard.MiddleValue != -1 {
-			if value <= float64(standard.MiddleValue) {
-				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
-			} else {
+
+		// ฟังก์ชันช่วยปัด 2 ตำแหน่ง
+		round2 := func(f float64) float64 {
+			return math.Round(f*100) / 100
+		}
+		value = round2(value)
+		middle := round2(float64(standard.MiddleValue))
+		min := round2(float64(standard.MinValue))
+		max := round2(float64(standard.MaxValue))
+
+		if standard.MiddleValue != -1 { // ค่าเดี่ยว
+			if value > middle {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
+			} else {
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
-		} else {
-			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
+		} else { // ค่าเป็นช่วง
+			if value >= min && value <= max {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)

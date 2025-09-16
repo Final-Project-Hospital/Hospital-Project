@@ -114,7 +114,7 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
     const handleCancelClick = () => {
         form.resetFields();
-        onCancel?.(); // ✅ ปลอดภัย ถ้าไม่มี onCancel ก็ไม่ทำอะไร
+        onCancel?.(); // ปลอดภัย ถ้าไม่มี onCancel ก็ไม่ทำอะไร
     };
 
     const handleStandardGroupChange = (value: string) => {
@@ -213,7 +213,7 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             const res2 = await createBOD(payloadAfter);
 
             if ((res1 as any)?.status === 201 && (res2 as any)?.status === 201) {
-                messageApi.success('บันทึกข้อมูลBODก่อนและหลังบำบัดสำเร็จ');
+                messageApi.success('บันทึกข้อมูล BOD ก่อนและหลังบำบัดสำเร็จ');
                 // รีเซ็ตฟอร์มและ state
                 form.resetFields();
                 setIsOtherunitSelected(false);
@@ -248,7 +248,7 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
             if (response.status === 201) {
                 messageApi.open({
                     type: 'success',
-                    content: 'การบันทึกข้อมูลBODสำเร็จ',
+                    content: 'การบันทึกข้อมูล BOD สำเร็จ',
                 });
                 form.resetFields();
                 setIsOtherunitSelected(false);
@@ -380,6 +380,10 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                         {
                                             validator: async (_, value) => {
                                                 if (value === undefined || value === null) return Promise.resolve();
+                                                // ถ้าใส่ "-" หรือค่าติดลบ ให้เตือนเลย
+                                                if (value === '-' || Number(value) < 0) {
+                                                    return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                                }
                                                 if (typeof value !== "number" || isNaN(value)) {
                                                     return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
                                                 }
@@ -389,11 +393,10 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                                 return Promise.resolve();
                                             },
                                         },
-
                                         ]}
                                     >
                                         <InputNumber
-                                            placeholder="กรอกค่ากลาง"
+                                            placeholder="กรอกค่าเดี่ยว"
                                             style={{ width: '100%' }}
                                             value={customSingleValue}
                                             onChange={(value) => setCustomSingleValue(value ?? undefined)}
@@ -425,10 +428,15 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                         <Form.Item
                                             label="ค่าต่ำสุด (Min)"
                                             name="customMin"
+                                            dependencies={['customMax']} // เมื่อ Max เปลี่ยน ให้ validate Min ใหม
                                             rules={[{ required: true, message: 'กรุณากรอกค่าต่ำสุด' },
                                             ({ getFieldValue }) => ({
                                                 validator: (_, val) => {
                                                     const max = getFieldValue("customMax");
+                                                    // เช็คค่าติดลบ
+                                                    if (val !== undefined && val < 0) {
+                                                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                                    }
                                                     if (val >= max) return Promise.reject("Min ต้องน้อยกว่า Max");
                                                     return Promise.resolve();
                                                 },
@@ -438,7 +446,7 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                             style={{ flex: 1 }}
                                         >
                                             <InputNumber
-                                                placeholder="ค่าต่ำสุด"
+                                                placeholder="กรอกค่าต่ำสุด"
                                                 style={{ width: '100%' }}
                                                 value={customMinValue}
                                                 onChange={(value) => setCustomMinValue(value ?? undefined)}
@@ -448,10 +456,15 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                         <Form.Item
                                             label="ค่าสูงสุด (Max)"
                                             name="customMax"
+                                            dependencies={['customMin']}
                                             rules={[{ required: true, message: 'กรุณากรอกค่าสูงสุด' },
                                             ({ getFieldValue }) => ({
                                                 validator: async (_, value) => {
                                                     const min = getFieldValue("customMin");
+                                                    // เช็คค่าติดลบ
+                                                    if (value !== undefined && value < 0) {
+                                                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                                    }
                                                     if (min !== undefined && value <= min) {
                                                         return Promise.reject("Max ต้องมากกว่า Min");
                                                     }
@@ -467,7 +480,7 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                             style={{ flex: 1 }}
                                         >
                                             <InputNumber
-                                                placeholder="ค่าสูงสุด"
+                                                placeholder="กรอกค่าสูงสุด"
                                                 style={{ width: '100%' }}
                                                 value={customMaxValue}
                                                 onChange={(value) => setCustomMaxValue(value ?? undefined)}
@@ -510,14 +523,17 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                         rules={[{ required: true, message: 'กรุณากรอกค่าก่อนบำบัด' },
                                         {
                                             validator: async (_, value) => {
-                                                if (value === undefined || value === null) return Promise.resolve();
-                                                if (typeof value !== "number" || isNaN(value)) {
-                                                    return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                                                if (value === undefined || value === null || value === '') return Promise.resolve();
+                                                // เช็คถ้าเป็นแค่ "-" ก็ให้เตือนเลย
+                                                if (value === '-' || Number(value) < 0) {
+                                                    return Promise.reject('กรุณาไม่กรอกค่าติดลบ');
+                                                }
+                                                if (isNaN(Number(value))) {
+                                                    return Promise.reject('กรุณากรอกเป็นตัวเลขเท่านั้น');
                                                 }
                                                 return Promise.resolve();
                                             },
-                                        }
-
+                                        },
                                         ]}
                                         style={{ flex: 1 }}
                                     >
@@ -530,14 +546,17 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                         rules={[{ required: true, message: 'กรุณากรอกค่าหลังบำบัด' },
                                         {
                                             validator: async (_, value) => {
-                                                if (value === undefined || value === null) return Promise.resolve();
-                                                if (typeof value !== "number" || isNaN(value)) {
-                                                    return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                                                if (value === undefined || value === null || value === '') return Promise.resolve();
+                                                // เช็คถ้าเป็นแค่ "-" ก็ให้เตือนเลย
+                                                if (value === '-' || Number(value) < 0) {
+                                                    return Promise.reject('กรุณาไม่กรอกค่าติดลบ');
+                                                }
+                                                if (isNaN(Number(value))) {
+                                                    return Promise.reject('กรุณากรอกเป็นตัวเลขเท่านั้น');
                                                 }
                                                 return Promise.resolve();
                                             },
-                                        }
-
+                                        },
                                         ]}
                                         style={{ flex: 1 }}
                                     >
@@ -551,17 +570,20 @@ const BODCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                     rules={[{ required: true, message: 'กรุณากรอกค่าที่วัดได้' },
                                     {
                                         validator: async (_, value) => {
-                                            if (value === undefined || value === null) return Promise.resolve();
-                                            if (typeof value !== "number" || isNaN(value)) {
-                                                return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                                            if (value === undefined || value === null || value === '') return Promise.resolve();
+                                            // เช็คถ้าเป็นแค่ "-" ก็ให้เตือนเลย
+                                            if (value === '-' || Number(value) < 0) {
+                                                return Promise.reject('กรุณาไม่กรอกค่าติดลบ');
+                                            }
+                                            if (isNaN(Number(value))) {
+                                                return Promise.reject('กรุณากรอกเป็นตัวเลขเท่านั้น');
                                             }
                                             return Promise.resolve();
                                         },
-                                    }
-
+                                    },
                                     ]}
                                 >
-                                    <InputNumber style={{ width: '100%' }} placeholder="กรุณากรอกค่าที่วัดได้" step={0.01} />
+                                    <InputNumber style={{ width: '100%' }} placeholder="กรอกค่าที่วัดได้" step={0.01} />
                                 </Form.Item>
                             )}
                         </div>
