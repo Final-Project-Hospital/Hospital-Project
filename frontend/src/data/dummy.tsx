@@ -24,7 +24,20 @@ import product6 from '../assets/admin/product6.jpg';
 import product7 from '../assets/admin/product7.jpg';
 import { GetUserDataByUserID } from "../services/httpLogin";
 import { UsersInterface } from "../interface/IUser";
+import { useNavigate } from 'react-router-dom';
 
+const handleLogout = () => {
+    localStorage.removeItem("isLogin");
+    localStorage.removeItem("userRole");
+    localStorage.clear();
+    const navigate = useNavigate();
+
+    setTimeout(() => {
+      navigate("/login");
+    }, 1500);
+  };
+
+// เเก้ไขเพิ่มอีกนิดหน่อย
 export const getLinks = async () => {
   let isAdmin = false;
 
@@ -34,8 +47,7 @@ export const getLinks = async () => {
       const user: UsersInterface | false = await GetUserDataByUserID(userId);
 
       if (!user) {
-        window.location.href = "/login";
-        return;
+        handleLogout();
       }
 
       if (user && user.Role?.RoleName === "Admin") {
