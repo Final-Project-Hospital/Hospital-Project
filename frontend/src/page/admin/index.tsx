@@ -1743,7 +1743,7 @@ const AdminDashboard: React.FC = () => {
                       size="small"
                       className="range-picker-responsive"
                       style={{
-                        width: isMobile ? "100%" : isTablet ? 190 : 220, // ✅ responsive
+                        width: isMobile ? "100%" : isTablet ? 190 : 180, // ✅ responsive
                         marginLeft: 0,                                   // ✅ ยกเลิก margin ติดลบ
                       }}
                       value={dateRange as [Dayjs, Dayjs] | undefined}
