@@ -45,19 +45,26 @@ const UpdateChemicalCentralForm: React.FC<UpdateChemicalCentralFormProps> = ({
         if (initialValues && initialValues.length > 0) {
             const record = initialValues[0];
 
+            // ฟังก์ชันปัดขึ้น 2 ตำแหน่ง
+            const toTwoDecimal = (value: any) => {
+                if (value === null || value === undefined) return undefined;
+                return Math.ceil(Number(value) * 100) / 100;
+            };
+
             form.setFieldsValue({
                 date: dayjs(record.Date),
                 time: dayjs(),
-                unit: record.UnitID ?? 'other',
+                unit: record.UnitID ?? "other",
                 standardID: record.StandardID,
                 beforeAfterTreatmentID: record.BeforeAfterTreatmentID,
-                value: record?.Data ?? undefined,
-                note: record?.Note || '',
-                quantity: record?.Quantity ?? undefined,
-                monthlyGarbage: record?.MonthlyGarbage ?? undefined,
-                average_daily_garbage: record?.AverageDailyGarbage ?? undefined,
-                totalSale: record?.TotalSale ?? undefined,
+                value: toTwoDecimal(record?.Data),
+                note: record?.Note || "",
+                quantity: toTwoDecimal(record?.Quantity),
+                monthlyGarbage: toTwoDecimal(record?.MonthlyGarbage),
+                average_daily_garbage: toTwoDecimal(record?.AverageDailyGarbage),
+                totalSale: toTwoDecimal(record?.TotalSale),
             });
+
             console.log(selectedTreatmentID);
             setSelectedTreatmentID(record.BeforeAfterTreatmentID);
         }
@@ -94,7 +101,6 @@ const UpdateChemicalCentralForm: React.FC<UpdateChemicalCentralFormProps> = ({
                 ParameterID: initialValues[0]?.ParameterID,
                 BeforeAfterTreatmentID: values.beforeAfterTreatmentID,
             };
- console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
             console.log(payload);
 
             await UpdateOrCreateChemical(payload);
@@ -103,7 +109,13 @@ const UpdateChemicalCentralForm: React.FC<UpdateChemicalCentralFormProps> = ({
             if (onSuccess) onSuccess();
         } catch (error: any) {
             console.error("Error updating Chemical:", error?.response?.data || error);
-            message.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+            const backendMessage = error?.response?.data?.error;
+
+            if (backendMessage) {
+                message.error(backendMessage);
+            } else {
+                message.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+            }
         }
     };
 
@@ -185,16 +197,21 @@ const UpdateChemicalCentralForm: React.FC<UpdateChemicalCentralFormProps> = ({
                     <Form.Item
                         label="จำนวนคนที่เข้าใช้บริการโรงพยาบาล"
                         name="quantity"
-                        rules={[{ required: true, message: 'กรุณากรอกจำนวนคน' },
-                        {
-                            validator: async (_, value) => {
-                                if (value === undefined || value === null) return Promise.resolve();
-                                if (typeof value !== "number" || isNaN(value)) {
-                                    return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
-                                }
-                                return Promise.resolve();
-                            },
-                        }
+                        rules={[
+                            { required: true, message: 'กรุณากรอกจำนวนคน' },
+                            {
+                                validator: async (_, value) => {
+                                    if (value === undefined || value === null) return Promise.resolve();
+                                    // ตรวจว่าต้องเป็นจำนวนเต็ม
+                                    if (!Number.isInteger(value)) {
+                                        return Promise.reject("กรุณากรอกเป็นจำนวนเต็มเท่านั้น");
+                                    }
+                                    if (value !== undefined && value < 0) {
+                                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                    }
+                                    return Promise.resolve();
+                                },
+                            }
                         ]}
                     >
                         <InputNumber style={{ width: '100%' }} placeholder="กรอกจำนวนคน" />
@@ -212,6 +229,9 @@ const UpdateChemicalCentralForm: React.FC<UpdateChemicalCentralFormProps> = ({
                                     if (value === undefined || value === null) return Promise.resolve();
                                     if (typeof value !== "number" || isNaN(value)) {
                                         return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                                    }
+                                    if (value !== undefined && value < 0) {
+                                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
                                     }
                                     return Promise.resolve();
                                 },
@@ -240,7 +260,9 @@ const UpdateChemicalCentralForm: React.FC<UpdateChemicalCentralFormProps> = ({
                     </Form.Item>
 
                     <Form.Item label="ปริมาณขยะต่อวัน (คำนวณอัตโนมัติ)" name="average_daily_garbage">
-                        <InputNumber style={{ width: "100%" }} disabled placeholder="คำนวณอัตโนมัติ" />
+                        <InputNumber style={{ width: "100%" }} disabled placeholder="คำนวณอัตโนมัติ"
+                            formatter={(value) => value !== undefined && value !== null ? Number(value).toFixed(2) : ""}
+                            parser={(value) => value ? parseFloat(value) : 0} />
                     </Form.Item>
                 </div>
 

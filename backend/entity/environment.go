@@ -6,7 +6,7 @@ import (
 
 type Environment struct {
 	gorm.Model
-	EnvironmentName	string
-	
-	EnvironmentalRecord	[]EnvironmentalRecord `gorm:"foreignKey: EnvironmentID"`
+	EnvironmentName string `valid:"required~EnvironmentName is required"`
+
+	EnvironmentalRecord []EnvironmentalRecord `gorm:"foreignKey: EnvironmentID"`
 }

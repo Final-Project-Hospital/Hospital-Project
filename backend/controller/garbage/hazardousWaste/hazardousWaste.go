@@ -463,11 +463,26 @@ func DeleteAllHazardousRecordsByDate(c *gin.Context) {
 // ใช้ส่วนรวม
 func CheckTarget(c *gin.Context) {
 	targetType := c.Query("type")
+	db := config.DB()
+
+	// ฟังก์ชันปัดทศนิยม 2 ตำแหน่ง (round-half-up)
+	roundToTwo := func(val string) (float64, error) {
+		num, err := strconv.ParseFloat(val, 64)
+		if err != nil {
+			return 0, err
+		}
+		return math.Round(num*100) / 100, nil
+	}
 
 	if targetType == "middle" {
 		middleTarget := c.Query("value")
+		roundedVal, err := roundToTwo(middleTarget)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "invalid middle value"})
+			return
+		}
 		var tar entity.Target
-		if err := config.DB().Where("middle_target = ?", middleTarget).First(&tar).Error; err == nil {
+		if err := db.Where("ROUND(middle_target::numeric, 2) = ?", roundedVal).First(&tar).Error; err == nil {
 			c.JSON(200, gin.H{"exists": true})
 			return
 		}
@@ -478,17 +493,23 @@ func CheckTarget(c *gin.Context) {
 	if targetType == "range" {
 		min := c.Query("min")
 		max := c.Query("max")
+		roundedMin, err1 := roundToTwo(min)
+		roundedMax, err2 := roundToTwo(max)
+		if err1 != nil || err2 != nil {
+			c.JSON(400, gin.H{"error": "invalid range values"})
+			return
+		}
 		var tar entity.Target
-		if err := config.DB().
-			Where("min_target = ? AND max_target = ?", min, max).
-			First(&tar).Error; err == nil {
+		if err := db.Where(
+			"ROUND(min_target::numeric, 2) = ? AND ROUND(max_target::numeric, 2) = ?",
+			roundedMin, roundedMax,
+		).First(&tar).Error; err == nil {
 			c.JSON(200, gin.H{"exists": true})
 			return
 		}
 		c.JSON(200, gin.H{"exists": false})
 		return
 	}
-
 	c.JSON(400, gin.H{"error": "invalid type"})
 }
 

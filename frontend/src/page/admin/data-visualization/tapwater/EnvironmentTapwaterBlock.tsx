@@ -127,8 +127,8 @@ const EnvironmentBlock = () => {
         const getDisplayStandard = (data: any) => {
           const { MinValue, MaxValue, MiddleValue } = data;
           if (MiddleValue === 0 && MinValue === -1 && MaxValue === -1) return 'ไม่พบ';
-          if (MinValue !== -1 || MaxValue !== -1) return `${MinValue} - ${MaxValue}`;
-          if (MiddleValue !== -1) return `${MiddleValue}`;
+          if (MinValue !== -1 || MaxValue !== -1) return `${MinValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - ${MaxValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          if (MiddleValue !== -1) return `${MiddleValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
           return '-';
         };
 
