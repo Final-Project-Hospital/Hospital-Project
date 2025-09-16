@@ -55,7 +55,7 @@ const Sidebar = () => {
   // ✅ โหลด links จาก dummy.tsx
   useEffect(() => {
     const loadLinks = async () => {
-      const data = await getLinks();
+      const data = await getLinks() || [];
       setMenuLinks(data);
       const keys = findOpenKeys(data.flatMap((section) => section.links), location.pathname);
       setOpenKeys(keys);
