@@ -145,7 +145,7 @@ const AdminDashboard: React.FC = () => {
   const [showAllAlerts, setShowAllAlerts] = useState(false);
 
   const [isParamPending, startParamTransition] = useTransition();
-  
+
 
   const [filterMode, setFilterMode] = useState<FilterMode>("year");
   const [dateRange, setDateRange] = useState<Dayjs[] | null>([
@@ -826,6 +826,15 @@ const AdminDashboard: React.FC = () => {
     dateRange,
   ]);
 
+  const tapMinMaxYMax = useMemo(
+    () =>
+      tapMinMaxPoints.reduce(
+        (m, p) => Math.max(m, Number(p.max || 0), Number(p.avg || 0)),
+        0
+      ),
+    [tapMinMaxPoints]
+  );
+
   const tapMinMaxSeries = useMemo(
     () => [
       {
@@ -847,14 +856,242 @@ const AdminDashboard: React.FC = () => {
     [tapMinMaxPoints, chartColor.tapMax, chartColor.tapMin, chartColor.tapAvg]
   );
 
-  const tapMinMaxYMax = useMemo(
-    () =>
-      tapMinMaxPoints.reduce(
-        (m, p) => Math.max(m, Number(p.max || 0), Number(p.avg || 0)),
-        0
-      ),
-    [tapMinMaxPoints]
+  // ✨ helper สำหรับล้าง unit
+  const cleanUnit = (u?: string | null) => {
+    const s = (u ?? "").toString().trim().toLowerCase();
+    if (!s) return "";
+    const noneWords = new Set(["-", "ไม่มีหน่วย", "none", "n/a", "na"]);
+    return noneWords.has(s) ? "" : (u as string).trim();
+  };
+
+  const buildOpts = useCallback(
+    (
+      title: string,
+      showStandard = true,
+      yMaxHint?: number,
+      categoriesOverride?: string[]
+    ): ApexOptions => {
+      const isEfficiency =
+        /efficiency/i.test(title) || title.includes("ประสิทธิภาพ");
+      const ann: NonNullable<ApexOptions["annotations"]> = {
+        yaxis: [],
+        xaxis: [],
+        points: [],
+        texts: [],
+        images: [],
+      };
+
+      const unitClean = cleanUnit(selectedParamUnit);
+      const unitLabel = unitClean ? " " + unitClean : "";
+
+      if (showStandard && !isEfficiency && !isGarbage && stdMode !== "none") {
+        if (stdMode === "middle" && hasVal(stdMid)) {
+          ann.yaxis!.push({
+            y: Number(stdMid),
+            strokeDashArray: 6,
+            borderColor: "#FF6F61",
+            borderWidth: 1.5,
+            label: {
+              borderColor: "#FF6F61",
+              style: { color: "#fff", background: "#FF6F61" },
+              offsetY: -8,
+              text: `มาตรฐาน ${Number(stdMid).toLocaleString("th-TH", {
+                maximumFractionDigits: 2,
+              })}${unitLabel}`,
+            },
+          });
+        } else {
+          if (hasVal(stdLow))
+            ann.yaxis!.push({
+              y: Number(stdLow),
+              strokeDashArray: 6,
+              borderColor: "rgba(255, 163, 24, 0.77)",
+              borderWidth: 1.5,
+              label: {
+                borderColor: "rgba(255, 163, 24, 0.77)",
+                style: { color: "#fff", background: "rgba(255,163,24,0.77)" },
+                offsetY: -8,
+                text: `มาตรฐานต่ำสุด ${Number(stdLow).toLocaleString("th-TH", {
+                  maximumFractionDigits: 2,
+                })}${unitLabel}`,
+              },
+            });
+          if (hasVal(stdHigh))
+            ann.yaxis!.push({
+              y: Number(stdHigh),
+              strokeDashArray: 6,
+              borderColor: "#035303ff",
+              borderWidth: 1.5,
+              label: {
+                borderColor: "#035303ff",
+                style: { color: "#fff", background: "rgba(3,83,3,0.6)" },
+                offsetY: -8,
+                text: `มาตรฐานสูงสุด ${Number(stdHigh).toLocaleString("th-TH", {
+                  maximumFractionDigits: 2,
+                })}${unitLabel}`,
+              },
+            });
+        }
+      }
+
+      const stdCeil =
+        !isEfficiency && showStandard && !isGarbage
+          ? stdMode === "middle"
+            ? hasVal(stdMid)
+              ? Number(stdMid)
+              : 0
+            : Math.max(
+              hasVal(stdHigh) ? Number(stdHigh) : 0,
+              hasVal(stdLow) ? Number(stdLow) : 0
+            )
+          : 0;
+
+      const suggestedMax =
+        Math.max(Number(yMaxHint || 0), stdCeil) > 0
+          ? Math.max(Number(yMaxHint || 0), stdCeil) * 1.1
+          : undefined;
+
+      const markerShape =
+        isGarbage ? 'circle' :
+          isSingleEnv ? 'circle' :
+            view === 'after' ? 'triangle' :
+              view === 'compare' ? ['circle', 'triangle'] :
+                'circle';
+
+      return {
+        chart: {
+          zoom: { enabled: true, type: "x", autoScaleYaxis: true },
+          foreColor: "#475467",
+          fontFamily: "Prompt, 'Prompt', sans-serif",
+          toolbar: { show: true },
+        },
+        grid: { borderColor: "#e5e7eb", strokeDashArray: 3 },
+        plotOptions: { bar: { columnWidth: "55%", borderRadius: 4 } },
+        dataLabels: { enabled: false },
+        stroke: { width: 2, curve: "smooth" },
+        markers: {
+          size: chartType === 'line' ? 4.5 : 0,
+          shape: markerShape as any,
+          strokeWidth: 2,
+          hover: { sizeOffset: 2 },
+        },
+        xaxis: {
+          categories:
+            categoriesOverride ??
+            (isGarbage
+              ? garbageSeries.map((p) => p.x)
+              : isSingleEnv
+                ? singleSeriesPoints.map((p) => p.x)
+                : labels),
+          tickPlacement: "on",
+          tickAmount: Math.min(
+            categoriesOverride?.length ??
+            (isGarbage
+              ? garbageSeries.length
+              : isSingleEnv
+                ? singleSeriesPoints.length
+                : labels.length),
+            6
+          ),
+          axisBorder: { show: false },
+          axisTicks: { show: false },
+          labels: {
+            show: true,
+            rotate: -45,
+            trim: false,
+            style: { fontSize: "12px", fontWeight: 500, colors: "#475467" },
+            offsetX: -4,
+          },
+          tooltip: { enabled: false },
+        },
+        yaxis: {
+          forceNiceScale: true,
+          min: 0,
+          max: isEfficiency ? 100 : suggestedMax,
+          title: {
+            text: isEfficiency
+              ? "เปอร์เซ็น ( % )"
+              : isGarbage
+                ? "หน่วย: kg"
+                : unitClean
+                  ? `หน่วย: ${unitClean}`
+                  : "",
+          },
+          labels: {
+            show: true,
+            style: { fontSize: "12px", fontWeight: 500, colors: "#475467" },
+            formatter: (v: number) =>
+              isEfficiency ? `${v.toFixed(2)}%` : fmt2(v),
+          },
+        },
+        annotations: ann,
+        title: { text: title, align: "left" },
+        tooltip: {
+          x: {
+            formatter: (_: any, opt: any) =>
+              isGarbage
+                ? garbageSeries?.[opt?.dataPointIndex]?.x ?? ""
+                : isSingleEnv
+                  ? singleSeriesPoints?.[opt?.dataPointIndex]?.x ?? ""
+                  : opt?.w?.globals?.categoryLabels?.[opt?.dataPointIndex] ?? "",
+          },
+          y: {
+            formatter: (v: number) =>
+              isEfficiency
+                ? `${v.toFixed(2)}%`
+                : `${fmt2(v)}${isGarbage ? " kg" : unitClean ? " " + unitClean : ""
+                }`,
+          },
+        },
+        legend: { position: "top" },
+      };
+    },
+    [labels, isGarbage, isSingleEnv, stdMode, stdLow, stdHigh, stdMid, selectedParamUnit, garbageSeries, singleSeriesPoints, view, chartType]
   );
+
+  const tapMinMaxOptions: ApexOptions = useMemo(() => {
+    // อิง config หลักจาก buildOpts แล้วค่อย override เฉพาะ markers
+    const base = buildOpts(
+      "ค่าสูงสุด/ต่ำสุด/เฉลี่ย",
+      true,
+      tapMinMaxYMax,
+      tapAggLabels
+    );
+
+    const isLine = chartType === "line";
+
+    return {
+      ...base,
+      markers: {
+        ...(base.markers || {}),
+        size: isLine ? 5 : 0,                    // bar ไม่ต้องมีจุด
+        shape: ["circle", "triangle", "diamond"],// [สูงสุด, ต่ำสุด, เฉลี่ย]
+        colors: [                                // สี “ด้านใน” ของ marker
+          chartColor.tapMax,                     // วงกลม = สีค่าสูงสุด
+          chartColor.tapMin,                     // สามเหลี่ยม = สีค่าต่ำสุด
+          "#FFFFFF",                             // หลามตัด = ขาว
+        ],
+        strokeColors: [                          // สีขอบของ marker
+          chartColor.tapMax,
+          chartColor.tapMin,
+          chartColor.tapAvg,                     // ขอบหลามตัด = สีของค่าเฉลี่ย
+        ],
+        strokeWidth: 2,
+        hover: { sizeOffset: 3 },
+      },
+    };
+  }, [
+    buildOpts,
+    tapMinMaxYMax,
+    tapAggLabels,
+    chartType,
+    chartColor.tapMax,
+    chartColor.tapMin,
+    chartColor.tapAvg,
+  ]);
+
+
+
 
   const beforeSeriesPoints = useMemo(() => makeSeries("ก่อน"), [makeSeries]);
   const afterSeriesPoints = useMemo(() => makeSeries("หลัง"), [makeSeries]);
@@ -1085,197 +1322,28 @@ const AdminDashboard: React.FC = () => {
     isWastewater,
   ]);
 
-  // ✨ helper สำหรับล้าง unit
-  const cleanUnit = (u?: string | null) => {
-    const s = (u ?? "").toString().trim().toLowerCase();
-    if (!s) return "";
-    const noneWords = new Set(["-", "ไม่มีหน่วย", "none", "n/a", "na"]);
-    return noneWords.has(s) ? "" : (u as string).trim();
-  };
-
-  const buildOpts = useCallback(
-    (
-      title: string,
-      showStandard = true,
-      yMaxHint?: number,
-      categoriesOverride?: string[]
-    ): ApexOptions => {
-      const isEfficiency =
-        /efficiency/i.test(title) || title.includes("ประสิทธิภาพ");
-      const ann: NonNullable<ApexOptions["annotations"]> = {
-        yaxis: [],
-        xaxis: [],
-        points: [],
-        texts: [],
-        images: [],
-      };
-
-      const unitClean = cleanUnit(selectedParamUnit);
-      const unitLabel = unitClean ? " " + unitClean : "";
-
-      if (showStandard && !isEfficiency && !isGarbage && stdMode !== "none") {
-        if (stdMode === "middle" && hasVal(stdMid)) {
-          ann.yaxis!.push({
-            y: Number(stdMid),
-            strokeDashArray: 6,
-            borderColor: "#FF6F61",
-            borderWidth: 1.5,
-            label: {
-              borderColor: "#FF6F61",
-              style: { color: "#fff", background: "#FF6F61" },
-              offsetY: -8,
-              text: `มาตรฐาน ${Number(stdMid).toLocaleString("th-TH", {
-                maximumFractionDigits: 2,
-              })}${unitLabel}`,
-            },
-          });
-        } else {
-          if (hasVal(stdLow))
-            ann.yaxis!.push({
-              y: Number(stdLow),
-              strokeDashArray: 6,
-              borderColor: "rgba(255, 163, 24, 0.77)",
-              borderWidth: 1.5,
-              label: {
-                borderColor: "rgba(255, 163, 24, 0.77)",
-                style: { color: "#fff", background: "rgba(255,163,24,0.77)" },
-                offsetY: -8,
-                text: `มาตรฐานต่ำสุด ${Number(stdLow).toLocaleString("th-TH", {
-                  maximumFractionDigits: 2,
-                })}${unitLabel}`,
-              },
-            });
-          if (hasVal(stdHigh))
-            ann.yaxis!.push({
-              y: Number(stdHigh),
-              strokeDashArray: 6,
-              borderColor: "#035303ff",
-              borderWidth: 1.5,
-              label: {
-                borderColor: "#035303ff",
-                style: { color: "#fff", background: "rgba(3,83,3,0.6)" },
-                offsetY: -8,
-                text: `มาตรฐานสูงสุด ${Number(stdHigh).toLocaleString("th-TH", {
-                  maximumFractionDigits: 2,
-                })}${unitLabel}`,
-              },
-            });
-        }
-      }
-
-      const stdCeil =
-        !isEfficiency && showStandard && !isGarbage
-          ? stdMode === "middle"
-            ? hasVal(stdMid)
-              ? Number(stdMid)
-              : 0
-            : Math.max(
-              hasVal(stdHigh) ? Number(stdHigh) : 0,
-              hasVal(stdLow) ? Number(stdLow) : 0
-            )
-          : 0;
-
-      const suggestedMax =
-        Math.max(Number(yMaxHint || 0), stdCeil) > 0
-          ? Math.max(Number(yMaxHint || 0), stdCeil) * 1.1
-          : undefined;
-
-      return {
-        chart: {
-          zoom: { enabled: true, type: "x", autoScaleYaxis: true },
-          foreColor: "#475467",
-          fontFamily: "Prompt, 'Prompt', sans-serif",
-          toolbar: { show: true },
+  const efficiencyOptions: ApexOptions = useMemo(() => {
+    const base = buildOpts("Efficiency (%)", false);
+    return {
+      ...base,
+      tooltip: {
+        ...(base.tooltip || {}),
+        shared: true,         // แสดงหลายซีรีส์พร้อมกัน (แม้จะมีซีรีส์เดียวก็ไม่เป็นไร)
+        intersect: false,     // ไม่ต้องเอาเมาส์ไปจิ้มตรงแท่ง/จุด
+        followCursor: true,   // ให้ Tooltip ตามตำแหน่งเมาส์
+      },
+      xaxis: {
+        ...(base.xaxis || {}),
+        crosshairs: {
+          show: true,
+          position: "back",
+          stroke: { color: "#cbd5e1", width: 1, dashArray: 3 }, // เส้นตั้งช่วยชี้ตำแหน่ง
         },
-        grid: { borderColor: "#e5e7eb", strokeDashArray: 3 },
-        plotOptions: { bar: { columnWidth: "55%", borderRadius: 4 } },
-        dataLabels: { enabled: false },
-        stroke: { width: 2, curve: "smooth" },
-        markers: { size: 4.5, strokeWidth: 2, hover: { sizeOffset: 2 } },
-        xaxis: {
-          categories:
-            categoriesOverride ??
-            (isGarbage
-              ? garbageSeries.map((p) => p.x)
-              : isSingleEnv
-                ? singleSeriesPoints.map((p) => p.x)
-                : labels),
-          tickPlacement: "on",
-          tickAmount: Math.min(
-            categoriesOverride?.length ??
-            (isGarbage
-              ? garbageSeries.length
-              : isSingleEnv
-                ? singleSeriesPoints.length
-                : labels.length),
-            6
-          ),
-          axisBorder: { show: false },
-          axisTicks: { show: false },
-          labels: {
-            show: true,
-            rotate: -45,
-            trim: false,
-            style: { fontSize: "12px", fontWeight: 500, colors: "#475467" },
-            offsetX: -4,
-          },
-          tooltip: { enabled: false },
-        },
-        yaxis: {
-          forceNiceScale: true,
-          min: 0,
-          max: isEfficiency ? 100 : suggestedMax,
-          title: {
-            text: isEfficiency
-              ? "เปอร์เซ็น ( % )"
-              : isGarbage
-                ? "หน่วย: kg"
-                : unitClean
-                  ? `หน่วย: ${unitClean}`
-                  : "",
-          },
-          labels: {
-            show: true,
-            style: { fontSize: "12px", fontWeight: 500, colors: "#475467" },
-            formatter: (v: number) =>
-              isEfficiency ? `${v.toFixed(2)}%` : fmt2(v),
-          },
-        },
-        annotations: ann,
-        title: { text: title, align: "left" },
-        tooltip: {
-          x: {
-            formatter: (_: any, opt: any) =>
-              isGarbage
-                ? garbageSeries?.[opt?.dataPointIndex]?.x ?? ""
-                : isSingleEnv
-                  ? singleSeriesPoints?.[opt?.dataPointIndex]?.x ?? ""
-                  : opt?.w?.globals?.categoryLabels?.[opt?.dataPointIndex] ?? "",
-          },
-          y: {
-            formatter: (v: number) =>
-              isEfficiency
-                ? `${v.toFixed(2)}%`
-                : `${fmt2(v)}${isGarbage ? " kg" : unitClean ? " " + unitClean : ""
-                }`,
-          },
-        },
-        legend: { position: "top" },
-      };
-    },
-    [
-      labels,
-      isGarbage,
-      isSingleEnv,
-      stdMode,
-      stdLow,
-      stdHigh,
-      stdMid,
-      selectedParamUnit,
-      garbageSeries,
-      singleSeriesPoints,
-    ]
-  );
+      },
+    };
+  }, [buildOpts]);
+
+
 
   const wastePieSeries = useMemo(
     () => (wasteMix || []).map((w) => Number(dFix(w.total || 0))),
@@ -1673,7 +1741,11 @@ const AdminDashboard: React.FC = () => {
                   {filterMode === "dateRange" && (
                     <DatePicker.RangePicker
                       size="small"
-                      style={{ width: 200, marginLeft: -15 }}
+                      className="range-picker-responsive"
+                      style={{
+                        width: isMobile ? "100%" : isTablet ? 190 : 220, // ✅ responsive
+                        marginLeft: 0,                                   // ✅ ยกเลิก margin ติดลบ
+                      }}
                       value={dateRange as [Dayjs, Dayjs] | undefined}
                       onChange={(dates) => {
                         setAutoRange(false);
@@ -1686,6 +1758,7 @@ const AdminDashboard: React.FC = () => {
                       locale={th_TH}
                       placeholder={["เริ่ม", "สิ้นสุด"]}
                       allowClear
+                      getPopupContainer={(trigger) => trigger.parentElement!} // กัน popup ล้น container
                     />
                   )}
                   {filterMode === "month" && (
@@ -1953,7 +2026,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
                     <ApexChart
-                      options={buildOpts("Efficiency (%)", false)}
+                      options={efficiencyOptions}
                       series={effSeriesData}
                       type="bar"
                       height={graphHeight}
@@ -1989,12 +2062,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
                     <ApexChart
-                      options={buildOpts(
-                        "ค่าสูงสุด/ต่ำสุด/เฉลี่ย",
-                        true,
-                        tapMinMaxYMax,
-                        tapAggLabels
-                      )}
+                      options={tapMinMaxOptions}   // ✅ ใช้ options ที่ override markers ต่อซีรีส์ไว้แล้ว
                       series={tapMinMaxSeries}
                       type={chartType}
                       height={graphHeight}
