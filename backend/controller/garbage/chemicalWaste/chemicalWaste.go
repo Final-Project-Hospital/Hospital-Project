@@ -13,6 +13,8 @@ import (
 	"github.com/Tawunchai/hospital-project/entity"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	"github.com/asaskevich/govalidator"
 )
 
 type Float64TwoDecimal float64
@@ -106,6 +108,13 @@ func CreateChemical(c *gin.Context) {
 		EmployeeID:          input.EmployeeID,
 	}
 
+	// Validate garbage (Unit Test)
+	ok, err := govalidator.ValidateStruct(garbage)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	if err := db.Create(&garbage).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "บันทึกข้อมูลไม่สำเร็จ"})
 		return
@@ -185,16 +194,16 @@ func ListChemical(c *gin.Context) {
 	}
 
 	var firstche []struct {
-		ID                  uint      `json:"ID"`
-		Date                time.Time `json:"Date"`
-		Quantity            uint      `json:"Quantity"`
-		Note                string    `json:"Note"`
-		Aadc                float64   `json:"Aadc"`
-		EnvironmentID       uint      `json:"EnvironmentID"`
-		ParameterID         uint      `json:"ParameterID"`
-		TargetID            uint      `json:"TargetID"`
-		UnitID              uint      `json:"UnitID"`
-		EmployeeID          uint      `json:"EmployeeID"`
+		ID            uint      `json:"ID"`
+		Date          time.Time `json:"Date"`
+		Quantity      uint      `json:"Quantity"`
+		Note          string    `json:"Note"`
+		Aadc          float64   `json:"Aadc"`
+		EnvironmentID uint      `json:"EnvironmentID"`
+		ParameterID   uint      `json:"ParameterID"`
+		TargetID      uint      `json:"TargetID"`
+		UnitID        uint      `json:"UnitID"`
+		EmployeeID    uint      `json:"EmployeeID"`
 		// MinTarget           float64   `json:"MinTarget"`
 		// MiddleTarget        float64   `json:"MiddleTarget"`
 		// MaxTarget           float64   `json:"MaxTarget"`
@@ -250,7 +259,7 @@ func GetChemicalTABLE(c *gin.Context) {
 		Preload("Unit").
 		Preload("Employee").
 		Where("parameter_id = ?", param.ID).
-		Order("date DESC"). // ✅ ดึงเรียงจากล่าสุดไปเก่า
+		Order("date DESC"). // ดึงเรียงจากล่าสุดไปเก่า
 		Find(&Haz)
 
 	if result.Error != nil {
@@ -328,6 +337,12 @@ func UpdateOrCreateChemical(c *gin.Context) {
 	}
 
 	db := config.DB()
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?", "ขยะ").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
 
 	var parameter entity.Parameter
 	if err := db.Where("parameter_name = ?", "ขยะเคมีบำบัด").First(&parameter).Error; err != nil {
@@ -336,7 +351,7 @@ func UpdateOrCreateChemical(c *gin.Context) {
 		return
 	}
 
-	// ✅ จัดการ CustomUnit
+	// จัดการ CustomUnit
 	if input.CustomUnit != nil && *input.CustomUnit != "" {
 		var unit entity.Unit
 		if err := db.Where("unit_name = ?", *input.CustomUnit).First(&unit).Error; err == nil {
@@ -349,12 +364,22 @@ func UpdateOrCreateChemical(c *gin.Context) {
 		}
 	}
 
-	// ✅ Update หรือ Create
+	// Update หรือ Create
 	if input.ID != 0 {
 		// Update
 		var existing entity.Garbage
 		if err := db.First(&existing, input.ID).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูลขยะเคมีบำบัด"})
+			return
+		}
+
+		input.EnvironmentID = environment.ID
+		input.ParameterID = parameter.ID
+
+		// Validate environmentRecord (Unit Test)
+		ok, err := govalidator.ValidateStruct(input.Garbage)
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
@@ -382,6 +407,16 @@ func UpdateOrCreateChemical(c *gin.Context) {
 
 		c.JSON(http.StatusOK, gin.H{"message": "อัปเดตข้อมูลขยะเคมีบำบัดสำเร็จ", "data": existing})
 	} else {
+		input.EnvironmentID = environment.ID
+		input.ParameterID = parameter.ID
+
+		// Validate environmentRecord (Unit Test)
+		ok, err := govalidator.ValidateStruct(input.Garbage)
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
 		// Create
 		if err := db.Create(&input.Garbage).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "สร้างข้อมูลล้มเหลว"})
@@ -493,7 +528,7 @@ func GetLastDayChemical(c *gin.Context) {
 		// MinTarget           float64   `json:"MinTarget"`
 		// MiddleTarget        float64   `json:"MiddleTarget"`
 		// MaxTarget           float64   `json:"MaxTarget"`
-		UnitName            string    `json:"UnitName"`
+		UnitName string `json:"UnitName"`
 	}
 
 	// คำสั่ง SQL ที่แก้ไขให้ใช้ DISTINCT ใน GROUP_CONCAT

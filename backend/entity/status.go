@@ -6,7 +6,7 @@ import (
 
 type Status struct {
 	gorm.Model
-	StatusName	string
+	StatusName	string `valid:"required~StatusName is required"`
 	
 	EnvironmentalRecord	[]EnvironmentalRecord `gorm:"foreignKey: StatusID"`
 }

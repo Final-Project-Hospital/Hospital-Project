@@ -12,6 +12,8 @@ import (
 	"github.com/Tawunchai/hospital-project/entity"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	"github.com/asaskevich/govalidator"
 )
 
 type Float64TwoDecimal float64
@@ -86,14 +88,24 @@ func CreateECO(c *gin.Context) {
 	// ฟังก์ชันตรวจสอบสถานะ
 	getStatusID := func(value float64) uint {
 		var status entity.Status
+
+		// ฟังก์ชันช่วยปัด 2 ตำแหน่ง
+		round2 := func(f float64) float64 {
+			return math.Round(f*100) / 100
+		}
+		value = round2(value)
+		middle := round2(float64(standard.MiddleValue))
+		min := round2(float64(standard.MinValue))
+		max := round2(float64(standard.MaxValue))
+
 		if standard.MiddleValue != -1 { // ค่าเดี่ยว
-			if value > float64(standard.MiddleValue) {
+			if value > middle {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		} else { // ค่าเป็นช่วง
-			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
+			if value >= min && value <= max {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
@@ -132,6 +144,13 @@ func CreateECO(c *gin.Context) {
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,
 		StatusID:               getStatusID(input.Data),
+	}
+
+	// Validate environmentRecord (Unit Test)
+	ok, err := govalidator.ValidateStruct(environmentRecord)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	if err := db.Create(&environmentRecord).Error; err != nil {
@@ -482,6 +501,12 @@ func UpdateOrCreateECO(c *gin.Context) {
 	}
 
 	db := config.DB()
+	var environment entity.Environment
+	if err := db.Where("environment_name = ?", "น้ำดื่ม").First(&environment).Error; err != nil {
+		fmt.Println("Error fetching environment:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
+		return
+	}
 
 	// ถ้า StandardID = 0 → สร้างใหม่จาก CustomStandard (ถ้าไม่มีซ้ำ)
 	if input.StandardID == 0 && input.CustomStandard != nil {
@@ -537,14 +562,24 @@ func UpdateOrCreateECO(c *gin.Context) {
 	// ฟังก์ชันคำนวณ Status
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-		if standard.MiddleValue != -1 {
-			if value <= float64(standard.MiddleValue) {
-				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
-			} else {
+
+		// ฟังก์ชันช่วยปัด 2 ตำแหน่ง
+		round2 := func(f float64) float64 {
+			return math.Round(f*100) / 100
+		}
+		value = round2(value)
+		middle := round2(float64(standard.MiddleValue))
+		min := round2(float64(standard.MinValue))
+		max := round2(float64(standard.MaxValue))
+
+		if standard.MiddleValue != -1 { // ค่าเดี่ยว
+			if value > middle {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
+			} else {
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
-		} else {
-			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
+		} else { // ค่าเป็นช่วง
+			if value >= min && value <= max {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
@@ -575,6 +610,16 @@ func UpdateOrCreateECO(c *gin.Context) {
 			return
 		}
 
+		input.EnvironmentID = environment.ID
+		input.StatusID = getStatusID(input.Data)
+
+		// Validate environmentRecord (Unit Test)
+		ok, err := govalidator.ValidateStruct(input.EnvironmentalRecord)
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
 		updatedData := map[string]interface{}{
 			"Date":                   input.Date,
 			"Data":                   input.Data,
@@ -595,6 +640,16 @@ func UpdateOrCreateECO(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "อัปเดตข้อมูลสำเร็จ", "data": existing})
 
 	} else {
+		input.EnvironmentID = environment.ID
+		input.StatusID = getStatusID(input.Data)
+
+		// Validate environmentRecord (Unit Test)
+		ok, err := govalidator.ValidateStruct(input.EnvironmentalRecord)
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
 		// Create
 		input.StatusID = getStatusID(input.Data)
 		if err := db.Create(&input.EnvironmentalRecord).Error; err != nil {

@@ -77,9 +77,10 @@ const EnvironmentBlock = () => {
 
         const getDisplayStandard = (data: any) => {
           const { MinValue, MaxValue, MiddleValue } = data;
+          const toFixed2 = (num: number) => num.toFixed(2);
           if (MiddleValue === 0 && MinValue === -1 && MaxValue === -1) return 'ไม่พบ';
-          if (MinValue !== -1 || MaxValue !== -1) return `${MinValue} - ${MaxValue}`;
-          if (MiddleValue !== -1) return `${MiddleValue}`;
+          if (MinValue !== -1 || MaxValue !== -1) return `${toFixed2(MinValue)} - ${toFixed2(MaxValue)}`;
+          if (MiddleValue !== -1) return `${toFixed2(MiddleValue)}`;
           return '-';
         };
 
