@@ -108,6 +108,7 @@
   background-color: #646464 !important;
   transform: scale(1.05) !important;
 }
+
 .up-tds-fornt-small {
   display: flex;
   gap: 16px;
@@ -115,33 +116,48 @@
 
 /* Responsive behavior */
 @media (max-width: 768px) {
-  .up-form-group-tds {
-    flex-direction: column;
-    gap: 16px;
+  .up-tds-container {
+    padding: 10px 20px;
   }
 
-  .up-form-group-tds .ant-form-item {
+  .up-form-group-tds {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .up-form-group-tds .ant-form-item,
+  .up-form-group-mini-tds,
+  .up-tds-fornt-small {
+    width: 100% !important;
     flex: 1 1 100%;
   }
 
   .up-form-actions-tds {
     flex-direction: column;
     align-items: stretch;
+    gap: 10px;
   }
 
   .cancel-up-tds,
   .reset-up-tds,
   .submit-up-tds {
-    width: 100%;
+    min-width: 79.5px;
     margin-top: 10px;
   }
 
-  .up-from-mini-tds {
-    width: 100%;
+  /* ปรับ label ให้เล็กลง */
+  .up-tds-fornt-small .ant-form-item-label>label,
+  .up-form-group-mini-tds .ant-form-item-label>label {
+    font-size: 0.85rem !important;
   }
-  .up-fornt-small-tds .ant-form-item-label > label {
-  font-size: small !important;}
-  
+
+  /* ปรับ Input, Select, DatePicker, TimePicker ให้เต็ม */
+  .up-tds-container .ant-input,
+  .up-tds-container .ant-input-number,
+  .up-tds-container .ant-picker,
+  .up-tds-container .ant-select-selector {
+    width: 100% !important;
+  }
 }
 
 @media (max-width: 1024px) {

@@ -1,6 +1,5 @@
 .tcod-title-header {
-  /* background: linear-gradient(90deg, #356768, #5AEEF0); */
-  background-color: #13b7b9;
+  background: linear-gradient(90deg, #0f766e, #22d3ee);
   padding: 20px;
   border-radius: 0 0 20px 20px;
   color: #ffffff;
@@ -11,7 +10,7 @@
 
 .tcod-title-header h1 {
   font-size: 2rem;
-  text-shadow: 0 4px 20px #d9d9d9a4;
+  /* text-shadow: 0 4px 20px #d9d9d9a4; */
   font-weight: bold;
   margin: 0;
 }
@@ -169,6 +168,7 @@
   min-width: 120px;
 }
 
+.tcod-select-date2,
 .tcod-select-date {
   display: flex;
   justify-content: space-between;
@@ -179,6 +179,7 @@
 }
 
 /* ลบกรอบของ Select */
+.tcod-select-date2 .ant-select-selector,
 .tcod-select-date .ant-select-selector {
   border: none !important;
   box-shadow: none !important;
@@ -187,6 +188,7 @@
 }
 
 /* ลบกรอบของ DatePicker และ RangePicker */
+.tcod-select-date2 .ant-picker,
 .tcod-select-date .ant-picker {
   border: none !important;
   box-shadow: none !important;
@@ -194,6 +196,7 @@
   background-color: rgb(255, 255, 255) !important;
 }
 
+.tcod-select-date2 .ant-picker-input input::placeholder,
 .tcod-select-date .ant-picker-input input::placeholder {
   color: #333 !important;
 }
@@ -226,6 +229,7 @@
   color: #6e6e76;
 }
 
+.tcod-select-date2 .ant-select-selection-placeholder,
 .tcod-select-date .ant-select-selection-placeholder {
   color: #333 !important;
   /* สี placeholder */
@@ -332,6 +336,8 @@
   margin-bottom: 20px;
   position: relative;
   z-index: 5;
+  overflow-x: unset;
+  overflow: visible;
 }
 
 .tcod-table-data .ant-table-thead>tr>th {
@@ -519,7 +525,7 @@
 }
 
 /* Responsive for medium screens (max-width: 768px) */
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   .tcod-title-header {
     margin-top: 50px;
     text-align: center;
@@ -545,13 +551,13 @@
 
   .tcod-table-data .ant-table {
     min-width: 600px !important;
-    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
+    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก 
   }
 
   .tcod-table-data .ant-table-thead>tr>th,
   .tcod-table-data .ant-table-ttsy>tr>td {
     white-space: nowrap !important;
-    /* บรรทัดไม่ตัด */
+    /* บรรทัดไม่ตัด 
     padding: 8px !important;
     font-size: 12px !important;
   }
@@ -570,12 +576,21 @@
     font-size: 12px;
     height: 28px;
   }
-}
+} */
 
 /* Responsive for small screens (max-width: 480px) */
 @media (max-width: 480px) {
   .tcod-title-header {
+    margin-top: 50px;
+    text-align: center;
     padding: 15px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .tcod-card {
+    display: none;
   }
 
   .tcod-title-header h1 {
@@ -608,121 +623,165 @@
   }
 
   .tcod-width40 {
-    width: 60%;
+    width: 70%;
   }
 
-  /* .tcod-table-data {
-    overflow-x: auto;
-    padding: 10px;
+  .tcod-width50 {
+    width: 80%;
   }
-  .tcod-table-data .ant-table {
-    min-width: 600px !important;
-  }
-  .tcod-table-data .ant-table-thead>tr>th,
-  .tcod-table-data .ant-table-ttsy>tr>td {
-    white-space: nowrap !important;
-    padding: 8px !important;
-    font-size: 5px !important;
-  } */
+
   .tcod-select-date {
-    align-items: flex-start;
-    gap: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
     width: 100%;
   }
 
-  /* ปรับ Select filter ให้เต็มจอเล็ก */
+  .tcod-select-date>div {
+    flex: 1 1 auto;
+    /* ยืดตามพื้นที่ */
+    min-width: 0;
+    /* สำคัญ ป้องกัน overflow */
+  }
+
+  .tcod-select-date .ant-picker,
   .tcod-select-date .tcod-select-filter {
-    width: 50% !important;
+    width: 100%;
+    /* ให้เต็มพื้นที่ div */
+    max-width: 200px;
+    /* ปรับให้เหมาะกับมือถือ */
   }
 
-  /* ปรับ DatePicker และ RangePicker ให้เต็มจอ */
-  .tcod-select-date .ant-picker {
-    width: 100% !important;
+  .tcod-filter-date {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: 100%;
   }
 
-}
-
-/* Responsive for small screens (max-width: 480px) */
-@media (max-width: 376px) {
-  .tcod-title-header {
-    padding: 15px;
-    max-width: 100%;
+  .tcod-filter-date>div {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
-  .tcod-width25 {
-    width: 40%;
+  .tcod-filter-date .ant-picker,
+  .tcod-filter-date .tcod-select-filter {
+    width: 100%;
+    max-width: 200px;
   }
 
-  .tcod-width40 {
-    width: 60%;
-  }
-
-  .tcod-title-header h1 {
+  .tcod-title-text-vis {
     font-size: 1rem;
   }
 
-  .tcod-graph-card {
-    min-height: 350px;
-    max-width: 375px;
+  .tcod-add-btn {
+    font-size: 1rem;
+    padding: 5px 12px;
   }
 
-  .tcod-select-group {
-    padding: 10px;
-    gap: 8px;
-  }
-
-  .tcod-head-graph-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .tcod-right-select-graph {
-    text-align: left;
-    width: 100%;
-  }
-
-  .tcod-table-data {
-    overflow-x: auto;
-    padding: 10px;
-  }
-
-  .tcod-table-data .ant-table {
-    min-width: 600px !important;
-    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
-  }
-
-  .tcod-table-data .ant-table-thead>tr>th,
-  .tcod-table-data .ant-table-ttsy>tr>td {
-    white-space: nowrap !important;
-    /* บรรทัดไม่ตัด */
-    padding: 5px !important;
-    font-size: 7px !important;
-  }
-
-  .tcod-circle-btn {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 2px solid #d9d9d9;
-    background-color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
-  }
-
-  .tcod-circle-btn:hover {
-    background-color: #f5f5f5;
+  .tcod-title-text {
+    font-size: 1rem;
   }
 
   .tcod-custom-modal {
-    width: 90% !important;
-    /* important ใช้ในกรณีที่ Ant Design อาจ override ค่า */
-    max-width: 1200px !important;
-    margin-top: 60px !important;
+    width: 100% !important;
+    /* max-width:100% !important; */
+    padding: 10px !important;
   }
+
+  /* ปรับสูงสุดให้ไม่ล้นจอมือถือ */
+  .tcod-custom-modal .ant-modal-content {
+    margin-top: 50px;
+    max-height: 100vh !important;
+  }
+
+  .tcod-task-number {
+    font-size: 13px;
+  }
+
+  .tcod-task-label {
+    font-size: 10px;
+  }
+
+  .tcod-task-total {
+    font-size: 10.5px;
+    margin-bottom: 15px;
+  }
+
+  .tcod-filter-status-and-efficiency {
+    display: flex;
+    flex-wrap: nowrap;
+    /* ห้าม wrap ลงบรรทัดใหม่ */
+    align-items: center;
+    gap: 10px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .tcod-filter-status-and-efficiency p {
+    margin: 0;
+    font-size: 12px;
+    flex: 0 0 auto;
+    /* label ไม่ยืด */
+    white-space: nowrap;
+    /* label ไม่หักบรรทัด */
+  }
+
+  .tcod-filter-status-and-efficiency .ant-select {
+    flex: 1 1 0;
+    /* select ยืดเต็มพื้นที่ที่เหลือ */
+    min-width: 0;
+    /* บังคับไม่ให้ overflow */
+  }
+
+  .modal-create {
+    margin-top: 70px !important;
+  }
+
+  .tcod-title-text-table {
+    font-size: 1rem;
+  }
+
+  .tcod-action-buttons {
+    min-width: 80px;
+    /* เล็กลงบนมือถือ */
+    gap: 6px;
+  }
+
+  .tcod-circle-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .tcod-circle-btn .anticon {
+    font-size: 16px;
+  }
+
+  .tcod-task-stats {
+    margin-left: auto;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .tcod-table-data {
+    padding: 20px;
+  }
+
+  .tcod-custom-modal {
+    width: 100% !important;
+    padding: 5px !important;
+  }
+
+  .tcod-chart-containner {
+    width: 100%;
+    min-height: 430px;
+  }
+
 }
+
 
 /* ไม่ใช้กรอบที่มีเงาจากหน้าบันทึก ที่ import มา*/
 .tcod-container {

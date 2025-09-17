@@ -12,6 +12,8 @@ import PhotoMonthlyGarbage from "../../../../../assets/waste/container.png"
 import PhotoDailyGarbage from "../../../../../assets/waste/garbage-bag.png"
 import PhotoAADC from "../../../../../assets/waste/garbage-truck.png"
 import { listInfectiousInterface } from "../../../../../interface/Igarbage/IinfectiousWaste";
+const isMobile = window.innerWidth <= 768;
+import { FormOutlined } from '@ant-design/icons';
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -380,7 +382,12 @@ const InfectiousWaste: React.FC = () => {
         type: chartType,
         zoom: { enabled: enableZoom, type: 'x', autoScaleYaxis: true },
         fontFamily: "Prompt, 'Prompt', sans-serif",
-        toolbar: { show: true },
+        toolbar: {
+          show: true,
+          tools: {
+            download: true, selection: true, zoom: true, zoomin: !isMobile, zoomout: !isMobile, pan: !isMobile, reset: true
+          }
+        },
       },
       annotations: {
         yaxis: isAADCChart
@@ -409,7 +416,7 @@ const InfectiousWaste: React.FC = () => {
                   borderColor: "#FF6F61",
                   borderWidth: 2.5,
                   strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middleTarget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
+                  label: { text: `มาตรฐาน ${middleTarget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#ff6e61e4", color: "#fff" } },
                 },
               ]
               : []
@@ -540,7 +547,7 @@ const InfectiousWaste: React.FC = () => {
         }
       },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
-      markers: chartType === "line" ? { size: 4.5, shape: ["circle", "triangle"], hover: { sizeOffset: 3 }, } : { size: 0 },
+      markers: chartType === "line" ? { size: isMobile ? 0 : 4.5, shape: ["circle", "triangle"], hover: { sizeOffset: 3 }, } : { size: 0 },
       legend: { show: true, showForSingleSeries: true, position: 'top', horizontalAlign: 'center', },
     };
   };
@@ -596,9 +603,20 @@ const InfectiousWaste: React.FC = () => {
       type: "donut",
       fontFamily: "Prompt, 'Prompt', sans-serif", // ใส่ font ทั้ง chart
     },
-    legend: {
-      show: false, // ปิด legend
-    },
+    legend: isMobile
+      ? {
+        position: "right",
+        horizontalAlign: "left",
+        offsetY: -23,  // ปรับค่าลบเพื่อดันขึ้น (ลองปรับจนเสมอ donut)
+        offsetX: 0,
+        markers: { size: 5 },
+        itemMargin: { horizontal: 8, vertical: 4 },
+        fontSize: "10px",
+        labels: { colors: "#ffffffff" },
+      }
+      : {
+        show: false, // ปิด legend
+      },
     stroke: {
       show: false, // ปิดขอบ
     },
@@ -897,10 +915,8 @@ const InfectiousWaste: React.FC = () => {
           <div>
             <h1
               className="infectious-title-text"
-              onClick={() => navigate(-1)}
-              style={{ cursor: 'pointer' }}
             >
-              <LeftOutlined className="infectious-back-icon" />
+              <LeftOutlined className="infectious-back-icon" onClick={() => navigate(-1)} style={{ cursor: 'pointer' }} />
               กราฟ Infectious Waste
             </h1>
           </div>
@@ -1035,7 +1051,7 @@ const InfectiousWaste: React.FC = () => {
                   false,          // isPercentChart (true/false)
                 )} series={series}
                 type={chartTypeData}
-                style={{ flex: 1 }}
+                {...(isMobile ? { height: 350 } : { style: { flex: 1 } })}
               />
             </div>
             <div className="infectious-graph-card">
@@ -1094,7 +1110,7 @@ const InfectiousWaste: React.FC = () => {
                   true,           // isPercentChart (true/false)
                 )} series={seriesMonthlyGarbageQuantityNormalized}
                 type={chartTypeCompareMonthlyGarbageQuantity}
-                style={{ flex: 1 }}
+                {...(isMobile ? { height: 350 } : { style: { flex: 1 } })}
               />
             </div>
           </div>
@@ -1148,7 +1164,7 @@ const InfectiousWaste: React.FC = () => {
                   false,        // isPercentChart (true/false)
                 )} series={seriesAADC}
                 type={chartTypeAadc}
-                height="85%"
+                height={isMobile ? "350" : "85%"}
               />
             </div>
             <div className="infectious-small-card-container">
@@ -1164,13 +1180,13 @@ const InfectiousWaste: React.FC = () => {
                         options={getPieOptions(false)}
                         series={pieSeries}
                         type="donut"
-                        width={90}
-                        height={90}
+                        width={isMobile ? "180" : "90"}
+                        height={isMobile ? "180" : "90"}
                       />
                     </div>
                   </div>
                 </div>
-                <span className="infectious-box-date">Date per 29 June 2024</span>
+                <span className="recycled-box-date">{lastDayInfectious && lastDayInfectious.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayInfectious.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
               </div>
               <div className="infectious-box">
                 <div className="infectious-box-title">จำนวนคนรวมปี {latestYear}</div>
@@ -1184,13 +1200,13 @@ const InfectiousWaste: React.FC = () => {
                         options={getPieOptions(true)}
                         series={pieSeriesQuantity}
                         type="donut"
-                        width={90}
-                        height={90}
+                        width={isMobile ? "180" : "90"}
+                        height={isMobile ? "180" : "90"}
                       />
                     </div>
                   </div>
                 </div>
-                <span className="infectious-box-date">Date per 29 June 2024</span>
+                <span className="recycled-box-date">{lastDayInfectious && lastDayInfectious.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayInfectious.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
               </div>
             </div>
           </div>
@@ -1198,10 +1214,10 @@ const InfectiousWaste: React.FC = () => {
         <div className="infectious-header-vis">
           <h1 className="infectious-title-text-vis">ข้อมูล Infectious Waste</h1>
           <div className="infectious-btn-container">
-            <button className="infectious-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
+            <button className="infectious-add-btn" onClick={showModal}>{isMobile ? <FormOutlined /> : 'เพิ่มข้อมูลใหม่'}</button>
           </div>
         </div>
-        <div className="infectious-select-date">
+        <div className="infectious-select-date2">
           <div className="infectious-filter-status-and-efficiency">
             <p>สถานะ</p>
             <Select
@@ -1297,19 +1313,19 @@ const InfectiousWaste: React.FC = () => {
         </div>
         <br />
         <div className="infectious-table-data">
-          <div className="infectious-width40">
+          <div >
             <h1 className="infectious-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
           </div>
           <div className="infectious-task-summary">
             <div className="infectious-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="infectious-task-stats">
               <div className="infectious-task-item">
-                <div className="infectious-task-number">{doneTasks}</div>
+                <div className="infectious-task-number status-good">{doneTasks}</div>
                 <div className="infectious-task-label">ผ่านเกณฑ์มาตรฐาน</div>
               </div>
               <div className="infectious-task-divider" />
               <div className="infectious-task-item">
-                <div className="infectious-task-number">{inProgressTasks}</div>
+                <div className="infectious-task-number status-high">{inProgressTasks}</div>
                 <div className="infectious-task-label">ไม่ผ่านเกณฑ์มาตรฐาน</div>
               </div>
             </div>
@@ -1343,8 +1359,11 @@ const InfectiousWaste: React.FC = () => {
               defaultPageSize: 10,
               showSizeChanger: true,
               pageSizeOptions: ['7', '10', '15', '30', '100'],
+              showQuickJumper: true,
+              responsive: true,
+              position: isMobile ? ['bottomCenter'] : ['bottomRight'],
             }}
-
+            scroll={isMobile ? { x: 'max-content' } : undefined}
           />
         </div>
 
@@ -1357,6 +1376,7 @@ const InfectiousWaste: React.FC = () => {
           closable={false}
           centered
           bodyStyle={{ padding: '30px 30px 15px 30px' }}
+          className="modal-create"
         >
           <div className="inf-container">
             <InfectiousCentralForm onCancel={handleAddModalCancel}
@@ -1378,6 +1398,7 @@ const InfectiousWaste: React.FC = () => {
           centered
           onCancel={handleEditModalCancel}
           bodyStyle={{ padding: '30px 30px 15px 30px' }}
+          className="modal-create"
         >
           {editingRecord && (
             <div className="up-recy-container">

@@ -129,37 +129,51 @@
 
 /* Responsive behavior */
 @media (max-width: 768px) {
+
+  .up-recy-container {
+    padding: 10px 20px;
+  }
+
+  /* กลุ่มฟอร์มหลักให้เรียงแนวตั้งเต็มความกว้าง */
   .up-form-group-recy {
-    flex-direction: column;
-    gap: 16px;
+    flex-direction: column !important;
+    gap: 16px !important;
   }
 
-  .up-form-group-recy .ant-form-item {
-    flex: 1 1 100%;
+  /* ทุก Form.Item ให้เต็มความกว้าง */
+  .up-form-group-recy .ant-form-item,
+  .recy-form-group .ant-form-item {
+    flex: 1 1 100% !important;
+    width: 100% !important;
   }
 
+  /* กล่องย่อย mini ให้เต็ม */
+  .up-form-group-mini-recy,
+  .recy-from-mini,
+  .up-recy-fornt-small,
+  .gener-fornt-small {
+    width: 100% !important;
+  }
+
+  /* ปรับ label ให้เล็กลง */
+  .up-form-group-mini-recy .ant-form-item-label>label,
+  .recy-from-mini .ant-form-item-label>label,
+  .up-recy-fornt-small .ant-form-item-label>label,
+  .gener-fornt-small .ant-form-item-label>label {
+    font-size: small !important;
+  }
+
+  /* ปุ่มให้เต็มความกว้าง */
   .up-form-actions-recy {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: column !important;
+    align-items: stretch !important;
   }
 
   .cancel-up-recy,
   .reset-up-recy,
   .submit-up-recy {
-    width: 100%;
-    margin-top: 10px;
-  }
-
-  .up-from-mini-recy {
-    width: 100%;
-  }
-
-  .up-fornt-small-recy .ant-form-item-label>label {
-    font-size: small !important;
-  }
-
-  .gener-fornt-small .ant-form-item-label>label {
-    font-size: small !important;
+    min-width: 79.5px !important;
+    margin-top: 10px !important;
   }
 }
 
