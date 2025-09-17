@@ -10,8 +10,9 @@ import dayjs, { Dayjs } from "dayjs";
 import { GetlistHazardous, GetfirstHazardous, GetLastDayHazardous } from "../../../../../services/garbageServices/hazardousWaste";
 import PhotoMonthlyGarbage from "../../../../../assets/waste/container.png"
 import PhotoDailyGarbage from "../../../../../assets/waste/garbage-bag.png"
-// import PhotoAADC from "../../../../../assets/waste/garbage-truck.png"
 import { listHazardousInterface } from "../../../../../interface/Igarbage/IhazardousWaste";
+const isMobile = window.innerWidth <= 768;
+import { FormOutlined } from '@ant-design/icons';
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -345,7 +346,12 @@ const HazardousWaste: React.FC = () => {
         type: chartType,
         zoom: { enabled: enableZoom, type: 'x', autoScaleYaxis: true },
         fontFamily: "Prompt, 'Prompt', sans-serif",
-        toolbar: { show: true },
+        toolbar: {
+          show: true,
+          tools: {
+            download: true, selection: true, zoom: true, zoomin: !isMobile, zoomout: !isMobile, pan: !isMobile, reset: true
+          }
+        },
       },
       annotations: {
         yaxis: isPercentChart
@@ -374,7 +380,7 @@ const HazardousWaste: React.FC = () => {
                   borderColor: "#FF6F61",
                   borderWidth: 2.5,
                   strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middleTarget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
+                  label: { text: `มาตรฐาน ${middleTarget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#ff6e61e4", color: "#fff" } },
                 },
               ]
               : []
@@ -506,7 +512,7 @@ const HazardousWaste: React.FC = () => {
         }
       },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
-      markers: chartType === "line" ? { size: 4.5, shape: ["circle", "triangle"], hover: { sizeOffset: 3 }, } : { size: 0 },
+      markers: chartType === "line" ? { size: isMobile ? 0 : 4.5, shape: ["circle", "triangle"], hover: { sizeOffset: 3 }, } : { size: 0 },
       legend: { show: true, showForSingleSeries: true, position: 'top', horizontalAlign: 'center', },
     };
   };
@@ -752,38 +758,6 @@ const HazardousWaste: React.FC = () => {
             </div>
             <br />
           </div>
-          {/* <img src={PhotoAADC} alt="Before Water" className="hazardous-photo" /> */}
-          {/* <div>
-            <h4>ค่า AADC ล่าสุด</h4>
-            <div className="hazardous-main">
-              <span>
-                {lastDayHazardous !== null ? (
-                  <>
-                    <span className="hazardous-value">{lastDayHazardous.AADC}</span>{" "}
-                    {lastDayHazardous.UnitName || ""}
-                  </>
-                ) : (
-                  "-"
-                )}
-              </span>
-            </div>
-            {lastDayHazardous ? (
-              <p>
-                มาตรฐาน{" "}
-                <span>
-                  {
-                    (lastDayHazardous.MiddleTarget !== null && lastDayHazardous.MiddleTarget !== 0) || (lastDayHazardous.MinTarget !== null && lastDayHazardous.MinTarget !== 0) || (lastDayHazardous.MaxTarget !== null && lastDayHazardous.MaxTarget !== 0) || (lastDayHazardous.UnitName && lastDayHazardous.UnitName.trim() !== "")
-                      ? (lastDayHazardous.MiddleTarget !== null && lastDayHazardous.MiddleTarget !== 0
-                        ? lastDayHazardous.MiddleTarget : `${(lastDayHazardous.MinTarget !== null && lastDayHazardous.MinTarget !== 0 ? lastDayHazardous.MinTarget : "-")} - ${(lastDayHazardous.MaxTarget !== null && lastDayHazardous.MaxTarget !== 0 ? lastDayHazardous.MaxTarget : "-")}`)
-                      : "-"
-                  }
-                </span>{" "}
-                {lastDayHazardous.UnitName || ""}
-              </p>
-            ) : (
-              <p>Loading...</p>
-            )}
-          </div> */}
         </div>
       </div>
       <div style={{ padding: "20px", backgroundColor: "#F8F9FA" }}>
@@ -791,10 +765,8 @@ const HazardousWaste: React.FC = () => {
           <div>
             <h1
               className="hazardous-title-text"
-              onClick={() => navigate(-1)}
-              style={{ cursor: 'pointer' }}
             >
-              <LeftOutlined className="hazardous-back-icon" />
+              <LeftOutlined className="hazardous-back-icon" onClick={() => navigate(-1)} style={{ cursor: 'pointer' }} />
               กราฟ Hazardous Waste
             </h1>
           </div>
@@ -927,7 +899,7 @@ const HazardousWaste: React.FC = () => {
                 false              // isPercentChart (true/false)
               )} series={series}
               type={chartTypeData}
-              style={{ flex: 1 }}
+              height={350}
             />
           </div>
           <div className="hazardous-graph-card">
@@ -986,17 +958,17 @@ const HazardousWaste: React.FC = () => {
                 true              // isPercentChart (true/false)
               )} series={seriesMonthlyGarbageQuantityNormalized}
               type={chartTypeCompareMonthlyGarbageQuantity}
-              style={{ flex: 1 }}
+              height={350}
             />
           </div>
         </div>
         <div className="hazardous-header-vis">
           <h1 className="hazardous-title-text-vis">ข้อมูล Hazardous Waste</h1>
           <div className="hazardous-btn-container">
-            <button className="hazardous-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
+            <button className="hazardous-add-btn" onClick={showModal}>{isMobile ? <FormOutlined /> : 'เพิ่มข้อมูลใหม่'}</button>
           </div>
         </div>
-        <div className="hazardous-select-date">
+        <div className="hazardous-select-date2">
           <div className="hazardous-filter-status-and-efficiency">
           </div>
           <div className="hazardous-filter-date">
@@ -1080,7 +1052,7 @@ const HazardousWaste: React.FC = () => {
         </div>
         <br />
         <div className="hazardous-table-data">
-          <div className="hazardous-width40">
+          <div >
             <h1 className="hazardous-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
           </div>
           <div className="hazardous-task-summary">
@@ -1116,8 +1088,11 @@ const HazardousWaste: React.FC = () => {
               defaultPageSize: 10,
               showSizeChanger: true,
               pageSizeOptions: ['7', '10', '15', '30', '100'],
+              showQuickJumper: true,
+              responsive: true,
+              position: isMobile ? ['bottomCenter'] : ['bottomRight'],
             }}
-
+            scroll={isMobile ? { x: 'max-content' } : undefined}
           />
         </div>
 
@@ -1130,6 +1105,7 @@ const HazardousWaste: React.FC = () => {
           closable={false}
           centered
           bodyStyle={{ padding: '35px 35px 20px 35px' }}
+          className="modal-create"
         >
           <div className="gen-container">
             <HazardousCentralForm onCancel={handleAddModalCancel}
@@ -1151,6 +1127,7 @@ const HazardousWaste: React.FC = () => {
           centered
           onCancel={handleEditModalCancel}
           bodyStyle={{ padding: '35px 35px 20px 35px' }}
+          className="modal-create"
         >
           {editingRecord && (
             <div className="up-recy-container">

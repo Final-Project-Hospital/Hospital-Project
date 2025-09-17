@@ -1,6 +1,5 @@
 .res-title-header {
-  /* background: linear-gradient(90deg, #356768, #5AEEF0); */
-  background-color: #13b7b9;
+  background: linear-gradient(90deg, #0f766e, #22d3ee);
   padding: 20px;
   border-radius: 0 0 20px 20px;
   color: #ffffff;
@@ -11,7 +10,7 @@
 
 .res-title-header h1 {
   font-size: 2rem;
-  text-shadow: 0 4px 20px #d9d9d9a4;
+  /* text-shadow: 0 4px 20px #d9d9d9a4; */
   font-weight: bold;
   margin: 0;
 }
@@ -169,6 +168,7 @@
   min-width: 120px;
 }
 
+.res-select-date2,
 .res-select-date {
   display: flex;
   justify-content: space-between;
@@ -179,6 +179,7 @@
 }
 
 /* ลบกรอบของ Select */
+.res-select-date2 .ant-select-selector,
 .res-select-date .ant-select-selector {
   border: none !important;
   box-shadow: none !important;
@@ -187,6 +188,7 @@
 }
 
 /* ลบกรอบของ DatePicker และ RangePicker */
+.res-select-date2 .ant-picker,
 .res-select-date .ant-picker {
   border: none !important;
   box-shadow: none !important;
@@ -194,6 +196,7 @@
   background-color: rgb(255, 255, 255) !important;
 }
 
+.res-select-date2 .ant-picker-input input::placeholder,
 .res-select-date .ant-picker-input input::placeholder {
   color: #333 !important;
 }
@@ -226,6 +229,7 @@
   color: #6e6e76;
 }
 
+.res-select-date2 .ant-select-selection-placeholder,
 .res-select-date .ant-select-selection-placeholder {
   color: #333 !important;
   /* สี placeholder */
@@ -332,6 +336,8 @@
   margin-bottom: 20px;
   position: relative;
   z-index: 5;
+  overflow-x: unset;
+  overflow: visible;
 }
 
 .res-table-data .ant-table-thead>tr>th {
@@ -519,7 +525,7 @@
 }
 
 /* Responsive for medium screens (max-width: 768px) */
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   .res-title-header {
     margin-top: 50px;
     text-align: center;
@@ -545,13 +551,13 @@
 
   .res-table-data .ant-table {
     min-width: 600px !important;
-    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
+    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก 
   }
 
   .res-table-data .ant-table-thead>tr>th,
   .res-table-data .ant-table-ttsy>tr>td {
     white-space: nowrap !important;
-    /* บรรทัดไม่ตัด */
+    /* บรรทัดไม่ตัด 
     padding: 8px !important;
     font-size: 12px !important;
   }
@@ -570,12 +576,21 @@
     font-size: 12px;
     height: 28px;
   }
-}
+} */
 
 /* Responsive for small screens (max-width: 480px) */
 @media (max-width: 480px) {
   .res-title-header {
+    margin-top: 50px;
+    text-align: center;
     padding: 15px;
+     flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .res-card {
+    display: none;
   }
 
   .res-title-header h1 {
@@ -608,119 +623,157 @@
   }
 
   .res-width40 {
-    width: 60%;
+    width: 70%;
   }
 
-  /* .res-table-data {
-    overflow-x: auto;
-    padding: 10px;
-  }
-  .res-table-data .ant-table {
-    min-width: 600px !important;
-  }
-  .res-table-data .ant-table-thead>tr>th,
-  .res-table-data .ant-table-ttsy>tr>td {
-    white-space: nowrap !important;
-    padding: 8px !important;
-    font-size: 5px !important;
-  } */
   .res-select-date {
-    align-items: flex-start;
-    gap: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
     width: 100%;
   }
 
-  /* ปรับ Select filter ให้เต็มจอเล็ก */
+  .res-select-date>div {
+    flex: 1 1 auto;
+    /* ยืดตามพื้นที่ */
+    min-width: 0;
+    /* สำคัญ ป้องกัน overflow */
+  }
+
+  .res-select-date .ant-picker,
   .res-select-date .res-select-filter {
-    width: 50% !important;
+    width: 100%;
+    /* ให้เต็มพื้นที่ div */
+    max-width: 200px;
+    /* ปรับให้เหมาะกับมือถือ */
   }
 
-  /* ปรับ DatePicker และ RangePicker ให้เต็มจอ */
-  .res-select-date .ant-picker {
-    width: 100% !important;
+  .res-filter-date {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: 100%;
   }
 
-}
-
-/* Responsive for small screens (max-width: 480px) */
-@media (max-width: 376px) {
-  .res-title-header {
-    padding: 15px;
-    max-width: 100%;
+  .res-filter-date>div {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
-  .res-width25 {
-    width: 40%;
+  .res-filter-date .ant-picker,
+  .res-filter-date .res-select-filter {
+    width: 100%;
+    max-width: 200px;
   }
 
-  .res-width40 {
-    width: 60%;
-  }
-
-  .res-title-header h1 {
+  .res-title-text-vis {
     font-size: 1rem;
   }
 
-  .res-graph-card {
-    min-height: 350px;
-    max-width: 375px;
+  .res-add-btn {
+    font-size: 1rem;
+    padding: 5px 12px;
   }
 
-  .res-select-group {
-    padding: 10px;
-    gap: 8px;
-  }
-
-  .res-head-graph-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .res-right-select-graph {
-    text-align: left;
-    width: 100%;
-  }
-
-  .res-table-data {
-    overflow-x: auto;
-    padding: 10px;
-  }
-
-  .res-table-data .ant-table {
-    min-width: 600px !important;
-    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
-  }
-
-  .res-table-data .ant-table-thead>tr>th,
-  .res-table-data .ant-table-ttsy>tr>td {
-    white-space: nowrap !important;
-    /* บรรทัดไม่ตัด */
-    padding: 5px !important;
-    font-size: 7px !important;
-  }
-
-  .res-circle-btn {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 2px solid #d9d9d9;
-    background-color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
-  }
-
-  .res-circle-btn:hover {
-    background-color: #f5f5f5;
+  .res-title-text {
+    font-size: 1rem;
   }
 
   .res-custom-modal {
-    width: 90% !important;
-    /* important ใช้ในกรณีที่ Ant Design อาจ override ค่า */
-    max-width: 1200px !important;
-    margin-top: 60px !important;
+    width: 100% !important;
+    /* max-width:100% !important; */
+    padding: 10px !important;
+  }
+
+  /* ปรับสูงสุดให้ไม่ล้นจอมือถือ */
+  .res-custom-modal .ant-modal-content {
+    margin-top: 50px;
+    max-height: 100vh !important;
+  }
+
+  .res-task-number {
+    font-size: 13px;
+  }
+
+  .res-task-label {
+    font-size: 10px;
+  }
+
+  .res-task-total {
+    font-size: 10.5px;
+    margin-bottom: 15px;
+  }
+
+  .res-filter-status-and-efficiency {
+    display: flex;
+    flex-wrap: nowrap;
+    /* ห้าม wrap ลงบรรทัดใหม่ */
+    align-items: center;
+    gap: 10px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .res-filter-status-and-efficiency p {
+    margin: 0;
+    font-size: 12px;
+    flex: 0 0 auto;
+    /* label ไม่ยืด */
+    white-space: nowrap;
+    /* label ไม่หักบรรทัด */
+  }
+
+  .res-filter-status-and-efficiency .ant-select {
+    flex: 1 1 0;
+    /* select ยืดเต็มพื้นที่ที่เหลือ */
+    min-width: 0;
+    /* บังคับไม่ให้ overflow */
+  }
+
+  .modal-create {
+    margin-top: 70px !important;
+  }
+
+  .res-title-text-table {
+    font-size: 1rem;
+  }
+
+  .res-action-buttons {
+    min-width: 80px;
+    /* เล็กลงบนมือถือ */
+    gap: 6px;
+  }
+
+  .res-circle-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .res-circle-btn .anticon {
+    font-size: 16px;
+  }
+
+  .res-task-stats {
+    margin-left: auto;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .res-table-data {
+    padding: 20px;
+  }
+
+  .res-custom-modal {
+    width: 100% !important;
+    padding: 5px !important;
+  }
+
+  .res-chart-containner {
+    width: 100%;
+    min-height: 430px;
   }
 }
 

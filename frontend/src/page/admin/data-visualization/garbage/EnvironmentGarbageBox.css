@@ -83,7 +83,7 @@
 
 .g-wqc-info p {
   margin: 1.0rem 0 0;
-  font-size: 1.0rem;
+   font-size: 0.95rem;
   color: #5D5D5D;
 }
 
@@ -159,7 +159,7 @@
     gap: 1.5rem;
   }
 
-  .g-wqc-card {
+  /* .g-wqc-card {
     flex-direction: column;
     text-align: center;
     gap: 1rem;
@@ -169,7 +169,7 @@
     width: 60%;
     height: 2px;
     margin: 1rem 0;
-  }
+  } */
 
   .g-wqc-icon {
     width: 60px;
