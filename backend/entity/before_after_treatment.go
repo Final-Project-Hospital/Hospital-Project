@@ -6,7 +6,7 @@ import (
 
 type BeforeAfterTreatment struct {
 	gorm.Model
-	TreatmentName	string
+	TreatmentName	string `valid:"required~TreatmentName is required"`
 	
 	EnvironmentalRecord	[]EnvironmentalRecord `gorm:"foreignKey: BeforeAfterTreatmentID"`
 }

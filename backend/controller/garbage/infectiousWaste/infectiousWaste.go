@@ -3,6 +3,7 @@ package infectiousWaste
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -109,14 +110,23 @@ func CreateInfectious(c *gin.Context) {
 	// ฟังก์ชันตรวจสอบ Status
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-		if target.MiddleTarget != 0 {
-			if value >= float64(target.MiddleTarget) {
+		// ฟังก์ชันช่วยปัด 2 ตำแหน่ง
+		round2 := func(f float64) float64 {
+			return math.Round(f*100) / 100
+		}
+		value = round2(value)
+		middle := round2(target.MiddleTarget)
+		min := round2(target.MinTarget)
+		max := round2(target.MaxTarget)
+
+		if middle != 0 {
+			if value >= middle {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		} else {
-			if value >= float64(target.MinTarget) && value <= float64(target.MaxTarget) {
+			if value >= min && value <= max {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
@@ -436,14 +446,23 @@ func UpdateOrCreateInfectious(c *gin.Context) {
 	// ฟังก์ชันตรวจสอบ Status
 	getStatusID := func(value float64) uint {
 		var status entity.Status
-		if target.MiddleTarget != 0 {
-			if value >= float64(target.MiddleTarget) {
+		// ฟังก์ชันช่วยปัด 2 ตำแหน่ง
+		round2 := func(f float64) float64 {
+			return math.Round(f*100) / 100
+		}
+		value = round2(value)
+		middle := round2(target.MiddleTarget)
+		min := round2(target.MinTarget)
+		max := round2(target.MaxTarget)
+
+		if middle != 0 {
+			if value >= middle {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		} else {
-			if value >= float64(target.MinTarget) && value <= float64(target.MaxTarget) {
+			if value >= min && value <= max {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)

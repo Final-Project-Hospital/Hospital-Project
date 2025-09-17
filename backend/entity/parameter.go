@@ -6,7 +6,7 @@ import (
 
 type Parameter struct {
 	gorm.Model
-	ParameterName	string
+	ParameterName	string `valid:"required~ParameterName is required"`
 	
 	EnvironmentalRecord	[]EnvironmentalRecord `gorm:"foreignKey: ParameterID"`
 }

@@ -46,12 +46,10 @@ const UpdateRecycledCentralForm: React.FC<UpdateRecycledCentralFormProps> = ({
 
         const record = initialValues[0];
 
-        // ฟังก์ชันเฉพาะ useEffect นี้: ปัดทศนิยม 2 ตำแหน่ง (round half up)
-        const toTwoDecimal = (val: any) => {
-            if (val === null || val === undefined) return undefined;
-            const num = Number(val);
-            if (isNaN(num)) return undefined;
-            return Math.round(num * 100) / 100;
+        // ฟังก์ชันปัดขึ้น 2 ตำแหน่ง
+        const toTwoDecimal = (value: any) => {
+            if (value === null || value === undefined) return undefined;
+            return Math.ceil(Number(value) * 100) / 100;
         };
 
         form.setFieldsValue({
@@ -201,6 +199,9 @@ const UpdateRecycledCentralForm: React.FC<UpdateRecycledCentralFormProps> = ({
                                         if (!Number.isInteger(value)) {
                                             return Promise.reject("กรุณากรอกเป็นจำนวนเต็มเท่านั้น");
                                         }
+                                        if (value !== undefined && value < 0) {
+                                            return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                        }
                                         return Promise.resolve();
                                     },
                                 }
@@ -223,6 +224,9 @@ const UpdateRecycledCentralForm: React.FC<UpdateRecycledCentralFormProps> = ({
                                         if (value === undefined || value === null) return Promise.resolve();
                                         if (typeof value !== "number" || isNaN(value)) {
                                             return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                                        }
+                                        if (value !== undefined && value < 0) {
+                                            return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
                                         }
                                         return Promise.resolve();
                                     },
@@ -253,7 +257,9 @@ const UpdateRecycledCentralForm: React.FC<UpdateRecycledCentralFormProps> = ({
 
                     <div className="recy-from-mini">
                         <Form.Item label="ปริมาณขยะต่อวัน (คำนวณอัตโนมัติ)" name="average_daily_garbage">
-                            <InputNumber style={{ width: "100%" }} disabled placeholder="คำนวณอัตโนมัติ" />
+                            <InputNumber style={{ width: "100%" }} disabled placeholder="คำนวณอัตโนมัติ"
+                                formatter={(value) => value !== undefined && value !== null ? Number(value).toFixed(2) : ""}
+                                parser={(value) => value ? parseFloat(value) : 0} />
                         </Form.Item>
                     </div>
                 </div>
@@ -269,6 +275,9 @@ const UpdateRecycledCentralForm: React.FC<UpdateRecycledCentralFormProps> = ({
                                         if (value === undefined || value === null) return Promise.resolve();
                                         if (typeof value !== "number" || isNaN(value)) {
                                             return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                                        }
+                                        if (value !== undefined && value < 0) {
+                                            return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
                                         }
                                         return Promise.resolve();
                                     },

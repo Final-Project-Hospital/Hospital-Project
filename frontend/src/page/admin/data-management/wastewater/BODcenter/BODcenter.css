@@ -140,9 +140,23 @@
   display: flex;
   flex-direction: column;
 }
+.bod-container-modal {
+  all: unset !important;
+  padding: 0px !important;
+  margin: 0px 0px 0px 0px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+  font-size: inherit !important;
+}
 
 /* Responsive behavior */
 @media (max-width: 768px) {
+  .bod-container {
+      padding: 10px 20px;
+  }
   .bod-form-group {
     flex-direction: column;
     gap: 16px;
@@ -160,7 +174,7 @@
   .bod-cancel,
   .bod-reset,
   .bod-submit {
-    width: 100%;
+    min-width: 79.5px;
     margin-top: 10px;
   }
 

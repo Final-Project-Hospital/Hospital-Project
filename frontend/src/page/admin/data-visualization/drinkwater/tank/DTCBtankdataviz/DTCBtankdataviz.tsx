@@ -9,6 +9,8 @@ import './DTCBtankdataviz.css';
 import dayjs, { Dayjs } from "dayjs";
 import { GetlistDTCBtank, GetfirstDTCBtank, GetBeforeAfterDTCBtank } from "../../../../../../services/drinkwaterServices/tank/dtcbT";
 import AftereWater from "../../../../../../assets/rain.png"
+const isMobile = window.innerWidth <= 768;
+import { FormOutlined } from '@ant-design/icons';
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -410,7 +412,12 @@ const DTCBtankdataviz: React.FC = () => {
     return {
       chart: {
         id: "dtcb-chart",
-        toolbar: { show: true },
+        toolbar: {
+          show: true,
+          tools: {
+            download: true, selection: true, zoom: true, zoomin: !isMobile, zoomout: !isMobile, pan: !isMobile, reset: true
+          }
+        },
         zoom: { enabled: enableZoom, type: 'x', autoScaleYaxis: true },
         fontFamily: "Prompt, 'Prompt', sans-serif",
       },
@@ -426,7 +433,7 @@ const DTCBtankdataviz: React.FC = () => {
                   borderColor: "#FF6F61",
                   borderWidth: 1.5,
                   strokeDashArray: 6,
-                  label: { text: "ไม่พบ", style: { background: "#ff6e61d4", color: "#fff" } },
+                  label: { text: "ไม่พบ", style: { background: "#ff6e61e4", color: "#fff" } },
                 },
               ]
               : (isStandardRange
@@ -453,7 +460,7 @@ const DTCBtankdataviz: React.FC = () => {
                       borderColor: "#FF6F61",
                       borderWidth: 1.5,
                       strokeDashArray: 6,
-                      label: { text: `มาตรฐาน ${middlestandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
+                      label: { text: `มาตรฐาน ${middlestandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#ff6e61e4", color: "#fff" } },
                     },
                   ]
                   : []
@@ -514,14 +521,14 @@ const DTCBtankdataviz: React.FC = () => {
               const item = afterMaxMinRef.current[dataPointIndex];
               const unit = item.maxUnit || 'ไม่มีการตรวจวัด';
               if (unit === 'ไม่มีการตรวจวัด') return unit;
-              return `${item.max.toFixed(2)} ${unit} (วันที่: ${item.maxDate})`;
+              return `${(item.max ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit} (วันที่: ${item.maxDate})`;
             }
 
             if (seriesName === "ค่าต่ำสุด" && afterMaxMinRef.current && afterMaxMinRef.current.length > dataPointIndex) {
               const item = afterMaxMinRef.current[dataPointIndex];
               const unit = item.minUnit || 'ไม่มีการตรวจวัด';
               if (unit === 'ไม่มีการตรวจวัด') return unit;
-              return `${item.min.toFixed(2)} ${unit} (วันที่: ${item.minDate})`;
+              return `${(item.min ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit} (วันที่: ${item.minDate})`;
             }
 
             if (seriesName === "ค่าเฉลี่ย" && afterMaxMinRef.current && afterMaxMinRef.current.length > dataPointIndex) {
@@ -529,7 +536,7 @@ const DTCBtankdataviz: React.FC = () => {
               const unit = item.avgUnit || 'ไม่มีการตรวจวัด';
               if (unit === 'ไม่มีการตรวจวัด') return unit;
               const thaiYear = item.avgYear ? (parseInt(item.avgYear) + 543) : "";
-              return `${item.avg?.toFixed(2)} ${unit} (ปี: ${thaiYear})`; // ✅ แสดงปี + ค่า + หน่วย
+              return `${(item.avg ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit} (ปี: ${thaiYear})`; // ✅ แสดงปี + ค่า + หน่วย
             }
 
             // กรณี beforeSeries หรือ compareSeries "ก่อนบำบัด"
@@ -563,11 +570,11 @@ const DTCBtankdataviz: React.FC = () => {
         enabled: false,
       },
       legend: { show: true, showForSingleSeries: true, position: 'top', horizontalAlign: 'center' },
-      stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
+      stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3,dashArray: [0, 0, 8], } : { show: false },
       markers: chartType === "line"
         ? {
-          size: 4.5,
-          shape: ["circle", "triangle", "diamond"],
+          size: isMobile ? 0 : 4.5,
+          shape: ["circle", "triangle", "star"],
           hover: { sizeOffset: 3 },
         }
         : { size: 0 },
@@ -873,10 +880,8 @@ const DTCBtankdataviz: React.FC = () => {
           <div>
             <h1
               className="dtcb-title-text"
-              onClick={() => navigate(-1)}
-              style={{ cursor: 'pointer' }}
             >
-              <LeftOutlined className="dtcb-back-icon" />
+              <LeftOutlined className="dtcb-back-icon" onClick={() => navigate(-1)} style={{ cursor: 'pointer' }} />
               กราฟ Total Coliform Bacteria of Tank
             </h1>
           </div>
@@ -1087,10 +1092,10 @@ const DTCBtankdataviz: React.FC = () => {
         <div className="dtcb-header-vis">
           <h1 className="dtcb-title-text-vis">ข้อมูล Total Coliform Bacteria of Tank</h1>
           <div className="dtcb-btn-container">
-            <button className="dtcb-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
+            <button className="dtcb-add-btn" onClick={showModal}>{isMobile ? <FormOutlined /> : 'เพิ่มข้อมูลใหม่'}</button>
           </div>
         </div>
-        <div className="dtcb-select-date">
+        <div className="dtcb-select-date2">
           <div className="dtcb-filter-status-and-efficiency">
             <p>สถานะ</p>
             <Select
@@ -1232,8 +1237,11 @@ const DTCBtankdataviz: React.FC = () => {
               defaultPageSize: 10,
               showSizeChanger: true,
               pageSizeOptions: ['7', '10', '15', '30', '100'],
+              showQuickJumper: true,
+              responsive: true,
+              position: isMobile ? ['bottomCenter'] : ['bottomRight'],
             }}
-
+            scroll={isMobile ? { x: 'max-content' } : undefined}
           />
         </div>
 
@@ -1246,6 +1254,7 @@ const DTCBtankdataviz: React.FC = () => {
           closable={false}
           centered
           bodyStyle={{ padding: '35px 35px 20px 35px' }}
+          className="modal-create"
         >
           <div className="dtcb-container">
             <DTCBtankCentralForm onCancel={handleAddModalCancel}
@@ -1266,6 +1275,7 @@ const DTCBtankdataviz: React.FC = () => {
           centered
           onCancel={handleEditModalCancel}
           bodyStyle={{ padding: '35px 35px 20px 35px' }}
+          className="modal-create"
         >
           {editingRecord && (
             <div className="up-tds-container">

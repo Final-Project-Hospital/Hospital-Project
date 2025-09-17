@@ -11,6 +11,8 @@ import { GetlistSUL, GetfirstSUL, GetBeforeAfterSUL } from "../../../../../servi
 import BeforeWater from "../../../../../assets/mineral.png"
 import AftereWater from "../../../../../assets/rain.png"
 import Efficiency from "../../../../../assets/productivity.png"
+const isMobile = window.innerWidth <= 768;
+import { FormOutlined } from '@ant-design/icons';
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -335,7 +337,12 @@ const SULdataviz: React.FC = () => {
     return {
       chart: {
         id: "sul-chart",
-        toolbar: { show: true },
+        toolbar: {
+          show: true,
+          tools: {
+            download: true, selection: true, zoom: true, zoomin: !isMobile, zoomout: !isMobile, pan: !isMobile, reset: true
+          }
+        },
         zoom: { enabled: enableZoom, type: 'x', autoScaleYaxis: true },
         fontFamily: "Prompt, 'Prompt', sans-serif",
       },
@@ -351,7 +358,7 @@ const SULdataviz: React.FC = () => {
                   borderColor: "#FF6F61",
                   borderWidth: 1.5,
                   strokeDashArray: 6,
-                  label: { text: "ไม่พบ", style: { background: "#ff6e61d4", color: "#fff" } },
+                  label: { text: "ไม่พบ", style: { background: "#ff6e61e4", color: "#fff" } },
                 },
               ]
               : (isStandardRange
@@ -378,7 +385,7 @@ const SULdataviz: React.FC = () => {
                       borderColor: "#FF6F61",
                       borderWidth: 1.5,
                       strokeDashArray: 6,
-                      label: { text: `มาตรฐาน ${middlestandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
+                      label: { text: `มาตรฐาน ${middlestandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#ff6e61e4", color: "#fff" } },
                     },
                   ]
                   : []
@@ -450,11 +457,11 @@ const SULdataviz: React.FC = () => {
       dataLabels: {
         enabled: false,
       },
-      legend: { show: true,showForSingleSeries: true, position: 'top', horizontalAlign: 'center' },
+      legend: { show: true, showForSingleSeries: true, position: 'top', horizontalAlign: 'center' },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
       markers: chartType === "line"
         ? {
-          size: 4.5,
+          size: isMobile ? 0 : 4.5,
           shape: ["circle", "triangle"],
           hover: { sizeOffset: 3 },
         }
@@ -760,10 +767,16 @@ const SULdataviz: React.FC = () => {
               <p>
                 มาตรฐาน{" "}
                 <span>
-                  {(BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== -1) || (BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== -1) || (BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== -1) || (BeforeAfter.before.UnitName && BeforeAfter.before.UnitName.trim() !== "")
-                    ? (BeforeAfter.before.MiddleValue !== null && BeforeAfter.before.MiddleValue !== -1
-                      ? BeforeAfter.before.MiddleValue.toLocaleString() : `${(BeforeAfter.before.MinValue !== null && BeforeAfter.before.MinValue !== -1 ? BeforeAfter.before.MinValue.toLocaleString() : "-")} - ${(BeforeAfter.before.MaxValue !== null && BeforeAfter.before.MaxValue !== -1 ? BeforeAfter.before.MaxValue.toLocaleString() : "-")}`) : "-"
-                  }
+                  {(() => {
+                    const { MiddleValue, MinValue, MaxValue, UnitName } = BeforeAfter.before;
+                    if (MiddleValue === 0 && MinValue === -1 && MaxValue === -1) { return "ไม่พบ"; }
+                    // เงื่อนไขเดิม
+                    if ((MiddleValue !== null && MiddleValue !== -1) || (MinValue !== null && MinValue !== -1) || (MaxValue !== null && MaxValue !== -1) || (UnitName && UnitName.trim() !== "")
+                    ) {
+                      return MiddleValue !== null && MiddleValue !== -1 ? MiddleValue.toLocaleString() : `${MinValue !== null && MinValue !== -1 ? MinValue.toLocaleString() : "-"} - ${MaxValue !== null && MaxValue !== -1 ? MaxValue.toLocaleString() : "-"}`;
+                    }
+                    return "-";
+                  })()}
                 </span>{" "}
                 {BeforeAfter.before.UnitName || ""}
               </p>
@@ -790,12 +803,16 @@ const SULdataviz: React.FC = () => {
               <p>
                 มาตรฐาน{" "}
                 <span>
-                  {
-                    (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== -1) || (BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== -1) || (BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== -1) || (BeforeAfter.after.UnitName && BeforeAfter.after.UnitName.trim() !== "")
-                      ? (BeforeAfter.after.MiddleValue !== null && BeforeAfter.after.MiddleValue !== -1
-                        ? BeforeAfter.after.MiddleValue.toLocaleString() : `${(BeforeAfter.after.MinValue !== null && BeforeAfter.after.MinValue !== -1 ? BeforeAfter.after.MinValue.toLocaleString() : "-")} - ${(BeforeAfter.after.MaxValue !== null && BeforeAfter.after.MaxValue !== -1 ? BeforeAfter.after.MaxValue.toLocaleString() : "-")}`)
-                      : "-"
-                  }
+                  {(() => {
+                    const { MiddleValue, MinValue, MaxValue, UnitName } = BeforeAfter.after;
+                    if (MiddleValue === 0 && MinValue === -1 && MaxValue === -1) { return "ไม่พบ"; }
+                    // เงื่อนไขเดิม
+                    if ((MiddleValue !== null && MiddleValue !== -1) || (MinValue !== null && MinValue !== -1) || (MaxValue !== null && MaxValue !== -1) || (UnitName && UnitName.trim() !== "")
+                    ) {
+                      return MiddleValue !== null && MiddleValue !== -1 ? MiddleValue.toLocaleString() : `${MinValue !== null && MinValue !== -1 ? MinValue.toLocaleString() : "-"} - ${MaxValue !== null && MaxValue !== -1 ? MaxValue.toLocaleString() : "-"}`;
+                    }
+                    return "-";
+                  })()}
                 </span>{" "}
                 {BeforeAfter.after.UnitName || ""}
               </p>
@@ -836,10 +853,8 @@ const SULdataviz: React.FC = () => {
           <div>
             <h1
               className="sul-title-text"
-              onClick={() => navigate(-1)}
-              style={{ cursor: 'pointer' }}
             >
-              <LeftOutlined className="sul-back-icon" />
+              <LeftOutlined className="sul-back-icon" onClick={() => navigate(-1)} style={{ cursor: 'pointer' }} />
               กราฟ Sulfide
             </h1>
           </div>
@@ -1138,10 +1153,10 @@ const SULdataviz: React.FC = () => {
         <div className="sul-header-vis">
           <h1 className="sul-title-text-vis">ข้อมูล Sulfide</h1>
           <div className="sul-btn-container">
-            <button className="sul-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
+            <button className="sul-add-btn" onClick={showModal}>{isMobile ? <FormOutlined /> : 'เพิ่มข้อมูลใหม่'}</button>
           </div>
         </div>
-        <div className="sul-select-date">
+        <div className="sul-select-date2">
           <div className="sul-filter-status-and-efficiency">
             <p>ประสิทธิภาพ</p>
             <Select
@@ -1303,8 +1318,11 @@ const SULdataviz: React.FC = () => {
               defaultPageSize: 10,
               showSizeChanger: true,
               pageSizeOptions: ['7', '10', '15', '30', '100'],
+              showQuickJumper: true,
+              responsive: true,
+              position: isMobile ? ['bottomCenter'] : ['bottomRight'],
             }}
-
+            scroll={isMobile ? { x: 'max-content' } : undefined}
           />
         </div>
 
@@ -1317,6 +1335,7 @@ const SULdataviz: React.FC = () => {
           closable={false}
           centered
           bodyStyle={{ padding: '35px 35px 20px 35px' }}
+          className="modal-create"
         >
           <div className="sul-container">
             <SULCentralForm onCancel={handleAddModalCancel}
@@ -1337,6 +1356,7 @@ const SULdataviz: React.FC = () => {
           centered
           onCancel={handleEditModalCancel}
           bodyStyle={{ padding: '35px 35px 20px 35px' }}
+          className="modal-create"
         >
           {editingRecord && (
             <div className="up-tds-container">

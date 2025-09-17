@@ -10,8 +10,9 @@ import dayjs, { Dayjs } from "dayjs";
 import { GetlistChemical, GetfirstChemical, GetLastDayChemical } from "../../../../../services/garbageServices/chemicalWaste";
 import PhotoMonthlyGarbage from "../../../../../assets/waste/container.png"
 import PhotoDailyGarbage from "../../../../../assets/waste/garbage-bag.png"
-// import PhotoAADC from "../../../../../assets/waste/garbage-truck.png"
 import { listChemicalInterface } from "../../../../../interface/Igarbage/IchemicalWaste";
+const isMobile = window.innerWidth <= 768;
+import { FormOutlined } from '@ant-design/icons';
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -344,7 +345,12 @@ const ChemicalWaste: React.FC = () => {
         type: chartType,
         zoom: { enabled: enableZoom, type: 'x', autoScaleYaxis: true },
         fontFamily: "Prompt, 'Prompt', sans-serif",
-        toolbar: { show: true },
+        toolbar: {
+          show: true,
+          tools: {
+            download: true, selection: true, zoom: true, zoomin: !isMobile, zoomout: !isMobile, pan: !isMobile, reset: true
+          }
+        },
       },
       annotations: {
         yaxis: isPercentChart
@@ -373,7 +379,7 @@ const ChemicalWaste: React.FC = () => {
                   borderColor: "#FF6F61",
                   borderWidth: 2.5,
                   strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middleTarget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
+                  label: { text: `มาตรฐาน ${middleTarget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#ff6e61e4", color: "#fff" } },
                 },
               ]
               : []
@@ -502,7 +508,7 @@ const ChemicalWaste: React.FC = () => {
         }
       },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
-      markers: chartType === "line" ? { size: 4.5, shape: ["circle", "triangle"], hover: { sizeOffset: 3 }, } : { size: 0 },
+      markers: chartType === "line" ? { size: isMobile ? 0 : 4.5, shape: ["circle", "triangle"], hover: { sizeOffset: 3 }, } : { size: 0 },
       legend: { show: true, showForSingleSeries: true, position: 'top', horizontalAlign: 'center', },
     };
   };
@@ -758,38 +764,6 @@ const ChemicalWaste: React.FC = () => {
             </div>
             <br />
           </div>
-          {/* <img src={PhotoAADC} alt="Before Water" className="chemical-photo" /> */}
-          {/* <div>
-            <h4>ค่า AADC ล่าสุด</h4>
-            <div className="chemical-main">
-              <span>
-                {lastDayChemical !== null ? (
-                  <>
-                    <span className="chemical-value">{lastDayChemical.AADC}</span>{" "}
-                    {lastDayChemical.UnitName || ""}
-                  </>
-                ) : (
-                  "-"
-                )}
-              </span>
-            </div>
-            {lastDayChemical ? (
-              <p>
-                มาตรฐาน{" "}
-                <span>
-                  {
-                    (lastDayChemical.MiddleTarget !== null && lastDayChemical.MiddleTarget !== 0) || (lastDayChemical.MinTarget !== null && lastDayChemical.MinTarget !== 0) || (lastDayChemical.MaxTarget !== null && lastDayChemical.MaxTarget !== 0) || (lastDayChemical.UnitName && lastDayChemical.UnitName.trim() !== "")
-                      ? (lastDayChemical.MiddleTarget !== null && lastDayChemical.MiddleTarget !== 0
-                        ? lastDayChemical.MiddleTarget : `${(lastDayChemical.MinTarget !== null && lastDayChemical.MinTarget !== 0 ? lastDayChemical.MinTarget : "-")} - ${(lastDayChemical.MaxTarget !== null && lastDayChemical.MaxTarget !== 0 ? lastDayChemical.MaxTarget : "-")}`)
-                      : "-"
-                  }
-                </span>{" "}
-                {lastDayChemical.UnitName || ""}
-              </p>
-            ) : (
-              <p>Loading...</p>
-            )}
-          </div> */}
         </div>
       </div>
       <div style={{ padding: "20px", backgroundColor: "#F8F9FA" }}>
@@ -797,10 +771,8 @@ const ChemicalWaste: React.FC = () => {
           <div>
             <h1
               className="chemical-title-text"
-              onClick={() => navigate(-1)}
-              style={{ cursor: 'pointer' }}
             >
-              <LeftOutlined className="chemical-back-icon" />
+              <LeftOutlined className="chemical-back-icon" onClick={() => navigate(-1)} style={{ cursor: 'pointer' }} />
               กราฟ Chemical Waste
             </h1>
           </div>
@@ -933,7 +905,7 @@ const ChemicalWaste: React.FC = () => {
                 false,            // isPercentChart (true/false)
               )} series={series}
               type={chartTypeData}
-              style={{ flex: 1 }}
+              height={350}
             />
           </div>
           <div className="chemical-graph-card">
@@ -992,17 +964,17 @@ const ChemicalWaste: React.FC = () => {
                 true,              // isPercentChart (true/false)
               )} series={seriesMonthlyGarbageQuantityNormalized}
               type={chartTypeCompareMonthlyGarbageQuantity}
-              style={{ flex: 1 }}
+              height={350}
             />
           </div>
         </div>
         <div className="chemical-header-vis">
           <h1 className="chemical-title-text-vis">ข้อมูล Chemical Waste</h1>
           <div className="chemical-btn-container">
-            <button className="chemical-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
+            <button className="chemical-add-btn" onClick={showModal}>{isMobile ? <FormOutlined /> : 'เพิ่มข้อมูลใหม่'}</button>
           </div>
         </div>
-        <div className="chemical-select-date">
+        <div className="chemical-select-date2">
           <div className="chemical-filter-status-and-efficiency">
           </div>
           <div className="chemical-filter-date">
@@ -1086,7 +1058,7 @@ const ChemicalWaste: React.FC = () => {
         </div>
         <br />
         <div className="chemical-table-data">
-          <div className="chemical-width40">
+          <div >
             <h1 className="chemical-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
           </div>
           <div className="chemical-task-summary">
@@ -1122,8 +1094,11 @@ const ChemicalWaste: React.FC = () => {
               defaultPageSize: 10,
               showSizeChanger: true,
               pageSizeOptions: ['7', '10', '15', '30', '100'],
+              showQuickJumper: true,
+              responsive: true,
+              position: isMobile ? ['bottomCenter'] : ['bottomRight'],
             }}
-
+            scroll={isMobile ? { x: 'max-content' } : undefined}
           />
         </div>
 
@@ -1136,6 +1111,7 @@ const ChemicalWaste: React.FC = () => {
           closable={false}
           centered
           bodyStyle={{ padding: '35px 35px 20px 35px' }}
+          className="modal-create"
         >
           <div className="chem-container">
             <ChemicalCentralForm onCancel={handleAddModalCancel}
@@ -1157,6 +1133,7 @@ const ChemicalWaste: React.FC = () => {
           centered
           onCancel={handleEditModalCancel}
           bodyStyle={{ padding: '35px 35px 20px 35px' }}
+          className="modal-create"
         >
           {editingRecord && (
             <div className="up-recy-container">
