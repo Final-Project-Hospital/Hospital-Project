@@ -1,6 +1,5 @@
 .eco-title-header {
-  /* background: linear-gradient(90deg, #356768, #5AEEF0); */
-  background-color: #13b7b9;
+  background: linear-gradient(90deg, #0f766e, #22d3ee);
   padding: 20px;
   border-radius: 0 0 20px 20px;
   color: #ffffff;
@@ -11,7 +10,7 @@
 
 .eco-title-header h1 {
   font-size: 2rem;
-  text-shadow: 0 4px 20px #d9d9d9a4;
+  /* text-shadow: 0 4px 20px #d9d9d9a4; */
   font-weight: bold;
   margin: 0;
 }
@@ -173,6 +172,7 @@
   min-width: 120px;
 }
 
+.eco-select-date2,
 .eco-select-date {
   display: flex;
   justify-content: space-between;
@@ -183,6 +183,7 @@
 }
 
 /* ลบกรอบของ Select */
+.eco-select-date2 .ant-select-selector,
 .eco-select-date .ant-select-selector {
   border: none !important;
   box-shadow: none !important;
@@ -191,6 +192,7 @@
 }
 
 /* ลบกรอบของ DatePicker และ RangePicker */
+.eco-select-date2 .ant-picker,
 .eco-select-date .ant-picker {
   border: none !important;
   box-shadow: none !important;
@@ -198,6 +200,7 @@
   background-color: rgb(255, 255, 255) !important;
 }
 
+.eco-select-date2 .ant-picker-input input::placeholder,
 .eco-select-date .ant-picker-input input::placeholder {
   color: #333 !important;
 }
@@ -230,6 +233,7 @@
   color: #6e6e76;
 }
 
+.eco-select-date2 .ant-select-selection-placeholder,
 .eco-select-date .ant-select-selection-placeholder {
   color: #333 !important;
   /* สี placeholder */
@@ -336,6 +340,8 @@
   margin-bottom: 20px;
   position: relative;
   z-index: 5;
+  overflow-x: unset;
+  overflow: visible;
 }
 
 .eco-table-data .ant-table-thead>tr>th {
@@ -523,7 +529,7 @@
 }
 
 /* Responsive for medium screens (max-width: 768px) */
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   .eco-title-header {
     margin-top: 50px;
     text-align: center;
@@ -549,13 +555,13 @@
 
   .eco-table-data .ant-table {
     min-width: 600px !important;
-    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
+    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก 
   }
 
   .eco-table-data .ant-table-thead>tr>th,
   .eco-table-data .ant-table-ttsy>tr>td {
     white-space: nowrap !important;
-    /* บรรทัดไม่ตัด */
+    /* บรรทัดไม่ตัด 
     padding: 8px !important;
     font-size: 12px !important;
   }
@@ -574,12 +580,21 @@
     font-size: 12px;
     height: 28px;
   }
-}
+} */
 
 /* Responsive for small screens (max-width: 480px) */
 @media (max-width: 480px) {
   .eco-title-header {
+    margin-top: 50px;
+    text-align: center;
     padding: 15px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .eco-card {
+    display: none;
   }
 
   .eco-title-header h1 {
@@ -612,119 +627,165 @@
   }
 
   .eco-width40 {
-    width: 60%;
+    width: 75%;
   }
 
-  /* .eco-table-data {
-    overflow-x: auto;
-    padding: 10px;
+  .eco-width50 {
+    width: 80%;
   }
-  .eco-table-data .ant-table {
-    min-width: 600px !important;
-  }
-  .eco-table-data .ant-table-thead>tr>th,
-  .eco-table-data .ant-table-ttsy>tr>td {
-    white-space: nowrap !important;
-    padding: 8px !important;
-    font-size: 5px !important;
-  } */
-  .eco-select-date {
-    align-items: flex-start;
-    gap: 10px;
+
+  .eco-width55 {
     width: 100%;
   }
 
-  /* ปรับ Select filter ให้เต็มจอเล็ก */
+  .eco-select-date {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+
+  .eco-select-date>div {
+    flex: 1 1 auto;
+    /* ยืดตามพื้นที่ */
+    min-width: 0;
+    /* สำคัญ ป้องกัน overflow */
+  }
+
+  .eco-select-date .ant-picker,
   .eco-select-date .eco-select-filter {
-    width: 50% !important;
+    width: 100%;
+    /* ให้เต็มพื้นที่ div */
+    max-width: 200px;
+    /* ปรับให้เหมาะกับมือถือ */
   }
 
-  /* ปรับ DatePicker และ RangePicker ให้เต็มจอ */
-  .eco-select-date .ant-picker {
-    width: 100% !important;
+  .eco-filter-date {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: 100%;
   }
 
-}
-
-/* Responsive for small screens (max-width: 480px) */
-@media (max-width: 376px) {
-  .eco-title-header {
-    padding: 15px;
-    max-width: 100%;
+  .eco-filter-date>div {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
-  .eco-width25 {
-    width: 40%;
+  .eco-filter-date .ant-picker,
+  .eco-filter-date .eco-select-filter {
+    width: 100%;
+    max-width: 200px;
   }
 
-  .eco-width40 {
-    width: 60%;
-  }
-
-  .eco-title-header h1 {
+  .eco-title-text-vis {
     font-size: 1rem;
   }
 
-  .eco-graph-card {
-    min-height: 350px;
-    max-width: 375px;
+  .eco-add-btn {
+    font-size: 1rem;
+    padding: 5px 12px;
   }
 
-  .eco-select-group {
-    padding: 10px;
-    gap: 8px;
-  }
-
-  .eco-head-graph-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .eco-right-select-graph {
-    text-align: left;
-    width: 100%;
-  }
-
-  .eco-table-data {
-    overflow-x: auto;
-    padding: 10px;
-  }
-
-  .eco-table-data .ant-table {
-    min-width: 600px !important;
-    /* ปรับความกว้างขั้นต่ำของตารางให้แสดง scrollbar หากจอเล็ก */
-  }
-
-  .eco-table-data .ant-table-thead>tr>th,
-  .eco-table-data .ant-table-ttsy>tr>td {
-    white-space: nowrap !important;
-    /* บรรทัดไม่ตัด */
-    padding: 5px !important;
-    font-size: 7px !important;
-  }
-
-  .eco-circle-btn {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 2px solid #d9d9d9;
-    background-color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
-  }
-
-  .eco-circle-btn:hover {
-    background-color: #f5f5f5;
+  .eco-title-text {
+    font-size: 1rem;
   }
 
   .eco-custom-modal {
-    width: 90% !important;
-    /* important ใช้ในกรณีที่ Ant Design อาจ override ค่า */
-    max-width: 1200px !important;
-    margin-top: 60px !important;
+    width: 100% !important;
+    /* max-width:100% !important; */
+    padding: 10px !important;
+  }
+
+  /* ปรับสูงสุดให้ไม่ล้นจอมือถือ */
+  .eco-custom-modal .ant-modal-content {
+    margin-top: 50px;
+    max-height: 100vh !important;
+  }
+
+  .eco-task-number {
+    font-size: 13px;
+  }
+
+  .eco-task-label {
+    font-size: 10px;
+  }
+
+  .eco-task-total {
+    font-size: 10.5px;
+    margin-bottom: 15px;
+  }
+
+  .eco-filter-status-and-efficiency {
+    display: flex;
+    flex-wrap: nowrap;
+    /* ห้าม wrap ลงบรรทัดใหม่ */
+    align-items: center;
+    gap: 10px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .eco-filter-status-and-efficiency p {
+    margin: 0;
+    font-size: 12px;
+    flex: 0 0 auto;
+    /* label ไม่ยืด */
+    white-space: nowrap;
+    /* label ไม่หักบรรทัด */
+  }
+
+  .eco-filter-status-and-efficiency .ant-select {
+    flex: 1 1 0;
+    /* select ยืดเต็มพื้นที่ที่เหลือ */
+    min-width: 0;
+    /* บังคับไม่ให้ overflow */
+  }
+
+  .modal-create {
+    margin-top: 70px !important;
+  }
+
+  .eco-title-text-table {
+    font-size: 1rem;
+  }
+
+  .eco-action-buttons {
+    min-width: 80px;
+    /* เล็กลงบนมือถือ */
+    gap: 6px;
+  }
+
+  .eco-circle-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .eco-circle-btn .anticon {
+    font-size: 16px;
+  }
+
+  .eco-task-stats {
+    margin-left: auto;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .eco-table-data {
+    padding: 20px;
+  }
+
+  .eco-custom-modal {
+    width: 100% !important;
+    padding: 5px !important;
+  }
+
+  .eco-chart-containner {
+    width: 100%;
+    min-height: 430px;
   }
 }
 

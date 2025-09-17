@@ -1,6 +1,5 @@
 .infectious-title-header {
-  /* background: linear-gradient(90deg, #356768, #5AEEF0); */
-  background-color: #13b7b9;
+  background: linear-gradient(90deg, #0f766e, #22d3ee);
   padding: 20px;
   border-radius: 0 0 20px 20px;
   color: #ffffff;
@@ -11,7 +10,7 @@
 
 .infectious-title-header h1 {
   font-size: 2rem;
-  text-shadow: 0 4px 20px #d9d9d9a4;
+  /* text-shadow: 0 4px 20px #d9d9d9a4; */
   font-weight: bold;
   margin: 0;
 }
@@ -228,6 +227,7 @@
   min-width: 120px;
 }
 
+.infectious-select-date2,
 .infectious-select-date {
   display: flex;
   justify-content: space-between;
@@ -238,6 +238,7 @@
 }
 
 /* ลบกรอบของ Select */
+.infectious-select-date2 .ant-select-selector,
 .infectious-select-date .ant-select-selector {
   border: none !important;
   box-shadow: none !important;
@@ -246,6 +247,7 @@
 }
 
 /* ลบกรอบของ DatePicker และ RangePicker */
+.infectious-select-date2 .ant-picker,
 .infectious-select-date .ant-picker {
   border: none !important;
   box-shadow: none !important;
@@ -253,6 +255,7 @@
   background-color: rgb(255, 255, 255) !important;
 }
 
+.infectious-select-date2 .ant-picker-input input::placeholder,
 .infectious-select-date .ant-picker-input input::placeholder {
   color: #333 !important;
 }
@@ -285,6 +288,7 @@
   color: #6e6e76;
 }
 
+.infectious-select-date2 .ant-select-selection-placeholder,
 .infectious-select-date .ant-select-selection-placeholder {
   color: #333 !important;
   /* สี placeholder */
@@ -391,6 +395,8 @@
   margin-bottom: 20px;
   position: relative;
   z-index: 5;
+  overflow-x: unset;
+  overflow: visible;
 }
 
 .infectious-table-data .ant-table-thead>tr>th {
@@ -656,4 +662,256 @@
   max-width: none !important;
   width: auto !important;
   font-size: inherit !important;
+}
+
+/* Responsive for small screens (max-width: 480px) */
+@media (max-width: 480px) {
+  .infectious-title-header {
+    text-align: center;
+    padding: 15px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .infectious-graph-container {
+    display: flex !important;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ฝั่งซ้าย + ฝั่งขวา ให้สูงเท่ากัน */
+  .infectious-graph-left,
+  .infectious-graph-right {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ให้การ์ดในฝั่งซ้ายเต็มพื้นที่และสูงเท่ากัน */
+  .infectious-graph-left .infectious-graph-card,
+  .infectious-graph-right>.infectious-graph-card {
+    flex: 1 1 auto;
+    min-height: 450px;
+    /* หรือสูงเท่าที่ต้องการ */
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* กราฟทั้งหมดยกเว้น small card container สูง 450px */
+  .infectious-graph-left .infectious-graph-card,
+  .infectious-graph-right>.infectious-graph-card {
+    min-height: 450px;
+    flex: unset;
+    /* ป้องกัน flex ยืดเกิน */
+  }
+
+  /* ApexChart ให้เต็มความสูงของ parent */
+  .infectious-graph-left .infectious-graph-card>div,
+  .infectious-graph-right>.infectious-graph-card>div {
+    flex: 1;
+  }
+
+  /* ฝั่งขวา 2 card เล็กยังให้ขนาดเท่าเดิม */
+  .infectious-small-card-container {
+    grid-template-columns: 1fr;
+    /* เปลี่ยนเป็นคอลัมน์เดียว */
+  }
+
+  .infectious-card {
+    display: none;
+  }
+
+  .infectious-title-header h1 {
+    font-size: 1.5rem;
+    margin-top: 50px;
+  }
+
+  .infectious-graph-card {
+    min-height: 350px;
+  }
+
+  .infectious-select-group {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .infectious-head-graph-card {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  .infectious-right-select-graph {
+    text-align: left;
+    width: 100%;
+  }
+
+  .infectious-width25 {
+    width: 40%;
+  }
+
+  .infectious-width50 {
+    width: 80%;
+  }
+
+  .infectious-select-date {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+
+  .infectious-select-date>div {
+    flex: 1 1 auto;
+    /* ยืดตามพื้นที่ */
+    min-width: 0;
+    /* สำคัญ ป้องกัน overflow */
+  }
+
+  .infectious-select-date .ant-picker,
+  .infectious-select-date .infectious-select-filter {
+    width: 100%;
+    /* ให้เต็มพื้นที่ div */
+    max-width: 200px;
+    /* ปรับให้เหมาะกับมือถือ */
+  }
+
+  .infectious-filter-date {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+
+  .infectious-filter-date>div {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .infectious-filter-date .ant-picker,
+  .infectious-filter-date .infectious-select-filter {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .infectious-title-text-vis {
+    font-size: 1rem;
+  }
+
+  .infectious-add-btn {
+    font-size: 1rem;
+    padding: 5px 12px;
+  }
+
+  .infectious-title-text {
+    font-size: 1rem;
+  }
+
+  .infectious-custom-modal {
+    width: 100% !important;
+    /* max-width:100% !important; */
+    padding: 10px !important;
+  }
+
+  /* ปรับสูงสุดให้ไม่ล้นจอมือถือ */
+  .infectious-custom-modal .ant-modal-content {
+    margin-top: 50px;
+    max-height: 100vh !important;
+  }
+
+  .infectious-task-number {
+    font-size: 13px;
+  }
+
+  .infectious-task-label {
+    font-size: 10px;
+  }
+
+  .infectious-task-total {
+    font-size: 10.5px;
+    margin-bottom: 15px;
+  }
+
+  .infectious-filter-status-and-efficiency {
+    display: flex;
+    flex-wrap: nowrap;
+    /* ห้าม wrap ลงบรรทัดใหม่ */
+    align-items: center;
+    gap: 10px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .infectious-filter-status-and-efficiency p {
+    margin: 0;
+    font-size: 12px;
+    flex: 0 0 auto;
+    /* label ไม่ยืด */
+    white-space: nowrap;
+    /* label ไม่หักบรรทัด */
+  }
+
+  .infectious-filter-status-and-efficiency .ant-select {
+    flex: 1 1 0;
+    /* select ยืดเต็มพื้นที่ที่เหลือ */
+    min-width: 0;
+    /* บังคับไม่ให้ overflow */
+  }
+
+  .modal-create {
+    margin-top: 70px !important;
+  }
+
+  .infectious-title-text-table {
+    font-size: 1rem;
+  }
+
+  .infectious-action-buttons {
+    min-width: 80px;
+    /* เล็กลงบนมือถือ */
+    gap: 6px;
+  }
+
+  .infectious-circle-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .infectious-circle-btn .anticon {
+    font-size: 16px;
+  }
+
+  .infectious-task-stats {
+    margin-left: auto;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .infectious-table-data {
+    padding: 20px;
+  }
+
+  .infectious-custom-modal {
+    width: 100% !important;
+    padding: 5px !important;
+  }
+
+  .infectious-chart-containner {
+    width: 100%;
+    min-height: 430px;
+  }
+
+  .infectious-box-number>div>div:last-child {
+    margin-left: auto;
+    max-width: 150px;
+  }
+
+  .infectious-box-number {
+    font-size: 20px;
+  }
 }

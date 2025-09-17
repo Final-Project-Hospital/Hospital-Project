@@ -200,6 +200,9 @@ const RecycledWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                       if (!Number.isInteger(value)) {
                         return Promise.reject("กรุณากรอกเป็นจำนวนเต็มเท่านั้น");
                       }
+                      if (value !== undefined && value < 0) {
+                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                      }
                       return Promise.resolve();
                     },
                   }
@@ -222,6 +225,9 @@ const RecycledWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                       if (value === undefined || value === null) return Promise.resolve();
                       if (typeof value !== "number" || isNaN(value)) {
                         return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                      }
+                      if (value !== undefined && value < 0) {
+                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
                       }
                       return Promise.resolve();
                     },
@@ -252,7 +258,9 @@ const RecycledWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
 
             <div className="recy-from-mini">
               <Form.Item label="ปริมาณขยะต่อวัน (คำนวณอัตโนมัติ)" name="average_daily_garbage">
-                <InputNumber style={{ width: "100%" }} disabled placeholder="คำนวณอัตโนมัติ" />
+                <InputNumber style={{ width: "100%" }} disabled placeholder="คำนวณอัตโนมัติ"
+                  formatter={(value) => value !== undefined && value !== null ? Number(value).toFixed(2) : ""}
+                  parser={(value) => value ? parseFloat(value) : 0} />
               </Form.Item>
             </div>
           </div>
@@ -268,6 +276,9 @@ const RecycledWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                       if (value === undefined || value === null) return Promise.resolve();
                       if (typeof value !== "number" || isNaN(value)) {
                         return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                      }
+                      if (value !== undefined && value < 0) {
+                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
                       }
                       return Promise.resolve();
                     },

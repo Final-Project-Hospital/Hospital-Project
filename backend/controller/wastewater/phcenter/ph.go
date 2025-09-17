@@ -12,6 +12,8 @@ import (
 	"github.com/Tawunchai/hospital-project/entity"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	"github.com/asaskevich/govalidator"
 )
 
 type Float64TwoDecimal float64
@@ -91,14 +93,24 @@ func CreatePH(c *gin.Context) {
 
 	getStatusID := func(value float64) uint {
 		var status entity.Status
+
+		// ฟังก์ชันช่วยปัด 2 ตำแหน่ง
+		round2 := func(f float64) float64 {
+			return math.Round(f*100) / 100
+		}
+		value = round2(value)
+		middle := round2(float64(standard.MiddleValue))
+		min := round2(float64(standard.MinValue))
+		max := round2(float64(standard.MaxValue))
+
 		if standard.MiddleValue != -1 { // ค่าเดี่ยว
-			if value > float64(standard.MiddleValue) {
+			if value > middle {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		} else { // ค่าเป็นช่วง
-			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
+			if value >= min && value <= max {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
@@ -113,11 +125,18 @@ func CreatePH(c *gin.Context) {
 		Note:                   input.Note,
 		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
 		EnvironmentID:          environment.ID,
-		ParameterID:            parameter.ID, // แก้ตรงนี้
+		ParameterID:            parameter.ID,
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,
 		StatusID:               getStatusID(input.Data),
+	}
+
+	// Validate environmentRecord (Unit Test)
+	ok, err := govalidator.ValidateStruct(environmentRecord)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	if err := db.Create(&environmentRecord).Error; err != nil {
@@ -127,7 +146,7 @@ func CreatePH(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "Potential of Hydrogen created successfully", // แก้ข้อความตรงนี้
+		"message": "Potential of Hydrogen created successfully",
 		"data":    environmentRecord,
 	})
 }
@@ -366,8 +385,6 @@ func GetPHTABLE(c *gin.Context) {
 		// Efficiency
 		if phMap[k].BeforeValue != nil && phMap[k].AfterValue != nil && *phMap[k].BeforeValue != 0 {
 			eff := ((*phMap[k].BeforeValue - *phMap[k].AfterValue) / (*phMap[k].BeforeValue)) * 100
-			// ✅ ถ้าค่าติดลบให้กลายเป็น 0.00
-			//fmt.Printf("Efficiency2: %.2f\n", eff)
 			if eff < 0 {
 				eff = 0.00
 			}
@@ -393,7 +410,7 @@ func GetPHTABLE(c *gin.Context) {
 					}
 				}
 
-				// ✅ อัปเดตลง DB ทันที (อัปเดต record หลังการบำบัด)
+				// อัปเดตลง DB ทันที (อัปเดต record หลังการบำบัด)
 				if phMap[k].AfterID != nil {
 					db.Model(&entity.EnvironmentalRecord{}).
 						Where("id = ?", *phMap[k].AfterID).
@@ -472,7 +489,7 @@ func UpdateOrCreatePH(c *gin.Context) {
 		return
 	}
 
-	// ✅ ถ้า StandardID = 0 → สร้างใหม่จาก CustomStandard (ถ้าไม่มีซ้ำ)
+	// ถ้า StandardID = 0 → สร้างใหม่จาก CustomStandard (ถ้าไม่มีซ้ำ)
 	if input.StandardID == 0 && input.CustomStandard != nil {
 		var existing entity.Standard
 		query := db.Model(&entity.Standard{})
@@ -488,7 +505,7 @@ func UpdateOrCreatePH(c *gin.Context) {
 			}
 		}
 
-	if err := query.First(&existing).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+		if err := query.First(&existing).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 			// กำหนดค่า default เป็น -1 ทุกตัว
 			newStandard := entity.Standard{
 				MiddleValue: -1,
@@ -516,35 +533,43 @@ func UpdateOrCreatePH(c *gin.Context) {
 		}
 	}
 
-	// ✅ โหลด Standard ที่จะใช้
+	// โหลด Standard ที่จะใช้
 	var standard entity.Standard
 	if err := db.First(&standard, input.StandardID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูลเกณฑ์มาตรฐาน"})
 		return
 	}
 
-	// ✅ ฟังก์ชันคำนวณสถานะ
+	// ฟังก์ชันคำนวณสถานะ
 	getStatusID := func(value float64) uint {
 		var status entity.Status
 
-		if standard.MiddleValue != -1 {
-			if value <= float64(standard.MiddleValue) {
-				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
-			} else {
+		// ฟังก์ชันช่วยปัด 2 ตำแหน่ง
+		round2 := func(f float64) float64 {
+			return math.Round(f*100) / 100
+		}
+		value = round2(value)
+		middle := round2(float64(standard.MiddleValue))
+		min := round2(float64(standard.MinValue))
+		max := round2(float64(standard.MaxValue))
+
+		if standard.MiddleValue != -1 { // ค่าเดี่ยว
+			if value > middle {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
+			} else {
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
-		} else {
-			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
+		} else { // ค่าเป็นช่วง
+			if value >= min && value <= max {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		}
-
 		return status.ID
 	}
 
-	// ✅ เช็ก CustomUnit → บันทึกถ้ายังไม่มี
+	// เช็ก CustomUnit → บันทึกถ้ายังไม่มี
 	if input.CustomUnit != nil && *input.CustomUnit != "" {
 		var unit entity.Unit
 		if err := db.Where("unit_name = ?", *input.CustomUnit).First(&unit).Error; err == nil {
@@ -557,12 +582,23 @@ func UpdateOrCreatePH(c *gin.Context) {
 		}
 	}
 
-	// ✅ Update หรือ Create
+	// Update หรือ Create
 	if input.ID != 0 {
 		// Update
 		var existing entity.EnvironmentalRecord
 		if err := db.First(&existing, input.ID).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูล"})
+			return
+		}
+
+		input.EnvironmentID = environment.ID
+		input.ParameterID = parameter.ID
+		input.StatusID = getStatusID(input.Data)
+
+		// Validate environmentRecord (Unit Test)
+		ok, err := govalidator.ValidateStruct(input.EnvironmentalRecord)
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
@@ -582,34 +618,45 @@ func UpdateOrCreatePH(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปเดตข้อมูลล้มเหลว"})
 			return
 		}
-		// ✅ อัปเดต Unit ให้ record ทั้งวันเดียวกัน
+		// อัปเดต Unit ให้ record ทั้งวันเดียวกัน
 		sameDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
 		startOfDay := sameDay
 		endOfDay := sameDay.Add(24 * time.Hour)
 
 		db.Model(&entity.EnvironmentalRecord{}).
 			Where("date >= ? AND date < ?", startOfDay, endOfDay).
-			Where("parameter_id = ?",parameter.ID).
+			Where("parameter_id = ?", parameter.ID).
 			Where("environment_id = ?", environment.ID).
 			Update("unit_id", input.UnitID)
 
 		c.JSON(http.StatusOK, gin.H{"message": "อัปเดตข้อมูลสำเร็จ", "data": existing})
 
 	} else {
+		input.EnvironmentID = environment.ID
+		input.ParameterID = parameter.ID
+		input.StatusID = getStatusID(input.Data)
+
+		// Validate environmentRecord (Unit Test)
+		ok, err := govalidator.ValidateStruct(input.EnvironmentalRecord)
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
 		// Create
 		input.StatusID = getStatusID(input.Data)
 		if err := db.Create(&input.EnvironmentalRecord).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "สร้างข้อมูลล้มเหลว"})
 			return
 		}
-		// ✅ อัปเดต Unit ให้ record ทั้งวันเดียวกัน
+		// อัปเดต Unit ให้ record ทั้งวันเดียวกัน
 		sameDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
 		startOfDay := sameDay
 		endOfDay := sameDay.Add(24 * time.Hour)
 
 		db.Model(&entity.EnvironmentalRecord{}).
 			Where("date >= ? AND date < ?", startOfDay, endOfDay).
-			Where("parameter_id = ?",parameter.ID).
+			Where("parameter_id = ?", parameter.ID).
 			Where("environment_id = ?", environment.ID).
 			Update("unit_id", input.UnitID)
 

@@ -64,7 +64,6 @@ const EnvironmentBlock = () => {
     }
   };
 
-
   useEffect(() => {
     const fetchStandards = async () => {
       try {
@@ -75,8 +74,13 @@ const EnvironmentBlock = () => {
 
         const getDisplayStandard = (data: any) => {
           const { MinTarget, MaxTarget, MiddleTarget } = data;
-          if (MinTarget !== 0 || MaxTarget !== 0) return `${MinTarget} - ${MaxTarget}`;
-          if (MiddleTarget !== 0) return `${MiddleTarget}`;
+          const toTwoDecimal = (value: number) => value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          if (MinTarget !== 0 || MaxTarget !== 0) {
+            return `${toTwoDecimal(MinTarget)} - ${toTwoDecimal(MaxTarget)}`;
+          }
+          if (MiddleTarget !== 0) {
+            return `${toTwoDecimal(MiddleTarget)}`;
+          }
           return '-';
         };
 

@@ -109,18 +109,36 @@
   background-color: #646464 !important;
   transform: scale(1.05) !important;
 }
+
 .recy-fornt-small {
   display: flex;
   gap: 16px;
 }
-.recy-chat-modal{
+
+.recy-chat-modal {
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
+.recy-container-modal {
+  all: unset !important;
+  padding: 0px !important;
+  margin: 0px 0px 0px 0px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+  font-size: inherit !important;
+}
+
 /* Responsive behavior */
 @media (max-width: 768px) {
+  .recy-container {
+    padding: 10px 20px;
+  }
+
   .recy-form-group {
     flex-direction: column;
     gap: 16px;
@@ -138,16 +156,18 @@
   .recy-cancel,
   .recy-reset,
   .recy-submit {
-    width: 100%;
+    min-width: 79.5px;
     margin-top: 10px;
   }
 
   .recy-from-mini {
     width: 100%;
   }
-  .recy-fornt-small .ant-form-item-label > label {
-  font-size: small !important;}
-  
+
+  .recy-fornt-small .ant-form-item-label>label {
+    font-size: small !important;
+  }
+
 }
 
 @media (max-width: 1024px) {

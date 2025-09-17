@@ -24,6 +24,83 @@ func ListHardware(c *gin.Context) {
 	c.JSON(http.StatusOK, hardwares)
 }
 
+// ✅ UpdateHardwareByID (อัปเดตเฉพาะ Name)
+func UpdateHardwareByID(c *gin.Context) {
+	id := c.Param("id")
+	hardwareID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid hardware ID"})
+		return
+	}
+
+	var input struct {
+		Name string `json:"name" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	db := config.DB()
+	var hardware entity.Hardware
+
+	// ตรวจสอบว่ามี Hardware อยู่จริงหรือไม่
+	if err := db.First(&hardware, hardwareID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Hardware not found"})
+		return
+	}
+
+	// อัปเดตเฉพาะ Name
+	hardware.Name = input.Name
+
+	if err := db.Save(&hardware).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, hardware)
+}
+
+// ✅ DeleteHardwareByID (ลบห้องที่ผูกกับ Hardware ก่อน แล้วค่อยลบ Hardware)
+func DeleteHardwareByID(c *gin.Context) {
+	id := c.Param("id")
+	hardwareID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid hardware ID"})
+		return
+	}
+
+	db := config.DB()
+
+	// ตรวจสอบว่ามี Hardware อยู่จริง
+	var hardware entity.Hardware
+	if err := db.First(&hardware, hardwareID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Hardware not found"})
+		return
+	}
+
+	// ใช้ Transaction ลบ Room ทั้งหมดที่อ้าง Hardware นี้ แล้วค่อยลบ Hardware
+	if err := db.Transaction(func(tx *gorm.DB) error {
+
+		if err := tx.Where("hardware_id = ?", hardwareID).Delete(&entity.Room{}).Error; err != nil {
+			return err
+		}
+
+		// ลบ Hardware (Soft delete)
+		if err := tx.Delete(&entity.Hardware{}, hardwareID).Error; err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Hardware and related rooms deleted successfully"})
+}
+
+
 type SensorInput struct {
 	Name   string             `json:"name"`
 	Sensor map[string]float64 `json:"sensor"`

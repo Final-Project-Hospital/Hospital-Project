@@ -10,8 +10,9 @@ import dayjs, { Dayjs } from "dayjs";
 import { GetlistRecycled, GetfirstRecycled, GetLastDayRecycled } from "../../../../../services/garbageServices/recycledWaste";
 import PhotoMonthlyGarbage from "../../../../../assets/waste/container.png"
 import PhotoDailyGarbage from "../../../../../assets/waste/garbage-bag.png"
-// import PhotoAADC from "../../../../../assets/waste/garbage-truck.png"
 import { listChemicalInterface } from "../../../../../interface/Igarbage/IchemicalWaste";
+const isMobile = window.innerWidth <= 768;
+import { FormOutlined } from '@ant-design/icons';
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -382,7 +383,12 @@ const Recycleddataviz: React.FC = () => {
         type: chartType,
         zoom: { enabled: enableZoom, type: 'x', autoScaleYaxis: true },
         fontFamily: "Prompt, 'Prompt', sans-serif",
-        toolbar: { show: true },
+        toolbar: {
+          show: true,
+          tools: {
+            download: true, selection: true, zoom: true, zoomin: !isMobile, zoomout: !isMobile, pan: !isMobile, reset: true
+          }
+        },
       },
       xaxis: {
         categories: categoriesFormatted,
@@ -422,11 +428,14 @@ const Recycleddataviz: React.FC = () => {
           },
           labels: {
             formatter: (value: number) =>
-              isTotalsaleChart
-                ? `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`         // ใช้บาท, ไม่ย่อ k
-                : value >= 1000
-                  ? `${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}k` // ใช้ unit, ย่อ k
-                  : value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),               // ใช้ unit, ไม่ย่อ k
+              value >= 1000
+                ? `${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}k` // value ≥ 1000 → ย่อ k
+                : value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            // isTotalsaleChart
+            //   ? `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`         // ใช้บาท, ไม่ย่อ k
+            //   : value >= 1000
+            //     ? `${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}k` // ใช้ unit, ย่อ k
+            //     : value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),               // ใช้ unit, ไม่ย่อ k
           },
         },
       dataLabels: {
@@ -477,7 +486,7 @@ const Recycleddataviz: React.FC = () => {
         }
       },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
-      markers: chartType === "line" ? { size: 4.5, shape: ["circle", "triangle"], hover: { sizeOffset: 3 }, } : { size: 0 },
+      markers: chartType === "line" ? { size: isMobile ? 0 : 4.5, shape: ["circle", "triangle"], hover: { sizeOffset: 3 }, } : { size: 0 },
       legend: { show: true, showForSingleSeries: true, position: 'top', horizontalAlign: 'center', },
     };
   };
@@ -516,19 +525,11 @@ const Recycleddataviz: React.FC = () => {
     { name: "จำนวนคน (Normalize)", data: quantityNormalized, color: colorCompareQuantity },
   ];
 
-  // ✅ ใช้ normalized มาคำนวณ combinedCompareData
+  //  ใช้ normalized มาคำนวณ combinedCompareData
   const combinedCompareData = [
     ...garbageNormalized,
     ...quantityNormalized,
   ];
-  // const seriesMonthlyGarbageQuantity = [
-  //   { name: "ค่าขยะรีไซเคิล", data: compareMonthlyGarbageQuantity.map(item => item.monthlyGarbage), color: colorCompareMonthlyGarbage, yAxis: 0, },
-  //   { name: "จำนวนคน", data: compareMonthlyGarbageQuantity.map(item => item.quantity), color: colorCompareQuantity, yAxis: 1, },
-  // ];
-  // const combinedCompareData = [
-  //   ...seriesMonthlyGarbageQuantity[0].data,
-  //   ...seriesMonthlyGarbageQuantity[1].data,
-  // ];
 
   const getPieOptions = (isQuantityChart = false, isTotalSaleChart = false): ApexCharts.ApexOptions => ({
     labels: monthlyDataLatestYear.map(d => d.month),
@@ -546,6 +547,7 @@ const Recycleddataviz: React.FC = () => {
       position: "right",
       horizontalAlign: "left",
       offsetY: -23,  // ปรับค่าลบเพื่อดันขึ้น (ลองปรับจนเสมอ donut)
+      offsetX: 0,
       markers: { size: 5, },
       itemMargin: { horizontal: 8, vertical: 4, },
       fontSize: "10px",
@@ -819,38 +821,6 @@ const Recycleddataviz: React.FC = () => {
             </div>
             <br />
           </div>
-          {/* <img src={PhotoAADC} alt="Before Water" className="recycled-photo" /> */}
-          {/* <div>
-            <h4>ค่า AADC ล่าสุด</h4>
-            <div className="recycled-main">
-              <span>
-                {lastDayRecycled !== null ? (
-                  <>
-                    <span className="recycled-value">{lastDayRecycled.AADC}</span>{" "}
-                    {lastDayRecycled.UnitName || ""}
-                  </>
-                ) : (
-                  "-"
-                )}
-              </span>
-            </div>
-            {lastDayRecycled ? (
-              <p>
-                มาตรฐาน{" "}
-                <span>
-                  {
-                    (lastDayRecycled.MiddleTarget !== null && lastDayRecycled.MiddleTarget !== 0) || (lastDayRecycled.MinTarget !== null && lastDayRecycled.MinTarget !== 0) || (lastDayRecycled.MaxTarget !== null && lastDayRecycled.MaxTarget !== 0) || (lastDayRecycled.UnitName && lastDayRecycled.UnitName.trim() !== "")
-                      ? (lastDayRecycled.MiddleTarget !== null && lastDayRecycled.MiddleTarget !== 0
-                        ? lastDayRecycled.MiddleTarget : `${(lastDayRecycled.MinTarget !== null && lastDayRecycled.MinTarget !== 0 ? lastDayRecycled.MinTarget : "-")} - ${(lastDayRecycled.MaxTarget !== null && lastDayRecycled.MaxTarget !== 0 ? lastDayRecycled.MaxTarget : "-")}`)
-                      : "-"
-                  }
-                </span>{" "}
-                {lastDayRecycled.UnitName || ""}
-              </p>
-            ) : (
-              <p>Loading...</p>
-            )}
-          </div> */}
         </div>
       </div>
       <div style={{ padding: "20px", backgroundColor: "#F8F9FA" }}>
@@ -858,10 +828,8 @@ const Recycleddataviz: React.FC = () => {
           <div>
             <h1
               className="recycled-title-text"
-              onClick={() => navigate(-1)}
-              style={{ cursor: 'pointer' }}
             >
-              <LeftOutlined className="recycled-back-icon" />
+              <LeftOutlined className="recycled-back-icon" onClick={() => navigate(-1)} style={{ cursor: 'pointer' }} />
               กราฟ Recycled Waste
             </h1>
           </div>
@@ -994,7 +962,7 @@ const Recycleddataviz: React.FC = () => {
                 false,             // isPercentChart (true/false)
               )} series={series}
               type={chartTypeData}
-              style={{ flex: 1 }}
+              height={350}
             />
           </div>
           <div className="recycled-graph-card">
@@ -1053,7 +1021,7 @@ const Recycleddataviz: React.FC = () => {
                 true            // isPercentChart (true/false)
               )} series={seriesMonthlyGarbageQuantityNormalized}
               type={chartTypeCompareMonthlyGarbageQuantity}
-              style={{ flex: 1 }}
+              height={350}
             />
           </div>
           <div className="recycled-graph-card">
@@ -1104,6 +1072,7 @@ const Recycleddataviz: React.FC = () => {
                 false,           // isPercentChart (true/false)
               )} series={seriesTotalSale}
               type={chartTypeTotalSale}
+              height={350}
             />
           </div>
           <div className="recycled-graph-for-total">
@@ -1125,7 +1094,7 @@ const Recycleddataviz: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <span className="recycled-box-date">Date per 29 June 2024</span>
+              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
             </div>
             <div className="recycled-box">
               <div className="recycled-box-title">จำนวนคนที่เข้าใช้บริการโรงพยาบาลรวมปี {latestYear}</div>
@@ -1145,7 +1114,7 @@ const Recycleddataviz: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <span className="recycled-box-date">Date per 29 June 2024</span>
+              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
             </div>
             <div className="recycled-box">
               <div className="recycled-box-title">จำนวนยอดขายขยะรีไซเคิลรวมปี {latestYear}</div>
@@ -1165,17 +1134,17 @@ const Recycleddataviz: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <span className="recycled-box-date">Date per 29 June 2024</span>
+              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
             </div>
           </div>
         </div>
         <div className="recycled-header-vis">
           <h1 className="recycled-title-text-vis">ข้อมูล Recycled Waste</h1>
           <div className="recycled-btn-container">
-            <button className="recycled-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
+            <button className="recycled-add-btn" onClick={showModal}>{isMobile ? <FormOutlined /> : 'เพิ่มข้อมูลใหม่'}</button>
           </div>
         </div>
-        <div className="recycled-select-date">
+        <div className="recycled-select-date2">
           <div className="recycled-filter-status-and-efficiency">
           </div>
           <div className="recycled-filter-date">
@@ -1295,8 +1264,11 @@ const Recycleddataviz: React.FC = () => {
               defaultPageSize: 10,
               showSizeChanger: true,
               pageSizeOptions: ['7', '10', '15', '30', '100'],
+              showQuickJumper: true,
+              responsive: true,
+              position: isMobile ? ['bottomCenter'] : ['bottomRight'],
             }}
-
+            scroll={isMobile ? { x: 'max-content' } : undefined}
           />
         </div>
 
@@ -1309,6 +1281,7 @@ const Recycleddataviz: React.FC = () => {
           closable={false}
           centered
           bodyStyle={{ padding: '35px 35px 20px 35px' }}
+          className="modal-create"
         >
           <div className="recy-container">
             <RecycledCentralForm onCancel={handleAddModalCancel}
@@ -1330,6 +1303,7 @@ const Recycleddataviz: React.FC = () => {
           centered
           onCancel={handleEditModalCancel}
           bodyStyle={{ padding: '35px 35px 20px 35px' }}
+          className="modal-create"
         >
           <div className="up-recy-container">
             {editingRecord && (

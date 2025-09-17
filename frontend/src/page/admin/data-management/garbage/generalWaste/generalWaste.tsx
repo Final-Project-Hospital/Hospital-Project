@@ -85,9 +85,10 @@ const GeneralWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
     const monthlyGarbage = form.getFieldValue("monthlyGarbage");
 
     if (quantity && monthlyGarbage && quantity > 0) {
-      const aadc = monthlyGarbage / (quantity * quantity);
+      let aadc = monthlyGarbage / (quantity * quantity);
+
       form.setFieldsValue({
-        aadc: parseFloat(aadc.toFixed(2)),
+        aadc,
       });
     } else {
       form.setFieldsValue({ aadc: null });
@@ -331,6 +332,9 @@ const GeneralWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                         if (typeof value !== "number" || isNaN(value)) {
                           return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
                         }
+                        if (value !== undefined && value < 0) {
+                          return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                        }
                         const data = await CheckTarget("middle", value);
                         if (!data) return Promise.reject("ไม่สามารถตรวจสอบค่าเป้าหมายได้");
                         if (data.exists) return Promise.reject("ค่าเป้าหมายนี้มีอยู่แล้วในระบบ");
@@ -341,7 +345,7 @@ const GeneralWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     ]}
                   >
                     <InputNumber
-                      placeholder="กรอกค่ากลาง"
+                      placeholder="กรอกค่าเดี่ยว"
                       style={{ width: '100%' }}
                       value={customSingleTarget}
                       onChange={(value) => setCustomSingleTarget(value ?? undefined)}
@@ -378,6 +382,9 @@ const GeneralWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                         validator: (_, val) => {
                           const max = getFieldValue("customMax");
                           if (val >= max) return Promise.reject("Min ต้องน้อยกว่า Max");
+                          if (val !== undefined && val < 0) {
+                            return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                          }
                           return Promise.resolve();
                         },
                       }),
@@ -386,7 +393,7 @@ const GeneralWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                       style={{ flex: 1 }}
                     >
                       <InputNumber
-                        placeholder="ค่าต่ำสุด"
+                        placeholder="กรอกค่าต่ำสุด"
                         style={{ width: '100%' }}
                         value={customMinTarget}
                         onChange={(value) => setCustomMinTarget(value ?? undefined)}
@@ -399,6 +406,9 @@ const GeneralWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                       rules={[{ required: true, message: 'กรุณากรอกค่าสูงสุด' },
                       ({ getFieldValue }) => ({
                         validator: async (_, value) => {
+                          if (value !== undefined && value < 0) {
+                            return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                          }
                           const min = getFieldValue("customMin");
                           if (min !== undefined && value <= min) {
                             return Promise.reject("Max ต้องมากกว่า Min");
@@ -415,7 +425,7 @@ const GeneralWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                       style={{ flex: 1 }}
                     >
                       <InputNumber
-                        placeholder="ค่าสูงสุด"
+                        placeholder="กรอกค่าสูงสุด"
                         style={{ width: '100%' }}
                         value={customMaxTarget}
                         onChange={(value) => setCustomMaxTarget(value ?? undefined)}
@@ -442,6 +452,9 @@ const GeneralWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                       if (!Number.isInteger(value)) {
                         return Promise.reject("กรุณากรอกเป็นจำนวนเต็มเท่านั้น");
                       }
+                      if (value !== undefined && value < 0) {
+                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                      }
                       return Promise.resolve();
                     },
                   }
@@ -466,6 +479,9 @@ const GeneralWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                       if (value === undefined || value === null) return Promise.resolve();
                       if (typeof value !== "number" || isNaN(value)) {
                         return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                      }
+                      if (value !== undefined && value < 0) {
+                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
                       }
                       return Promise.resolve();
                     },
@@ -503,13 +519,17 @@ const GeneralWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
               <Form.Item
                 label="ค่า AADC (คำนวณอัตโนมัติ)"
                 name="aadc">
-                <InputNumber style={{ width: '100%' }} placeholder="คำนวณอัตโนมัติ" step={0.01} disabled />
+                <InputNumber style={{ width: '100%' }} placeholder="คำนวณอัตโนมัติ" step={0.01} disabled
+                  formatter={(value) => value !== undefined && value !== null ? Number(value).toFixed(2) : ""}
+                  parser={(value) => value ? parseFloat(value) : 0} />
               </Form.Item>
             </div>
 
             <div className="gen-from-mini">
               <Form.Item label="ปริมาณขยะต่อวัน (คำนวณอัตโนมัติ)" name="average_daily_garbage">
-                <InputNumber style={{ width: "100%" }} disabled placeholder="คำนวณอัตโนมัติ" />
+                <InputNumber style={{ width: "100%" }} disabled placeholder="คำนวณอัตโนมัติ"
+                  formatter={(value) => value !== undefined && value !== null ? Number(value).toFixed(2) : ""}
+                  parser={(value) => value ? parseFloat(value) : 0} />
               </Form.Item>
             </div>
           </div>

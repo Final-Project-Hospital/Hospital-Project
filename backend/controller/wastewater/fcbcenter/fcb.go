@@ -91,14 +91,24 @@ func CreateFCB(c *gin.Context) {
 
 	getStatusID := func(value float64) uint {
 		var status entity.Status
+
+		// ฟังก์ชันช่วยปัด 2 ตำแหน่ง
+		round2 := func(f float64) float64 {
+			return math.Round(f*100) / 100
+		}
+		value = round2(value)
+		middle := round2(float64(standard.MiddleValue))
+		min := round2(float64(standard.MinValue))
+		max := round2(float64(standard.MaxValue))
+
 		if standard.MiddleValue != -1 { // ค่าเดี่ยว
-			if value > float64(standard.MiddleValue) {
+			if value > middle {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		} else { // ค่าเป็นช่วง
-			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
+			if value >= min && value <= max {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
@@ -113,7 +123,7 @@ func CreateFCB(c *gin.Context) {
 		Note:                   input.Note,
 		BeforeAfterTreatmentID: input.BeforeAfterTreatmentID,
 		EnvironmentID:          environment.ID,
-		ParameterID:            parameter.ID, // แก้ตรงนี้
+		ParameterID:            parameter.ID,
 		StandardID:             input.StandardID,
 		UnitID:                 input.UnitID,
 		EmployeeID:             input.EmployeeID,
@@ -127,7 +137,7 @@ func CreateFCB(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "Fecal Coliform Bacteria created successfully", // แก้ข้อความตรงนี้
+		"message": "Fecal Coliform Bacteria created successfully",
 		"data":    environmentRecord,
 	})
 }
@@ -387,7 +397,7 @@ func GetFCBTABLE(c *gin.Context) {
 		// Efficiency
 		if fcbMap[k].BeforeValue != nil && fcbMap[k].AfterValue != nil && *fcbMap[k].BeforeValue != 0 {
 			eff := ((*fcbMap[k].BeforeValue - *fcbMap[k].AfterValue) / (*fcbMap[k].BeforeValue)) * 100
-			// ✅ ถ้าค่าติดลบให้กลายเป็น 0.00
+			// ถ้าค่าติดลบให้กลายเป็น 0.00
 			//fmt.Printf("Efficiency2: %.2f\n", eff)
 			if eff < 0 {
 				eff = 0.00
@@ -414,7 +424,7 @@ func GetFCBTABLE(c *gin.Context) {
 					}
 				}
 
-				// ✅ อัปเดตลง DB ทันที (อัปเดต record หลังการบำบัด)
+				// อัปเดตลง DB ทันที (อัปเดต record หลังการบำบัด)
 				if fcbMap[k].AfterID != nil {
 					db.Model(&entity.EnvironmentalRecord{}).
 						Where("id = ?", *fcbMap[k].AfterID).
@@ -480,7 +490,7 @@ func UpdateOrCreateFCB(c *gin.Context) {
 
 	db := config.DB()
 
-		var environment entity.Environment
+	var environment entity.Environment
 	if err := db.Where("environment_name = ?", "น้ำเสีย").First(&environment).Error; err != nil {
 		fmt.Println("Error fetching environment:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid environment"})
@@ -494,7 +504,7 @@ func UpdateOrCreateFCB(c *gin.Context) {
 		return
 	}
 
-	// ✅ ถ้า StandardID = 0 → สร้างใหม่จาก CustomStandard (ถ้าไม่มีซ้ำ)
+	// ถ้า StandardID = 0 → สร้างใหม่จาก CustomStandard (ถ้าไม่มีซ้ำ)
 	if input.StandardID == 0 && input.CustomStandard != nil {
 		var existing entity.Standard
 		query := db.Model(&entity.Standard{})
@@ -538,35 +548,43 @@ func UpdateOrCreateFCB(c *gin.Context) {
 		}
 	}
 
-	// ✅ โหลด Standard ที่จะใช้
+	// โหลด Standard ที่จะใช้
 	var standard entity.Standard
 	if err := db.First(&standard, input.StandardID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบข้อมูลเกณฑ์มาตรฐาน"})
 		return
 	}
 
-	// ✅ ฟังก์ชันคำนวณสถานะ
+	// ฟังก์ชันคำนวณสถานะ
 	getStatusID := func(value float64) uint {
 		var status entity.Status
 
-		if standard.MiddleValue != -1 {
-			if value <= float64(standard.MiddleValue) {
-				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
-			} else {
+		// ฟังก์ชันช่วยปัด 2 ตำแหน่ง
+		round2 := func(f float64) float64 {
+			return math.Round(f*100) / 100
+		}
+		value = round2(value)
+		middle := round2(float64(standard.MiddleValue))
+		min := round2(float64(standard.MinValue))
+		max := round2(float64(standard.MaxValue))
+
+		if standard.MiddleValue != -1 { // ค่าเดี่ยว
+			if value > middle {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
+			} else {
+				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
-		} else {
-			if value >= float64(standard.MinValue) && value <= float64(standard.MaxValue) {
+		} else { // ค่าเป็นช่วง
+			if value >= min && value <= max {
 				db.Where("status_name = ?", "ผ่านเกณฑ์มาตรฐาน").First(&status)
 			} else {
 				db.Where("status_name = ?", "ไม่ผ่านเกณฑ์มาตรฐาน").First(&status)
 			}
 		}
-
 		return status.ID
 	}
 
-	// ✅ เช็ก CustomUnit → บันทึกถ้ายังไม่มี
+	// เช็ก CustomUnit → บันทึกถ้ายังไม่มี
 	if input.CustomUnit != nil && *input.CustomUnit != "" {
 		var unit entity.Unit
 		if err := db.Where("unit_name = ?", *input.CustomUnit).First(&unit).Error; err == nil {
@@ -579,7 +597,7 @@ func UpdateOrCreateFCB(c *gin.Context) {
 		}
 	}
 
-	// ✅ Update หรือ Create
+	// Update หรือ Create
 	if input.ID != 0 {
 		// Update
 		var existing entity.EnvironmentalRecord
@@ -604,14 +622,14 @@ func UpdateOrCreateFCB(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "อัปเดตข้อมูลล้มเหลว"})
 			return
 		}
-		// ✅ อัปเดต Unit ให้ record ทั้งวันเดียวกัน
+		// อัปเดต Unit ให้ record ทั้งวันเดียวกัน
 		sameDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
 		startOfDay := sameDay
 		endOfDay := sameDay.Add(24 * time.Hour)
 
 		db.Model(&entity.EnvironmentalRecord{}).
 			Where("date >= ? AND date < ?", startOfDay, endOfDay).
-			Where("parameter_id = ?",parameter.ID).
+			Where("parameter_id = ?", parameter.ID).
 			Where("environment_id = ?", environment.ID).
 			Update("unit_id", input.UnitID)
 
@@ -624,14 +642,14 @@ func UpdateOrCreateFCB(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "สร้างข้อมูลล้มเหลว"})
 			return
 		}
-		// ✅ อัปเดต Unit ให้ record ทั้งวันเดียวกัน
+		// อัปเดต Unit ให้ record ทั้งวันเดียวกัน
 		sameDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
 		startOfDay := sameDay
 		endOfDay := sameDay.Add(24 * time.Hour)
 
 		db.Model(&entity.EnvironmentalRecord{}).
 			Where("date >= ? AND date < ?", startOfDay, endOfDay).
-			Where("parameter_id = ?",parameter.ID).
+			Where("parameter_id = ?", parameter.ID).
 			Where("environment_id = ?", environment.ID).
 			Update("unit_id", input.UnitID)
 

@@ -9,6 +9,8 @@ import './ALdataviz.css';
 import dayjs, { Dayjs } from "dayjs";
 import { GetlistAL, GetfirstAL, GetBeforeAfterAL } from "../../../../../services/tapwaterServices/al";
 import AftereWater from "../../../../../assets/rain.png"
+const isMobile = window.innerWidth <= 768;
+import { FormOutlined } from '@ant-design/icons';
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -299,6 +301,9 @@ const ALdataviz: React.FC = () => {
         } else {
           processGroups(dateStr => dateStr); // รายวัน
         }
+        console.log(afterMaxMin)
+        console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        console.log(after)
 
         setAfterMaxMinData(afterMaxMin);
         setUnit(lastal.data.UnitName);
@@ -410,7 +415,12 @@ const ALdataviz: React.FC = () => {
     return {
       chart: {
         id: "al-chart",
-        toolbar: { show: true },
+        toolbar: {
+          show: true,
+          tools: {
+            download: true, selection: true, zoom: true, zoomin: !isMobile, zoomout: !isMobile, pan: !isMobile, reset: true
+          }
+        },
         zoom: { enabled: enableZoom, type: 'x', autoScaleYaxis: true },
         fontFamily: "Prompt, 'Prompt', sans-serif",
       },
@@ -426,7 +436,7 @@ const ALdataviz: React.FC = () => {
                   borderColor: "#FF6F61",
                   borderWidth: 1.5,
                   strokeDashArray: 6,
-                  label: { text: "ไม่พบ", style: { background: "#ff6e61d4", color: "#fff" } },
+                  label: { text: "ไม่พบ", style: { background: "#ff6e61e4", color: "#fff" } },
                 },
               ]
               : (isStandardRange
@@ -453,7 +463,7 @@ const ALdataviz: React.FC = () => {
                       borderColor: "#FF6F61",
                       borderWidth: 1.5,
                       strokeDashArray: 6,
-                      label: { text: `มาตรฐาน ${middlestandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
+                      label: { text: `มาตรฐาน ${middlestandard.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#ff6e61e4", color: "#fff" } },
                     },
                   ]
                   : []
@@ -514,14 +524,14 @@ const ALdataviz: React.FC = () => {
               const item = afterMaxMinRef.current[dataPointIndex];
               const unit = item.maxUnit || 'ไม่มีการตรวจวัด';
               if (unit === 'ไม่มีการตรวจวัด') return unit;
-              return `${item.max.toFixed(2)} ${unit} (วันที่: ${item.maxDate})`;
+              return `${(item.max ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit} (วันที่: ${item.maxDate})`;
             }
 
             if (seriesName === "ค่าต่ำสุด" && afterMaxMinRef.current && afterMaxMinRef.current.length > dataPointIndex) {
               const item = afterMaxMinRef.current[dataPointIndex];
               const unit = item.minUnit || 'ไม่มีการตรวจวัด';
               if (unit === 'ไม่มีการตรวจวัด') return unit;
-              return `${item.min.toFixed(2)} ${unit} (วันที่: ${item.minDate})`;
+              return `${(item.min ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit} (วันที่: ${item.minDate})`;
             }
 
             if (seriesName === "ค่าเฉลี่ย" && afterMaxMinRef.current && afterMaxMinRef.current.length > dataPointIndex) {
@@ -529,7 +539,7 @@ const ALdataviz: React.FC = () => {
               const unit = item.avgUnit || 'ไม่มีการตรวจวัด';
               if (unit === 'ไม่มีการตรวจวัด') return unit;
               const thaiYear = item.avgYear ? (parseInt(item.avgYear) + 543) : "";
-              return `${item.avg?.toFixed(2)} ${unit} (ปี: ${thaiYear})`; // ✅ แสดงปี + ค่า + หน่วย
+              return `${(item.avg ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit} (ปี: ${thaiYear})`; // ✅ แสดงปี + ค่า + หน่วย
             }
 
             // กรณี beforeSeries หรือ compareSeries "ก่อนบำบัด"
@@ -563,11 +573,11 @@ const ALdataviz: React.FC = () => {
         enabled: false,
       },
       legend: { show: true, showForSingleSeries: true, position: 'top', horizontalAlign: 'center' },
-      stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
+      stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3, dashArray: [0, 0, 8], } : { show: false },
       markers: chartType === "line"
         ? {
-          size: 4.5,
-          shape: ["circle", "triangle", "diamond"],
+          size: isMobile ? 0 : 4.5,
+          shape: ["circle", "triangle", "star"],
           hover: { sizeOffset: 3 },
         }
         : { size: 0 },
@@ -587,7 +597,7 @@ const ALdataviz: React.FC = () => {
       name: "ค่าต่ำสุด",
       data: afterMaxMinData.map(item => item.min),
       color: colorMin,
-    }, 
+    },
     {
       name: "ค่าเฉลี่ย", //  เพิ่ม series ใหม่
       data: afterMaxMinData.map(item => item.avg ?? 0),
@@ -873,10 +883,8 @@ const ALdataviz: React.FC = () => {
           <div>
             <h1
               className="al-title-text"
-              onClick={() => navigate(-1)}
-              style={{ cursor: 'pointer' }}
             >
-              <LeftOutlined className="al-back-icon" />
+              <LeftOutlined className="al-back-icon" onClick={() => navigate(-1)} style={{ cursor: 'pointer' }} />
               กราฟ Aluminium
             </h1>
           </div>
@@ -1087,10 +1095,10 @@ const ALdataviz: React.FC = () => {
         <div className="al-header-vis">
           <h1 className="al-title-text-vis">ข้อมูล Aluminium</h1>
           <div className="al-btn-container">
-            <button className="al-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
+            <button className="al-add-btn" onClick={showModal}>{isMobile ? <FormOutlined /> : 'เพิ่มข้อมูลใหม่'}</button>
           </div>
         </div>
-        <div className="al-select-date">
+        <div className="al-select-date2">
           <div className="al-filter-status-and-efficiency">
             <p>สถานะ</p>
             <Select
@@ -1232,8 +1240,11 @@ const ALdataviz: React.FC = () => {
               defaultPageSize: 10,
               showSizeChanger: true,
               pageSizeOptions: ['7', '10', '15', '30', '100'],
+              showQuickJumper: true,
+              responsive: true,
+              position: isMobile ? ['bottomCenter'] : ['bottomRight'],
             }}
-
+            scroll={isMobile ? { x: 'max-content' } : undefined} // ใช้แค่ตอนมือถือ
           />
         </div>
 
@@ -1246,6 +1257,7 @@ const ALdataviz: React.FC = () => {
           closable={false}
           centered
           bodyStyle={{ padding: '35px 35px 20px 35px' }}
+          className="modal-create"
         >
           <div className="al-container">
             <ALCentralForm onCancel={handleAddModalCancel}
@@ -1266,6 +1278,7 @@ const ALdataviz: React.FC = () => {
           centered
           onCancel={handleEditModalCancel}
           bodyStyle={{ padding: '35px 35px 20px 35px' }}
+          className="modal-create"
         >
           {editingRecord && (
             <div className="up-tds-container">

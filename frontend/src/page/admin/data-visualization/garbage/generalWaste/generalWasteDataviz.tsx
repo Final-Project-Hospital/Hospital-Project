@@ -12,6 +12,8 @@ import PhotoMonthlyGarbage from "../../../../../assets/waste/container.png"
 import PhotoDailyGarbage from "../../../../../assets/waste/garbage-bag.png"
 import PhotoAADC from "../../../../../assets/waste/garbage-truck.png"
 import { listGeneralInterface } from "../../../../../interface/Igarbage/IgeneralWaste";
+const isMobile = window.innerWidth <= 768;
+import { FormOutlined } from '@ant-design/icons';
 
 // ใช้กับกราฟ
 import ApexChart from "react-apexcharts";
@@ -374,7 +376,12 @@ const GeneralWaste: React.FC = () => {
         type: chartType,
         zoom: { enabled: enableZoom, type: 'x', autoScaleYaxis: true },
         fontFamily: "Prompt, 'Prompt', sans-serif",
-        toolbar: { show: true },
+        toolbar: {
+          show: true,
+          tools: {
+            download: true, selection: true, zoom: true, zoomin: !isMobile, zoomout: !isMobile, pan: !isMobile, reset: true
+          }
+        },
       },
       annotations: {
         yaxis: isAADCChart
@@ -403,7 +410,7 @@ const GeneralWaste: React.FC = () => {
                   borderColor: "#FF6F61",
                   borderWidth: 2.5,
                   strokeDashArray: 6,
-                  label: { text: `มาตรฐาน ${middleTarget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#FF6F61", color: "#fff" } },
+                  label: { text: `มาตรฐาน ${middleTarget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, style: { background: "#ff6e61e4", color: "#fff" } },
                 },
               ]
               : []
@@ -482,7 +489,7 @@ const GeneralWaste: React.FC = () => {
               return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
             }
 
-             // MonthlyGarbage / Quantity (normalized แต่ tooltip ต้องแสดงค่าจริง)
+            // MonthlyGarbage / Quantity (normalized แต่ tooltip ต้องแสดงค่าจริง)
             if (["ค่าขยะทั่วไป (Normalize)", "จำนวนคน (Normalize)"].includes(seriesName)
               && compareRef.current.length > dataPointIndex) {
 
@@ -506,7 +513,7 @@ const GeneralWaste: React.FC = () => {
         }
       },
       stroke: chartType === "line" ? { show: true, curve: "smooth", width: 3 } : { show: false },
-      markers: chartType === "line" ? { size: 4.5, shape: ["circle", "triangle"], hover: { sizeOffset: 3 }, } : { size: 0 },
+      markers: chartType === "line" ? { size: isMobile ? 0 : 4.5, shape: ["circle", "triangle"], hover: { sizeOffset: 3 }, } : { size: 0 },
       legend: { show: true, showForSingleSeries: true, position: 'top', horizontalAlign: 'center', },
     };
   };
@@ -550,14 +557,6 @@ const GeneralWaste: React.FC = () => {
     ...garbageNormalized,
     ...quantityNormalized,
   ];
-  // const seriesMonthlyGarbageQuantity = [
-  //   { name: "ค่าขยะทั่วไป", data: compareMonthlyGarbageQuantity.map(item => item.monthlyGarbage), color: colorCompareMonthlyGarbage },
-  //   { name: "จำนวนคน", data: compareMonthlyGarbageQuantity.map(item => item.quantity), color: colorCompareQuantity },
-  // ];
-  // const combinedCompareData = [
-  //   ...seriesMonthlyGarbageQuantity[0].data,
-  //   ...seriesMonthlyGarbageQuantity[1].data,
-  // ];
   const getPieOptions = (isQuantityChart = false): ApexCharts.ApexOptions => ({
     labels: monthlyDataLatestYear.map(d => d.month),
     dataLabels: {
@@ -570,9 +569,20 @@ const GeneralWaste: React.FC = () => {
       type: "donut",
       fontFamily: "Prompt, 'Prompt', sans-serif", // ใส่ font ทั้ง chart
     },
-    legend: {
-      show: false, // ปิด legend
-    },
+    legend: isMobile
+      ? {
+        position: "right",
+        horizontalAlign: "left",
+        offsetY: -23,  // ปรับค่าลบเพื่อดันขึ้น (ลองปรับจนเสมอ donut)
+        offsetX: 0,
+        markers: { size: 5 },
+        itemMargin: { horizontal: 8, vertical: 4 },
+        fontSize: "10px",
+        labels: { colors: "#ffffffff" },
+      }
+      : {
+        show: false, // ปิด legend
+      },
     stroke: {
       show: false, // ปิดขอบ
     },
@@ -849,7 +859,7 @@ const GeneralWaste: React.FC = () => {
             </div>
             {lastDayGeneral ? (
               <p>
-                มาตรฐาน{" "}
+                เป้าหมาย{" "}
                 <span>
                   {
                     (lastDayGeneral.MiddleTarget !== null && lastDayGeneral.MiddleTarget !== 0) || (lastDayGeneral.MinTarget !== null && lastDayGeneral.MinTarget !== 0) || (lastDayGeneral.MaxTarget !== null && lastDayGeneral.MaxTarget !== 0) || (lastDayGeneral.UnitName && lastDayGeneral.UnitName.trim() !== "")
@@ -872,10 +882,8 @@ const GeneralWaste: React.FC = () => {
           <div>
             <h1
               className="general-title-text"
-              onClick={() => navigate(-1)}
-              style={{ cursor: 'pointer' }}
             >
-              <LeftOutlined className="general-back-icon" />
+              <LeftOutlined className="general-back-icon" onClick={() => navigate(-1)} style={{ cursor: 'pointer' }} />
               กราฟ General Waste
             </h1>
           </div>
@@ -1010,7 +1018,7 @@ const GeneralWaste: React.FC = () => {
                   false,          // isPercentChart (true/false)
                 )} series={series}
                 type={chartTypeData}
-                style={{ flex: 1 }}
+                {...(isMobile ? { height: 350 } : { style: { flex: 1 } })}
               />
             </div>
             <div className="general-graph-card">
@@ -1070,7 +1078,7 @@ const GeneralWaste: React.FC = () => {
                   true,           // isPercentChart (true/false)
                 )} series={seriesMonthlyGarbageQuantityNormalized}
                 type={chartTypeCompareMonthlyGarbageQuantity}
-                style={{ flex: 1 }}
+                {...(isMobile ? { height: 350 } : { style: { flex: 1 } })}
               />
             </div>
           </div>
@@ -1124,7 +1132,7 @@ const GeneralWaste: React.FC = () => {
                   false,            // isPercentChart (true/false)
                 )} series={seriesAADC}
                 type={chartTypeAadc}
-                height="85%"
+                height={isMobile ? "350" : "85%"}
               />
             </div>
             <div className="general-small-card-container">
@@ -1140,13 +1148,13 @@ const GeneralWaste: React.FC = () => {
                         options={getPieOptions(false)}
                         series={pieSeries}
                         type="donut"
-                        width={90}
-                        height={90}
+                        width={isMobile ? "180" : "90"}
+                        height={isMobile ? "180" : "90"}
                       />
                     </div>
                   </div>
                 </div>
-                <span className="general-box-date">Date per 29 June 2024</span>
+                <span className="recycled-box-date">{lastDayGeneral && lastDayGeneral.Date ? `ข้อมูลล่าสุด: ${dayjs(lastDayGeneral.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
               </div>
               <div className="general-box">
                 <div className="general-box-title">จำนวนคนรวมปี {latestYear}</div>
@@ -1160,13 +1168,15 @@ const GeneralWaste: React.FC = () => {
                         options={getPieOptions(true)}
                         series={pieSeriesQuantity}
                         type="donut"
-                        width={90}
-                        height={90}
+                        // width={90}
+                        // height={90}
+                        width={isMobile ? "180" : "90"}
+                        height={isMobile ? "180" : "90"}
                       />
                     </div>
                   </div>
                 </div>
-                <span className="general-box-date">Date per 29 June 2024</span>
+                <span className="recycled-box-date">{lastDayGeneral && lastDayGeneral.Date ? `ข้อมูลล่าสุด: ${dayjs(lastDayGeneral.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
               </div>
             </div>
           </div>
@@ -1174,10 +1184,10 @@ const GeneralWaste: React.FC = () => {
         <div className="general-header-vis">
           <h1 className="general-title-text-vis">ข้อมูล General Waste</h1>
           <div className="general-btn-container">
-            <button className="general-add-btn" onClick={showModal}>เพิ่มข้อมูลใหม่</button>
+            <button className="general-add-btn" onClick={showModal}>{isMobile ? <FormOutlined /> : 'เพิ่มข้อมูลใหม่'}</button>
           </div>
         </div>
-        <div className="general-select-date">
+        <div className="general-select-date2">
           <div className="general-filter-status-and-efficiency">
             <p>สถานะเป้าหมาย</p>
             <Select
@@ -1273,19 +1283,19 @@ const GeneralWaste: React.FC = () => {
         </div>
         <br />
         <div className="general-table-data">
-          <div className="general-width40">
+          <div >
             <h1 className="general-title-text-table">ตารางรายงานผลการดำเนินงาน</h1>
           </div>
           <div className="general-task-summary">
             <div className="general-task-total">จำนวนทั้งหมด <span style={{ color: "#1a4b57", fontWeight: "bold" }}>{totalTasks}</span> วัน</div>
             <div className="general-task-stats">
               <div className="general-task-item">
-                <div className="general-task-number">{doneTasks}</div>
+                <div className="general-task-number status-good">{doneTasks}</div>
                 <div className="general-task-label">สำเร็จตามเป้าหมาย</div>
               </div>
               <div className="general-task-divider" />
               <div className="general-task-item">
-                <div className="general-task-number">{inProgressTasks}</div>
+                <div className="general-task-number status-high">{inProgressTasks}</div>
                 <div className="general-task-label">ไม่สำเร็จตามเป้าหมาย</div>
               </div>
             </div>
@@ -1319,8 +1329,11 @@ const GeneralWaste: React.FC = () => {
               defaultPageSize: 10,
               showSizeChanger: true,
               pageSizeOptions: ['7', '10', '15', '30', '100'],
+              showQuickJumper: true,
+              responsive: true,
+              position: isMobile ? ['bottomCenter'] : ['bottomRight'],
             }}
-
+            scroll={isMobile ? { x: 'max-content' } : undefined}
           />
         </div>
 
@@ -1333,6 +1346,7 @@ const GeneralWaste: React.FC = () => {
           closable={false}
           centered
           bodyStyle={{ padding: '30px 30px 15px 30px' }}
+          className="modal-create"
         >
           <div className="gen-container">
             <GeneralCentralForm onCancel={handleAddModalCancel}
@@ -1354,6 +1368,7 @@ const GeneralWaste: React.FC = () => {
           centered
           onCancel={handleEditModalCancel}
           bodyStyle={{ padding: '30px 30px 15px 30px' }}
+          className="modal-create"
         >
           {editingRecord && (
             <div className="up-recy-container">

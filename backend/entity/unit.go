@@ -6,7 +6,7 @@ import (
 
 type Unit struct {
 	gorm.Model
-	UnitName	string
-	
-	EnvironmentalRecord	[]EnvironmentalRecord `gorm:"foreignKey: UnitID"`
+	UnitName string `valid:"required~UnitName is required"`
+
+	EnvironmentalRecord []EnvironmentalRecord `gorm:"foreignKey:UnitID"`
 }

@@ -5,7 +5,7 @@ import { AddLogin, GetUserDataByUserID } from "../../../services/httpLogin";
 import { LoginInterface } from "../../../interface/Login";
 import LogoLogin from "../../../assets/Logo Environment Login.png";
 
-const Login = ({ handleSignIn, handleForgot }: any) => {
+const Login = ({ handleForgot }: any) => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,8 +44,6 @@ const Login = ({ handleSignIn, handleForgot }: any) => {
           window.location.href = "/admin";
         } else if (RoleName === "Employee") {
           window.location.href = "/admin";
-        } else if (RoleName === "Guest") {
-          window.location.href = "/guest";
         }
       }, 500);
     } else {
@@ -163,16 +161,6 @@ const Login = ({ handleSignIn, handleForgot }: any) => {
             )}
           </button>
         </form>
-
-        <div className="text-center mt-6 text-base text-teal-400">
-          ยังไม่มีบัญชีใช่หรือไม่?{" "}
-          <span
-            className="text-teal-600 hover:underline cursor-pointer font-bold"
-            onClick={handleSignIn}
-          >
-            สมัครสมาชิก
-          </span>
-        </div>
       </div>
     </>
   );

@@ -45,19 +45,26 @@ const UpdateHazardousCentralForm: React.FC<UpdateHazardousCentralFormProps> = ({
         if (initialValues && initialValues.length > 0) {
             const record = initialValues[0];
 
+            // ฟังก์ชันปัดขึ้น 2 ตำแหน่ง
+            const toTwoDecimal = (value: any) => {
+                if (value === null || value === undefined) return undefined;
+                return Math.ceil(Number(value) * 100) / 100;
+            };
+
             form.setFieldsValue({
                 date: dayjs(record.Date),
                 time: dayjs(),
-                unit: record.UnitID ?? 'other',
+                unit: record.UnitID ?? "other",
                 standardID: record.StandardID,
                 beforeAfterTreatmentID: record.BeforeAfterTreatmentID,
-                value: record?.Data ?? undefined,
-                note: record?.Note || '',
-                quantity: record?.Quantity ?? undefined,
-                monthlyGarbage: record?.MonthlyGarbage ?? undefined,
-                average_daily_garbage: record?.AverageDailyGarbage ?? undefined,
-                totalSale: record?.TotalSale ?? undefined,
+                value: toTwoDecimal(record?.Data),
+                note: record?.Note || "",
+                quantity: toTwoDecimal(record?.Quantity),
+                monthlyGarbage: toTwoDecimal(record?.MonthlyGarbage),
+                average_daily_garbage: toTwoDecimal(record?.AverageDailyGarbage),
+                totalSale: toTwoDecimal(record?.TotalSale),
             });
+
             console.log(selectedTreatmentID);
             setSelectedTreatmentID(record.BeforeAfterTreatmentID);
         }
@@ -190,6 +197,9 @@ const UpdateHazardousCentralForm: React.FC<UpdateHazardousCentralFormProps> = ({
                                     if (!Number.isInteger(value)) {
                                         return Promise.reject("กรุณากรอกเป็นจำนวนเต็มเท่านั้น");
                                     }
+                                    if (value !== undefined && value < 0) {
+                                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
+                                    }
                                     return Promise.resolve();
                                 },
                             }
@@ -210,6 +220,9 @@ const UpdateHazardousCentralForm: React.FC<UpdateHazardousCentralFormProps> = ({
                                     if (value === undefined || value === null) return Promise.resolve();
                                     if (typeof value !== "number" || isNaN(value)) {
                                         return Promise.reject("กรุณากรอกเป็นตัวเลขเท่านั้น");
+                                    }
+                                    if (value !== undefined && value < 0) {
+                                        return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
                                     }
                                     return Promise.resolve();
                                 },
@@ -238,7 +251,9 @@ const UpdateHazardousCentralForm: React.FC<UpdateHazardousCentralFormProps> = ({
                     </Form.Item>
 
                     <Form.Item label="ปริมาณขยะต่อวัน (คำนวณอัตโนมัติ)" name="average_daily_garbage">
-                        <InputNumber style={{ width: "100%" }} disabled placeholder="คำนวณอัตโนมัติ" />
+                        <InputNumber style={{ width: "100%" }} disabled placeholder="คำนวณอัตโนมัติ"
+                            formatter={(value) => value !== undefined && value !== null ? Number(value).toFixed(2) : ""}
+                            parser={(value) => value ? parseFloat(value) : 0} />
                     </Form.Item>
                 </div>
 
