@@ -2,14 +2,14 @@
 #include <HTTPClient.h>
 #include <time.h>
 
-// WiFi config
-const char *ssid = "vivo Y33T";
+// ---------- WiFi ----------
+const char *ssid     = "vivo Y33T";
 const char *password = "0935096372";
 
-// Backend API endpoint (เปลี่ยนเป็น IP หรือ domain จริงถ้ามี)
-const char *serverName = "http://192.168.53.128:8000/hardware/read";
+// ---------- Backend (HTTP เท่านั้น) ----------
+const char *HTTP_URL  = "http://cpeoffice.sut.ac.th/envi/api/hardware/read";
 
-// NTP Time config
+// ---------- NTP ----------
 const char *ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 7 * 3600;
 const int daylightOffset_sec = 0;
@@ -30,18 +30,20 @@ void getCurrentDateTime(String &dateStr, String &timeStr) {
 
 void setup() {
   Serial.begin(115200);
+  delay(300);
 
-  // Connect to WiFi
-  WiFi.begin(ssid, password);
+  // Connect WiFi
   Serial.print("Connecting to WiFi");
+  WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    delay(400);
     Serial.print(".");
   }
   Serial.println("\nWiFi connected");
-  Serial.println("IP address: " + WiFi.localIP().toString());
+  Serial.print("IP address: "); Serial.println(WiFi.localIP());
+  Serial.print("MAC: ");        Serial.println(WiFi.macAddress());
 
-  // Sync NTP time
+  // NTP
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
@@ -49,47 +51,77 @@ void setup() {
   } else {
     Serial.println(&timeinfo, "Time acquired: %Y-%m-%d %H:%M:%S");
   }
+
+  randomSeed((uint32_t)esp_timer_get_time());
 }
 
 void loop() {
-  // Generate random sensor data
-  float temperature = random(200, 350) / 10.0;   // 20.0 - 35.0 °C
-  float humidity = random(300, 800) / 10.0;      // 30% - 80%
+  // --- Mock sensor data ---
+  // Formaldehyde (ppm): 0.00–0.99 ทศนิยม 2 ตำแหน่ง
+  float formaldehyde = random(0, 100) / 100.0;   // 0..99 -> 0.00..0.99
+  float temperature  = random(200, 350) / 10.0;  // 20.0 - 35.0 °C
+  float humidity     = random(300, 800) / 10.0;  // 30 - 80 %
 
   String dateStr, timeStr;
   getCurrentDateTime(dateStr, timeStr);
 
-  // Build JSON payload
+  // ✅ JSON ให้ตรงกับ API: ใช้ mac_address
   String json = "{";
-  json += "\"name\": \"ESP32-001\",";
-  json += "\"ip_address\": \"" + WiFi.localIP().toString() + "\",";
-  json += "\"parameters\": [";
-  json += "{\"parameter\": \"Temperature\", \"data\": " + String(temperature, 2) + "},";
-  json += "{\"parameter\": \"Humidity\", \"data\": " + String(humidity, 2) + "}";
+  json += "\"name\":\"ESP32-001\",";
+  json += "\"mac_address\":\"" + String(WiFi.macAddress()) + "\",";
+  json += "\"parameters\":[";
+  json += "{\"parameter\":\"Formaldehyde\",\"data\":" + String(formaldehyde, 2) + "},";
+  json += "{\"parameter\":\"Temperature\",\"data\":" + String(temperature, 2) + "},";
+  json += "{\"parameter\":\"Humidity\",\"data\":" + String(humidity, 2) + "}";
   json += "]}";
 
-  // Print debug
-  Serial.println("------------------------");
-  Serial.println("Date: " + dateStr);
-  Serial.println("Time: " + timeStr);
-  Serial.println("Sending to backend: " + json);
+  Serial.println("--------------------------------------------------");
+  Serial.println("Date: " + dateStr + " Time: " + timeStr);
+  Serial.println("POST to (HTTP): " + String(HTTP_URL));
+  Serial.println("Payload:");
+  Serial.println(json);
 
-  // Send POST request
   if (WiFi.status() == WL_CONNECTED) {
+    WiFiClient client;
+    client.setTimeout(15000);
+
     HTTPClient http;
-    http.begin(serverName);
-    http.addHeader("Content-Type", "application/json");
 
-    int httpResponseCode = http.POST(json);
+    // เก็บ header 'Location' เผื่อเจอ redirect
+    const char* headerKeys[] = {"Location"};
+    http.collectHeaders(headerKeys, 1);
 
-    if (httpResponseCode == 200) {
-      Serial.println("✅ Data sent to backend successfully!");
+    if (!http.begin(client, HTTP_URL)) {
+      Serial.println("HTTP begin() failed");
     } else {
-      Serial.println("❌ Failed to send data. Response code: " + String(httpResponseCode));
-    }
+      http.setConnectTimeout(15000);
+      http.addHeader("Content-Type", "application/json");
+      http.addHeader("User-Agent", "ESP32-ENV/1.0");
 
-    http.end();
+      int code = http.POST(json);
+      String body = http.getString();
+
+      Serial.printf("HTTP status: %d\n", code);
+      Serial.println("Response body:");
+      Serial.println(body);
+
+      if (code == 200 || code == 201) {
+        Serial.println("✅ Sent successfully (HTTP)");
+      } else if (code == 301 || code == 302 || code == 307 || code == 308) {
+        Serial.println("⚠️ Server returned redirect (HTTP). อาจต้องใช้ HTTPS.");
+        if (http.hasHeader("Location")) {
+          Serial.print("Redirect Location: ");
+          Serial.println(http.header("Location"));
+        }
+      } else {
+        Serial.println("❌ Failed to send data (ดู status/body ข้างบน)");
+      }
+
+      http.end();
+    }
+  } else {
+    Serial.println("WiFi disconnected.");
   }
 
-  delay(120000); 
+  delay(120000);
 }
