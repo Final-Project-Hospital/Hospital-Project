@@ -33,7 +33,7 @@ const handleLogout = () => {
     const navigate = useNavigate();
 
     setTimeout(() => {
-      navigate("/login");
+      navigate("/");
     }, 1500);
   };
 

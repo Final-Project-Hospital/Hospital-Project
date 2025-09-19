@@ -4,6 +4,7 @@ import { message, Spin } from "antd";
 import { AddLogin, GetUserDataByUserID } from "../../../services/httpLogin";
 import { LoginInterface } from "../../../interface/Login";
 import LogoLogin from "../../../assets/Logo Environment Login.png";
+import { useNavigate } from "react-router-dom";
 
 const Login = ({ handleForgot }: any) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -11,6 +12,7 @@ const Login = ({ handleForgot }: any) => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+  const navigate = useNavigate();
 
   const clickLoginbt = async (datalogin: LoginInterface) => {
     setLoading(true);
@@ -40,10 +42,13 @@ const Login = ({ handleForgot }: any) => {
       messageApi.success(`เข้าสู่ระบบในฐานะ ${RoleName} สำเร็จ`);
       setTimeout(() => {
         setLoading(false);
-        if (RoleName === "Admin") {
-          window.location.href = "/admin";
-        } else if (RoleName === "Employee") {
-          window.location.href = "/admin";
+        // if (RoleName === "Admin") {
+        //   window.location.href = "/admin";
+        // } else if (RoleName === "Employee") {
+        //   window.location.href = "/admin";
+        // }
+        if (RoleName === "Admin" || RoleName === "Employee") {
+          navigate("/admin"); 
         }
       }, 500);
     } else {
