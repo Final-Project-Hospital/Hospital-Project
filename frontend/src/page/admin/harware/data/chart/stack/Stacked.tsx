@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChartComponent,
   SeriesCollectionDirective,
@@ -24,32 +24,58 @@ interface ChartdataProps {
   chartHeight?: string;
   reloadKey?: number;
 
-  // ✅ รับจากพ่อ
   data?: ChartPoint[];
   meta?: ChartMetaMap;
   loading?: boolean;
 }
 
-function labelHour(date: Date) {
-  const d = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
-  const t = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-  return `${d} ${t}`; // dd/MM HH:mm
-}
-function labelDay(date: Date) {
-  return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }); // dd/MM
-}
-function labelMonth(date: Date) {
-  return date.toLocaleDateString('en-GB', { month: 'short' }); // Jan..Dec
+/* ---------- type guards ---------- */
+const isDateRange = (v: any): v is [Date, Date] =>
+  Array.isArray(v) && v.length === 2 && v.every((d) => d instanceof Date && !isNaN(d.getTime()));
+const isYearRange = (v: any): v is [number, number] =>
+  Array.isArray(v) && v.length === 2 && v.every((n) => Number.isFinite(n));
+const isMonthSel = (v: any): v is { month: string; year: string } =>
+  v && typeof v === 'object' && 'month' in v && 'year' in v;
+
+/* ---------- label helpers ---------- */
+const labelHour = (d: Date) =>
+  `${d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })} ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+const labelDay = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+const labelMonth = (d: Date) => d.toLocaleDateString('en-GB', { month: 'short' });
+
+/* ---------- group/avg helpers ---------- */
+function groupAvgByLabel(data: { x: string; y: number }[], categories: string[]) {
+  const bucket: Record<string, number[]> = {};
+  for (const p of data) (bucket[p.x] ??= []).push(p.y);
+  const avg = (arr: number[]) => arr.reduce((s, v) => s + v, 0) / arr.length;
+  return categories.map((x) => ({ x, y: bucket[x] ? avg(bucket[x]) : 0 }));
 }
 
-function groupAvgByLabel(data: { x: string; y: number }[], categories: string[]) {
-  const map: Record<string, number[]> = {};
-  data.forEach(d => {
-    map[d.x] ??= [];
-    map[d.x].push(d.y);
-  });
-  const existing = new Map(Object.entries(map).map(([x, ys]) => [x, ys.reduce((a,b)=>a+b,0) / ys.length]));
-  return categories.map(x => ({ x, y: existing.get(x) ?? 0 }));
+/* ---------- parse key to sort time-like labels ---------- */
+function keyToSortValue(s: string): number | string {
+  // dd/MM HH:mm
+  let m = /^(\d{2})\/(\d{2}) (\d{2}):(\d{2})$/.exec(s);
+  if (m) {
+    const [, dd, MM, hh, mm] = m;
+    const y = new Date().getFullYear();
+    return new Date(+y, +MM - 1, +dd, +hh, +mm).getTime();
+  }
+  // dd/MM
+  m = /^(\d{2})\/(\d{2})$/.exec(s);
+  if (m) {
+    const [, dd, MM] = m;
+    const y = new Date().getFullYear();
+    return new Date(+y, +MM - 1, +dd).getTime();
+  }
+  // Mon (Jan..Dec)
+  if (/^[A-Za-z]{3}$/.test(s)) {
+    const y = new Date().getFullYear();
+    const d = new Date(`${s} 1, ${y}`);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
+  // YYYY
+  if (/^\d{4}$/.test(s)) return +s;
+  return s;
 }
 
 const Stacked: React.FC<ChartdataProps> = ({
@@ -64,213 +90,151 @@ const Stacked: React.FC<ChartdataProps> = ({
   loading = false,
 }) => {
   const { currentMode } = useStateContext();
-  const [seriesDataByParam, setSeriesDataByParam] = useState<Record<string, { x: string; y: number }[]>>({});
-  const [standardLines, setStandardLines] = useState<any[]>([]);//@ts-ignore
-  const [categories, setCategories] = useState<string[]>([]);
+
+  const [seriesByParam, setSeriesByParam] = useState<Record<string, { x: string; y: number }[]>>({});
+  const [stdLines, setStdLines] = useState<any[]>([]); //@ts-ignore
+  const [xCats, setXCats] = useState<string[]>([]);
   const [unitMap, setUnitMap] = useState<Record<string, string>>({});
   const [sortedParams, setSortedParams] = useState<string[]>([]);
   const [hasData, setHasData] = useState(true);
+
   const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, [reloadKey]);
 
-  useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; };
-  }, [reloadKey]);
+  // สี fallback
+  const colorOf = useMemo(() => {
+    const map: Record<string, string> = {};
+    parameters.forEach((p, i) => { map[p] = colors[i] || '#999999'; });
+    return map;
+  }, [parameters, colors]);
 
-  const isRangeReady = useMemo(() => {
-    if (!selectedRange) return false;
-    if (timeRangeType === 'hour') return Array.isArray(selectedRange) && selectedRange.length === 2;
-    if (timeRangeType === 'day') return Array.isArray(selectedRange) && selectedRange.length === 2;
-    if (timeRangeType === 'month') return selectedRange?.month && selectedRange?.year;
-    if (timeRangeType === 'year') return Array.isArray(selectedRange) && selectedRange.length === 2;
+  // กัน selectedRange ไม่ตรงชนิด (เฝ้าในตัวคอมโพเนนต์ด้วย)
+  const rangeReady = useMemo(() => {
+    if (timeRangeType === 'hour' || timeRangeType === 'day') return isDateRange(selectedRange);
+    if (timeRangeType === 'month') return isMonthSel(selectedRange);
+    if (timeRangeType === 'year') return isYearRange(selectedRange);
     return false;
-  }, [selectedRange, timeRangeType]);
+  }, [timeRangeType, selectedRange]);
 
   useEffect(() => {
-    if (!isRangeReady) return;
+    if (!rangeReady) return;
 
     if (loading) {
-      setSeriesDataByParam({});
-      setStandardLines([]);
-      setCategories([]);
-      setUnitMap({});
-      setSortedParams([]);
-      setHasData(true);
+      setSeriesByParam({}); setStdLines([]); setXCats([]); setUnitMap({});
+      setSortedParams([]); setHasData(true);
       return;
     }
 
-    if (!parameters?.length || !Array.isArray(data) || data.length === 0) {
-      setSeriesDataByParam({});
-      setCategories([]);
-      setUnitMap({});
-      setSortedParams([]);
-      setHasData(false);
+    if (!parameters.length || !Array.isArray(data) || data.length === 0) {
+      setSeriesByParam({}); setXCats([]); setUnitMap({}); setSortedParams([]); setHasData(false);
       return;
     }
 
-    // กรณีเลือกวันเดียว: เติม label ก่อน/ถัดไป
-    const forcedXLabels: string[] = [];
-    if (timeRangeType === 'day' && Array.isArray(selectedRange) && selectedRange.length === 2) {
-      const s = new Date(selectedRange[0]);
-      const e = new Date(selectedRange[1]);
-      if (s.toDateString() === e.toDateString()) {
-        const prev = new Date(s.getTime() - 86400000);
-        const next = new Date(s.getTime() + 86400000);
-        forcedXLabels.push(labelDay(prev), labelDay(s), labelDay(next));
-      }
-    }
-
-    // unit/standard จาก meta
-    const stdMaxMap: Record<string, number> = {};
-    const stdMinMap: Record<string, number> = {};
+    // unit/standard
+    const stdMax: Record<string, number> = {};
+    const stdMin: Record<string, number> = {};
     const unitMapping: Record<string, string> = {};
     for (const p of parameters) {
       const m = meta[p];
       if (m?.unit && !unitMapping[m.unit]) unitMapping[m.unit] = p;
-      if (typeof m?.standard === 'number') stdMaxMap[p] = m.standard;
-      if (typeof m?.standardMin === 'number') stdMinMap[p] = m.standardMin;
+      if (typeof m?.standard === 'number') stdMax[p] = m.standard;
+      if (typeof m?.standardMin === 'number') stdMin[p] = m.standardMin;
     }
 
-    // กรอง/จัด label ตามช่วงเวลา
-    const paramPoints: Record<string, { x: string; y: number }[]> = {};
-    const xSet = new Set<string>(forcedXLabels);
-
-    const pushPoint = (name: string, d: Date, value: number) => {
-      let inRange = false;
-      let label = '';
-
-      if (timeRangeType === 'hour') {
-        const [start, end] = selectedRange || [];
-        if (!start || !end) return;
-        const s = new Date(start), e = new Date(end);
-        inRange = d >= s && d <= e;
-        if (inRange) label = labelHour(d);
-      } else if (timeRangeType === 'day') {
-        const [start, end] = selectedRange || [];
-        if (!start || !end) return;
-        const s = new Date(start), e = new Date(end);
-        s.setHours(0,0,0,0); e.setHours(23,59,59,999);
-        inRange = d >= s && d <= e;
-        if (inRange) label = labelDay(d);
-      } else if (timeRangeType === 'month') {
-        const m = Number(selectedRange?.month);
-        const y = Number(selectedRange?.year);
-        inRange = (d.getMonth() + 1) === m && d.getFullYear() === y;
-        if (inRange) label = labelDay(d); // วันในเดือน
-      } else if (timeRangeType === 'year') {
-        const [ys, ye] = selectedRange || [];
-        const sameYear = +ys === +ye;
-        inRange = d.getFullYear() >= +ys && d.getFullYear() <= +ye;
-        if (inRange) label = sameYear ? labelMonth(d) : d.getFullYear().toString();
+    const forcedX: string[] = [];
+    // ถ้าเลือก "วันเดียว" ในโหมด day → เติม label ก่อน/ถัดไปให้แกนไม่ว่าง
+    if (timeRangeType === 'day' && isDateRange(selectedRange)) {
+      const [s0, e0] = selectedRange;
+      if (s0 && e0 && s0.toDateString() === e0.toDateString()) {
+        const prev = new Date(s0.getTime() - 86400000);
+        const next = new Date(s0.getTime() + 86400000);
+        forcedX.push(labelDay(prev), labelDay(s0), labelDay(next));
       }
+    }
 
-      if (!inRange || !label) return;
-      (paramPoints[name] ??= []).push({ x: label, y: value });
-      xSet.add(label);
+    // กรอง & สร้าง label
+    const pointsByParam: Record<string, { x: string; y: number }[]> = {};
+    const xset = new Set<string>(forcedX);
+
+    const pushPoint = (p: string, d: Date, v: number) => {
+      let ok = false; let x = '';
+      if (timeRangeType === 'hour' && isDateRange(selectedRange)) {
+        const [s, e] = selectedRange; ok = d >= s && d <= e; if (ok) x = labelHour(d);
+      } else if (timeRangeType === 'day' && isDateRange(selectedRange)) {
+        const [s, e] = selectedRange; const s2 = new Date(s); const e2 = new Date(e);
+        s2.setHours(0,0,0,0); e2.setHours(23,59,59,999);
+        ok = d >= s2 && d <= e2; if (ok) x = labelDay(d);
+      } else if (timeRangeType === 'month' && isMonthSel(selectedRange)) {
+        const m = +selectedRange.month, y = +selectedRange.year;
+        ok = (d.getMonth() + 1) === m && d.getFullYear() === y; if (ok) x = labelDay(d);
+      } else if (timeRangeType === 'year' && isYearRange(selectedRange)) {
+        const [ys, ye] = selectedRange; ok = d.getFullYear() >= +ys && d.getFullYear() <= +ye;
+        if (ok) x = (ys === ye) ? labelMonth(d) : d.getFullYear().toString();
+      }
+      if (!ok || !x) return;
+      (pointsByParam[p] ??= []).push({ x, y: v });
+      xset.add(x);
     };
 
     for (const pt of data) {
-      const { parameter, date, value } = pt;
-      if (!parameters.includes(parameter)) continue;
-      const d = new Date(date);
-      if (isNaN(d.getTime()) || typeof value !== 'number') continue;
-      pushPoint(parameter, d, value);
+      if (!parameters.includes(pt.parameter)) continue;
+      const d = new Date(pt.date);
+      if (isNaN(d.getTime()) || typeof pt.value !== 'number') continue;
+      pushPoint(pt.parameter, d, pt.value);
     }
 
-    // เรียงแกน X ให้ถูกลำดับเวลา
-    const parseKey = (s: string): number | string => {
-      // dd/MM HH:mm
-      let m = /^(\d{2})\/(\d{2}) (\d{2}):(\d{2})$/.exec(s);
-      if (m) {
-        const [, dd, MM, hh, mm] = m;
-        const y = new Date().getFullYear();
-        return new Date(+y, +MM - 1, +dd, +hh, +mm).getTime();
-      }
-      // dd/MM
-      m = /^(\d{2})\/(\d{2})$/.exec(s);
-      if (m) {
-        const [, dd, MM] = m;
-        const y = new Date().getFullYear();
-        return new Date(+y, +MM - 1, +dd).getTime();
-      }
-      // Mon (Jan..Dec)
-      if (/^[A-Za-z]{3}$/.test(s)) {
-        const y = new Date().getFullYear();
-        const d = new Date(`${s} 1, ${y}`);
-        if (!isNaN(d.getTime())) return d.getTime();
-      }
-      // YYYY
-      if (/^\d{4}$/.test(s)) return +s;
-      return s;
-    };
-
-    const xCats = Array.from(xSet).sort((a, b) => {
-      const ka = parseKey(a);
-      const kb = parseKey(b);
-      if (typeof ka === 'number' && typeof kb === 'number') return ka - kb;
+    const xCatsSorted = Array.from(xset).sort((a, b) => {
+      const va = keyToSortValue(a); const vb = keyToSortValue(b);
+      if (typeof va === 'number' && typeof vb === 'number') return va - vb;
       return String(a).localeCompare(String(b));
     });
 
-    // ทำค่าเฉลี่ย/เติม 0 ให้ครบทุก category
-    const seriesByParam: Record<string, { x: string; y: number }[]> = {};
-    for (const p of parameters) {
-      const arr = paramPoints[p] ?? [];
-      seriesByParam[p] = groupAvgByLabel(arr, xCats);
-    }
+    // รวม/เฉลี่ยและเติม 0 ให้ครบทุก bucket
+    const byParam: Record<string, { x: string; y: number }[]> = {};
+    for (const p of parameters) byParam[p] = groupAvgByLabel(pointsByParam[p] ?? [], xCatsSorted);
 
-    // sort legend/stack โดยยอดรวมรวมจากน้อยไปมาก (อ่าน layer ง่าย)
-    const totals = Object.fromEntries(
-      parameters.map(p => [p, seriesByParam[p].reduce((s, d) => s + d.y, 0)])
-    );
+    // sort layer ตามยอดรวม (เล็ก→ใหญ่ อ่านซ้อนง่าย)
+    const totals = Object.fromEntries(parameters.map(p => [p, byParam[p].reduce((s, d) => s + d.y, 0)]));
     const sorted = [...parameters].sort((a, b) => totals[a] - totals[b]);
 
-    // เส้นมาตรฐาน
-    const stdSeries: any[] = [];
-    Object.entries(stdMaxMap).forEach(([p, std]) => {
-      stdSeries.push({
-        dataSource: xCats.map(x => ({ x, y: std })),
-        xName: 'x',
-        yName: 'y',
-        type: 'Line',
-        name: `${p} (Max)`,
-        dashArray: '5,5',
-        width: 2,
-        marker: { visible: false },
-        fill: 'red',
-      });
-    });
-    Object.entries(stdMinMap).forEach(([p, std]) => {
-      stdSeries.push({
-        dataSource: xCats.map(x => ({ x, y: std })),
-        xName: 'x',
-        yName: 'y',
-        type: 'Line',
-        name: `${p} (Min)`,
-        dashArray: '5,5',
-        width: 2,
-        marker: { visible: false },
-        fill: '#f59e0b',
-      });
-    });
+    // เส้นมาตรฐาน (สร้างต่อเมื่อมีแกน X)
+    const stds: any[] = [];
+    if (xCatsSorted.length) {
+      for (const [p, val] of Object.entries(stdMax)) {
+        stds.push({
+          dataSource: xCatsSorted.map(x => ({ x, y: val })),
+          xName: 'x', yName: 'y', type: 'Line',
+          name: `${p} (Max)`, dashArray: '5,5', width: 2,
+          marker: { visible: false }, fill: 'red', animation: { enable: false },
+        });
+      }
+      for (const [p, val] of Object.entries(stdMin)) {
+        stds.push({
+          dataSource: xCatsSorted.map(x => ({ x, y: val })),
+          xName: 'x', yName: 'y', type: 'Line',
+          name: `${p} (Min)`, dashArray: '5,5', width: 2,
+          marker: { visible: false }, fill: '#f59e0b', animation: { enable: false },
+        });
+      }
+    }
 
-    const hasSeries =
-      xCats.length > 0 && sorted.some(p => seriesByParam[p]?.some(d => d.y !== 0));
+    const someData = xCatsSorted.length > 0 && sorted.some(p => byParam[p]?.some(d => d.y !== 0));
 
     if (mounted.current) {
-      if (hasSeries) {
-        setSeriesDataByParam(seriesByParam);
-        setCategories(xCats);
-        setStandardLines(stdSeries);
+      if (someData) {
+        setSeriesByParam(byParam);
+        setXCats(xCatsSorted);
+        setStdLines(stds);
         setUnitMap(unitMapping);
         setSortedParams(sorted);
         setHasData(true);
       } else {
-        setSeriesDataByParam({});
-        setCategories([]);
+        setSeriesByParam({});
+        setXCats([]);
         setHasData(false);
       }
     }
-  }, [parameters, colors, timeRangeType, selectedRange, reloadKey, loading, data, meta, isRangeReady]);
+  }, [parameters, colors, timeRangeType, selectedRange, reloadKey, loading, data, meta, rangeReady]);
 
   if (loading) {
     return (
@@ -280,7 +244,6 @@ const Stacked: React.FC<ChartdataProps> = ({
       </div>
     );
   }
-
   if (!hasData) {
     return (
       <div className="flex justify-center items-center h-80 text-red-500 font-bold">
@@ -293,41 +256,34 @@ const Stacked: React.FC<ChartdataProps> = ({
     <div style={{ position: 'relative', width: '100%', paddingTop: '40px' }}>
       <div style={{ position: 'absolute', top: '4px', zIndex: 10 }}>
         <span className="text-black font-bold">หน่วย : </span>
-        {Object.entries(unitMap).map(([unit, param]) => {
-          const idx = parameters.indexOf(param);
-          const color = colors?.[idx] ?? (currentMode === 'Dark' ? '#fff' : '#000');
-          return (
-            <span
-              key={unit}
-              style={{
-                color,
-                backgroundColor: currentMode === 'Dark' ? '#33373E' : '#f0f0f0',
-                padding: '2px 8px',
-                marginRight: 8,
-                borderRadius: 6,
-                fontWeight: 'bold',
-              }}
-            >
-              {unit}
-            </span>
-          );
-        })}
+        {Object.entries(unitMap).map(([unit, param]) => (
+          <span
+            key={unit}
+            style={{
+              color: colorOf[param] || (currentMode === 'Dark' ? '#fff' : '#000'),
+              backgroundColor: currentMode === 'Dark' ? '#33373E' : '#f0f0f0',
+              padding: '2px 8px', marginRight: 8, borderRadius: 6, fontWeight: 'bold',
+            }}
+          >
+            {unit}
+          </span>
+        ))}
       </div>
 
       <ChartComponent
-        id={`stacked-${parameters.join('-')}`}
+        id={`stacked-${parameters.length ? parameters.join('-') : 'none'}`}
         width="100%"
         height={chartHeight}
         primaryXAxis={{
           valueType: 'Category',
           title: "วันที่บันทึก",
-          majorGridLines: { width: 0 },
           labelIntersectAction: 'Rotate45',
           interval: 1,
+          majorGridLines: { width: 0 },
         }}
         primaryYAxis={{
-          labelFormat: '{value}',
           title: 'ค่าที่ได้จากการตรวจวัด',
+          labelFormat: '{value}',
           lineStyle: { width: 0 },
           majorTickLines: { width: 0 },
           minorTickLines: { width: 0 },
@@ -335,9 +291,9 @@ const Stacked: React.FC<ChartdataProps> = ({
         chartArea={{ border: { width: 0 } }}
         tooltip={{ enable: true }}
         tooltipRender={(args) => {
-          if (args.point && typeof (args.point as any).y === 'number') {
-            const y = (args.point as any).y.toFixed(2);
-            args.text = `${(args.point as any).x} : ${y}`;
+          const pt: any = args.point;
+          if (pt && typeof pt.y === 'number') {
+            args.text = `${pt.x} : ${pt.y.toFixed(2)}`;
           }
         }}
         legendSettings={{ background: 'white' }}
@@ -345,21 +301,22 @@ const Stacked: React.FC<ChartdataProps> = ({
       >
         <Inject services={[StackingColumnSeries, Category, Legend, Tooltip, LineSeries]} />
         <SeriesCollectionDirective>
-          {sortedParams.map((param, index) => (
+          {sortedParams.map((p) => (
             <SeriesDirective
-              key={index}
-              dataSource={seriesDataByParam[param]}
+              key={`stack-${p}`}
+              dataSource={seriesByParam[p]}
               xName="x"
               yName="y"
-              name={param}
+              name={p}
               type="StackingColumn"
-              // @ts-ignore Syncfusion accepts cornerRadius on column/stacking column
+              // @ts-ignore cornerRadius supported at runtime
               cornerRadius={{ topLeft: 5, topRight: 5 }}
-              fill={colors[parameters.indexOf(param)]}
+              fill={colorOf[p]}
+              animation={{ enable: false }}
             />
           ))}
-          {standardLines.map((line, i) => (
-            <SeriesDirective key={`std-${i}`} {...line} />
+          {stdLines.map((s, i) => (
+            <SeriesDirective key={`std-${i}`} {...s} />
           ))}
         </SeriesCollectionDirective>
       </ChartComponent>
