@@ -78,7 +78,7 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
       <DateRangePickerComponent
         placeholder="Select date(s)"
         change={args => onChange(args.value)}
-        value={selectedValue}
+        value={Array.isArray(selectedValue) ? selectedValue : undefined}
         max={new Date()}
         cssClass="w-full text-xs"
       />

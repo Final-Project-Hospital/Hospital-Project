@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
 import Area from './Area';
 import TimeRangeSelector from './TimeRangeSelector';
@@ -29,11 +29,36 @@ interface ChartdataProps {
   colors?: string[];
   reloadKey?: number;
 
-  // ✅ รับจากพ่อ
   data?: ChartPoint[];
   meta?: ChartMetaMap;
   loading?: boolean;
 }
+
+const initRangeFor = (type: 'hour' | 'day' | 'month' | 'year') => {
+  if (type === 'day') {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(today.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+    return [sevenDaysAgo, today] as [Date, Date];
+  }
+  if (type === 'month') {
+    const now = new Date();
+    return {
+      month: (now.getMonth() + 1).toString().padStart(2, '0'),
+      year: now.getFullYear().toString(),
+    };
+  }
+  if (type === 'year') {
+    const y = new Date().getFullYear();
+    return [y, y] as [number, number];
+  }
+  // hour
+  const end = new Date();
+  const start = new Date(end.getTime() - 6 * 60 * 60 * 1000);
+  return [start, end] as [Date, Date];
+};
 
 const AreaChartIndex: React.FC<ChartdataProps> = ({
   hardwareID,
@@ -46,26 +71,8 @@ const AreaChartIndex: React.FC<ChartdataProps> = ({
 }) => {
   const { currentMode } = useStateContext();
   const [timeRangeType, setTimeRangeType] = useState<'hour' | 'day' | 'month' | 'year'>('day');
-  const [selectedRange, setSelectedRange] = useState<any>(null);
+  const [selectedRange, setSelectedRange] = useState<any>(() => initRangeFor('day'));
   const [areaChartParameters, setAreaChartParameters] = useState<AreaParamWithColor[]>([]);
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState<number>(0);
-
-  // ✅ Detect resize dynamically
-  useEffect(() => {
-    const observer = new ResizeObserver(entries => {
-      for (let entry of entries) {
-        if (entry.contentRect) {
-          setContainerWidth(entry.contentRect.width);
-        }
-      }
-    });
-    if (containerRef.current) observer.observe(containerRef.current);
-    return () => {
-      if (containerRef.current) observer.unobserve(containerRef.current);
-    };
-  }, []);
 
   useEffect(() => {
     if (parameters && parameters.length > 0) {
@@ -79,33 +86,14 @@ const AreaChartIndex: React.FC<ChartdataProps> = ({
     }
   }, [parameters, colors]);
 
-  // ✅ Default selectedRange by type
-  useEffect(() => {
-    if (timeRangeType === 'day') {
-      const today = new Date();
-      today.setHours(23, 59, 59, 999);
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(today.getDate() - 6);
-      sevenDaysAgo.setHours(0, 0, 0, 0);
-      setSelectedRange([sevenDaysAgo, today]);
-    } else if (timeRangeType === 'month') {
-      const now = new Date();
-      setSelectedRange({
-        month: (now.getMonth() + 1).toString().padStart(2, '0'),
-        year: now.getFullYear().toString(),
-      });
-    } else if (timeRangeType === 'year') {
-      const y = new Date().getFullYear();
-      setSelectedRange([y, y]);
-    } else if (timeRangeType === 'hour') {
-      const end = new Date();
-      const start = new Date(end.getTime() - 6 * 60 * 60 * 1000);
-      setSelectedRange([start, end]);
-    }
-  }, [timeRangeType]);
+  const handleTimeChange = (t: 'hour' | 'day' | 'month' | 'year') => {
+    // ตั้งทั้งสอง state พร้อมกันเพื่อกัน state ขัดกันชั่วคราว
+    setTimeRangeType(t);
+    setSelectedRange(initRangeFor(t));
+  };
 
   return (
-    <div className="w-full" ref={containerRef}>
+    <div className="w-full">
       <div className="w-full mx-auto px-2 py-2">
         <div className="bg-white rounded-2xl dark:bg-secondary-dark-bg dark:text-gray-200 p-3 sm:p-4 shadow">
 
@@ -129,8 +117,7 @@ const AreaChartIndex: React.FC<ChartdataProps> = ({
               ))}
             </div>
 
-            {/* ✅ Responsive selector row */}
-            {/* 📱 Mobile (stacked) */}
+            {/* 📱 Mobile */}
             <div className="flex flex-col gap-2 w-full sm:hidden">
               <DropDownListComponent
                 id="time-mobile"
@@ -147,7 +134,7 @@ const AreaChartIndex: React.FC<ChartdataProps> = ({
                 dataSource={dropdownData}
                 popupHeight="220px"
                 popupWidth="140px"
-                change={(e) => setTimeRangeType(e.value)}
+                change={(e) => handleTimeChange(e.value)}
               />
 
               <TimeRangeSelector
@@ -157,7 +144,7 @@ const AreaChartIndex: React.FC<ChartdataProps> = ({
               />
             </div>
 
-            {/* 💻 Tablet / Desktop (row) */}
+            {/* 💻 Tablet / Desktop */}
             <div className="hidden sm:flex flex-nowrap gap-2 w-full md:w-auto items-center">
               <div className="flex-shrink min-w-[90px] max-w-[120px] text-xs">
                 <DropDownListComponent
@@ -175,7 +162,7 @@ const AreaChartIndex: React.FC<ChartdataProps> = ({
                   dataSource={dropdownData}
                   popupHeight="220px"
                   popupWidth="140px"
-                  change={(e) => setTimeRangeType(e.value)}
+                  change={(e) => handleTimeChange(e.value)}
                 />
               </div>
 
@@ -199,8 +186,6 @@ const AreaChartIndex: React.FC<ChartdataProps> = ({
               selectedRange={selectedRange}
               chartHeight="420px"
               reloadKey={reloadKey}
-              key={containerWidth}
-              // ✅ ส่งต่อจากพ่อ
               data={data}
               meta={meta}
               loading={loading}
