@@ -379,3 +379,25 @@
 @media (max-width:480px){
   .apexcharts-datalabels-group text { font-size: 10px !important; }
 }
+/* ป้องกัน RangePicker ขยายเกินไปในแถวควบคุม */
+.range-picker-responsive {
+  flex: 0 0 auto;
+  width: clamp(170px, 22vw, 220px);  /* responsive แต่มีเพดาน */
+  max-width: 220px;
+}
+
+/* อนุญาตให้ input ด้านในยอม “หด” ได้ */
+.range-picker-responsive .ant-picker-input,
+.range-picker-responsive .ant-picker-input > input {
+  min-width: 0;            /* KEY: ไม่งั้นมันจะดันกล่องให้กว้าง */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* แถวรวมควรห่อบรรทัดได้ เพื่อกันทับบนจอเล็ก */
+.controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
