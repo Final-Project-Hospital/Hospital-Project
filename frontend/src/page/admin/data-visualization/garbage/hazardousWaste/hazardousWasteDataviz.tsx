@@ -731,7 +731,7 @@ const HazardousWaste: React.FC = () => {
               <span>
                 {lastDayHazardous !== null ? (
                   <>
-                    <span className="hazardous-value">{lastDayHazardous.MonthlyGarbage.toLocaleString()}</span>{" "}
+                    <span className="hazardous-value">{lastDayHazardous.MonthlyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayHazardous.UnitName || ""}
                   </>
                 ) : (
@@ -748,7 +748,7 @@ const HazardousWaste: React.FC = () => {
               <span>
                 {lastDayHazardous !== null ? (
                   <>
-                    <span className="hazardous-value">{lastDayHazardous.AverageDailyGarbage.toLocaleString()}</span>{" "}
+                    <span className="hazardous-value">{lastDayHazardous.AverageDailyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayHazardous.UnitName || ""}
                   </>
                 ) : (

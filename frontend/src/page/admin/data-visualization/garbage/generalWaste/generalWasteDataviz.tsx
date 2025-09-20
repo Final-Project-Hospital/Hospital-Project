@@ -815,7 +815,7 @@ const GeneralWaste: React.FC = () => {
               <span>
                 {lastDayGeneral !== null ? (
                   <>
-                    <span className="general-value">{lastDayGeneral.MonthlyGarbage.toLocaleString()}</span>{" "}
+                    <span className="general-value">{lastDayGeneral.MonthlyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayGeneral.UnitName || ""}
                   </>
                 ) : (
@@ -832,7 +832,7 @@ const GeneralWaste: React.FC = () => {
               <span>
                 {lastDayGeneral !== null ? (
                   <>
-                    <span className="general-value">{lastDayGeneral.AverageDailyGarbage.toLocaleString()}</span>{" "}
+                    <span className="general-value">{lastDayGeneral.AverageDailyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayGeneral.UnitName || ""}
                   </>
                 ) : (
@@ -849,7 +849,7 @@ const GeneralWaste: React.FC = () => {
               <span>
                 {lastDayGeneral !== null ? (
                   <>
-                    <span className="general-value">{lastDayGeneral.AADC}</span>{" "}
+                    <span className="general-value">{lastDayGeneral.AADC.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayGeneral.UnitName || ""}
                   </>
                 ) : (
@@ -1141,7 +1141,7 @@ const GeneralWaste: React.FC = () => {
                 <div className="general-box-number">
                   <div>
                     <div >
-                      {totalMonthlyGarbage.toLocaleString()} Kg
+                      {new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2, }).format(totalMonthlyGarbage)} Kg
                     </div >
                     <div>
                       <Chart
@@ -1154,7 +1154,7 @@ const GeneralWaste: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <span className="recycled-box-date">{lastDayGeneral && lastDayGeneral.Date ? `ข้อมูลล่าสุด: ${dayjs(lastDayGeneral.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
+                <span className="general-box-date">{lastDayGeneral && lastDayGeneral.Date ? `ข้อมูลล่าสุด: ${dayjs(lastDayGeneral.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
               </div>
               <div className="general-box">
                 <div className="general-box-title">จำนวนคนรวมปี {latestYear}</div>
@@ -1176,7 +1176,7 @@ const GeneralWaste: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <span className="recycled-box-date">{lastDayGeneral && lastDayGeneral.Date ? `ข้อมูลล่าสุด: ${dayjs(lastDayGeneral.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
+                <span className="general-box-date">{lastDayGeneral && lastDayGeneral.Date ? `ข้อมูลล่าสุด: ${dayjs(lastDayGeneral.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
               </div>
             </div>
           </div>

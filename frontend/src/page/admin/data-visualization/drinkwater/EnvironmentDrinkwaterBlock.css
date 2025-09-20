@@ -91,7 +91,7 @@
   /* ✅ เพิ่มเงา */
 }
 
-.wqc-info {
+.wqc-info-drink {
   text-align: center;
 }
 
@@ -102,20 +102,20 @@
   margin: 1rem 0;
 }
 
-.wqc-info h3 {
+.wqc-info-drink h3 {
   margin: -7px;
   font-size: 1.2rem;
   font-weight: bold;
   color: #5D5D5D;
 }
 
-.wqc-info p {
+.wqc-info-drink p {
   margin: 1.0rem 0 0;
-   font-size: 0.95rem;
+  font-size: 0.95rem;
   color: #5D5D5D;
 }
 
-.wqc-info span {
+.wqc-info-drink span {
   color: #6c63ff;
   font-weight: bold;
 }
@@ -202,5 +202,15 @@
   .wqc-icon {
     width: 60px;
     height: 60px;
+  }
+
+  .wqc-info-drink h3 {
+    font-size: 1.1rem;
+    margin-left: 3px;
+  }
+
+  .wqc-info-drink p {
+    text-align: left;
+        margin-left: 3px;
   }
 }

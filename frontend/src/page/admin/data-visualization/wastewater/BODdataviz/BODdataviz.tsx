@@ -789,7 +789,7 @@ const BODdataviz: React.FC = () => {
           <div>
             <h4>น้ำก่อนบำบัดล่าสุด</h4>
             <div className="bod-main">
-              <span>{BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined ? (<><span className="bod-value">{BeforeAfter.before.Data.toLocaleString()}</span>{" "}{BeforeAfter.before.UnitName || ""}</>) : "-"}</span>
+              <span>{BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined ? (<><span className="bod-value">{BeforeAfter.before.Data.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}{BeforeAfter.before.UnitName || ""}</>) : "-"}</span>
             </div>
             {BeforeAfter ? (
               <p>
@@ -801,7 +801,7 @@ const BODdataviz: React.FC = () => {
                     // เงื่อนไขเดิม
                     if ((MiddleValue !== null && MiddleValue !== -1) || (MinValue !== null && MinValue !== -1) || (MaxValue !== null && MaxValue !== -1) || (UnitName && UnitName.trim() !== "")
                     ) {
-                      return MiddleValue !== null && MiddleValue !== -1 ? MiddleValue.toLocaleString() : `${MinValue !== null && MinValue !== -1 ? MinValue.toLocaleString() : "-"} - ${MaxValue !== null && MaxValue !== -1 ? MaxValue.toLocaleString() : "-"}`;
+                      return MiddleValue !== null && MiddleValue !== -1 ? MiddleValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : `${MinValue !== null && MinValue !== -1 ? MinValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-"} - ${MaxValue !== null && MaxValue !== -1 ? MaxValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-"}`;
                     }
                     return "-";
                   })()}
@@ -816,7 +816,7 @@ const BODdataviz: React.FC = () => {
           <div>
             <h4>น้ำหลังบำบัดล่าสุด</h4>
             <div className="bod-main">
-              <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="bod-value">{BeforeAfter.after.Data.toLocaleString()}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
+              <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="bod-value">{BeforeAfter.after.Data.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
               <span className="bod-change">
                 {(() => {
                   if (BeforeAfter?.after.Data != null && BeforeAfter?.before.Data != null) {
@@ -837,7 +837,7 @@ const BODdataviz: React.FC = () => {
                     // เงื่อนไขเดิม
                     if ((MiddleValue !== null && MiddleValue !== -1) || (MinValue !== null && MinValue !== -1) || (MaxValue !== null && MaxValue !== -1) || (UnitName && UnitName.trim() !== "")
                     ) {
-                      return MiddleValue !== null && MiddleValue !== -1 ? MiddleValue.toLocaleString() : `${MinValue !== null && MinValue !== -1 ? MinValue.toLocaleString() : "-"} - ${MaxValue !== null && MaxValue !== -1 ? MaxValue.toLocaleString() : "-"}`;
+                      return MiddleValue !== null && MiddleValue !== -1 ? MiddleValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : `${MinValue !== null && MinValue !== -1 ? MinValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-"} - ${MaxValue !== null && MaxValue !== -1 ? MaxValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-"}`;
                     }
                     return "-";
                   })()}

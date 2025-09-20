@@ -75,12 +75,16 @@
   font-size: 1.2rem;
   font-weight: bold;
   color: #5D5D5D;
+   text-align: left;
+   margin-left: 5px;
 }
 
 .wqc-info p {
   margin: 1.0rem 0 0;
   font-size: 0.95rem;
   color: #5D5D5D;
+  text-align: left;
+   margin-left: 5px;
 }
 
 .wqc-info span {

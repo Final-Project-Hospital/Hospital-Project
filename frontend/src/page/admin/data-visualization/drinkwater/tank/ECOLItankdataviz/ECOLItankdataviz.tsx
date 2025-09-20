@@ -851,7 +851,7 @@ const ECOtankdataviz: React.FC = () => {
           <div>
             <h4>ค่า E Coli of Tank ล่าสุด</h4>
             <div className="eco-main">
-              <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="eco-value">{BeforeAfter.after.Data.toLocaleString()}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
+              <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="eco-value">{BeforeAfter.after.Data.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
             </div>
             {BeforeAfter ? (
               <p>
@@ -863,7 +863,7 @@ const ECOtankdataviz: React.FC = () => {
                     // ✅ เงื่อนไขเดิม
                     if ((MiddleValue !== null && MiddleValue !== -1) || (MinValue !== null && MinValue !== -1) || (MaxValue !== null && MaxValue !== -1) || (UnitName && UnitName.trim() !== "")
                     ) {
-                      return MiddleValue !== null && MiddleValue !== -1 ? MiddleValue.toLocaleString() : `${MinValue !== null && MinValue !== -1 ? MinValue.toLocaleString() : "-"} - ${MaxValue !== null && MaxValue !== -1 ? MaxValue.toLocaleString() : "-"}`;
+                      return MiddleValue !== null && MiddleValue !== -1 ? MiddleValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : `${MinValue !== null && MinValue !== -1 ? MinValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-"} - ${MaxValue !== null && MaxValue !== -1 ? MaxValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-"}`;
                     }
                     return "-";
                   })()}

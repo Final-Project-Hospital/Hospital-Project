@@ -737,7 +737,7 @@ const ChemicalWaste: React.FC = () => {
               <span>
                 {lastDayChemical !== null ? (
                   <>
-                    <span className="chemical-value">{lastDayChemical.MonthlyGarbage.toLocaleString()}</span>{" "}
+                    <span className="chemical-value">{lastDayChemical.MonthlyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayChemical.UnitName || ""}
                   </>
                 ) : (
@@ -754,7 +754,7 @@ const ChemicalWaste: React.FC = () => {
               <span>
                 {lastDayChemical !== null ? (
                   <>
-                    <span className="chemical-value">{lastDayChemical.AverageDailyGarbage.toLocaleString()}</span>{" "}
+                    <span className="chemical-value">{lastDayChemical.AverageDailyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayChemical.UnitName || ""}
                   </>
                 ) : (

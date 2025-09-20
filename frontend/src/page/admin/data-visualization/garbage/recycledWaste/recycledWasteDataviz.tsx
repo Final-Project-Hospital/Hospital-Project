@@ -794,7 +794,7 @@ const Recycleddataviz: React.FC = () => {
               <span>
                 {lastDayRecycled !== null ? (
                   <>
-                    <span className="recycled-value">{lastDayRecycled.MonthlyGarbage.toLocaleString()}</span>{" "}
+                    <span className="recycled-value">{lastDayRecycled.MonthlyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayRecycled.UnitName || ""}
                   </>
                 ) : (
@@ -811,7 +811,7 @@ const Recycleddataviz: React.FC = () => {
               <span>
                 {lastDayRecycled !== null ? (
                   <>
-                    <span className="recycled-value">{lastDayRecycled.AverageDailyGarbage.toLocaleString()}</span>{" "}
+                    <span className="recycled-value">{lastDayRecycled.AverageDailyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayRecycled.UnitName || ""}
                   </>
                 ) : (
@@ -1081,7 +1081,7 @@ const Recycleddataviz: React.FC = () => {
               <div className="recycled-box-number">
                 <div>
                   <div >
-                    {totalMonthlyGarbage.toLocaleString()} Kg
+                    {new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2, }).format(totalMonthlyGarbage)} Kg
                   </div >
                   <div>
                     <Chart
@@ -1094,7 +1094,7 @@ const Recycleddataviz: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
+              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date ? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
             </div>
             <div className="recycled-box">
               <div className="recycled-box-title">จำนวนคนที่เข้าใช้บริการโรงพยาบาลรวมปี {latestYear}</div>
@@ -1114,14 +1114,14 @@ const Recycleddataviz: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
+              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date ? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
             </div>
             <div className="recycled-box">
               <div className="recycled-box-title">จำนวนยอดขายขยะรีไซเคิลรวมปี {latestYear}</div>
               <div className="recycled-box-number">
                 <div>
                   <div >
-                    {totalTotalSale.toLocaleString()} บาท
+                    {new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2, }).format(totalTotalSale)} บาท
                   </div >
                   <div>
                     <Chart
@@ -1134,7 +1134,7 @@ const Recycleddataviz: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
+              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date ? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
             </div>
           </div>
         </div>

@@ -848,7 +848,7 @@ const InfectiousWaste: React.FC = () => {
               <span>
                 {lastDayInfectious !== null ? (
                   <>
-                    <span className="infectious-value">{lastDayInfectious.MonthlyGarbage.toLocaleString()}</span>{" "}
+                    <span className="infectious-value">{lastDayInfectious.MonthlyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayInfectious.UnitName || ""}
                   </>
                 ) : (
@@ -865,7 +865,7 @@ const InfectiousWaste: React.FC = () => {
               <span>
                 {lastDayInfectious !== null ? (
                   <>
-                    <span className="infectious-value">{lastDayInfectious.AverageDailyGarbage.toLocaleString()}</span>{" "}
+                    <span className="infectious-value">{lastDayInfectious.AverageDailyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayInfectious.UnitName || ""}
                   </>
                 ) : (
@@ -882,7 +882,7 @@ const InfectiousWaste: React.FC = () => {
               <span>
                 {lastDayInfectious !== null ? (
                   <>
-                    <span className="infectious-value">{lastDayInfectious.AADC}</span>{" "}
+                    <span className="infectious-value">{lastDayInfectious.AADC.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayInfectious.UnitName || ""}
                   </>
                 ) : (
@@ -1173,7 +1173,7 @@ const InfectiousWaste: React.FC = () => {
                 <div className="infectious-box-number">
                   <div>
                     <div >
-                      {totalMonthlyGarbage.toLocaleString()} Kg
+                      {new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2, }).format(totalMonthlyGarbage)} Kg
                     </div >
                     <div>
                       <Chart
@@ -1186,7 +1186,7 @@ const InfectiousWaste: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <span className="recycled-box-date">{lastDayInfectious && lastDayInfectious.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayInfectious.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
+                <span className="infectious-box-date">{lastDayInfectious && lastDayInfectious.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayInfectious.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
               </div>
               <div className="infectious-box">
                 <div className="infectious-box-title">จำนวนคนรวมปี {latestYear}</div>
@@ -1206,7 +1206,7 @@ const InfectiousWaste: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <span className="recycled-box-date">{lastDayInfectious && lastDayInfectious.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayInfectious.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
+                <span className="infectious-box-date">{lastDayInfectious && lastDayInfectious.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayInfectious.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
               </div>
             </div>
           </div>
