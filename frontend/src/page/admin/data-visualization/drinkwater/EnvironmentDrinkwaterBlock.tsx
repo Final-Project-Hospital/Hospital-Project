@@ -137,7 +137,7 @@ const EnvironmentBlock = () => {
                 className="wqc-card clickable"
                 onClick={() => navigate(`/admin/data-visualization/drinkwater/${center.path}`)}
               >
-                <div className="wqc-info">
+                <div className="wqc-info-drink">
                   <h3>{center.name}</h3>
                   <p>
                     มาตรฐาน <span>{center.standard}</span>

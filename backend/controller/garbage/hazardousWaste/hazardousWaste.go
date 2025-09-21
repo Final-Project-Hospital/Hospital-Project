@@ -74,10 +74,7 @@ func CreateHazardous(c *gin.Context) {
 		return
 	}
 
-	// ลบ record ของวันเดียวกันและ ParameterID ตรงกัน
-	startOfDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
-	endOfDay := startOfDay.AddDate(0, 0, 1).Add(-time.Nanosecond)
-	if err := db.Where("date >= ? AND date <= ? AND parameter_id = ?", startOfDay, endOfDay, param.ID).
+	if err := db.Where("DATE(date) = DATE(?) AND parameter_id = ?", input.Date, param.ID).
 		Delete(&entity.Garbage{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบข้อมูลเก่าของวันเดียวกันไม่สำเร็จ"})
 		return

@@ -39,7 +39,6 @@ const normalizeString = (str: any) =>
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';
-import th_TH from 'antd/es/date-picker/locale/th_TH';
 dayjs.locale('th');
 dayjs.extend(customParseFormat);
 dayjs.extend(isBetween);
@@ -789,7 +788,7 @@ const BODdataviz: React.FC = () => {
           <div>
             <h4>น้ำก่อนบำบัดล่าสุด</h4>
             <div className="bod-main">
-              <span>{BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined ? (<><span className="bod-value">{BeforeAfter.before.Data.toLocaleString()}</span>{" "}{BeforeAfter.before.UnitName || ""}</>) : "-"}</span>
+              <span>{BeforeAfter?.before.Data !== null && BeforeAfter?.before.Data !== undefined ? (<><span className="bod-value">{BeforeAfter.before.Data.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}{BeforeAfter.before.UnitName || ""}</>) : "-"}</span>
             </div>
             {BeforeAfter ? (
               <p>
@@ -801,7 +800,7 @@ const BODdataviz: React.FC = () => {
                     // เงื่อนไขเดิม
                     if ((MiddleValue !== null && MiddleValue !== -1) || (MinValue !== null && MinValue !== -1) || (MaxValue !== null && MaxValue !== -1) || (UnitName && UnitName.trim() !== "")
                     ) {
-                      return MiddleValue !== null && MiddleValue !== -1 ? MiddleValue.toLocaleString() : `${MinValue !== null && MinValue !== -1 ? MinValue.toLocaleString() : "-"} - ${MaxValue !== null && MaxValue !== -1 ? MaxValue.toLocaleString() : "-"}`;
+                      return MiddleValue !== null && MiddleValue !== -1 ? MiddleValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : `${MinValue !== null && MinValue !== -1 ? MinValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-"} - ${MaxValue !== null && MaxValue !== -1 ? MaxValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-"}`;
                     }
                     return "-";
                   })()}
@@ -816,7 +815,7 @@ const BODdataviz: React.FC = () => {
           <div>
             <h4>น้ำหลังบำบัดล่าสุด</h4>
             <div className="bod-main">
-              <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="bod-value">{BeforeAfter.after.Data.toLocaleString()}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
+              <span>{BeforeAfter?.after.Data !== null && BeforeAfter?.after.Data !== undefined ? (<><span className="bod-value">{BeforeAfter.after.Data.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}{BeforeAfter.after.UnitName || ""}</>) : "-"}</span>
               <span className="bod-change">
                 {(() => {
                   if (BeforeAfter?.after.Data != null && BeforeAfter?.before.Data != null) {
@@ -837,7 +836,7 @@ const BODdataviz: React.FC = () => {
                     // เงื่อนไขเดิม
                     if ((MiddleValue !== null && MiddleValue !== -1) || (MinValue !== null && MinValue !== -1) || (MaxValue !== null && MaxValue !== -1) || (UnitName && UnitName.trim() !== "")
                     ) {
-                      return MiddleValue !== null && MiddleValue !== -1 ? MiddleValue.toLocaleString() : `${MinValue !== null && MinValue !== -1 ? MinValue.toLocaleString() : "-"} - ${MaxValue !== null && MaxValue !== -1 ? MaxValue.toLocaleString() : "-"}`;
+                      return MiddleValue !== null && MiddleValue !== -1 ? MiddleValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : `${MinValue !== null && MinValue !== -1 ? MinValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-"} - ${MaxValue !== null && MaxValue !== -1 ? MaxValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-"}`;
                     }
                     return "-";
                   })()}
@@ -915,7 +914,7 @@ const BODdataviz: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+                 
                   allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
@@ -935,7 +934,7 @@ const BODdataviz: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+                 
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={true}
@@ -955,7 +954,7 @@ const BODdataviz: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+                 
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
                   allowClear={true}
@@ -1238,7 +1237,7 @@ const BODdataviz: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+                 
                   allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
@@ -1258,7 +1257,7 @@ const BODdataviz: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+                 
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={true}
@@ -1279,7 +1278,7 @@ const BODdataviz: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+                 
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
                   allowClear={true}

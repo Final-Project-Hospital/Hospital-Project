@@ -138,11 +138,20 @@ const UpdateChemicalCentralForm: React.FC<UpdateChemicalCentralFormProps> = ({
                 }}
             >
                 {/* วันที่และเวลา */}
-                <div className="up-form-group-recy">
+                {/* <div className="up-form-group-recy">
                     <Form.Item label="วันที่บันทึกข้อมูล" name="date">
                         <DatePicker format="DD/MM/YYYY" className="full-width-recy" />
                     </Form.Item>
                     <Form.Item label="เวลาที่บันทึกข้อมูล" name="time">
+                        <TimePicker format="HH:mm" className="full-width-recy" />
+                    </Form.Item>
+                </div> */}
+                <div className="up-form-group-recy">
+                    <Form.Item label="วันที่บันทึกข้อมูล" name="date" rules={[{ required: true, message: 'กรุณาเลือกวันที่' }]}>
+                        <DatePicker format="DD/MM/YYYY" className="full-width-recy" />
+                    </Form.Item>
+
+                    <Form.Item label="เวลาที่บันทึกข้อมูล" name="time" rules={[{ required: true, message: 'กรุณากรอกเวลา' }]}>
                         <TimePicker format="HH:mm" className="full-width-recy" />
                     </Form.Item>
                 </div>

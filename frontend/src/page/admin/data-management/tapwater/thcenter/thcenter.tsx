@@ -203,12 +203,12 @@ const THCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     }}
                 >
                     <div className="th-form-group">
-                        <Form.Item label="วันที่บันทึกข้อมูล" name="date">
+                        <Form.Item label="วันที่บันทึกข้อมูล" name="date" rules={[{ required: true, message: 'กรุณาเลือกวันที่' }]}>
                             <DatePicker defaultValue={dayjs()} format="DD/MM/YYYY" className="th-full-width" />
                         </Form.Item>
 
-                        <Form.Item label="เวลาที่บันทึกข้อมูล" name="time">
-                            <TimePicker defaultValue={dayjs()} format={"HH:mm"} className="th-full-width" />
+                        <Form.Item label="เวลาที่บันทึกข้อมูล" name="time" rules={[{ required: true, message: 'กรุณากรอกเวลา' }]}>
+                            <TimePicker defaultValue={dayjs()} format="HH:mm" className="th-full-width" />
                         </Form.Item>
                     </div>
 
@@ -299,7 +299,7 @@ const THCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                         {
                                             validator: async (_, value) => {
                                                 if (value === undefined || value === null) return Promise.resolve();
-                                                 // ถ้าใส่ "-" หรือค่าติดลบ ให้เตือนเลย
+                                                // ถ้าใส่ "-" หรือค่าติดลบ ให้เตือนเลย
                                                 if (value === '-' || Number(value) < 0) {
                                                     return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
                                                 }
