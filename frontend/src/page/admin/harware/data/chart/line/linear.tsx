@@ -27,12 +27,13 @@ interface LineChartProps {
   chartHeight?: string;
   reloadKey?: number;
 
-  // ✅ รับจากพ่อ
+  // จากพ่อ
   data?: ChartPoint[];
   meta?: ChartMetaMap;
   loading?: boolean;
 }
 
+/* ---------- helpers ---------- */
 function getMonthStartDate(year: number, month: number) {
   return new Date(year, month, 1);
 }
@@ -40,7 +41,7 @@ function getYearStartDate(year: number) {
   return new Date(year, 0, 1);
 }
 function groupByHourAvg(data: { x: Date; y: number }[]) {
-  const groups: { [hourKey: string]: number[] } = {};
+  const groups: Record<string, number[]> = {};
   data.forEach(d => {
     const dt = new Date(d.x);
     const key = `${dt.getFullYear()}-${(dt.getMonth() + 1)
@@ -49,8 +50,7 @@ function groupByHourAvg(data: { x: Date; y: number }[]) {
       .getHours()
       .toString()
       .padStart(2, '0')}:00`;
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(d.y);
+    (groups[key] ??= []).push(d.y);
   });
   return Object.entries(groups)
     .map(([k, values]) => {
@@ -65,44 +65,60 @@ function groupByHourAvg(data: { x: Date; y: number }[]) {
     .sort((a, b) => a.x.getTime() - b.x.getTime());
 }
 function groupByDayAvg(data: { x: Date; y: number }[]) {
-  const groups: { [day: string]: number[] } = {};
+  // ใช้โลคัลเดท ป้องกัน timezone ทำวันเพี้ยน
+  const groups: Record<string, number[]> = {};
   data.forEach(d => {
-    const key = d.x.toISOString().split('T')[0];
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(d.y);
+    const dt = d.x;
+    const key = `${dt.getFullYear()}-${(dt.getMonth()+1).toString().padStart(2,'0')}-${dt.getDate().toString().padStart(2,'0')}`;
+    (groups[key] ??= []).push(d.y);
   });
-  return Object.entries(groups).map(([day, values]) => ({
-    x: new Date(day),
-    y: values.reduce((sum, val) => sum + val, 0) / values.length,
-  })).sort((a, b) => a.x.getTime() - b.x.getTime());
+  return Object.entries(groups)
+    .map(([key, values]) => {
+      const [y, m, d] = key.split('-').map(Number);
+      return {
+        x: new Date(y, m - 1, d),
+        y: values.reduce((sum, val) => sum + val, 0) / values.length,
+      };
+    })
+    .sort((a, b) => a.x.getTime() - b.x.getTime());
 }
 function groupByMonthAvg(data: { x: Date; y: number }[]) {
-  const groups: { [month: string]: number[] } = {};
+  const groups: Record<string, number[]> = {};
   data.forEach(d => {
     const key = `${d.x.getFullYear()}-${d.x.getMonth() + 1}`;
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(d.y);
+    (groups[key] ??= []).push(d.y);
   });
-  return Object.entries(groups).map(([key, values]) => {
-    const [year, month] = key.split('-').map(Number);
-    return {
-      x: getMonthStartDate(year, month - 1),
-      y: values.reduce((sum, val) => sum + val, 0) / values.length,
-    };
-  }).sort((a, b) => a.x.getTime() - b.x.getTime());
+  return Object.entries(groups)
+    .map(([key, values]) => {
+      const [year, month] = key.split('-').map(Number);
+      return {
+        x: getMonthStartDate(year, month - 1),
+        y: values.reduce((sum, val) => sum + val, 0) / values.length,
+      };
+    })
+    .sort((a, b) => a.x.getTime() - b.x.getTime());
 }
 function groupByYearAvg(data: { x: Date; y: number }[]) {
-  const groups: { [year: string]: number[] } = {};
+  const groups: Record<string, number[]> = {};
   data.forEach(d => {
     const key = `${d.x.getFullYear()}`;
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(d.y);
+    (groups[key] ??= []).push(d.y);
   });
-  return Object.entries(groups).map(([year, values]) => ({
-    x: getYearStartDate(Number(year)),
-    y: values.reduce((sum, val) => sum + val, 0) / values.length,
-  })).sort((a, b) => a.x.getTime() - b.x.getTime());
+  return Object.entries(groups)
+    .map(([year, values]) => ({
+      x: getYearStartDate(Number(year)),
+      y: values.reduce((sum, val) => sum + val, 0) / values.length,
+    }))
+    .sort((a, b) => a.x.getTime() - b.x.getTime());
 }
+
+/* ---------- type guards ---------- */
+const isDateRange = (v: any): v is [Date, Date] =>
+  Array.isArray(v) && v.length === 2 && v.every((d) => d instanceof Date && !isNaN(d.getTime()));
+const isYearRange = (v: any): v is [number, number] =>
+  Array.isArray(v) && v.length === 2 && v.every((n) => Number.isFinite(n));
+const isMonthSel = (v: any): v is { month: string; year: string } =>
+  v && typeof v === 'object' && 'month' in v && 'year' in v;
 
 const LineChart: React.FC<LineChartProps> = ({
   timeRangeType,
@@ -125,43 +141,56 @@ const LineChart: React.FC<LineChartProps> = ({
     return acc;
   }, {} as Record<string, string>);
 
-  // คำนวณจาก data+meta แทนการเรียก service
   useEffect(() => {
-    // ถ้าพ่อยังโหลดอยู่ ให้โชว์สถานะโหลดใน component นี้
+    // 1) รอโหลดจากพ่อ
     if (loading) {
       setSeriesData([]);
       setNoData(false);
       return;
     }
 
-    // เมื่อไม่ได้ส่ง data มาเลย
+    // 2) กัน selectedRange ชนิดไม่ตรงกับ timeRangeType (อย่า destructure ก่อนเช็ค)
+    if (timeRangeType === 'hour' || timeRangeType === 'day') {
+      if (!isDateRange(selectedRange)) {
+        setSeriesData([]);
+        setNoData(false);
+        return;
+      }
+    } else if (timeRangeType === 'month') {
+      if (!isMonthSel(selectedRange)) {
+        setSeriesData([]);
+        setNoData(false);
+        return;
+      }
+    } else if (timeRangeType === 'year') {
+      if (!isYearRange(selectedRange)) {
+        setSeriesData([]);
+        setNoData(false);
+        return;
+      }
+    }
+
+    // 3) ไม่มีข้อมูล/ไม่มีพารามิเตอร์
     if (!Array.isArray(data) || data.length === 0 || parameters.length === 0) {
       setSeriesData([]);
       setNoData(true);
       return;
     }
 
-    // สร้าง map ตาม parameter ที่เลือก
+    // 4) เตรียม map และ unit/standard
     const parameterMap: Record<string, { x: Date; y: number }[]> = {};
     const maxStandardMap: Record<string, number> = {};
     const minStandardMap: Record<string, number> = {};
-
-    // unitMap: unit -> parameter (แสดงบน UI)
     const localUnitMap: Record<string, string> = {};
+
     for (const p of parameters) {
       const m = meta[p];
-      if (m?.unit && !localUnitMap[m.unit]) {
-        localUnitMap[m.unit] = p;
-      }
-      if (typeof m?.standard === 'number') {
-        maxStandardMap[p] = m.standard;
-      }
-      if (typeof m?.standardMin === 'number') {
-        minStandardMap[p] = m.standardMin;
-      }
+      if (m?.unit && !localUnitMap[m.unit]) localUnitMap[m.unit] = p;
+      if (typeof m?.standard === 'number') maxStandardMap[p] = m.standard;
+      if (typeof m?.standardMin === 'number') minStandardMap[p] = m.standardMin;
     }
 
-    // คัดตามช่วงเวลา
+    // 5) filter ตามช่วงเวลา (หลังผ่าน type guard)
     for (const pt of data) {
       const { parameter, value, date } = pt;
       if (!parameters.includes(parameter) || typeof value !== 'number' || !date) continue;
@@ -171,52 +200,41 @@ const LineChart: React.FC<LineChartProps> = ({
 
       let inRange = false;
       if (timeRangeType === 'hour') {
-        const [start, end] = selectedRange || [];
-        if (!start || !end) continue;
-        const s = new Date(start);
-        const e = new Date(end);
-        inRange = d >= s && d <= e;
+        const [start, end] = selectedRange as [Date, Date];
+        inRange = d >= start && d <= end;
       } else if (timeRangeType === 'day') {
-        const [start, end] = selectedRange || [];
-        if (!start || !end) continue;
+        const [start, end] = selectedRange as [Date, Date];
         const s = new Date(start);
         const e = new Date(end);
         e.setHours(23, 59, 59, 999);
         inRange = d >= s && d <= e;
       } else if (timeRangeType === 'month') {
-        inRange = (d.getMonth() + 1) === Number(selectedRange?.month) &&
-                  d.getFullYear() === Number(selectedRange?.year);
-      } else if (timeRangeType === 'year') {
-        const [startY, endY] = selectedRange || [];
-        if (!startY || !endY) continue;
+        const { month, year } = selectedRange as { month: string; year: string };
+        inRange = (d.getMonth() + 1) === Number(month) && d.getFullYear() === Number(year);
+      } else {
+        const [startY, endY] = selectedRange as [number, number];
         inRange = d.getFullYear() >= +startY && d.getFullYear() <= +endY;
       }
 
       if (!inRange) continue;
-
       (parameterMap[parameter] ??= []).push({ x: d, y: value });
     }
 
-    const createStandardLine = (
-      standard: number,
-      data: { x: Date; y: number }[]
-    ) => {
+    // 6) สร้างเส้นมาตรฐาน
+    const createStandardLine = (standard: number, data: { x: Date; y: number }[]) => {
       const sorted = [...data].sort((a, b) => a.x.getTime() - b.x.getTime());
       if (sorted.length === 0) return [];
       if (sorted.length === 1) {
         const d = sorted[0];
         const prev = new Date(d.x.getTime() - 1000 * 60 * 60);
         const next = new Date(d.x.getTime() + 1000 * 60 * 60);
-        return [
-          { x: prev, y: standard },
-          { x: next, y: standard },
-        ];
+        return [{ x: prev, y: standard }, { x: next, y: standard }];
       }
       return sorted.map(d => ({ x: d.x, y: standard }));
     };
 
-    // สร้าง series
-    let series: any[] = [];
+    // 7) สร้างซีรีส์
+    const series: any[] = [];
 
     Object.entries(parameterMap).forEach(([name, dataArray]) => {
       const sortedData = dataArray.sort((a, b) => a.x.getTime() - b.x.getTime());
@@ -226,9 +244,9 @@ const LineChart: React.FC<LineChartProps> = ({
         timeRangeType === 'hour'
           ? groupByHourAvg(sortedData)
           : timeRangeType === 'year'
-            ? (selectedRange?.[0] === selectedRange?.[1]
-              ? groupByMonthAvg(groupByDayAvg(sortedData.filter(d => d.x.getFullYear() === +selectedRange[0])))
-              : groupByYearAvg(sortedData))
+            ? ((selectedRange as [number, number])[0] === (selectedRange as [number, number])[1]
+                ? groupByMonthAvg(groupByDayAvg(sortedData.filter(d => d.x.getFullYear() === (selectedRange as [number, number])[0])))
+                : groupByYearAvg(sortedData))
             : timeRangeType === 'month'
               ? groupByDayAvg(sortedData)
               : groupByDayAvg(sortedData);
@@ -243,10 +261,11 @@ const LineChart: React.FC<LineChartProps> = ({
         marker: { visible: true, width: 8, height: 8 },
         type: 'Line',
         fill: fillColor,
+        animation: { enable: false },
       });
 
-      // เส้น Max Standard (สีแดง)
-      if (maxStandardMap[name]) {
+      // เส้น Max (รองรับ 0 ด้วย hasOwnProperty)
+      if (Object.prototype.hasOwnProperty.call(maxStandardMap, name)) {
         const stdData = createStandardLine(maxStandardMap[name], dataSource);
         if (stdData.length > 0) {
           series.push({
@@ -259,12 +278,13 @@ const LineChart: React.FC<LineChartProps> = ({
             marker: { visible: false },
             type: 'Line',
             fill: 'red',
+            animation: { enable: false },
           });
         }
       }
 
-      // เส้น Min Standard (สีทอง)
-      if (minStandardMap[name]) {
+      // เส้น Min
+      if (Object.prototype.hasOwnProperty.call(minStandardMap, name)) {
         const stdDataMin = createStandardLine(minStandardMap[name], dataSource);
         if (stdDataMin.length > 0) {
           series.push({
@@ -277,6 +297,7 @@ const LineChart: React.FC<LineChartProps> = ({
             marker: { visible: false },
             type: 'Line',
             fill: '#f59e0b',
+            animation: { enable: false },
           });
         }
       }
@@ -287,6 +308,7 @@ const LineChart: React.FC<LineChartProps> = ({
     setNoData(series.length === 0);
   }, [loading, data, meta, parameters, colors, timeRangeType, selectedRange, reloadKey]);
 
+  // สถานะ
   if (loading) {
     return (
       <div className="flex items-center justify-center h-80 text-lg text-gray-500">
@@ -295,7 +317,6 @@ const LineChart: React.FC<LineChartProps> = ({
       </div>
     );
   }
-
   if (noData) {
     return (
       <div className="flex items-center justify-center h-80 text-lg text-red-500 font-bold">
@@ -304,17 +325,17 @@ const LineChart: React.FC<LineChartProps> = ({
     );
   }
 
-  // กำหนดฟอร์แมตรายแกน X ตามชนิดช่วงเวลา
+  // X-axis format
   const xLabelFormat =
     timeRangeType === 'hour' ? 'HH:mm'
       : timeRangeType === 'year'
-        ? (selectedRange?.[0] !== selectedRange?.[1] ? 'yyyy' : 'MMM')
+        ? ((selectedRange as [number, number])?.[0] !== (selectedRange as [number, number])?.[1] ? 'yyyy' : 'MMM')
         : 'dd/MM';
 
   const xIntervalType =
     timeRangeType === 'hour' ? 'Hours'
       : timeRangeType === 'year'
-        ? (selectedRange?.[0] !== selectedRange?.[1] ? 'Years' : 'Months')
+        ? ((selectedRange as [number, number])?.[0] !== (selectedRange as [number, number])?.[1] ? 'Years' : 'Months')
         : 'Days';
 
   const xInterval = timeRangeType === 'day' ? 1 : timeRangeType === 'hour' ? 1 : undefined;
@@ -337,7 +358,7 @@ const LineChart: React.FC<LineChartProps> = ({
                 fontWeight: 'bold'
               }}
             >
-             {unit}
+              {unit}
             </span>
           );
         })}
@@ -361,7 +382,7 @@ const LineChart: React.FC<LineChartProps> = ({
         primaryYAxis={{
           title: 'ค่าที่ได้จากการตรวจวัด',
           labelFormat: '{value}',
-          minimum: 0,
+          minimum: 0, // ถ้าอยาก auto ให้ลบออก
           rangePadding: 'None',
           lineStyle: { width: 0 },
           majorTickLines: { width: 0 },
@@ -370,18 +391,16 @@ const LineChart: React.FC<LineChartProps> = ({
         chartArea={{ border: { width: 0 } }}
         tooltip={{ enable: true }}
         tooltipRender={(args) => {
-          if (args.point && typeof args.point.y === 'number') {
-            const y = args.point.y.toFixed(2);
-            const d: Date = args.point.x as any;
+          if (args.point && typeof (args.point as any).y === 'number') {
+            const y = (args.point as any).y.toFixed(2);
+            const d: Date = (args.point as any).x;
             let when = '';
             if (timeRangeType === 'hour') {
-              when = d.toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            } else if (timeRangeType === 'day') {
-              when = d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            } else if (timeRangeType === 'month') {
-              when = d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+              when = d.toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+            } else if (timeRangeType === 'day' || timeRangeType === 'month') {
+              when = d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Bangkok' });
             } else {
-              when = d.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' });
+              when = d.toLocaleDateString('th-TH', { month: 'short', year: 'numeric', timeZone: 'Asia/Bangkok' });
             }
             args.text = `${when} : ${y}`;
           }
@@ -391,8 +410,8 @@ const LineChart: React.FC<LineChartProps> = ({
       >
         <Inject services={[LineSeries, DateTime, Legend, Tooltip]} />
         <SeriesCollectionDirective>
-          {seriesData.map((item, idx) => (
-            <SeriesDirective key={idx} {...item} />
+          {seriesData.map((item) => (
+            <SeriesDirective key={`${item.name}-${item.type}`} {...item} />
           ))}
         </SeriesCollectionDirective>
       </ChartComponent>

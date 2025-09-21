@@ -28,12 +28,12 @@ interface ChartdataProps {
   chartHeight?: string;
   reloadKey?: number;
 
-  // ✅ รับจากพ่อ
   data?: ChartPoint[];
   meta?: ChartMetaMap;
   loading?: boolean;
 }
 
+/* ---------- helpers ---------- */
 function getMonthStartDate(year: number, month: number) {
   return new Date(year, month, 1);
 }
@@ -44,12 +44,7 @@ function groupByHourAvg(data: { x: Date; y: number }[]) {
   const groups: Record<string, number[]> = {};
   data.forEach(d => {
     const dt = new Date(d.x);
-    const key = `${dt.getFullYear()}-${(dt.getMonth() + 1)
-      .toString()
-      .padStart(2, '0')}-${dt.getDate().toString().padStart(2, '0')} ${dt
-      .getHours()
-      .toString()
-      .padStart(2, '0')}:00`;
+    const key = `${dt.getFullYear()}-${(dt.getMonth() + 1).toString().padStart(2,'0')}-${dt.getDate().toString().padStart(2,'0')} ${dt.getHours().toString().padStart(2,'0')}:00`;
     if (!groups[key]) groups[key] = [];
     groups[key].push(d.y);
   });
@@ -111,6 +106,20 @@ function groupByYearAvg(data: { x: Date; y: number }[]) {
     .sort((a, b) => a.x.getTime() - b.x.getTime());
 }
 
+/* ---------- type guards ---------- */
+const isDateRange = (v: any): v is [Date, Date] =>
+  Array.isArray(v) &&
+  v.length === 2 &&
+  v.every((d) => d instanceof Date && !isNaN(d.getTime()));
+
+const isYearRange = (v: any): v is [number, number] =>
+  Array.isArray(v) &&
+  v.length === 2 &&
+  v.every((n) => Number.isFinite(n));
+
+const isMonthSel = (v: any): v is { month: string; year: string } =>
+  v && typeof v === 'object' && 'month' in v && 'year' in v;
+
 const Area: React.FC<ChartdataProps> = ({
   parameters,
   colors = [],
@@ -133,17 +142,40 @@ const Area: React.FC<ChartdataProps> = ({
   }, {} as Record<string, string>);
 
   useEffect(() => {
-    // ระหว่างพ่อกำลังโหลด
+    // รอ parent
     if (loading) {
       setSeriesData([]);
       setNoData(false);
       return;
     }
 
+    // ถ้าไม่มี data/parameter
     if (!Array.isArray(data) || data.length === 0 || parameters.length === 0) {
       setSeriesData([]);
       setNoData(true);
       return;
+    }
+
+    // ✅ ป้องกันชนิด selectedRange ไม่ตรงกับ timeRangeType
+    if (timeRangeType === 'hour' || timeRangeType === 'day') {
+      if (!isDateRange(selectedRange)) {
+        // ยังตั้งค่าไม่เสร็จ ให้รอรอบถัดไป
+        setSeriesData([]);
+        setNoData(false);
+        return;
+      }
+    } else if (timeRangeType === 'month') {
+      if (!isMonthSel(selectedRange)) {
+        setSeriesData([]);
+        setNoData(false);
+        return;
+      }
+    } else if (timeRangeType === 'year') {
+      if (!isYearRange(selectedRange)) {
+        setSeriesData([]);
+        setNoData(false);
+        return;
+      }
     }
 
     const parameterMap: Record<string, { x: Date; y: number }[]> = {};
@@ -159,7 +191,7 @@ const Area: React.FC<ChartdataProps> = ({
       if (typeof m?.standardMin === 'number') minStandardMap[p] = m.standardMin;
     }
 
-    // filter by time-range
+    // filter by selected range (หลังจาก type guard แล้ว)
     for (const pt of data) {
       const { parameter, value } = pt;
       if (!parameters.includes(parameter) || typeof value !== 'number') continue;
@@ -169,23 +201,19 @@ const Area: React.FC<ChartdataProps> = ({
 
       let inRange = false;
       if (timeRangeType === 'hour') {
-        const [start, end] = selectedRange || [];
-        if (!start || !end) continue;
-        const s = new Date(start); const e = new Date(end);
-        inRange = d >= s && d <= e;
+        const [start, end] = selectedRange as [Date, Date];
+        inRange = d >= start && d <= end;
       } else if (timeRangeType === 'day') {
-        const [start, end] = selectedRange || [];
-        if (!start || !end) continue;
+        const [start, end] = selectedRange as [Date, Date];
         const s = new Date(start); const e = new Date(end);
         e.setHours(23, 59, 59, 999);
         inRange = d >= s && d <= e;
       } else if (timeRangeType === 'month') {
-        inRange = (d.getMonth() + 1) === Number(selectedRange?.month) &&
-                  d.getFullYear() === Number(selectedRange?.year);
-      } else if (timeRangeType === 'year') {
-        const [ys, ye] = selectedRange || [];
-        if (ys == null || ye == null) continue;
-        inRange = d.getFullYear() >= +ys && d.getFullYear() <= +ye;
+        const { month, year } = selectedRange as { month: string; year: string };
+        inRange = (d.getMonth() + 1) === Number(month) && d.getFullYear() === Number(year);
+      } else {
+        const [ys, ye] = selectedRange as [number, number];
+        inRange = d.getFullYear() >= ys && d.getFullYear() <= ye;
       }
 
       if (!inRange) continue;
@@ -213,8 +241,8 @@ const Area: React.FC<ChartdataProps> = ({
       const dataSource =
         timeRangeType === 'hour' ? groupByHourAvg(sorted)
         : timeRangeType === 'year'
-          ? (selectedRange?.[0] === selectedRange?.[1]
-              ? groupByMonthAvg(groupByDayAvg(sorted.filter(d => d.x.getFullYear() === +selectedRange[0])))
+          ? ((selectedRange as [number, number])[0] === (selectedRange as [number, number])[1]
+              ? groupByMonthAvg(groupByDayAvg(sorted.filter(d => d.x.getFullYear() === (selectedRange as [number, number])[0])))
               : groupByYearAvg(sorted))
           : timeRangeType === 'month'
             ? groupByDayAvg(sorted)
@@ -233,8 +261,8 @@ const Area: React.FC<ChartdataProps> = ({
         fill: fillColor,
       });
 
-      // เส้น Max (แดง)
-      if (maxStandardMap[name]) {
+      // เส้น Max
+      if (Object.prototype.hasOwnProperty.call(maxStandardMap, name)) {
         const std = createStandardLine(maxStandardMap[name], dataSource);
         if (std.length > 0) {
           series.push({
@@ -251,8 +279,8 @@ const Area: React.FC<ChartdataProps> = ({
         }
       }
 
-      // เส้น Min (ทอง)
-      if (minStandardMap[name]) {
+      // เส้น Min
+      if (Object.prototype.hasOwnProperty.call(minStandardMap, name)) {
         const stdMin = createStandardLine(minStandardMap[name], dataSource);
         if (stdMin.length > 0) {
           series.push({
@@ -295,13 +323,13 @@ const Area: React.FC<ChartdataProps> = ({
   const xLabelFormat =
     timeRangeType === 'hour' ? 'HH:mm'
       : timeRangeType === 'year'
-        ? (selectedRange?.[0] !== selectedRange?.[1] ? 'yyyy' : 'MMM')
+        ? ((selectedRange as [number, number])?.[0] !== (selectedRange as [number, number])?.[1] ? 'yyyy' : 'MMM')
         : 'dd/MM';
 
   const xIntervalType =
     timeRangeType === 'hour' ? 'Hours'
       : timeRangeType === 'year'
-        ? (selectedRange?.[0] !== selectedRange?.[1] ? 'Years' : 'Months')
+        ? ((selectedRange as [number, number])?.[0] !== (selectedRange as [number, number])?.[1] ? 'Years' : 'Months')
         : 'Days';
 
   const xInterval = timeRangeType === 'day' ? 1 : timeRangeType === 'hour' ? 1 : undefined;
@@ -363,9 +391,7 @@ const Area: React.FC<ChartdataProps> = ({
             let when = '';
             if (timeRangeType === 'hour') {
               when = d.toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            } else if (timeRangeType === 'day') {
-              when = d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            } else if (timeRangeType === 'month') {
+            } else if (timeRangeType === 'day' || timeRangeType === 'month') {
               when = d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
             } else {
               when = d.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' });
