@@ -226,385 +226,382 @@ func main() {
 		authorized.POST("/create-calendar", calendar.PostCalendar)
 		authorized.PUT("/update-calendar/:id", calendar.UpdateCalendar)
 		authorized.DELETE("/delete-calendar/:id", calendar.DeleteCalendar)
+
+		//PH
+		authorized.POST("/create-ph", phcenter.CreatePH)
+		authorized.GET("/get-first-ph", phcenter.GetfirstPH)
+		authorized.GET("/list-ph", phcenter.ListPH)
+		authorized.GET("/get-ph/:id", phcenter.GetPHbyID)
+		authorized.GET("/get-ph-table", phcenter.GetPHTABLE)
+		authorized.PATCH("/update-or-create-ph/:d", phcenter.UpdateOrCreatePH)
+		authorized.DELETE("/delete-ph/:id", phcenter.DeletePH)
+		authorized.DELETE("/delete-ph-day/:id", phcenter.DeleteAllPHRecordsByDate)
+		authorized.GET("/get-beforeafter-ph", phcenter.GetBeforeAfterPH)
+
+		//TDS
+		authorized.POST("/create-tds", tdscenter.CreateTDS)
+		authorized.GET("/get-first-tds", tdscenter.GetfirstTDS)
+		authorized.GET("/list-tds", tdscenter.ListTDS)
+		authorized.GET("/get-tds/:id", tdscenter.GetTDSbyID)
+		authorized.GET("/get-tds-table", tdscenter.GetTDSTABLE)
+		authorized.PATCH("/update-or-create-tds/:d", tdscenter.UpdateOrCreateTDS)
+		authorized.DELETE("/delete-tds/:id", tdscenter.DeleteTDS)
+		authorized.DELETE("/delete-tds-day/:id", tdscenter.DeleteAllTDSRecordsByDate)
+		authorized.GET("/get-beforeafter-tds", tdscenter.GetBeforeAfterTDS)
+
+		authorized.GET("/check-units", tdscenter.CheckUnit)
+		authorized.GET("/check-standard", tdscenter.CheckStandard)
+		authorized.GET("/get-alert-software", tdscenter.GetAlertSoftware)
+
+		//TKN
+		authorized.POST("/create-tkn", tkncenter.CreateTKN)
+		authorized.GET("/get-first-tkn", tkncenter.GetfirstTKN)
+		authorized.GET("/list-tkn", tkncenter.ListTKN)
+		authorized.GET("/get-tkn/:id", tkncenter.GetTKNbyID)
+		authorized.GET("/get-tkn-table", tkncenter.GetTKNTABLE)
+		authorized.PATCH("/update-or-create-tkn/:d", tkncenter.UpdateOrCreateTKN)
+		authorized.DELETE("/delete-tkn/:id", tkncenter.DeleteTKN)
+		authorized.DELETE("/delete-tkn-day/:id", tkncenter.DeleteAllTKNRecordsByDate)
+		authorized.GET("/get-beforeafter-tkn", tkncenter.GetBeforeAfterTKN)
+
+		//TS
+		authorized.POST("/create-ts", tscenter.CreateTS)
+		authorized.GET("/get-first-ts", tscenter.GetfirstTS)
+		authorized.GET("/list-ts", tscenter.ListTS)
+		authorized.GET("/get-ts/:id", tscenter.GetTSbyID)
+		authorized.GET("/get-ts-table", tscenter.GetTSTABLE)
+		authorized.PATCH("/update-or-create-ts/:d", tscenter.UpdateOrCreateTS)
+		authorized.DELETE("/delete-ts/:id", tscenter.DeleteTS)
+		authorized.DELETE("/delete-ts-day/:id", tscenter.DeleteAllTSRecordsByDate)
+		authorized.GET("/get-beforeafter-ts", tscenter.GetBeforeAfterTS)
+
+		//COD
+		authorized.POST("/create-cod", codcenter.CreateCOD)
+		authorized.GET("/get-first-cod", codcenter.GetfirstCOD)
+		authorized.GET("/list-cod", codcenter.ListCOD)
+		authorized.GET("/get-cod/:id", codcenter.GetCODbyID)
+		authorized.GET("/get-cod-table", codcenter.GetCODTABLE)
+		authorized.PATCH("/update-or-create-cod/:d", codcenter.UpdateOrCreateCOD)
+		authorized.DELETE("/delete-cod/:id", codcenter.DeleteCOD)
+		authorized.DELETE("/delete-cod-day/:id", codcenter.DeleteAllCODRecordsByDate)
+		authorized.GET("/get-beforeafter-cod", codcenter.GetBeforeAfterCOD)
+
+		//FCB
+		authorized.POST("/create-fcb", fcbcenter.CreateFCB)
+		authorized.GET("/get-first-fcb", fcbcenter.GetfirstFCB)
+		authorized.GET("/list-fcb", fcbcenter.ListFCB)
+		authorized.GET("/get-fcb/:id", fcbcenter.GetFCBbyID)
+		authorized.GET("/get-fcb-table", fcbcenter.GetFCBTABLE)
+		authorized.PATCH("/update-or-create-fcb/:d", fcbcenter.UpdateOrCreateFCB)
+		authorized.DELETE("/delete-fcb/:id", fcbcenter.DeleteFCB)
+		authorized.DELETE("/delete-fcb-day/:id", fcbcenter.DeleteAllFCBRecordsByDate)
+		authorized.GET("/get-beforeafter-fcb", fcbcenter.GetBeforeAfterFCB)
+
+		//RES
+		authorized.POST("/create-res", rescenter.CreateRES)
+		authorized.GET("/get-first-res", rescenter.GetfirstRES)
+		authorized.GET("/list-res", rescenter.ListRES)
+		authorized.GET("/get-res/:id", rescenter.GetRESbyID)
+		authorized.GET("/get-res-table", rescenter.GetRESTABLE)
+		authorized.PATCH("/update-or-create-res/:d", rescenter.UpdateOrCreateRES)
+		authorized.DELETE("/delete-res/:id", rescenter.DeleteRES)
+		authorized.DELETE("/delete-res-day/:id", rescenter.DeleteAllRESRecordsByDate)
+		authorized.GET("/get-beforeafter-res", rescenter.GetBeforeAfterRES)
+
+		//SUL
+		authorized.POST("/create-sul", sulcenter.CreateSUL)
+		authorized.GET("/get-first-sul", sulcenter.GetfirstSUL)
+		authorized.GET("/list-sul", sulcenter.ListSUL)
+		authorized.GET("/get-sul/:id", sulcenter.GetSULbyID)
+		authorized.GET("/get-sul-table", sulcenter.GetSULTABLE)
+		authorized.PATCH("/update-or-create-sul/:d", sulcenter.UpdateOrCreateSUL)
+		authorized.DELETE("/delete-sul/:id", sulcenter.DeleteSUL)
+		authorized.DELETE("/delete-sul-day/:id", sulcenter.DeleteAllSULRecordsByDate)
+		authorized.GET("/get-beforeafter-sul", sulcenter.GetBeforeAfterSUL)
+
+		//TCB
+		authorized.POST("/create-tcb", tcbcenter.CreateTCB)
+		authorized.GET("/get-first-tcb", tcbcenter.GetfirstTCB)
+		authorized.GET("/list-tcb", tcbcenter.ListTCB)
+		authorized.GET("/get-tcb/:id", tcbcenter.GetTCBbyID)
+		authorized.GET("/get-tcb-table", tcbcenter.GetTCBTABLE)
+		authorized.PATCH("/update-or-create-tcb/:d", tcbcenter.UpdateOrCreateTCB)
+		authorized.DELETE("/delete-tcb/:id", tcbcenter.DeleteTCB)
+		authorized.DELETE("/delete-tcb-day/:id", tcbcenter.DeleteAllTCBRecordsByDate)
+		authorized.GET("/get-beforeafter-tcb", tcbcenter.GetBeforeAfterTCB)
+
+		//BOD
+		authorized.POST("/create-bod", bodcenter.CreateBod)
+		authorized.GET("/get-first-bod", bodcenter.GetfirstBOD)
+		authorized.GET("/list-bod", bodcenter.ListBOD)
+		authorized.GET("/get-bod/:id", bodcenter.GetBODbyID)
+		authorized.GET("/get-bod-table", bodcenter.GetBODTABLE)
+		authorized.PATCH("/update-or-create-bod/:d", bodcenter.UpdateOrCreateBOD)
+		authorized.DELETE("/delete-bod/:id", bodcenter.DeleteBOD)
+		authorized.DELETE("/delete-bod-day/:id", bodcenter.DeleteAllBODRecordsByDate)
+		authorized.GET("/get-beforeafter-bod", bodcenter.GetBeforeAfterBOD) //เพิ่ม
+
+		//FOG
+		authorized.POST("/create-fog", fogcenter.CreateFOG)
+		authorized.GET("/get-first-fog", fogcenter.GetfirstFOG)
+		authorized.GET("/list-fog", fogcenter.ListFOG)
+		authorized.GET("/get-fog/:id", fogcenter.GetFOGbyID)
+		authorized.GET("/get-fog-table", fogcenter.GetFOGTABLE)
+		authorized.PATCH("/update-or-create-fog/:d", fogcenter.UpdateOrCreateFOG)
+		authorized.DELETE("/delete-fog/:id", fogcenter.DeleteFOG)
+		authorized.DELETE("/delete-fog-day/:id", fogcenter.DeleteAllFOGRecordsByDate)
+		authorized.GET("/get-beforeafter-fog", fogcenter.GetBeforeAfterFOG)
+
+		//drinkwater
+		//ecoin(glass)
+		authorized.POST("/create-eco", ecocenter.CreateECO)
+		authorized.GET("/get-first-eco", ecocenter.GetfirstECO)
+		authorized.GET("/list-eco", ecocenter.ListECO)
+		authorized.GET("/get-eco/:id", ecocenter.GetECObyID)
+		authorized.GET("/get-eco-table", ecocenter.GetECOTABLE)
+		authorized.PATCH("/update-or-create-eco/:d", ecocenter.UpdateOrCreateECO)
+		authorized.DELETE("/delete-eco/:id", ecocenter.DeleteECO)
+		authorized.DELETE("/delete-eco-day/:id", ecocenter.DeleteAllECORecordsByDate)
+		authorized.GET("/get-beforeafter-eco", ecocenter.GetBeforeAfterECO)
+
+		//DFCB(glass)
+		authorized.POST("/create-dfcb", dfcbcenter.CreateDFCB)
+		authorized.GET("/get-first-dfcb", dfcbcenter.GetfirstDFCB)
+		authorized.GET("/list-dfcb", dfcbcenter.ListDFCB)
+		authorized.GET("/get-dfcb/:id", dfcbcenter.GetDFCBbyID)
+		authorized.GET("/get-dfcb-table", dfcbcenter.GetDFCBTABLE)
+		authorized.PATCH("/update-or-create-dfcb/:d", dfcbcenter.UpdateOrCreateDFCB)
+		authorized.DELETE("/delete-dfcb/:id", dfcbcenter.DeleteDFCB)
+		authorized.DELETE("/delete-dfcb-day/:id", dfcbcenter.DeleteAllDFCBRecordsByDate)
+		authorized.GET("/get-beforeafter-dfcb", dfcbcenter.GetBeforeAfterDFCB)
+
+		//DTCB(glass)
+		authorized.POST("/create-dtcb", dtcbcenter.CreateDTCB)
+		authorized.GET("/get-first-dtcb", dtcbcenter.GetfirstDTCB)
+		authorized.GET("/list-dtcb", dtcbcenter.ListDTCB)
+		authorized.GET("/get-dtcb/:id", dtcbcenter.GetDTCBbyID)
+		authorized.GET("/get-dtcb-table", dtcbcenter.GetDTCBTABLE)
+		authorized.PATCH("/update-or-create-dtcb/:d", dtcbcenter.UpdateOrCreateDTCB)
+		authorized.DELETE("/delete-dtcb/:id", dtcbcenter.DeleteDTCB)
+		authorized.DELETE("/delete-dtcb-day/:id", dtcbcenter.DeleteAllDTCBRecordsByDate)
+		authorized.GET("/get-beforeafter-dtcb", dtcbcenter.GetBeforeAfterDTCB)
+
+		//ecoin(tank)
+		authorized.POST("/create-eco-tank", ecocenterT.CreateECOtank)
+		authorized.GET("/get-first-eco-tank", ecocenterT.GetfirstECOtank)
+		authorized.GET("/list-eco-tank", ecocenterT.ListECOtank)
+		authorized.GET("/get-eco-tank/:id", ecocenterT.GetECOtankbyID)
+		authorized.GET("/get-eco-tank-table", ecocenterT.GetECOtankTABLE)
+		authorized.PATCH("/update-or-create-eco-tank/:d", ecocenterT.UpdateOrCreateECOtank)
+		authorized.DELETE("/delete-eco-tank/:id", ecocenterT.DeleteECOtank)
+		authorized.DELETE("/delete-eco-tank-day/:id", ecocenterT.DeleteAllECOtankRecordsByDate)
+		authorized.GET("/get-beforeafter-eco-tank", ecocenterT.GetBeforeAfterECOtank)
+
+		//DFCB(tank)
+		authorized.POST("/create-dfcb-tank", dfcbcenterT.CreateDFCBtank)
+		authorized.GET("/get-first-dfcb-tank", dfcbcenterT.GetfirstDFCBtank)
+		authorized.GET("/list-dfcb-tank", dfcbcenterT.ListDFCBtank)
+		authorized.GET("/get-dfcb-tank/:id", dfcbcenterT.GetDFCBtankbyID)
+		authorized.GET("/get-dfcb-tank-table", dfcbcenterT.GetDFCBtankTABLE)
+		authorized.PATCH("/update-or-create-dfcb-tank/:d", dfcbcenterT.UpdateOrCreateDFCBtank)
+		authorized.DELETE("/delete-dfcb-tank/:id", dfcbcenterT.DeleteDFCBtank)
+		authorized.DELETE("/delete-dfcb-tank-day/:id", dfcbcenterT.DeleteAllDFCBtankRecordsByDate)
+		authorized.GET("/get-beforeafter-dfcb-tank", dfcbcenterT.GetBeforeAfterDFCBtank)
+
+		//DTCB(tank)
+		authorized.POST("/create-dtcb-tank", dtcbcenterT.CreateDTCBtank)
+		authorized.GET("/get-first-dtcb-tank", dtcbcenterT.GetfirstDTCBtank)
+		authorized.GET("/list-dtcb-tank", dtcbcenterT.ListDTCBtank)
+		authorized.GET("/get-dtcb-tank/:id", dtcbcenterT.GetDTCBtankbyID)
+		authorized.GET("/get-dtcb-tank-table", dtcbcenterT.GetDTCBtankTABLE)
+		authorized.PATCH("/update-or-create-dtcb-tank/:d", dtcbcenterT.UpdateOrCreateDTCBtank)
+		authorized.DELETE("/delete-dtcb-tank/:id", dtcbcenterT.DeleteDTCBtank)
+		authorized.DELETE("/delete-dtcb-tank-day/:id", dtcbcenterT.DeleteAllDTCBtankRecordsByDate)
+		authorized.GET("/get-beforeafter-dtcb-tank", dtcbcenterT.GetBeforeAfterDTCBtank)
+
+		//tapwater
+		//al
+		authorized.POST("/create-al", alcenter.CreateAL)
+		authorized.GET("/get-first-al", alcenter.GetfirstAL)
+		authorized.GET("/list-al", alcenter.ListAL)
+		authorized.GET("/get-al/:id", alcenter.GetALbyID)
+		authorized.GET("/get-al-table", alcenter.GetALTABLE)
+		authorized.PATCH("/update-or-create-al/:d", alcenter.UpdateOrCreateAL)
+		authorized.DELETE("/delete-al/:id", alcenter.DeleteAL)
+		authorized.DELETE("/delete-al-day/:id", alcenter.DeleteAllALRecordsByDate)
+		authorized.GET("/get-beforeafter-al", alcenter.GetBeforeAfterAL)
+
+		//iron
+		authorized.POST("/create-iron", ironcenter.CreateIRON)
+		authorized.GET("/get-first-iron", ironcenter.GetfirstIRON)
+		authorized.GET("/list-iron", ironcenter.ListIRON)
+		authorized.GET("/get-iron/:id", ironcenter.GetIRONbyID)
+		authorized.GET("/get-iron-table", ironcenter.GetIRONTABLE)
+		authorized.PATCH("/update-or-create-iron/:d", ironcenter.UpdateOrCreateIRON)
+		authorized.DELETE("/delete-iron/:id", ironcenter.DeleteIRON)
+		authorized.DELETE("/delete-iron-day/:id", ironcenter.DeleteAllIRONRecordsByDate)
+		authorized.GET("/get-beforeafter-iron", ironcenter.GetBeforeAfterIRON)
+
+		//mn
+		authorized.POST("/create-mn", mncenter.CreateMN)
+		authorized.GET("/get-first-mn", mncenter.GetfirstMN)
+		authorized.GET("/list-mn", mncenter.ListMN)
+		authorized.GET("/get-mn/:id", mncenter.GetMNbyID)
+		authorized.GET("/get-mn-table", mncenter.GetMNTABLE)
+		authorized.PATCH("/update-or-create-mn/:d", mncenter.UpdateOrCreateMN)
+		authorized.DELETE("/delete-mn/:id", mncenter.DeleteMN)
+		authorized.DELETE("/delete-mn-day/:id", mncenter.DeleteAllMNRecordsByDate)
+		authorized.GET("/get-beforeafter-mn", mncenter.GetBeforeAfterMN)
+
+		//ni
+		authorized.POST("/create-ni", nicenter.CreateNI)
+		authorized.GET("/get-first-ni", nicenter.GetfirstNI)
+		authorized.GET("/list-ni", nicenter.ListNI)
+		authorized.GET("/get-ni/:id", nicenter.GetNIbyID)
+		authorized.GET("/get-ni-table", nicenter.GetNITABLE)
+		authorized.PATCH("/update-or-create-ni/:d", nicenter.UpdateOrCreateNI)
+		authorized.DELETE("/delete-ni/:id", nicenter.DeleteNI)
+		authorized.DELETE("/delete-ni-day/:id", nicenter.DeleteAllNIRecordsByDate)
+		authorized.GET("/get-beforeafter-ni", nicenter.GetBeforeAfterNI)
+
+		//ntu
+		authorized.POST("/create-ntu", ntucenter.CreateNTU)
+		authorized.GET("/get-first-ntu", ntucenter.GetfirstNTU)
+		authorized.GET("/list-ntu", ntucenter.ListNTU)
+		authorized.GET("/get-ntu/:id", ntucenter.GetNTUbyID)
+		authorized.GET("/get-ntu-table", ntucenter.GetNTUTABLE)
+		authorized.PATCH("/update-or-create-ntu/:d", ntucenter.UpdateOrCreateNTU)
+		authorized.DELETE("/delete-ntu/:id", ntucenter.DeleteNTU)
+		authorized.DELETE("/delete-ntu-day/:id", ntucenter.DeleteAllNTURecordsByDate)
+		authorized.GET("/get-beforeafter-ntu", ntucenter.GetBeforeAfterNTU)
+
+		//pt
+		authorized.POST("/create-pt", ptcenter.CreatePT)
+		authorized.GET("/get-first-pt", ptcenter.GetfirstPT)
+		authorized.GET("/list-pt", ptcenter.ListPT)
+		authorized.GET("/get-pt/:id", ptcenter.GetPTbyID)
+		authorized.GET("/get-pt-table", ptcenter.GetPTTABLE)
+		authorized.PATCH("/update-or-create-pt/:d", ptcenter.UpdateOrCreatePT)
+		authorized.DELETE("/delete-pt/:id", ptcenter.DeletePT)
+		authorized.DELETE("/delete-pt-day/:id", ptcenter.DeleteAllPTRecordsByDate)
+		authorized.GET("/get-beforeafter-pt", ptcenter.GetBeforeAfterPT)
+
+		//tcod
+		authorized.POST("/create-tcod", tcodcenter.CreateTCOD)
+		authorized.GET("/get-first-tcod", tcodcenter.GetfirstTCOD)
+		authorized.GET("/list-tcod", tcodcenter.ListTCOD)
+		authorized.GET("/get-tcod/:id", tcodcenter.GetTCODbyID)
+		authorized.GET("/get-tcod-table", tcodcenter.GetTCODTABLE)
+		authorized.PATCH("/update-or-create-tcod/:d", tcodcenter.UpdateOrCreateTCOD)
+		authorized.DELETE("/delete-tcod/:id", tcodcenter.DeleteTCOD)
+		authorized.DELETE("/delete-tcod-day/:id", tcodcenter.DeleteAllTCODRecordsByDate)
+		authorized.GET("/get-beforeafter-tcod", tcodcenter.GetBeforeAfterTCOD)
+
+		//th
+		authorized.POST("/create-th", thcenter.CreateTH)
+		authorized.GET("/get-first-th", thcenter.GetfirstTH)
+		authorized.GET("/list-th", thcenter.ListTH)
+		authorized.GET("/get-th/:id", thcenter.GetTHbyID)
+		authorized.GET("/get-th-table", thcenter.GetTHTABLE)
+		authorized.PATCH("/update-or-create-th/:d", thcenter.UpdateOrCreateTH)
+		authorized.DELETE("/delete-th/:id", thcenter.DeleteTH)
+		authorized.DELETE("/delete-th-day/:id", thcenter.DeleteAllTHRecordsByDate)
+		authorized.GET("/get-beforeafter-th", thcenter.GetBeforeAfterTH)
+
+		//ttcb
+		authorized.POST("/create-ttcb", ttcbcenter.CreateTTCB)
+		authorized.GET("/get-first-ttcb", ttcbcenter.GetfirstTTCB)
+		authorized.GET("/list-ttcb", ttcbcenter.ListTTCB)
+		authorized.GET("/get-ttcb/:id", ttcbcenter.GetTTCBbyID)
+		authorized.GET("/get-ttcb-table", ttcbcenter.GetTTCBTABLE)
+		authorized.PATCH("/update-or-create-ttcb/:d", ttcbcenter.UpdateOrCreateTTCB)
+		authorized.DELETE("/delete-ttcb/:id", ttcbcenter.DeleteTTCB)
+		authorized.DELETE("/delete-ttcb-day/:id", ttcbcenter.DeleteAllTTCBRecordsByDate)
+		authorized.GET("/get-beforeafter-ttcb", ttcbcenter.GetBeforeAfterTTCB)
+
+		//Garbage
+		//HazardousWaste
+		authorized.POST("/create-hazardous", hazardousWaste.CreateHazardous)
+		authorized.GET("/get-first-hazardous", hazardousWaste.GetfirstHazardous)
+		authorized.GET("/list-hazardous", hazardousWaste.ListHazardous)
+		authorized.GET("/get-hazardous/:id", hazardousWaste.GetHazardousbyID)
+		authorized.GET("/get-hazardous-table", hazardousWaste.GetHazardousTABLE)
+		authorized.GET("/get-last-day-hazardous", hazardousWaste.GetLastDayHazardous)
+		authorized.PATCH("/update-or-create-hazardous/:d", hazardousWaste.UpdateOrCreateHazardous)
+		authorized.DELETE("/delete-hazardous-day/:id", hazardousWaste.DeleteAllHazardousRecordsByDate)
+		//ใช้ร่วมกัน
+		authorized.GET("/check-target", hazardousWaste.CheckTarget)
+
+		//GeneralWaste
+		authorized.POST("/create-general", generalWaste.CreateGeneral)
+		authorized.GET("/get-first-general", generalWaste.GetfirstGeneral)
+		authorized.GET("/list-general", generalWaste.ListGeneral)
+		authorized.GET("/get-general/:id", generalWaste.GetGeneralbyID)
+		authorized.GET("/get-general-table", generalWaste.GetGeneralTABLE)
+		authorized.GET("/get-last-day-general", generalWaste.GetLastDayGeneral)
+		authorized.PATCH("/update-or-create-general/:d", generalWaste.UpdateOrCreateGeneral)
+		authorized.DELETE("/delete-general-day/:id", generalWaste.DeleteAllGeneralRecordsByDate)
+
+		//ChemicalWaste
+		authorized.POST("/create-chemical", chemicalWaste.CreateChemical)
+		authorized.GET("/get-first-chemical", chemicalWaste.GetfirstChemical)
+		authorized.GET("/list-chemical", chemicalWaste.ListChemical)
+		authorized.GET("/get-chemical/:id", chemicalWaste.GetChemicalbyID)
+		authorized.GET("/get-chemical-table", chemicalWaste.GetChemicalTABLE)
+		authorized.GET("/get-last-day-chemical", chemicalWaste.GetLastDayChemical)
+		authorized.PATCH("/update-or-create-chemical/:d", chemicalWaste.UpdateOrCreateChemical)
+		authorized.DELETE("/delete-chemical-day/:id", chemicalWaste.DeleteAllChemicalRecordsByDate)
+
+		//infectiousWaste
+		authorized.POST("/create-infectious", infectiousWaste.CreateInfectious)
+		authorized.GET("/get-first-infectious", infectiousWaste.GetfirstInfectious)
+		authorized.GET("/list-infectious", infectiousWaste.ListInfectious)
+		authorized.GET("/get-infectious/:id", infectiousWaste.GetInfectiousbyID)
+		authorized.GET("/get-infectious-table", infectiousWaste.GetInfectiousTABLE)
+		authorized.GET("/get-last-day-infectious", infectiousWaste.GetLastDayInfectious)
+		authorized.PATCH("/update-or-create-infectious/:d", infectiousWaste.UpdateOrCreateInfectious)
+		authorized.DELETE("/delete-infectious-day/:id", infectiousWaste.DeleteAllInfectiousRecordsByDate)
+
+		//RecycledWaste
+		authorized.POST("/create-recycled", recycledWaste.CreateRecycled)
+		authorized.GET("/get-first-recycled", recycledWaste.GetfirstRecycled)
+		authorized.GET("/list-recycled", recycledWaste.ListRecycled)
+		authorized.GET("/get-recycled/:id", recycledWaste.GetRecycledbyID)
+		authorized.GET("/get-recycled-table", recycledWaste.GetRecycledTABLE)
+		authorized.GET("/get-last-day-recycled", recycledWaste.GetLastDayRecycled)
+		authorized.PATCH("/update-or-create-recycled/:d", recycledWaste.UpdateOrCreateRecycled)
+		authorized.DELETE("/delete-recycled-day/:id", recycledWaste.DeleteAllRecycledRecordsByDate)
+
+		//SelectBoxAll
+		authorized.GET("/list-BeforeAfterTreatment", selectBoxAll.ListBeforeAfterTreatment)
+		authorized.GET("/list-unit", selectBoxAll.ListUnit)
+		authorized.GET("/api/positions", position.GetPositions)
+
+		authorized.GET("/list-standard", selectBoxAll.ListStandard) //เก่า
+
+		//น้ำ
+		authorized.GET("/list-standard-middle", selectBoxAll.ListMiddleStandard)
+		authorized.GET("/list-standard-range", selectBoxAll.ListRangeStandard)
+		authorized.POST("/add-middle-standard", selectBoxAll.AddMiddleStandard)
+		authorized.POST("/add-range-standard", selectBoxAll.AddRangeStandard)
+
+		//ขยะ
+		//hazardousWaste
+		authorized.GET("/list-target-middle", selectBoxAll.ListMiddleTarget)
+		authorized.GET("/list-target-range", selectBoxAll.ListRangeTarget)
+		authorized.POST("/add-middle-target", selectBoxAll.AddMiddleTarget)
+		authorized.POST("/add-range-target", selectBoxAll.AddRangeTarget)
+
+		authorized.GET("/list-status", selectBoxAll.ListStatus)
+		authorized.GET("/list-status-garbage", selectBoxAll.ListStatusGarbage)
 	}
 
 	public := r.Group("")
 	{
 		public.POST("/api/predict", predict.Predict)
 
-		//PH
-		public.POST("/create-ph", phcenter.CreatePH)
-		public.GET("/get-first-ph", phcenter.GetfirstPH)
-		public.GET("/list-ph", phcenter.ListPH)
-		public.GET("/get-ph/:id", phcenter.GetPHbyID)
-		public.GET("/get-ph-table", phcenter.GetPHTABLE)
-		public.PATCH("/update-or-create-ph/:d", phcenter.UpdateOrCreatePH)
-		public.DELETE("/delete-ph/:id", phcenter.DeletePH)
-		public.DELETE("/delete-ph-day/:id", phcenter.DeleteAllPHRecordsByDate)
-		public.GET("/get-beforeafter-ph", phcenter.GetBeforeAfterPH)
-
-		//TDS
-		public.POST("/create-tds", tdscenter.CreateTDS)
-		public.GET("/get-first-tds", tdscenter.GetfirstTDS)
-		public.GET("/list-tds", tdscenter.ListTDS)
-		public.GET("/get-tds/:id", tdscenter.GetTDSbyID)
-		public.GET("/get-tds-table", tdscenter.GetTDSTABLE)
-		public.PATCH("/update-or-create-tds/:d", tdscenter.UpdateOrCreateTDS)
-		public.DELETE("/delete-tds/:id", tdscenter.DeleteTDS)
-		public.DELETE("/delete-tds-day/:id", tdscenter.DeleteAllTDSRecordsByDate)
-		public.GET("/get-beforeafter-tds", tdscenter.GetBeforeAfterTDS)
-
-		public.GET("/check-units", tdscenter.CheckUnit)
-		public.GET("/check-standard", tdscenter.CheckStandard)
-		public.GET("/get-alert-software", tdscenter.GetAlertSoftware)
-
-		//TKN
-		public.POST("/create-tkn", tkncenter.CreateTKN)
-		public.GET("/get-first-tkn", tkncenter.GetfirstTKN)
-		public.GET("/list-tkn", tkncenter.ListTKN)
-		public.GET("/get-tkn/:id", tkncenter.GetTKNbyID)
-		public.GET("/get-tkn-table", tkncenter.GetTKNTABLE)
-		public.PATCH("/update-or-create-tkn/:d", tkncenter.UpdateOrCreateTKN)
-		public.DELETE("/delete-tkn/:id", tkncenter.DeleteTKN)
-		public.DELETE("/delete-tkn-day/:id", tkncenter.DeleteAllTKNRecordsByDate)
-		public.GET("/get-beforeafter-tkn", tkncenter.GetBeforeAfterTKN)
-
-		//TS
-		public.POST("/create-ts", tscenter.CreateTS)
-		public.GET("/get-first-ts", tscenter.GetfirstTS)
-		public.GET("/list-ts", tscenter.ListTS)
-		public.GET("/get-ts/:id", tscenter.GetTSbyID)
-		public.GET("/get-ts-table", tscenter.GetTSTABLE)
-		public.PATCH("/update-or-create-ts/:d", tscenter.UpdateOrCreateTS)
-		public.DELETE("/delete-ts/:id", tscenter.DeleteTS)
-		public.DELETE("/delete-ts-day/:id", tscenter.DeleteAllTSRecordsByDate)
-		public.GET("/get-beforeafter-ts", tscenter.GetBeforeAfterTS)
-
-		//COD
-		public.POST("/create-cod", codcenter.CreateCOD)
-		public.GET("/get-first-cod", codcenter.GetfirstCOD)
-		public.GET("/list-cod", codcenter.ListCOD)
-		public.GET("/get-cod/:id", codcenter.GetCODbyID)
-		public.GET("/get-cod-table", codcenter.GetCODTABLE)
-		public.PATCH("/update-or-create-cod/:d", codcenter.UpdateOrCreateCOD)
-		public.DELETE("/delete-cod/:id", codcenter.DeleteCOD)
-		public.DELETE("/delete-cod-day/:id", codcenter.DeleteAllCODRecordsByDate)
-		public.GET("/get-beforeafter-cod", codcenter.GetBeforeAfterCOD)
-
-		//FCB
-		public.POST("/create-fcb", fcbcenter.CreateFCB)
-		public.GET("/get-first-fcb", fcbcenter.GetfirstFCB)
-		public.GET("/list-fcb", fcbcenter.ListFCB)
-		public.GET("/get-fcb/:id", fcbcenter.GetFCBbyID)
-		public.GET("/get-fcb-table", fcbcenter.GetFCBTABLE)
-		public.PATCH("/update-or-create-fcb/:d", fcbcenter.UpdateOrCreateFCB)
-		public.DELETE("/delete-fcb/:id", fcbcenter.DeleteFCB)
-		public.DELETE("/delete-fcb-day/:id", fcbcenter.DeleteAllFCBRecordsByDate)
-		public.GET("/get-beforeafter-fcb", fcbcenter.GetBeforeAfterFCB)
-
-		//RES
-		public.POST("/create-res", rescenter.CreateRES)
-		public.GET("/get-first-res", rescenter.GetfirstRES)
-		public.GET("/list-res", rescenter.ListRES)
-		public.GET("/get-res/:id", rescenter.GetRESbyID)
-		public.GET("/get-res-table", rescenter.GetRESTABLE)
-		public.PATCH("/update-or-create-res/:d", rescenter.UpdateOrCreateRES)
-		public.DELETE("/delete-res/:id", rescenter.DeleteRES)
-		public.DELETE("/delete-res-day/:id", rescenter.DeleteAllRESRecordsByDate)
-		public.GET("/get-beforeafter-res", rescenter.GetBeforeAfterRES)
-
-		//SUL
-		public.POST("/create-sul", sulcenter.CreateSUL)
-		public.GET("/get-first-sul", sulcenter.GetfirstSUL)
-		public.GET("/list-sul", sulcenter.ListSUL)
-		public.GET("/get-sul/:id", sulcenter.GetSULbyID)
-		public.GET("/get-sul-table", sulcenter.GetSULTABLE)
-		public.PATCH("/update-or-create-sul/:d", sulcenter.UpdateOrCreateSUL)
-		public.DELETE("/delete-sul/:id", sulcenter.DeleteSUL)
-		public.DELETE("/delete-sul-day/:id", sulcenter.DeleteAllSULRecordsByDate)
-		public.GET("/get-beforeafter-sul", sulcenter.GetBeforeAfterSUL)
-
-		//TCB
-		public.POST("/create-tcb", tcbcenter.CreateTCB)
-		public.GET("/get-first-tcb", tcbcenter.GetfirstTCB)
-		public.GET("/list-tcb", tcbcenter.ListTCB)
-		public.GET("/get-tcb/:id", tcbcenter.GetTCBbyID)
-		public.GET("/get-tcb-table", tcbcenter.GetTCBTABLE)
-		public.PATCH("/update-or-create-tcb/:d", tcbcenter.UpdateOrCreateTCB)
-		public.DELETE("/delete-tcb/:id", tcbcenter.DeleteTCB)
-		public.DELETE("/delete-tcb-day/:id", tcbcenter.DeleteAllTCBRecordsByDate)
-		public.GET("/get-beforeafter-tcb", tcbcenter.GetBeforeAfterTCB)
-
-		//BOD
-		public.POST("/create-bod", bodcenter.CreateBod)
-		public.GET("/get-first-bod", bodcenter.GetfirstBOD)
-		public.GET("/list-bod", bodcenter.ListBOD)
-		public.GET("/get-bod/:id", bodcenter.GetBODbyID)
-		public.GET("/get-bod-table", bodcenter.GetBODTABLE)
-		public.PATCH("/update-or-create-bod/:d", bodcenter.UpdateOrCreateBOD)
-		public.DELETE("/delete-bod/:id", bodcenter.DeleteBOD)
-		public.DELETE("/delete-bod-day/:id", bodcenter.DeleteAllBODRecordsByDate)
-		public.GET("/get-beforeafter-bod", bodcenter.GetBeforeAfterBOD) //เพิ่ม
-
-		//FOG
-		public.POST("/create-fog", fogcenter.CreateFOG)
-		public.GET("/get-first-fog", fogcenter.GetfirstFOG)
-		public.GET("/list-fog", fogcenter.ListFOG)
-		public.GET("/get-fog/:id", fogcenter.GetFOGbyID)
-		public.GET("/get-fog-table", fogcenter.GetFOGTABLE)
-		public.PATCH("/update-or-create-fog/:d", fogcenter.UpdateOrCreateFOG)
-		public.DELETE("/delete-fog/:id", fogcenter.DeleteFOG)
-		public.DELETE("/delete-fog-day/:id", fogcenter.DeleteAllFOGRecordsByDate)
-		public.GET("/get-beforeafter-fog", fogcenter.GetBeforeAfterFOG)
-
-		//drinkwater
-		//ecoin(glass)
-		public.POST("/create-eco", ecocenter.CreateECO)
-		public.GET("/get-first-eco", ecocenter.GetfirstECO)
-		public.GET("/list-eco", ecocenter.ListECO)
-		public.GET("/get-eco/:id", ecocenter.GetECObyID)
-		public.GET("/get-eco-table", ecocenter.GetECOTABLE)
-		public.PATCH("/update-or-create-eco/:d", ecocenter.UpdateOrCreateECO)
-		public.DELETE("/delete-eco/:id", ecocenter.DeleteECO)
-		public.DELETE("/delete-eco-day/:id", ecocenter.DeleteAllECORecordsByDate)
-		public.GET("/get-beforeafter-eco", ecocenter.GetBeforeAfterECO)
-
-		//DFCB(glass)
-		public.POST("/create-dfcb", dfcbcenter.CreateDFCB)
-		public.GET("/get-first-dfcb", dfcbcenter.GetfirstDFCB)
-		public.GET("/list-dfcb", dfcbcenter.ListDFCB)
-		public.GET("/get-dfcb/:id", dfcbcenter.GetDFCBbyID)
-		public.GET("/get-dfcb-table", dfcbcenter.GetDFCBTABLE)
-		public.PATCH("/update-or-create-dfcb/:d", dfcbcenter.UpdateOrCreateDFCB)
-		public.DELETE("/delete-dfcb/:id", dfcbcenter.DeleteDFCB)
-		public.DELETE("/delete-dfcb-day/:id", dfcbcenter.DeleteAllDFCBRecordsByDate)
-		public.GET("/get-beforeafter-dfcb", dfcbcenter.GetBeforeAfterDFCB)
-
-		//DTCB(glass)
-		public.POST("/create-dtcb", dtcbcenter.CreateDTCB)
-		public.GET("/get-first-dtcb", dtcbcenter.GetfirstDTCB)
-		public.GET("/list-dtcb", dtcbcenter.ListDTCB)
-		public.GET("/get-dtcb/:id", dtcbcenter.GetDTCBbyID)
-		public.GET("/get-dtcb-table", dtcbcenter.GetDTCBTABLE)
-		public.PATCH("/update-or-create-dtcb/:d", dtcbcenter.UpdateOrCreateDTCB)
-		public.DELETE("/delete-dtcb/:id", dtcbcenter.DeleteDTCB)
-		public.DELETE("/delete-dtcb-day/:id", dtcbcenter.DeleteAllDTCBRecordsByDate)
-		public.GET("/get-beforeafter-dtcb", dtcbcenter.GetBeforeAfterDTCB)
-
-		//ecoin(tank)
-		public.POST("/create-eco-tank", ecocenterT.CreateECOtank)
-		public.GET("/get-first-eco-tank", ecocenterT.GetfirstECOtank)
-		public.GET("/list-eco-tank", ecocenterT.ListECOtank)
-		public.GET("/get-eco-tank/:id", ecocenterT.GetECOtankbyID)
-		public.GET("/get-eco-tank-table", ecocenterT.GetECOtankTABLE)
-		public.PATCH("/update-or-create-eco-tank/:d", ecocenterT.UpdateOrCreateECOtank)
-		public.DELETE("/delete-eco-tank/:id", ecocenterT.DeleteECOtank)
-		public.DELETE("/delete-eco-tank-day/:id", ecocenterT.DeleteAllECOtankRecordsByDate)
-		public.GET("/get-beforeafter-eco-tank", ecocenterT.GetBeforeAfterECOtank)
-
-		//DFCB(tank)
-		public.POST("/create-dfcb-tank", dfcbcenterT.CreateDFCBtank)
-		public.GET("/get-first-dfcb-tank", dfcbcenterT.GetfirstDFCBtank)
-		public.GET("/list-dfcb-tank", dfcbcenterT.ListDFCBtank)
-		public.GET("/get-dfcb-tank/:id", dfcbcenterT.GetDFCBtankbyID)
-		public.GET("/get-dfcb-tank-table", dfcbcenterT.GetDFCBtankTABLE)
-		public.PATCH("/update-or-create-dfcb-tank/:d", dfcbcenterT.UpdateOrCreateDFCBtank)
-		public.DELETE("/delete-dfcb-tank/:id", dfcbcenterT.DeleteDFCBtank)
-		public.DELETE("/delete-dfcb-tank-day/:id", dfcbcenterT.DeleteAllDFCBtankRecordsByDate)
-		public.GET("/get-beforeafter-dfcb-tank", dfcbcenterT.GetBeforeAfterDFCBtank)
-
-		//DTCB(tank)
-		public.POST("/create-dtcb-tank", dtcbcenterT.CreateDTCBtank)
-		public.GET("/get-first-dtcb-tank", dtcbcenterT.GetfirstDTCBtank)
-		public.GET("/list-dtcb-tank", dtcbcenterT.ListDTCBtank)
-		public.GET("/get-dtcb-tank/:id", dtcbcenterT.GetDTCBtankbyID)
-		public.GET("/get-dtcb-tank-table", dtcbcenterT.GetDTCBtankTABLE)
-		public.PATCH("/update-or-create-dtcb-tank/:d", dtcbcenterT.UpdateOrCreateDTCBtank)
-		public.DELETE("/delete-dtcb-tank/:id", dtcbcenterT.DeleteDTCBtank)
-		public.DELETE("/delete-dtcb-tank-day/:id", dtcbcenterT.DeleteAllDTCBtankRecordsByDate)
-		public.GET("/get-beforeafter-dtcb-tank", dtcbcenterT.GetBeforeAfterDTCBtank)
-
-		//tapwater
-		//al
-		public.POST("/create-al", alcenter.CreateAL)
-		public.GET("/get-first-al", alcenter.GetfirstAL)
-		public.GET("/list-al", alcenter.ListAL)
-		public.GET("/get-al/:id", alcenter.GetALbyID)
-		public.GET("/get-al-table", alcenter.GetALTABLE)
-		public.PATCH("/update-or-create-al/:d", alcenter.UpdateOrCreateAL)
-		public.DELETE("/delete-al/:id", alcenter.DeleteAL)
-		public.DELETE("/delete-al-day/:id", alcenter.DeleteAllALRecordsByDate)
-		public.GET("/get-beforeafter-al", alcenter.GetBeforeAfterAL)
-
-		//iron
-		public.POST("/create-iron", ironcenter.CreateIRON)
-		public.GET("/get-first-iron", ironcenter.GetfirstIRON)
-		public.GET("/list-iron", ironcenter.ListIRON)
-		public.GET("/get-iron/:id", ironcenter.GetIRONbyID)
-		public.GET("/get-iron-table", ironcenter.GetIRONTABLE)
-		public.PATCH("/update-or-create-iron/:d", ironcenter.UpdateOrCreateIRON)
-		public.DELETE("/delete-iron/:id", ironcenter.DeleteIRON)
-		public.DELETE("/delete-iron-day/:id", ironcenter.DeleteAllIRONRecordsByDate)
-		public.GET("/get-beforeafter-iron", ironcenter.GetBeforeAfterIRON)
-
-		//mn
-		public.POST("/create-mn", mncenter.CreateMN)
-		public.GET("/get-first-mn", mncenter.GetfirstMN)
-		public.GET("/list-mn", mncenter.ListMN)
-		public.GET("/get-mn/:id", mncenter.GetMNbyID)
-		public.GET("/get-mn-table", mncenter.GetMNTABLE)
-		public.PATCH("/update-or-create-mn/:d", mncenter.UpdateOrCreateMN)
-		public.DELETE("/delete-mn/:id", mncenter.DeleteMN)
-		public.DELETE("/delete-mn-day/:id", mncenter.DeleteAllMNRecordsByDate)
-		public.GET("/get-beforeafter-mn", mncenter.GetBeforeAfterMN)
-
-		//ni
-		public.POST("/create-ni", nicenter.CreateNI)
-		public.GET("/get-first-ni", nicenter.GetfirstNI)
-		public.GET("/list-ni", nicenter.ListNI)
-		public.GET("/get-ni/:id", nicenter.GetNIbyID)
-		public.GET("/get-ni-table", nicenter.GetNITABLE)
-		public.PATCH("/update-or-create-ni/:d", nicenter.UpdateOrCreateNI)
-		public.DELETE("/delete-ni/:id", nicenter.DeleteNI)
-		public.DELETE("/delete-ni-day/:id", nicenter.DeleteAllNIRecordsByDate)
-		public.GET("/get-beforeafter-ni", nicenter.GetBeforeAfterNI)
-
-		//ntu
-		public.POST("/create-ntu", ntucenter.CreateNTU)
-		public.GET("/get-first-ntu", ntucenter.GetfirstNTU)
-		public.GET("/list-ntu", ntucenter.ListNTU)
-		public.GET("/get-ntu/:id", ntucenter.GetNTUbyID)
-		public.GET("/get-ntu-table", ntucenter.GetNTUTABLE)
-		public.PATCH("/update-or-create-ntu/:d", ntucenter.UpdateOrCreateNTU)
-		public.DELETE("/delete-ntu/:id", ntucenter.DeleteNTU)
-		public.DELETE("/delete-ntu-day/:id", ntucenter.DeleteAllNTURecordsByDate)
-		public.GET("/get-beforeafter-ntu", ntucenter.GetBeforeAfterNTU)
-
-		//pt
-		public.POST("/create-pt", ptcenter.CreatePT)
-		public.GET("/get-first-pt", ptcenter.GetfirstPT)
-		public.GET("/list-pt", ptcenter.ListPT)
-		public.GET("/get-pt/:id", ptcenter.GetPTbyID)
-		public.GET("/get-pt-table", ptcenter.GetPTTABLE)
-		public.PATCH("/update-or-create-pt/:d", ptcenter.UpdateOrCreatePT)
-		public.DELETE("/delete-pt/:id", ptcenter.DeletePT)
-		public.DELETE("/delete-pt-day/:id", ptcenter.DeleteAllPTRecordsByDate)
-		public.GET("/get-beforeafter-pt", ptcenter.GetBeforeAfterPT)
-
-		//tcod
-		public.POST("/create-tcod", tcodcenter.CreateTCOD)
-		public.GET("/get-first-tcod", tcodcenter.GetfirstTCOD)
-		public.GET("/list-tcod", tcodcenter.ListTCOD)
-		public.GET("/get-tcod/:id", tcodcenter.GetTCODbyID)
-		public.GET("/get-tcod-table", tcodcenter.GetTCODTABLE)
-		public.PATCH("/update-or-create-tcod/:d", tcodcenter.UpdateOrCreateTCOD)
-		public.DELETE("/delete-tcod/:id", tcodcenter.DeleteTCOD)
-		public.DELETE("/delete-tcod-day/:id", tcodcenter.DeleteAllTCODRecordsByDate)
-		public.GET("/get-beforeafter-tcod", tcodcenter.GetBeforeAfterTCOD)
-
-		//th
-		public.POST("/create-th", thcenter.CreateTH)
-		public.GET("/get-first-th", thcenter.GetfirstTH)
-		public.GET("/list-th", thcenter.ListTH)
-		public.GET("/get-th/:id", thcenter.GetTHbyID)
-		public.GET("/get-th-table", thcenter.GetTHTABLE)
-		public.PATCH("/update-or-create-th/:d", thcenter.UpdateOrCreateTH)
-		public.DELETE("/delete-th/:id", thcenter.DeleteTH)
-		public.DELETE("/delete-th-day/:id", thcenter.DeleteAllTHRecordsByDate)
-		public.GET("/get-beforeafter-th", thcenter.GetBeforeAfterTH)
-
-		//ttcb
-		public.POST("/create-ttcb", ttcbcenter.CreateTTCB)
-		public.GET("/get-first-ttcb", ttcbcenter.GetfirstTTCB)
-		public.GET("/list-ttcb", ttcbcenter.ListTTCB)
-		public.GET("/get-ttcb/:id", ttcbcenter.GetTTCBbyID)
-		public.GET("/get-ttcb-table", ttcbcenter.GetTTCBTABLE)
-		public.PATCH("/update-or-create-ttcb/:d", ttcbcenter.UpdateOrCreateTTCB)
-		public.DELETE("/delete-ttcb/:id", ttcbcenter.DeleteTTCB)
-		public.DELETE("/delete-ttcb-day/:id", ttcbcenter.DeleteAllTTCBRecordsByDate)
-		public.GET("/get-beforeafter-ttcb", ttcbcenter.GetBeforeAfterTTCB)
-
-		//Garbage
-		//HazardousWaste
-		public.POST("/create-hazardous", hazardousWaste.CreateHazardous)
-		public.GET("/get-first-hazardous", hazardousWaste.GetfirstHazardous)
-		public.GET("/list-hazardous", hazardousWaste.ListHazardous)
-		public.GET("/get-hazardous/:id", hazardousWaste.GetHazardousbyID)
-		public.GET("/get-hazardous-table", hazardousWaste.GetHazardousTABLE)
-		public.GET("/get-last-day-hazardous", hazardousWaste.GetLastDayHazardous)
-		public.PATCH("/update-or-create-hazardous/:d", hazardousWaste.UpdateOrCreateHazardous)
-		public.DELETE("/delete-hazardous-day/:id", hazardousWaste.DeleteAllHazardousRecordsByDate)
-		//ใช้ร่วมกัน
-		public.GET("/check-target", hazardousWaste.CheckTarget)
-
-		//GeneralWaste
-		public.POST("/create-general", generalWaste.CreateGeneral)
-		public.GET("/get-first-general", generalWaste.GetfirstGeneral)
-		public.GET("/list-general", generalWaste.ListGeneral)
-		public.GET("/get-general/:id", generalWaste.GetGeneralbyID)
-		public.GET("/get-general-table", generalWaste.GetGeneralTABLE)
-		public.GET("/get-last-day-general", generalWaste.GetLastDayGeneral)
-		public.PATCH("/update-or-create-general/:d", generalWaste.UpdateOrCreateGeneral)
-		public.DELETE("/delete-general-day/:id", generalWaste.DeleteAllGeneralRecordsByDate)
-
-		//ChemicalWaste
-		public.POST("/create-chemical", chemicalWaste.CreateChemical)
-		public.GET("/get-first-chemical", chemicalWaste.GetfirstChemical)
-		public.GET("/list-chemical", chemicalWaste.ListChemical)
-		public.GET("/get-chemical/:id", chemicalWaste.GetChemicalbyID)
-		public.GET("/get-chemical-table", chemicalWaste.GetChemicalTABLE)
-		public.GET("/get-last-day-chemical", chemicalWaste.GetLastDayChemical)
-		public.PATCH("/update-or-create-chemical/:d", chemicalWaste.UpdateOrCreateChemical)
-		public.DELETE("/delete-chemical-day/:id", chemicalWaste.DeleteAllChemicalRecordsByDate)
-
-		//infectiousWaste
-		public.POST("/create-infectious", infectiousWaste.CreateInfectious)
-		public.GET("/get-first-infectious", infectiousWaste.GetfirstInfectious)
-		public.GET("/list-infectious", infectiousWaste.ListInfectious)
-		public.GET("/get-infectious/:id", infectiousWaste.GetInfectiousbyID)
-		public.GET("/get-infectious-table", infectiousWaste.GetInfectiousTABLE)
-		public.GET("/get-last-day-infectious", infectiousWaste.GetLastDayInfectious)
-		public.PATCH("/update-or-create-infectious/:d", infectiousWaste.UpdateOrCreateInfectious)
-		public.DELETE("/delete-infectious-day/:id", infectiousWaste.DeleteAllInfectiousRecordsByDate)
-
-		//RecycledWaste
-		public.POST("/create-recycled", recycledWaste.CreateRecycled)
-		public.GET("/get-first-recycled", recycledWaste.GetfirstRecycled)
-		public.GET("/list-recycled", recycledWaste.ListRecycled)
-		public.GET("/get-recycled/:id", recycledWaste.GetRecycledbyID)
-		public.GET("/get-recycled-table", recycledWaste.GetRecycledTABLE)
-		public.GET("/get-last-day-recycled", recycledWaste.GetLastDayRecycled)
-		public.PATCH("/update-or-create-recycled/:d", recycledWaste.UpdateOrCreateRecycled)
-		public.DELETE("/delete-recycled-day/:id", recycledWaste.DeleteAllRecycledRecordsByDate)
-
 		public.GET("/api/employees", employee.GetEmployees)
 		public.POST("/api/employees", employee.CreateEmployee)
-
-		//SelectBoxAll
-		public.GET("/list-BeforeAfterTreatment", selectBoxAll.ListBeforeAfterTreatment)
-		public.GET("/list-unit", selectBoxAll.ListUnit)
-		public.GET("/api/positions", position.GetPositions)
-
-		public.GET("/list-standard", selectBoxAll.ListStandard) //เก่า
-
-		//น้ำ
-		public.GET("/list-standard-middle", selectBoxAll.ListMiddleStandard)
-		public.GET("/list-standard-range", selectBoxAll.ListRangeStandard)
-		public.POST("/add-middle-standard", selectBoxAll.AddMiddleStandard)
-		public.POST("/add-range-standard", selectBoxAll.AddRangeStandard)
-
-		//ขยะ
-		//hazardousWaste
-		public.GET("/list-target-middle", selectBoxAll.ListMiddleTarget)
-		public.GET("/list-target-range", selectBoxAll.ListRangeTarget)
-		public.POST("/add-middle-target", selectBoxAll.AddMiddleTarget)
-		public.POST("/add-range-target", selectBoxAll.AddRangeTarget)
-
-		public.GET("/list-status", selectBoxAll.ListStatus)
-		public.GET("/list-status-garbage", selectBoxAll.ListStatusGarbage)
-
-		//public.GET("/api/water-quality", dashboard.GetWaterQuality)
-		//public.GET("/dashboard/environmental", dashboard.GetEnvironmentalDashboard)
 
 	}
 

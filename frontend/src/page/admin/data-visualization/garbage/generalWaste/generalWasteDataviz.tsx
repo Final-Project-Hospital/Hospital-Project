@@ -1,6 +1,6 @@
 //ใช้ทั้งกราฟและตาราง
 import React, { useEffect, useRef, useState } from "react";
-import { Select, DatePicker, Modal, message, Tooltip } from "antd";
+import { Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { LeftOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled, CheckCircleFilled, QuestionCircleFilled, CloseCircleFilled } from "@ant-design/icons";
@@ -20,7 +20,7 @@ import ApexChart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { ColorPicker } from "antd";
 import type { Color } from "antd/es/color-picker";
-import { BarChart3, LineChart } from "lucide-react";
+import { BarChart3, LineChart, Maximize2 } from "lucide-react";
 import Chart from "react-apexcharts";
 
 //ใช้กับตาราง
@@ -36,7 +36,6 @@ const normalizeString = (str: any) =>
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';
-import th_TH from 'antd/es/date-picker/locale/th_TH';
 dayjs.locale('th');
 dayjs.extend(customParseFormat);
 dayjs.extend(isBetween);
@@ -74,6 +73,8 @@ const GeneralWaste: React.FC = () => {
   const [unit, setUnit] = useState<string>("-");
   const [totalQuantity, setTotalQuantity] = useState<number>(0);
   const [monthlyQuantityLatestYear, setMonthlyQuantityLatestYear] = useState<{ month: string; value: number; unit: string }[]>([]);
+  const [modalGraphType, setModalGraphType] = useState<"garbage" | "garbageperpeople" | "aadc" | null>(null);//modalGraphType
+  const [modalVisible, setModalVisible] = useState(false);
 
   //ใช้กับตาราง
   const [search] = useState(""); //setSearch
@@ -616,6 +617,16 @@ const GeneralWaste: React.FC = () => {
     return `${monthShortNames[monthIndex]} ${thaiYear}`;
   };
 
+  const openModal = (type: "garbage" | "garbageperpeople" | "aadc") => {
+    setModalGraphType(type);
+    setModalVisible(true);
+  };
+  //ใช้กับกราฟ
+  const closeModal = () => {
+    setModalVisible(false);
+    setModalGraphType(null);
+  };
+
   //ใช้กับตาราง
   const columns: ColumnsType<any> = [
     {
@@ -916,7 +927,7 @@ const GeneralWaste: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
@@ -936,7 +947,7 @@ const GeneralWaste: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={true}
@@ -956,7 +967,7 @@ const GeneralWaste: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
                   allowClear={true}
@@ -973,7 +984,7 @@ const GeneralWaste: React.FC = () => {
             <div className="general-graph-card">
               <div className="general-head-graph-card">
                 <div className="general-width25">
-                  <h2 className="general-head-graph-card-text" >กราฟขยะ</h2>
+                  <h2 className="general-head-graph-card-text" >ขยะทั่วไป</h2>
                 </div>
                 <div>
                   <ColorPicker
@@ -984,6 +995,7 @@ const GeneralWaste: React.FC = () => {
                       localStorage.setItem('colorGarbage', hex);
                     }}
                   />
+                  <Button className="general-expand-chat" onClick={() => openModal("garbage")}><Maximize2 /></Button>
                 </div>
               </div>
               <div className="general-right-select-graph">
@@ -1023,8 +1035,8 @@ const GeneralWaste: React.FC = () => {
             </div>
             <div className="general-graph-card">
               <div className="general-head-graph-card">
-                <div className="general-width40">
-                  <h2 className="general-head-graph-card-text" >กราฟขยะต่อคน</h2>
+                <div className="general-width50">
+                  <h2 className="general-head-graph-card-text" >ขยะทั่วไปต่อคนที่เข้าใช้บริการ</h2>
                 </div>
                 <div>
                   <ColorPicker
@@ -1043,6 +1055,7 @@ const GeneralWaste: React.FC = () => {
                       localStorage.setItem('colorCompareQuantity', hex);
                     }}
                   />
+                  <Button className="general-expand-chat" onClick={() => openModal("garbageperpeople")}><Maximize2 /></Button>
                 </div>
               </div>
 
@@ -1098,6 +1111,7 @@ const GeneralWaste: React.FC = () => {
                       localStorage.setItem('colorAadc', hex);
                     }}
                   />
+                  <Button className="general-expand-chat" onClick={() => openModal("aadc")}><Maximize2 /></Button>
                 </div>
               </div>
               <div className="general-right-select-graph">
@@ -1229,7 +1243,7 @@ const GeneralWaste: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
@@ -1249,7 +1263,7 @@ const GeneralWaste: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={true}
@@ -1270,7 +1284,7 @@ const GeneralWaste: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
                   allowClear={true}
@@ -1384,6 +1398,152 @@ const GeneralWaste: React.FC = () => {
                 }}
                 onCancel={handleEditModalCancel}
               />
+            </div>
+          )}
+        </Modal>
+
+        <Modal
+          visible={modalVisible}
+          onCancel={closeModal}
+          footer={null}
+          className="general-custom-modal"
+          centered
+          destroyOnClose
+          maskClosable={true}
+        >
+          {modalGraphType === "garbage" && (
+            <div className="general-chat-modal">
+              <div className="general-head-graph-card">
+                <div className="general-width25">
+                  <h2 className="general-head-graph-card-text">ขยะทั่วไป</h2>
+                </div>
+              </div>
+              <div className="general-right-select-graph">
+                <Select
+                  value={chartTypeData}
+                  onChange={val => setChartTypeData(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div className="general-chart-containner">
+                <ApexChart
+                  key={chartTypeData}
+                  options={getChartOptions(
+                    listdata.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                    chartTypeData,          // ประเภท chart
+                    filterMode === "year",   // 'day' | 'month' | 'year'
+                    series[0]?.data || [],
+                    true,          // array ของตัวเลข
+                    true,
+                    false,          // isPercentChart (true/false)
+                  )} series={series}
+                  type={chartTypeData}
+                  height="100%"
+                />
+              </div>
+            </div>
+          )}
+          {modalGraphType === "garbageperpeople" && (
+            <div className="general-chat-modal">
+              <div className="general-head-graph-card" >
+                <div className="general-width40">
+                  <h2 className="general-head-graph-card-text" >ขยะทั่วไปต่อคนที่เข้าใช้บริการ</h2>
+                </div>
+              </div>
+              <div className="general-right-select-graph">
+                <Select
+                  value={chartTypeCompareMonthlyGarbageQuantity}
+                  onChange={val => setChartTypeCompareMonthlyGarbageQuantity(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div className="general-chart-containner">
+                <ApexChart
+                  key={chartTypeCompareMonthlyGarbageQuantity}
+                  options={getChartOptions(
+                    compareMonthlyGarbageQuantity.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                    chartTypeCompareMonthlyGarbageQuantity,          // ประเภท chart
+                    filterMode === "year",   // 'day' | 'month' | 'year'
+                    combinedCompareData,
+                    true,          // array ของตัวเลข
+                    true,
+                    true,           // isPercentChart (true/false)
+                  )} series={seriesMonthlyGarbageQuantityNormalized}
+                  type={chartTypeCompareMonthlyGarbageQuantity}
+                  height="100%"
+                />
+              </div>
+            </div>
+          )}
+          {modalGraphType === "aadc" && (
+            <div className="general-chat-modal">
+              <div className="general-head-graph-card" >
+                <div className="general-width40">
+                  <h2 className="general-head-graph-card-text" >AADC</h2>
+                </div>
+              </div>
+              <div className="general-right-select-graph">
+                <Select
+                  value={chartTypeAadc}
+                  onChange={val => setChartTypeAadc(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div className="general-chart-containner">
+                <ApexChart
+                  key={chartTypeAadc}
+                  options={getChartOptions(
+                    aadcData.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                    chartTypeAadc,          // ประเภท chart
+                    filterMode === "year",   // 'day' | 'month' | 'year'
+                    seriesAADC[0]?.data || [],
+                    true,          // array ของตัวเลข
+                    false,
+                    false,            // isPercentChart (true/false)
+                  )} series={seriesAADC}
+                  type={chartTypeAadc}
+                  height="100%"
+                />
+              </div>
             </div>
           )}
         </Modal>

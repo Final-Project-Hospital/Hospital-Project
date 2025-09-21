@@ -39,7 +39,6 @@ const normalizeString = (str: any) =>
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';
-import th_TH from 'antd/es/date-picker/locale/th_TH';
 dayjs.locale('th');
 dayjs.extend(customParseFormat);
 dayjs.extend(isBetween);
@@ -915,7 +914,7 @@ const BODdataviz: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+                 
                   allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
@@ -935,7 +934,7 @@ const BODdataviz: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+                 
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={true}
@@ -955,7 +954,7 @@ const BODdataviz: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+                 
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
                   allowClear={true}
@@ -1238,7 +1237,7 @@ const BODdataviz: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+                 
                   allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
@@ -1258,7 +1257,7 @@ const BODdataviz: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+                 
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={true}
@@ -1279,7 +1278,7 @@ const BODdataviz: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+                 
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
                   allowClear={true}

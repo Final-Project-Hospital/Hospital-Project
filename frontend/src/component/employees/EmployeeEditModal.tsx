@@ -1,18 +1,20 @@
-// 📁 components/employees/EmployeeEditModal.tsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Modal, Form, Input, message, Row, Col, Select } from "antd";
 import { CameraOutlined, FormOutlined } from "@ant-design/icons";
 import { EmployeeInterface } from "../../interface/IEmployee";
 import { PositionInterface } from "../../interface/IPosition";
 import { RoleInterface } from "../../interface/IRole";
-import { ListRole, UpdateManageEmployeeByID,ListPositions } from "../../services/httpLogin";
+import {
+  ListRole,
+  UpdateManageEmployeeByID,
+  ListPositions,
+} from "../../services/httpLogin";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   employee: EmployeeInterface | null;
-  /** เดิมส่งมาจาก parent ได้ แต่ตอนนี้จะพยายามดึงจาก service เองก่อน */
   positions?: PositionInterface[];
   isSelf?: boolean;
 };
@@ -27,6 +29,7 @@ const EmployeeEditModal: React.FC<Props> = ({
 }) => {
   const [form] = Form.useForm();
   const [uploadFile, setUploadFile] = useState<File | undefined>();
+  const [profileBase64, setProfileBase64] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
 
   const [roles, setRoles] = useState<RoleInterface[]>([]);
@@ -43,7 +46,7 @@ const EmployeeEditModal: React.FC<Props> = ({
   const loadRoles = useCallback(async () => {
     try {
       setRolesLoading(true);
-      const res = await ListRole(); // ต้องคืน role ทั้ง "ทุกอัน" จากตาราง Role
+      const res = await ListRole();
       setRoles(Array.isArray(res) ? res : []);
     } catch (e: any) {
       console.error(e);
@@ -57,11 +60,10 @@ const EmployeeEditModal: React.FC<Props> = ({
   const loadPositions = useCallback(async () => {
     try {
       setPositionsLoading(true);
-      const res = await ListPositions(); // GET /api/positions
+      const res = await ListPositions();
       if (res && Array.isArray(res)) {
         setPositionsState(res);
       } else {
-        // เผื่อกรณี service ล้มเหลว → fallback ใช้ props ที่ส่งเข้ามา
         setPositionsState(positions);
       }
     } catch (e) {
@@ -76,7 +78,6 @@ const EmployeeEditModal: React.FC<Props> = ({
   useEffect(() => {
     if (!open || !employee) return;
 
-    // เซ็ตค่าเริ่มต้นของฟอร์ม
     form.setFieldsValue({
       firstName: employee.FirstName ?? "",
       lastName: employee.LastName ?? "",
@@ -86,8 +87,8 @@ const EmployeeEditModal: React.FC<Props> = ({
       roleID: employee.Role?.ID ?? undefined,
     });
     setUploadFile(undefined);
+    setProfileBase64(undefined);
 
-    // โหลด roles/positions ทุกครั้งที่เปิด modal เพื่อให้รายการล่าสุด
     loadRoles();
     loadPositions();
   }, [open, employee, form, loadRoles, loadPositions]);
@@ -95,13 +96,22 @@ const EmployeeEditModal: React.FC<Props> = ({
   const handleFileChange = (file?: File) => {
     if (!file) {
       setUploadFile(undefined);
+      setProfileBase64(undefined);
       return;
     }
     if (!file.type.startsWith("image/")) {
       message.error("กรุณาอัปโหลดไฟล์รูปภาพ");
       return;
     }
+
     setUploadFile(file);
+
+    // ✅ แปลงไฟล์เป็น base64
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfileBase64(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleCancel = () => {
@@ -109,6 +119,7 @@ const EmployeeEditModal: React.FC<Props> = ({
     setTimeout(() => {
       form.resetFields();
       setUploadFile(undefined);
+      setProfileBase64(undefined);
     }, 0);
   };
 
@@ -122,37 +133,35 @@ const EmployeeEditModal: React.FC<Props> = ({
         return;
       }
 
-      const formData = new FormData();
-      formData.append("firstName", String(values.firstName));
-      formData.append("lastName", String(values.lastName));
-      formData.append("email", String(values.email));
-      formData.append("phone", String(values.phone));
+      // ✅ payload JSON
+      const payload: any = {
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        phone: values.phone,
+        positionID: values.positionID,
+      };
 
       if (values.password) {
-        formData.append("password", String(values.password));
+        payload.password = values.password;
       }
 
-      if (values.positionID) {
-        formData.append("positionID", String(values.positionID));
-      }
-
-      // ✅ แนบ roleID ตามเงื่อนไข
       if (isSelf) {
-        // แก้ไขข้อมูลตัวเอง → ไม่ให้เปลี่ยนสิทธิ์ เลยยึดตาม role ปัจจุบัน
         if (employee?.Role?.ID != null) {
-          formData.append("roleID", String(employee.Role.ID));
+          payload.roleID = employee.Role.ID;
         }
       } else {
-        // แก้ไขโดยผู้ดูแล → ใช้ค่าที่เลือกจาก Select
         if (values.roleID != null) {
-          formData.append("roleID", String(values.roleID));
+          payload.roleID = values.roleID;
         }
       }
 
-      if (uploadFile) formData.append("profile", uploadFile);
+      if (profileBase64) {
+        payload.profile = profileBase64;
+      }
 
       setLoading(true);
-      await UpdateManageEmployeeByID(employee.ID, formData);
+      await UpdateManageEmployeeByID(employee.ID, payload);
       message.success("แก้ไขข้อมูลสำเร็จ");
       onSuccess();
       onClose();
@@ -180,7 +189,6 @@ const EmployeeEditModal: React.FC<Props> = ({
     }
   };
 
-  // ✅ antd v5: ใช้ options เพื่อความเสถียร (+ search)
   const roleOptions = useMemo(
     () =>
       (roles ?? [])
@@ -314,7 +322,9 @@ const EmployeeEditModal: React.FC<Props> = ({
                 showSearch
                 optionFilterProp="label"
                 allowClear
-                getPopupContainer={(trigger) => trigger.parentElement || document.body}
+                getPopupContainer={(trigger) =>
+                  trigger.parentElement || document.body
+                }
               />
             </Form.Item>
           </Col>
@@ -346,7 +356,9 @@ const EmployeeEditModal: React.FC<Props> = ({
               showSearch
               optionFilterProp="label"
               allowClear
-              getPopupContainer={(trigger) => trigger.parentElement || document.body}
+              getPopupContainer={(trigger) =>
+                trigger.parentElement || document.body
+              }
             />
           </Form.Item>
         )}

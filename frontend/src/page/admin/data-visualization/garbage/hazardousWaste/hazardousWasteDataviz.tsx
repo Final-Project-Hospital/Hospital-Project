@@ -1,6 +1,6 @@
 //ใช้ทั้งกราฟและตาราง
 import React, { useEffect, useRef, useState } from "react";
-import { Select, DatePicker, Modal, message, Tooltip } from "antd";
+import { Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { LeftOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled } from "@ant-design/icons";
@@ -19,7 +19,7 @@ import ApexChart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { ColorPicker } from "antd";
 import type { Color } from "antd/es/color-picker";
-import { BarChart3, LineChart } from "lucide-react";
+import { BarChart3, LineChart, Maximize2 } from "lucide-react";
 
 //ใช้กับตาราง
 import Table, { ColumnsType } from "antd/es/table";
@@ -29,7 +29,6 @@ import HazardousCentralForm from "../../../data-management/garbage/hazardousWast
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';
-import th_TH from 'antd/es/date-picker/locale/th_TH';
 dayjs.locale('th');
 dayjs.extend(customParseFormat);
 dayjs.extend(isBetween);
@@ -52,7 +51,6 @@ const HazardousWaste: React.FC = () => {
   const [aadcData, setAADCData] = useState<{ date: string; avgValue: number; unit: string }[]>([]);
   const [compareMonthlyGarbageQuantity, setcompareMonthlyGarbageQuantity] = useState<{ date: string; monthlyGarbage: number; quantity: number; unit: string }[]>([]);
   const [chartTypeData, setChartTypeData] = useState<'bar' | 'line'>('line');
-  // const [chartTypeAadc, setChartTypeAadc] = useState<'bar' | 'line'>('line');
   const [chartTypeCompareMonthlyGarbageQuantity, setChartTypeCompareMonthlyGarbageQuantity] = useState<'bar' | 'line'>('line');
   const [colorGarbage, setColorGarbage] = useState<string>("#2abdbf");
   const [, setColorAadc] = useState<string>("#1a4b57");//colorAadc
@@ -67,6 +65,8 @@ const HazardousWaste: React.FC = () => {
   const [unit, setUnit] = useState<string>("-");
   const [, setTotalQuantity] = useState<number>(0);//totalQuantity
   const [, setMonthlyQuantityLatestYear] = useState<{ month: string; value: number }[]>([]);//monthlyQuantityLatestYear
+  const [modalGraphType, setModalGraphType] = useState<"garbage" | "garbageperpeople" | null>(null);//modalGraphType
+  const [modalVisible, setModalVisible] = useState(false);
 
   //ใช้กับตาราง
   const [search] = useState(""); //setSearch
@@ -556,6 +556,16 @@ const HazardousWaste: React.FC = () => {
     ...quantityNormalized,
   ];
 
+  const openModal = (type: "garbage" | "garbageperpeople") => {
+    setModalGraphType(type);
+    setModalVisible(true);
+  };
+  //ใช้กับกราฟ
+  const closeModal = () => {
+    setModalVisible(false);
+    setModalGraphType(null);
+  };
+
   //ใช้กับกราฟ --- ฟังก์ชันช่วยแปลงชื่อเดือนไทย ---
   const monthShortNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
   const formatMonthLabel = (monthStr: string) => {
@@ -799,7 +809,7 @@ const HazardousWaste: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
@@ -819,7 +829,7 @@ const HazardousWaste: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={true}
@@ -839,7 +849,7 @@ const HazardousWaste: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
                   allowClear={true}
@@ -865,6 +875,7 @@ const HazardousWaste: React.FC = () => {
                     localStorage.setItem('colorGarbage', hex);
                   }}
                 />
+                <Button className="hazardous-expand-chat" onClick={() => openModal("garbage")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="hazardous-right-select-graph">
@@ -924,6 +935,7 @@ const HazardousWaste: React.FC = () => {
                     localStorage.setItem('colorCompareQuantity', hex);
                   }}
                 />
+                <Button className="hazardous-expand-chat" onClick={() => openModal("garbageperpeople")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="hazardous-right-select-graph">
@@ -998,7 +1010,7 @@ const HazardousWaste: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
@@ -1018,7 +1030,7 @@ const HazardousWaste: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={true}
@@ -1039,7 +1051,7 @@ const HazardousWaste: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
                   allowClear={true}
@@ -1143,6 +1155,107 @@ const HazardousWaste: React.FC = () => {
                 }}
                 onCancel={handleEditModalCancel}
               />
+            </div>
+          )}
+        </Modal>
+
+        <Modal
+          visible={modalVisible}
+          onCancel={closeModal}
+          footer={null}
+          className="hazardous-custom-modal"
+          centered
+          destroyOnClose
+          maskClosable={true}
+        >
+          {modalGraphType === "garbage" && (
+            <div className="hazardous-chat-modal">
+              <div className="hazardous-head-graph-card">
+                <div className="hazardous-width25">
+                  <h2 className="hazardous-head-graph-card-text">ขยะอันตราย</h2>
+                </div>
+              </div>
+              <div className="hazardous-right-select-graph">
+                <Select
+                  value={chartTypeData}
+                  onChange={val => setChartTypeData(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div className="hazardous-chart-containner">
+                <ApexChart
+                  key={chartTypeData}
+                  options={getChartOptions(
+                    listdata.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                    chartTypeData,          // ประเภท chart
+                    filterMode === "year",   // 'day' | 'month' | 'year'
+                    series[0]?.data || [],
+                    true,          // array ของตัวเลข
+                    true,
+                    false              // isPercentChart (true/false)
+                  )} series={series}
+                  type={chartTypeData}
+                  height="100%"
+                />
+              </div>
+            </div>
+          )}
+          {modalGraphType === "garbageperpeople" && (
+            <div className="hazardous-chat-modal">
+              <div className="hazardous-head-graph-card" >
+                <div className="hazardous-width40">
+                  <h2 className="hazardous-head-graph-card-text" >ขยะอันตรายต่อคนที่เข้าใช้บริการ</h2>
+                </div>
+              </div>
+              <div className="hazardous-right-select-graph">
+                <Select
+                  value={chartTypeCompareMonthlyGarbageQuantity}
+                  onChange={val => setChartTypeCompareMonthlyGarbageQuantity(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div className="hazardous-chart-containner">
+                <ApexChart
+                  key={chartTypeCompareMonthlyGarbageQuantity}
+                  options={getChartOptions(
+                    compareMonthlyGarbageQuantity.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                    chartTypeCompareMonthlyGarbageQuantity,          // ประเภท chart
+                    filterMode === "year",   // 'day' | 'month' | 'year'
+                    combinedCompareData,
+                    true,          // array ของตัวเลข
+                    true,
+                    true              // isPercentChart (true/false)
+                  )} series={seriesMonthlyGarbageQuantityNormalized}
+                  type={chartTypeCompareMonthlyGarbageQuantity}
+                  height="100%"
+                />
+              </div>
             </div>
           )}
         </Modal>
