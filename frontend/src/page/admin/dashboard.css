@@ -401,3 +401,53 @@
   flex-wrap: wrap;
   gap: 12px;
 }
+/* ใช้ได้ทั้งการ์ดโดนัทสองใบ – ปรับ selector ให้ตรงกับของคุณ */
+.recycled-box .apexcharts-legend,
+.card .apexcharts-legend {
+  max-height: 120px;      /* สูงเท่าไหร่ให้เลื่อน */
+  overflow-y: auto;
+  padding-right: 6px;     /* เผื่อพื้นที่ให้สกรอลล์บาร์ */
+}
+/* —— สไตล์หลัก: โปร่งใส แท่งสีขาวมน —— */
+.recycled-box .apexcharts-legend,
+.card .apexcharts-legend {
+  scrollbar-width: thin;                          /* Firefox */
+  scrollbar-color: rgba(255,255,255,.75) transparent;
+}
+
+/* WebKit (Chrome/Edge/Safari) */
+.recycled-box .apexcharts-legend::-webkit-scrollbar,
+.card .apexcharts-legend::-webkit-scrollbar {
+  width: 10px;
+}
+
+.recycled-box .apexcharts-legend::-webkit-scrollbar-track,
+.card .apexcharts-legend::-webkit-scrollbar-track {
+  background: transparent;                        /* ไม่มีรางเทา ๆ */
+}
+
+.recycled-box .apexcharts-legend::-webkit-scrollbar-thumb,
+.card .apexcharts-legend::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.85);              /* แท่งสีขาว */
+  border-radius: 999px;                           /* มนยาว */
+  border: 3px solid rgba(255,255,255,.25);        /* ขอบนวล ๆ ให้ดูลอย */
+}
+
+/* ปลายบน/ล่าง (ไอคอนลูกศรแบบรูปแรก) – บราวเซอร์ส่วนใหญ่ยังรองรับปุ่มได้ */
+.recycled-box .apexcharts-legend::-webkit-scrollbar-button:single-button:vertical:decrement,
+.card .apexcharts-legend::-webkit-scrollbar-button:single-button:vertical:decrement {
+  height: 12px;
+  background: linear-gradient(45deg, transparent 50%, rgba(255,255,255,.9) 50%) 50% 60%/60% 60% no-repeat;
+}
+
+.recycled-box .apexcharts-legend::-webkit-scrollbar-button:single-button:vertical:increment,
+.card .apexcharts-legend::-webkit-scrollbar-button:single-button:vertical:increment {
+  height: 12px;
+  background: linear-gradient(-135deg, transparent 50%, rgba(255,255,255,.9) 50%) 50% 40%/60% 60% no-repeat;
+}
+
+/* โฮเวอร์ให้ดูชัดขึ้นเล็กน้อย */
+.recycled-box .apexcharts-legend::-webkit-scrollbar-thumb:hover,
+.card .apexcharts-legend::-webkit-scrollbar-thumb:hover {
+  background: #ffffff;
+}
