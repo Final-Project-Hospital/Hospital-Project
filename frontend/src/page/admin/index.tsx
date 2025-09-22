@@ -39,9 +39,12 @@ import "./dashboard.css";
 import "./skydash-override.css";
 import "dayjs/locale/th";
 import buddhistEra from "dayjs/plugin/buddhistEra";
+import en_US from "antd/es/date-picker/locale/en_US";
 
 dayjs.locale("th");
 dayjs.extend(buddhistEra);
+const formatThaiBE = (d?: Dayjs | null) =>
+  d ? d.locale("th").format("D MMMM BBBB") : "";
 
 interface ParamMeta {
   id: number;
@@ -494,11 +497,24 @@ const AdminDashboard: React.FC = () => {
           qtyMonthMap[k] = (qtyMonthMap[k] || 0) + Number(r.Quantity || 0);
         });
 
-        const saleMonthsOrdered = monthShortTH.filter((m) => m in saleMonthMap);
-        const saleSeriesOrdered = saleMonthsOrdered.map((m) => saleMonthMap[m]);
+        //const saleMonthsOrdered = monthShortTH.filter((m) => m in saleMonthMap);
+        //const saleSeriesOrdered = saleMonthsOrdered.map((m) => saleMonthMap[m]);
+        const salePairs = Object.entries(saleMonthMap)
+          .map(([m, v]) => ({ m, v, idx: monthShortTH.indexOf(m) }))
+          .sort((a, b) => b.idx - a.idx);
 
-        const qtyMonthsOrdered = monthShortTH.filter((m) => m in qtyMonthMap);
-        const qtySeriesOrdered = qtyMonthsOrdered.map((m) => qtyMonthMap[m]);
+        const saleMonthsOrdered = salePairs.map(p => p.m);
+        const saleSeriesOrdered = salePairs.map(p => p.v);
+
+
+        //const qtyMonthsOrdered = monthShortTH.filter((m) => m in qtyMonthMap);
+        //const qtySeriesOrdered = qtyMonthsOrdered.map((m) => qtyMonthMap[m]);
+        const qtyPairs = Object.entries(qtyMonthMap)
+        .map(([m, v]) => ({ m, v, idx: monthShortTH.indexOf(m) }))
+        .sort((a, b) => b.idx - a.idx);
+
+      const qtyMonthsOrdered = qtyPairs.map(p => p.m);
+      const qtySeriesOrdered = qtyPairs.map(p => p.v);
 
         setDonutMonths(saleMonthsOrdered);
         setDonutSeries(saleSeriesOrdered);
@@ -1573,6 +1589,7 @@ const buildOpts = useCallback(
         offsetY: -10,
         markers: { size: 6 },
         fontSize: "11px",
+        labels: { colors: "#FFFFFF" },
       },
       dataLabels: { enabled: false },
       stroke: { show: false },
@@ -1592,6 +1609,7 @@ const buildOpts = useCallback(
               horizontalAlign: "center",
               fontSize: "9px",
               markers: { size: 6 },
+               labels: { colors: "#FFFFFF" },
             },
             plotOptions: { pie: { donut: { size: "70%" } } },
           },
@@ -1611,6 +1629,7 @@ const buildOpts = useCallback(
         offsetY: -10,
         markers: { size: 6 },
         fontSize: "11px",
+         labels: { colors: "#FFFFFF" },
       },
       dataLabels: { enabled: false },
       stroke: { show: false },
@@ -1630,6 +1649,7 @@ const buildOpts = useCallback(
               horizontalAlign: "center",
               fontSize: "9px",
               markers: { size: 6 },
+               labels: { colors: "#FFFFFF" },
             },
             plotOptions: { pie: { donut: { size: "70%" } } },
           },
@@ -1793,29 +1813,33 @@ const buildOpts = useCallback(
                             : null
                         );
                       }}
-                      locale={th_TH}
-                      placeholder={["เริ่ม", "สิ้นสุด"]}
+                      // ป๊อปอัพ ENG ตามรูป 1
+                      locale={en_US}
+                      // ข้อความในช่องเป็นไทย พ.ศ. ตามรูป 2
+                      format={(value) => formatThaiBE(value as Dayjs)}
+                      // ลูกศรคั่นช่วง
+                      separator="  →  "
+                      placeholder={["วันเริ่มต้น", "วันสิ้นสุด"]}
                       allowClear
-                      inputReadOnly                // กันคีย์บอร์ด/เคอร์เซอร์ทำให้เลย์เอาต์กระดิก
-                      format="YYYY-MM-DD"          // ลดความยาวข้อความแสดงผล
+                      inputReadOnly
                       getPopupContainer={() => document.body}
                     />
                   )}
                   {filterMode === "month" && (
                     <DatePicker
                       size="small"
-                      style={{ width: 100 }}
+                      style={{ width: 160 }}              // ขยายให้พอดีกับข้อความไทย
                       picker="month"
                       value={dateRange ? dateRange[0] : null}
                       onChange={(d) => {
                         setAutoRange(false);
-                        setDateRange(
-                          d ? [d.startOf("month"), d.endOf("month")] : null
-                        );
+                        setDateRange(d ? [d.startOf("month"), d.endOf("month")] : null);
                       }}
-                      locale={th_TH}
-                      placeholder="เดือน"
+                      locale={en_US}                      // ป๊อปอัพ ENG
+                      format={(d) => (d ? d.locale("th").format("MMMM BBBB") : "")}  // แสดงในช่องเป็น ไทย + พ.ศ.
+                      placeholder="เลือกเดือน"
                       allowClear
+                      inputReadOnly
                     />
                   )}
                   {filterMode === "year" && (
@@ -1833,7 +1857,7 @@ const buildOpts = useCallback(
                         );
                       }}
                       locale={th_TH}
-                      placeholder={["ปีต้น", "ปีท้าย"]}
+                      placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                       allowClear
                       format="BBBB"
                       inputReadOnly
@@ -2168,14 +2192,23 @@ const buildOpts = useCallback(
               <div className="dashboard-graph-card card pie-clean-card">
                 <div className="pie-header">
                   <div className="teal-title-chip">สัดส่วนขยะ (ต่อเดือน)</div>
+
+                  {/* ใช้ wasteMonth เสมอ ไม่ต้องผูกกับ filterMode */}
                   <DatePicker
+                    size="small"
+                    style={{ width: 160 }}
                     picker="month"
                     value={wasteMonth}
-                    onChange={(d) => setWasteMonth(d ? d.startOf("month") : null)}
-                    locale={th_TH}
-                    allowClear={false}
-                    className="dashboard-picker month-picker-compact"
+                    onChange={(d) => {
+                      setWasteMonth(d ? d.startOf("month") : null); // เลือกเดือนที่อยากดู
+                      setAutoRange(false);                          // ไม่ให้ auto override
+                      // ไม่ต้องยุ่งกับ dateRange ของกราฟอื่น ๆ
+                    }}
+                    locale={en_US} // ป๊อปอัพเป็นอังกฤษ
+                    format={(d) => (d ? d.locale("th").format("MMMM BBBB") : "")} // แสดงไทย + พ.ศ.
                     placeholder="เลือกเดือน"
+                    allowClear
+                    inputReadOnly
                   />
                 </div>
                 {wasteLoading ? (
@@ -2214,7 +2247,7 @@ const buildOpts = useCallback(
                 >
                   <div className="z-10">
                     <div className="opacity-95 mb-2 text-sm sm:text-base md:text-[18px]">
-                      จำนวนยอดขายรวมขยะรีไซเคิลปี {donutYearThai ?? "-"}
+                      จำนวนยอดขายขยะรีไซเคิลรวมปี {donutYearThai ?? "-"}
                     </div>
 
                     <div
@@ -2225,12 +2258,12 @@ const buildOpts = useCallback(
                     </div>
 
                     <div className="mt-1 opacity-95 text-[10px] sm:text-[11px] md:text-xs">
-                      {lastRecordDate ? `Date per ${lastRecordDate}` : ""}
+                      <span className="recycled-box-date">{lastRecordDate ? `ข้อมูลล่าสุด: ${dayjs(lastRecordDate).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
                     </div>
                   </div>
 
                   {/* ★ CHANGED: ตัด scale ออก กำหนดขนาดตามจอ */}
-                  <div className="z-10 origin-center">
+                  <div className="z-10 origin-center legend-scroll">
                     <ApexChart
                       options={donutOptions}
                       series={donutSeries}
@@ -2260,7 +2293,7 @@ const buildOpts = useCallback(
                 >
                   <div className="z-10">
                     <div className="opacity-95 mb-2 text-sm sm:text-base md:text-[18px]">
-                      จำนวนคนที่เข้าใช้บริการรวมปี {donutYearThai ?? "-"}
+                      จำนวนคนที่เข้าใช้บริการโรงพยาบาลรวมปี {donutYearThai ?? "-"}
                     </div>
 
                     <div
@@ -2271,12 +2304,12 @@ const buildOpts = useCallback(
                     </div>
 
                     <div className="mt-1 opacity-95 text-[10px] sm:text-[11px] md:text-xs">
-                      {lastRecordDate ? `Date per ${lastRecordDate}` : ""}
+                      <span className="recycled-box-date">{lastRecordDate ? `ข้อมูลล่าสุด: ${dayjs(lastRecordDate).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
                     </div>
                   </div>
 
                   {/* ★ CHANGED: ขนาดกราฟตามจอ */}
-                  <div className="z-10 origin-center">
+                  <div className="z-10 origin-center legend-scroll">
                     <ApexChart
                       options={qtyDonutOptions}
                       series={qtySeries}
@@ -2285,7 +2318,6 @@ const buildOpts = useCallback(
                       height={cardDonutSize}
                     />
                   </div>
-
                   <div
                     className="absolute right-0 top-0 w-[60%] h-[60%] rounded-bl-full pointer-events-none"
                     style={{
