@@ -1,6 +1,6 @@
 //ใช้ทั้งกราฟและตาราง
 import React, { useEffect, useRef, useState } from "react";
-import { Select, DatePicker, Modal, message, Tooltip } from "antd";
+import { Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { LeftOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled } from "@ant-design/icons";
@@ -19,7 +19,7 @@ import ApexChart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { ColorPicker } from "antd";
 import type { Color } from "antd/es/color-picker";
-import { BarChart3, LineChart } from "lucide-react";
+import { BarChart3, LineChart, Maximize2 } from "lucide-react";
 import Chart from "react-apexcharts";
 
 //ใช้กับตาราง
@@ -30,7 +30,6 @@ import RecycledCentralForm from "../../../data-management/garbage/recycledWaste/
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';
-import th_TH from 'antd/es/date-picker/locale/th_TH';
 dayjs.locale('th');
 dayjs.extend(customParseFormat);
 dayjs.extend(isBetween);
@@ -70,6 +69,8 @@ const Recycleddataviz: React.FC = () => {
   const [monthlyQuantityLatestYear, setMonthlyQuantityLatestYear] = useState<{ month: string; value: number; unit: string }[]>([]);
   const [totalTotalSale, setTotalSale] = useState<number>(0);
   const [monthlyTotalSaleLatestYear, setMonthlyTotalSaleLatestYear] = useState<{ month: string; value: number; unit: string }[]>([]);
+  const [modalGraphType, setModalGraphType] = useState<"garbage" | "garbageperpeople" | "totalsale" | null>(null);//modalGraphType
+  const [modalVisible, setModalVisible] = useState(false);
 
 
   //ใช้กับตาราง
@@ -591,6 +592,16 @@ const Recycleddataviz: React.FC = () => {
     return `${monthShortNames[monthIndex]} ${thaiYear}`;
   };
 
+  const openModal = (type: "garbage" | "garbageperpeople" | "totalsale") => {
+    setModalGraphType(type);
+    setModalVisible(true);
+  };
+  //ใช้กับกราฟ
+  const closeModal = () => {
+    setModalVisible(false);
+    setModalGraphType(null);
+  };
+
   //ใช้กับตาราง
   const columns: ColumnsType<any> = [
     {
@@ -794,7 +805,7 @@ const Recycleddataviz: React.FC = () => {
               <span>
                 {lastDayRecycled !== null ? (
                   <>
-                    <span className="recycled-value">{lastDayRecycled.MonthlyGarbage.toLocaleString()}</span>{" "}
+                    <span className="recycled-value">{lastDayRecycled.MonthlyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayRecycled.UnitName || ""}
                   </>
                 ) : (
@@ -811,7 +822,7 @@ const Recycleddataviz: React.FC = () => {
               <span>
                 {lastDayRecycled !== null ? (
                   <>
-                    <span className="recycled-value">{lastDayRecycled.AverageDailyGarbage.toLocaleString()}</span>{" "}
+                    <span className="recycled-value">{lastDayRecycled.AverageDailyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayRecycled.UnitName || ""}
                   </>
                 ) : (
@@ -862,7 +873,7 @@ const Recycleddataviz: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
@@ -882,7 +893,7 @@ const Recycleddataviz: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={true}
@@ -902,7 +913,7 @@ const Recycleddataviz: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
                   allowClear={true}
@@ -928,6 +939,7 @@ const Recycleddataviz: React.FC = () => {
                     localStorage.setItem('colorGarbage', hex);
                   }}
                 />
+                <Button className="recycled-expand-chat" onClick={() => openModal("garbage")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="recycled-right-select-graph">
@@ -987,6 +999,7 @@ const Recycleddataviz: React.FC = () => {
                     localStorage.setItem('colorCompareQuantity', hex);
                   }}
                 />
+                <Button className="recycled-expand-chat" onClick={() => openModal("garbageperpeople")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="recycled-right-select-graph">
@@ -1038,6 +1051,7 @@ const Recycleddataviz: React.FC = () => {
                     localStorage.setItem('colorGarbage', hex);
                   }}
                 />
+                <Button className="recycled-expand-chat" onClick={() => openModal("totalsale")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="recycled-right-select-graph">
@@ -1081,7 +1095,7 @@ const Recycleddataviz: React.FC = () => {
               <div className="recycled-box-number">
                 <div>
                   <div >
-                    {totalMonthlyGarbage.toLocaleString()} Kg
+                    {new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2, }).format(totalMonthlyGarbage)} Kg
                   </div >
                   <div>
                     <Chart
@@ -1094,7 +1108,7 @@ const Recycleddataviz: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
+              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date ? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
             </div>
             <div className="recycled-box">
               <div className="recycled-box-title">จำนวนคนที่เข้าใช้บริการโรงพยาบาลรวมปี {latestYear}</div>
@@ -1114,14 +1128,14 @@ const Recycleddataviz: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
+              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date ? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
             </div>
             <div className="recycled-box">
               <div className="recycled-box-title">จำนวนยอดขายขยะรีไซเคิลรวมปี {latestYear}</div>
               <div className="recycled-box-number">
                 <div>
                   <div >
-                    {totalTotalSale.toLocaleString()} บาท
+                    {new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2, }).format(totalTotalSale)} บาท
                   </div >
                   <div>
                     <Chart
@@ -1134,7 +1148,7 @@ const Recycleddataviz: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
+              <span className="recycled-box-date">{lastDayRecycled && lastDayRecycled.Date ? `ข้อมูลล่าสุด: ${dayjs(lastDayRecycled.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
             </div>
           </div>
         </div>
@@ -1174,7 +1188,7 @@ const Recycleddataviz: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
@@ -1194,7 +1208,7 @@ const Recycleddataviz: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={true}
@@ -1215,7 +1229,7 @@ const Recycleddataviz: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
                   allowClear={true}
@@ -1321,6 +1335,152 @@ const Recycleddataviz: React.FC = () => {
               />
             )}
           </div>
+        </Modal>
+
+        <Modal
+          visible={modalVisible}
+          onCancel={closeModal}
+          footer={null}
+          className="recycled-custom-modal"
+          centered
+          destroyOnClose
+          maskClosable={true}
+        >
+          {modalGraphType === "garbage" && (
+            <div className="recycled-chat-modal">
+              <div className="recycled-head-graph-card">
+                <div className="recycled-width25">
+                  <h2 className="recycled-head-graph-card-text">ขยะรีไซเคิล</h2>
+                </div>
+              </div>
+              <div className="recycled-right-select-graph">
+                <Select
+                  value={chartTypeData}
+                  onChange={val => setChartTypeData(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div className="recycled-chart-containner">
+                <ApexChart
+                  key={chartTypeData}
+                  options={getChartOptions(
+                    listdata.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                    chartTypeData,          // ประเภท chart
+                    filterMode === "year",   // 'day' | 'month' | 'year'
+                    series[0]?.data || [],
+                    true,          // array ของตัวเลข
+                    false,
+                    false,             // isPercentChart (true/false)
+                  )} series={series}
+                  type={chartTypeData}
+                  height="100%"
+                />
+              </div>
+            </div>
+          )}
+          {modalGraphType === "garbageperpeople" && (
+            <div className="recycled-chat-modal">
+              <div className="recycled-head-graph-card" >
+                <div className="recycled-width40">
+                  <h2 className="recycled-head-graph-card-text" >ขยะรีไซเคิลต่อคนที่เข้าใช้บริการ</h2>
+                </div>
+              </div>
+              <div className="recycled-right-select-graph">
+                <Select
+                  value={chartTypeCompareMonthlyGarbageQuantity}
+                  onChange={val => setChartTypeCompareMonthlyGarbageQuantity(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div className="recycled-chart-containner">
+                <ApexChart
+                  key={chartTypeCompareMonthlyGarbageQuantity}
+                  options={getChartOptions(
+                    compareMonthlyGarbageQuantity.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                    chartTypeCompareMonthlyGarbageQuantity,          // ประเภท chart
+                    filterMode === "year",   // 'day' | 'month' | 'year'
+                    combinedCompareData,
+                    true,          // array ของตัวเลข
+                    false,
+                    true            // isPercentChart (true/false)
+                  )} series={seriesMonthlyGarbageQuantityNormalized}
+                  type={chartTypeCompareMonthlyGarbageQuantity}
+                  height="100%"
+                />
+              </div>
+            </div>
+          )}
+          {modalGraphType === "totalsale" && (
+            <div className="recycled-chat-modal">
+              <div className="recycled-head-graph-card" >
+                <div className="recycled-width40">
+                  <h2 className="recycled-head-graph-card-text" >ยอดขายขยะรีไซเคิล</h2>
+                </div>
+              </div>
+              <div className="recycled-right-select-graph">
+                <Select
+                  value={chartTypeTotalSale}
+                  onChange={val => setChartTypeTotalSale(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div className="recycled-chart-containner">
+                <ApexChart
+                  key={chartTypeTotalSale}
+                  options={getChartOptions(
+                    TotalSaleData.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                    chartTypeTotalSale,          // ประเภท chart
+                    filterMode === "year",   // 'day' | 'month' | 'year'
+                    seriesTotalSale[0]?.data || [],
+                    true,          // array ของตัวเลข
+                    true,
+                    false,           // isPercentChart (true/false)
+                  )} series={seriesTotalSale}
+                  type={chartTypeTotalSale}
+                  height="100%"
+                />
+              </div>
+            </div>
+          )}
         </Modal>
       </div>
     </div>

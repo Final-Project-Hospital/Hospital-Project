@@ -1,6 +1,6 @@
 //ใช้ทั้งกราฟและตาราง
 import React, { useEffect, useRef, useState } from "react";
-import { Select, DatePicker, Modal, message, Tooltip } from "antd";
+import { Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { LeftOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled } from "@ant-design/icons";
@@ -19,7 +19,7 @@ import ApexChart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { ColorPicker } from "antd";
 import type { Color } from "antd/es/color-picker";
-import { BarChart3, LineChart } from "lucide-react";
+import { BarChart3, LineChart, Maximize2 } from "lucide-react";
 
 //ใช้กับตาราง
 import Table, { ColumnsType } from "antd/es/table";
@@ -29,7 +29,6 @@ import ChemicalCentralForm from "../../../data-management/garbage/chemicalWaste/
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';
-import th_TH from 'antd/es/date-picker/locale/th_TH';
 dayjs.locale('th');
 dayjs.extend(customParseFormat);
 dayjs.extend(isBetween);
@@ -52,7 +51,6 @@ const ChemicalWaste: React.FC = () => {
   const [aadcData, setAADCData] = useState<{ date: string; avgValue: number; unit: string }[]>([]);
   const [compareMonthlyGarbageQuantity, setcompareMonthlyGarbageQuantity] = useState<{ date: string; monthlyGarbage: number; quantity: number; unit: string }[]>([]);
   const [chartTypeData, setChartTypeData] = useState<'bar' | 'line'>('line');
-  // const [chartTypeAadc, setChartTypeAadc] = useState<'bar' | 'line'>('line');
   const [chartTypeCompareMonthlyGarbageQuantity, setChartTypeCompareMonthlyGarbageQuantity] = useState<'bar' | 'line'>('line');
   const [colorGarbage, setColorGarbage] = useState<string>("#2abdbf");
   const [, setColorAadc] = useState<string>("#1a4b57");//colorAadc
@@ -67,6 +65,8 @@ const ChemicalWaste: React.FC = () => {
   const [unit, setUnit] = useState<string>("-");
   const [, setTotalQuantity] = useState<number>(0);//totalQuantity
   const [, setMonthlyQuantityLatestYear] = useState<{ month: string; value: number }[]>([]);//monthlyQuantityLatestYear
+  const [modalGraphType, setModalGraphType] = useState<"garbage" | "garbageperpeople" | null>(null);//modalGraphType
+  const [modalVisible, setModalVisible] = useState(false);
 
   //ใช้กับตาราง
   const [search] = useState(""); //setSearch
@@ -551,16 +551,15 @@ const ChemicalWaste: React.FC = () => {
     ...garbageNormalized,
     ...quantityNormalized,
   ];
-  // //ใช้กับกราฟ
-  // const openModal = (type: "before" | "after" | "compare" | "percentChange") => {
-  //   setModalGraphType(type);
-  //   setModalVisible(true);
-  // };
-  // //ใช้กับกราฟ
-  // const closeModal = () => {
-  //   setModalVisible(false);
-  //   setModalGraphType(null);
-  // };
+  const openModal = (type: "garbage" | "garbageperpeople") => {
+    setModalGraphType(type);
+    setModalVisible(true);
+  };
+  //ใช้กับกราฟ
+  const closeModal = () => {
+    setModalVisible(false);
+    setModalGraphType(null);
+  };
 
   //ใช้กับกราฟ --- ฟังก์ชันช่วยแปลงชื่อเดือนไทย ---
   const monthShortNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
@@ -737,7 +736,7 @@ const ChemicalWaste: React.FC = () => {
               <span>
                 {lastDayChemical !== null ? (
                   <>
-                    <span className="chemical-value">{lastDayChemical.MonthlyGarbage.toLocaleString()}</span>{" "}
+                    <span className="chemical-value">{lastDayChemical.MonthlyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayChemical.UnitName || ""}
                   </>
                 ) : (
@@ -754,7 +753,7 @@ const ChemicalWaste: React.FC = () => {
               <span>
                 {lastDayChemical !== null ? (
                   <>
-                    <span className="chemical-value">{lastDayChemical.AverageDailyGarbage.toLocaleString()}</span>{" "}
+                    <span className="chemical-value">{lastDayChemical.AverageDailyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayChemical.UnitName || ""}
                   </>
                 ) : (
@@ -805,7 +804,7 @@ const ChemicalWaste: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
@@ -825,7 +824,7 @@ const ChemicalWaste: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={true}
@@ -845,7 +844,7 @@ const ChemicalWaste: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
                   allowClear={true}
@@ -871,6 +870,7 @@ const ChemicalWaste: React.FC = () => {
                     localStorage.setItem('colorGarbage', hex);
                   }}
                 />
+                <Button className="chemical-expand-chat" onClick={() => openModal("garbage")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="chemical-right-select-graph">
@@ -930,6 +930,7 @@ const ChemicalWaste: React.FC = () => {
                     localStorage.setItem('colorCompareQuantity', hex);
                   }}
                 />
+                <Button className="chemical-expand-chat" onClick={() => openModal("garbageperpeople")}><Maximize2 /></Button>
               </div>
             </div>
             <div className="chemical-right-select-graph">
@@ -1004,7 +1005,7 @@ const ChemicalWaste: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
@@ -1024,7 +1025,7 @@ const ChemicalWaste: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={true}
@@ -1045,7 +1046,7 @@ const ChemicalWaste: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
                   allowClear={true}
@@ -1149,6 +1150,107 @@ const ChemicalWaste: React.FC = () => {
                 }}
                 onCancel={handleEditModalCancel}
               />
+            </div>
+          )}
+        </Modal>
+
+        <Modal
+          visible={modalVisible}
+          onCancel={closeModal}
+          footer={null}
+          className="chemical-custom-modal"
+          centered
+          destroyOnClose
+          maskClosable={true}
+        >
+          {modalGraphType === "garbage" && (
+            <div className="chemical-chat-modal">
+              <div className="chemical-head-graph-card">
+                <div className="chemical-width25">
+                  <h2 className="chemical-head-graph-card-text">ขยะเคมีบำบัด</h2>
+                </div>
+              </div>
+              <div className="chemical-right-select-graph">
+                <Select
+                  value={chartTypeData}
+                  onChange={val => setChartTypeData(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div className="chemical-chart-containner">
+                <ApexChart
+                  key={chartTypeData}
+                  options={getChartOptions(
+                    listdata.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                    chartTypeData,          // ประเภท chart
+                    filterMode === "year",   // 'day' | 'month' | 'year'
+                    series[0]?.data || [],
+                    true,          // array ของตัวเลข
+                    true,
+                    false,            // isPercentChart (true/false)
+                  )} series={series}
+                  type={chartTypeData}
+                  height="100%"
+                />
+              </div>
+            </div>
+          )}
+          {modalGraphType === "garbageperpeople" && (
+            <div className="chemical-chat-modal">
+              <div className="chemical-head-graph-card" >
+                <div className="chemical-width40">
+                  <h2 className="chemical-head-graph-card-text" >ขยะเคมีบำบัดต่อคนที่เข้าใช้บริการ</h2>
+                </div>
+              </div>
+              <div className="chemical-right-select-graph">
+                <Select
+                  value={chartTypeCompareMonthlyGarbageQuantity}
+                  onChange={val => setChartTypeCompareMonthlyGarbageQuantity(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div className="chemical-chart-containner">
+                <ApexChart
+                  key={chartTypeCompareMonthlyGarbageQuantity}
+                  options={getChartOptions(
+                    compareMonthlyGarbageQuantity.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                    chartTypeCompareMonthlyGarbageQuantity,          // ประเภท chart
+                    filterMode === "year",   // 'day' | 'month' | 'year'
+                    combinedCompareData,
+                    true,          // array ของตัวเลข
+                    true,
+                    true,              // isPercentChart (true/false)
+                  )} series={seriesMonthlyGarbageQuantityNormalized}
+                  type={chartTypeCompareMonthlyGarbageQuantity}
+                  height="100%"
+                />
+              </div>
             </div>
           )}
         </Modal>
