@@ -181,7 +181,7 @@ func main() {
 		authorized.PUT("/hardware-parameter/:id/group-display", hardware.UpdateGroupDisplayByID)         
 		authorized.PATCH("/sensor-data-parameter/:id/note", hardware.CreateNoteBySensorDataParameterID) 
 		authorized.PATCH("/hardware-parameters/:id/layout-display", hardware.UpdateLayoutDisplayByID)      
-		authorized.PATCH("/update-hardware-parameter-color/:id", hardware.UpdateHardwareParameterColorByID)
+		authorized.PATCH("/hardware-parameters/:id/color", hardware.AttachColorToHardwareParameter)
 		authorized.POST("/employees/:id/check-password", hardware.CheckPasswordByID)                       
 		authorized.GET("/report-hardware", report.ListReportHardware)
 		authorized.PUT("/update-hardware/:id", hardware.UpdateHardwareByID) 
@@ -609,7 +609,7 @@ func main() {
 		c.String(http.StatusOK, "API RUNNING... PORT: %s", PORT)
 	})
 
-	// r.Run("localhost:" + PORT)
+	//r.Run("localhost:" + PORT)
 	r.Run("0.0.0.0:" + PORT)
 
 }

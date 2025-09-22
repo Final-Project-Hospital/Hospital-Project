@@ -3,6 +3,11 @@
 #include <HardwareSerial.h>
 #include <DHT.h>
 
+// =============== เพิ่มสำหรับ WiFi / HTTP / เวลา ===============
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <time.h>
+
 // ===================== RS485 <-> ESP32 wiring =====================
 // ESP32 TXD2(17) -> DI
 // ESP32 RXD2(16) <- RO
@@ -10,8 +15,8 @@
 // GND ↔ GND
 // RS485 bus A(D+) -> DB9 pin 9, B(D-) -> DB9 pin 8 (HMI COM1)
 
-// RS485
-#define PIN_DE_RE  4
+// ===================== RS485 / Modbus =====================
+#define PIN_DE_RE  18
 #define PIN_RXD2   16
 #define PIN_TXD2   17
 #define BAUDRATE   9600
@@ -19,8 +24,8 @@
 
 // LW0..LW7
 #define ADDR_LW0   0   // Formaldehyde raw (ppm *1000)
-#define ADDR_LW1   1   // Temp raw
-#define ADDR_LW2   2   // Humi raw
+#define ADDR_LW1   1   // Temp raw (x100)
+#define ADDR_LW2   2   // Humi raw (x100)
 #define ADDR_LW4   4   // Formaldehyde status
 #define ADDR_LW5   5   // Temp status
 #define ADDR_LW6   6   // Humi status
@@ -33,7 +38,7 @@ static const uint32_t SENSOR_BAUD = 9600;
 HardwareSerial zeSerial(1);
 
 // ===================== DHT11 =====================
-#define DHTPIN 8
+#define DHTPIN 4
 #define DHTTYPE DHT11
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -47,7 +52,7 @@ bool lw7Triggered = false;
 uint32_t lastTrigger = 0;
 
 // ===================== Calibration =====================
-#define CALIB_FACTOR 21.0f   // ปรับค่าตามเครื่องมือแพทย์ (0.02 → 0.42 ppm ≈ 21x)
+#define CALIB_FACTOR 21.0f   // ปรับค่าตามเครื่องมือแพทย์
 #define DEADZONE     0.01f   // ถ้าต่ำกว่า 0.01 ppm → บังคับเป็น 0
 
 // ===================== Moving Average =====================
@@ -56,13 +61,27 @@ float formBuf[AVG_SIZE];
 int bufIndex = 0;
 bool bufFilled = false;
 
-// Callback หลังเขียนเสร็จ
+// ===================== WiFi / HTTP / NTP =====================
+const char *ssid = "vivo Y33T";
+const char *password = "0935096372";
+const char *serverName = "http://cpeoffice.sut.ac.th/envi/api/hardware/read";
+
+// NTP Time config
+const char *ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = 7 * 3600;
+const int daylightOffset_sec = 0;
+
+// กำหนดช่วงเวลาในการ POST (มิลลิวินาที)
+const uint32_t HTTP_POST_INTERVAL = 120000; // 120 วินาที
+uint32_t lastHttpPost = 0;
+
+// ===================== Utilities =====================
 bool cbWrite(Modbus::ResultCode rc, uint16_t, void*) {
   busy = false;
   return true;
 }
 
-// ===================== อ่านค่า ZE08 + smoothing =====================
+// ฟังก์ชันอ่าน ZE08
 float readZE08Avg() {
   float ppm = -1;
 
@@ -86,18 +105,87 @@ float readZE08Avg() {
   // apply deadzone
   if (ppm < DEADZONE) ppm = 0;
 
-  // save to buffer
+  // บันทึกลงบัฟเฟอร์เพื่อทำ moving average
   formBuf[bufIndex++] = ppm;
   if (bufIndex >= AVG_SIZE) {
     bufIndex = 0;
     bufFilled = true;
   }
 
-  // calculate average
+  // คำนวณค่าเฉลี่ย
   int n = bufFilled ? AVG_SIZE : bufIndex;
   float sum = 0;
   for (int i = 0; i < n; i++) sum += formBuf[i];
-  return (n > 0) ? sum / n : ppm;
+  float avg = (n > 0) ? sum / n : ppm;
+
+  return avg;
+}
+
+// ฟังก์ชันอ่าน DHT แบบ retry + fallback
+float readTemperatureSafe() {
+  for (int i = 0; i < 3; i++) {
+    float t = dht.readTemperature();
+    if (!isnan(t)) return t;
+    delay(100);
+  }
+  return NAN;
+}
+
+float readHumiditySafe() {
+  for (int i = 0; i < 3; i++) {
+    float h = dht.readHumidity();
+    if (!isnan(h)) return h;
+    delay(100);
+  }
+  return NAN;
+}
+
+void getCurrentDateTime(String &dateStr, String &timeStr) {
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo)) {
+    char dateBuf[11], timeBuf[9];
+    strftime(dateBuf, sizeof(dateBuf), "%Y-%m-%d", &timeinfo);
+    strftime(timeBuf, sizeof(timeBuf), "%H:%M:%S", &timeinfo);
+    dateStr = String(dateBuf);
+    timeStr = String(timeBuf);
+  } else {
+    dateStr = "0000-00-00";
+    timeStr = "00:00:00";
+  }
+}
+
+// สร้าง JSON payload
+String buildJsonPayload(float form_ppm, float temp_c, float humi_pct) {
+  if (isnan(form_ppm)) form_ppm = 0;
+  if (isnan(temp_c))   temp_c   = 0;
+  if (isnan(humi_pct)) humi_pct = 0;
+
+  String json = "{";
+  json += "\"name\":\"ESP32-001\",";
+  json += "\"ip_address\":\"" + WiFi.localIP().toString() + "\",";
+  json += "\"parameters\":[";
+  json += "{\"parameter\":\"Formaldehyde\",\"data\":" + String(form_ppm, 2) + "},";
+  json += "{\"parameter\":\"Temperature\",\"data\":" + String(temp_c, 2) + "},";
+  json += "{\"parameter\":\"Humidity\",\"data\":" + String(humi_pct, 2) + "}";
+  json += "]}";
+  return json;
+}
+
+void ensureWiFiConnected() {
+  if (WiFi.status() == WL_CONNECTED) return;
+
+  Serial.print("Connecting to WiFi");
+  WiFi.begin(ssid, password);
+  uint32_t startAttempt = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - startAttempt < 15000) {
+    delay(500);
+    Serial.print(".");
+  }
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nWiFi connected. IP: " + WiFi.localIP().toString());
+  } else {
+    Serial.println("\nWiFi connect timeout.");
+  }
 }
 
 // ===================== SETUP =====================
@@ -109,74 +197,101 @@ void setup() {
 
   // DHT
   dht.begin();
+  delay(2000); // รอเซนเซอร์พร้อม
 
   // Modbus
   Serial2.begin(BAUDRATE, SERIAL_8N1, PIN_RXD2, PIN_TXD2);
   mb.begin(&Serial2, PIN_DE_RE);
   mb.master();
 
-  Serial.println("System start: ZE08 + DHT11 -> Modbus RTU to HMI (ppm calibrated + smoothed)");
+  // WiFi + NTP
+  ensureWiFiConnected();
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Failed to obtain time via NTP");
+  } else {
+    Serial.println(&timeinfo, "Time acquired: %Y-%m-%d %H:%M:%S");
+  }
+
+  Serial.println("System start: ZE08 + DHT11 -> Modbus RTU to HMI + HTTP POST to backend");
 }
 
 // ===================== LOOP =====================
 void loop() {
   mb.task();
 
-  static uint32_t last = 0;
-  if (!busy && millis() - last > 5000) {
-    // ====================== อ่านค่า Formaldehyde ======================
+  static uint32_t lastModbus = 0;
+  if (!busy && millis() - lastModbus > 10000) {
     float f = readZE08Avg();
 
-    regsAll[0] = (uint16_t)(f * 1000); // เก็บเป็น int x1000 (ppm)
+    // อ่าน DHT แบบปลอดภัย
+    float t = readTemperatureSafe();
+    float h = readHumiditySafe();
 
-    if (f < 0.030) {  // <0.030 ppm
-      regsAll[4] = 0;   // ต่ำ
-    } else if (f <= 0.050) {  // 0.030-0.050
-      regsAll[4] = 1;   // ปกติ
-    } else {
-      regsAll[4] = 2;   // สูง
-      regsAll[7] = 1;   // Trigger
-      lw7Triggered = true;
-      lastTrigger = millis();
+    // ถ้าอ่านไม่ได้ ให้ใช้ค่าล่าสุด
+    if (isnan(t)) {
+      Serial.println("⚠️ ใช้ค่า Temp ล่าสุดแทน");
+      t = regsAll[1] / 100.0f;
+    }
+    if (isnan(h)) {
+      Serial.println("⚠️ ใช้ค่า Humi ล่าสุดแทน");
+      h = regsAll[2] / 100.0f;
     }
 
-    // ====================== อ่านค่า DHT11 ======================
-    float t = dht.readTemperature();
-    float h = dht.readHumidity();
+    regsAll[0] = (uint16_t)(f * 1000.0f);
+    regsAll[1] = (uint16_t)(t * 100.0f);
+    regsAll[2] = (uint16_t)(h * 100.0f);
 
-    if (isnan(t)) t = 0;
-    if (isnan(h)) h = 0;
+    // สถานะ
+    if (f < 0.030f) regsAll[4] = 0;
+    else if (f <= 0.050f) regsAll[4] = 1;
+    else { regsAll[4] = 2; regsAll[7] = 1; lw7Triggered = true; lastTrigger = millis(); }
 
-    regsAll[1] = (uint16_t)(t * 100); // temp ×100
-    regsAll[2] = (uint16_t)(h * 100); // humi ×100
+    if (regsAll[1] < 2500) regsAll[5] = 0;
+    else if (regsAll[1] <= 3000) regsAll[5] = 1;
+    else regsAll[5] = 2;
 
-    if (regsAll[1] < 2500) regsAll[5] = 0;   // ต่ำ
-    else if (regsAll[1] <= 3000) regsAll[5] = 1; // ปกติ
-    else regsAll[5] = 2;   // สูง
+    if (regsAll[2] < 4000) regsAll[6] = 0;
+    else if (regsAll[2] <= 6000) regsAll[6] = 1;
+    else regsAll[6] = 2;
 
-    if (regsAll[2] < 4000) regsAll[6] = 0;   // ต่ำ
-    else if (regsAll[2] <= 6000) regsAll[6] = 1; // ปกติ
-    else regsAll[6] = 2;   // สูง
-
-    // ====================== ส่งค่า LW0–LW7 ======================
     if (mb.writeHreg(HMI_ID, ADDR_LW0, regsAll, 8, cbWrite)) {
       busy = true;
-      last = millis();
+      lastModbus = millis();
+
       Serial.printf("RawCalAvg -> Form=%.3f ppm | Temp=%.2f °C | Humi=%.2f %% | LW7=%d\n",
                     f, t, h, regsAll[7]);
+    }
 
-      const char* formStatus[] = {"ต่ำ", "ปกติ", "สูง"};
-      const char* tempStatus[] = {"ต่ำ", "ปกติ", "สูง"};
-      const char* humiStatus[] = {"ต่ำ", "ปกติ", "สูง"};
+    if (millis() - lastHttpPost >= HTTP_POST_INTERVAL) {
+      ensureWiFiConnected();
+      if (WiFi.status() == WL_CONNECTED) {
+        String dateStr, timeStr;
+        getCurrentDateTime(dateStr, timeStr);
 
-      Serial.printf("Status -> Form=%s | Temp=%s | Humi=%s\n",
-                    formStatus[regsAll[4]],
-                    tempStatus[regsAll[5]],
-                    humiStatus[regsAll[6]]);
+        String json = buildJsonPayload(f, t, h);
+        Serial.println("Sending: " + json);
+
+        HTTPClient http;
+        http.begin(serverName);
+        http.addHeader("Content-Type", "application/json");
+        int httpCode = http.POST(json);
+
+        if (httpCode > 0) {
+          Serial.printf("HTTP Response: %d\n", httpCode);
+          String res = http.getString();
+          if (res.length() > 0) Serial.println("Response: " + res);
+        } else {
+          Serial.printf("❌ HTTP POST failed: %s\n", http.errorToString(httpCode).c_str());
+        }
+        http.end();
+      }
+      lastHttpPost = millis();
     }
   }
 
-  // ✅ รีเซ็ต LW7 หลัง Trigger 2 วินาที
+  // รีเซ็ต LW7
   if (lw7Triggered && millis() - lastTrigger >= 2000 && !busy) {
     regsAll[7] = 0;
     if (mb.writeHreg(HMI_ID, ADDR_LW7, regsAll[7], cbWrite)) {
