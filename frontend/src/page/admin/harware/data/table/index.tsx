@@ -737,7 +737,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
     {
       title: (
         <span className="col-title bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent font-bold">
-          Action
+          จัดการ
         </span>
       ),
       key: "action",
