@@ -14,9 +14,12 @@ const Login = ({ handleForgot }: any) => {
   const [messageApi, contextHolder] = message.useMessage();
   const navigate = useNavigate();
 
+  
+
   const clickLoginbt = async (datalogin: LoginInterface) => {
     setLoading(true);
     let res = await AddLogin(datalogin);
+    console.log(res)
 
     if (res.status === 200) {
       localStorage.setItem("token", res.data.token);
@@ -64,6 +67,7 @@ const Login = ({ handleForgot }: any) => {
       return;
     }
     const datalogin: LoginInterface = { email: email.trim(), password: password };
+    console.log(datalogin)
     await clickLoginbt(datalogin);
   };
 

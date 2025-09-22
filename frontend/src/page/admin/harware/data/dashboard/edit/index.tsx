@@ -18,8 +18,8 @@ import {
   ListHardwareParameterByHardwareID,
   UpdateGroupDisplay, // ✅ ใช้ตัวนี้ยิง group_display + index + right พร้อมกัน
   UpdateLayoutDisplay,
-  UpdateHardwareParameterColorByID,
   ListDataGraph, // ✅ ดึง "กราฟทั้งหมด" จาก backend
+  AttachColorToHardwareParameter
 } from "../../../../../../services/hardware";
 import { ColorPicker } from "antd";
 import LineChartingImg from "../../../../../../assets/chart/LineCharting.png";
@@ -696,6 +696,12 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
   // ---------- save ----------
   const handleSave = async () => {
     setSaving(true);
+    const plan: Array<{
+      type: string;
+      paramId?: number;
+      parameter?: string;
+      payload?: any;
+    }> = [];
     try {
       // 1) คำนวณ index/right + กราฟจากเลย์เอาต์
       const indexByParamId = new Map<number, number>();
@@ -755,18 +761,32 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
         }
 
         // (b) Color per parameter
+        // (b) Color per parameter — ใช้ "ParameterID + code" → ให้ BE หา/สร้างสี แล้วผูกให้พารามิเตอร์
         if (
           (!old || old.HardwareParameterColorCode !== cur.HardwareParameterColorCode) &&
-          cur.HardwareParameterColorID
+          cur.HardwareParameterColorCode // ← ต้องมีโค้ดสี (string)
         ) {
+          plan.push({
+            type: "AttachColorToHardwareParameter",
+            paramId: cur.ID,
+            parameter: cur.Parameter,
+            payload: {
+              code: cur.HardwareParameterColorCode,
+              employee_id: employeeid,
+            },
+          });
           updates.push(
-            UpdateHardwareParameterColorByID(
-              cur.HardwareParameterColorID,
-              cur.HardwareParameterColorCode || "#000000",
+            AttachColorToHardwareParameter(
+              cur.ID, // ✅ ใช้ ParameterID
+              cur.HardwareParameterColorCode, // ✅ code
               employeeid
             )
           );
         }
+
+        console.log(cur.HardwareParameterColorID,
+          cur.HardwareParameterColorCode || "#000000",
+          employeeid)
 
         // (c) GroupDisplay + Index + Right (ใช้ endpoint เดียว)
         const desiredIndex = indexByParamId.get(cur.ID); // undefined = ไม่ถูกวางในเลย์เอาต์
@@ -924,9 +944,8 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                     <div className="text-gray-500 text-sm">ทุกพารามิเตอร์ถูกใช้อยู่ในเลย์เอาต์แล้ว</div>
                   ) : (
                     <div
-                      className={`flex flex-col gap-2 ${
-                        visibleParams.length > 7 ? "max-h-[60vh] overflow-y-auto pr-1" : ""
-                      }`}
+                      className={`flex flex-col gap-2 ${visibleParams.length > 7 ? "max-h-[60vh] overflow-y-auto pr-1" : ""
+                        }`}
                     >
                       {visibleParams.map((rowParam) => (
                         <div
@@ -1069,9 +1088,8 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
                             return (
                               <div
                                 key={subIdx}
-                                className={`relative rounded-xl border p-3 min-h=[160px] min-h-[160px] transition ${
-                                  isOver ? "border-teal-400 bg-teal-50" : "border-gray-300 bg-gray-50"
-                                }`}
+                                className={`relative rounded-xl border p-3 min-h=[160px] min-h-[160px] transition ${isOver ? "border-teal-400 bg-teal-50" : "border-gray-300 bg-gray-50"
+                                  }`}
                                 onDragOver={!isCompact ? (e) => handleDragOverSlot(slotIdx, isSplit ? subIdx : null, e) : undefined}
                                 onDrop={!isCompact ? () => handleDropOnSlot(slotIdx, isSplit ? subIdx : null) : undefined}
                                 title={isSplit ? (subIdx === 0 ? "ช่องซ้าย" : "ขวา") : "ช่องเดี่ยว"}
@@ -1314,7 +1332,7 @@ const EditParameterModal: React.FC<EditParameterModalProps> = ({
             onChange={(c) => setColorTemp(c.toHexString())}
             presets={[
               {
-                label: "แนะนำ",
+                label: "แนะนำ55",
                 colors: [
                   "#1B3F71",
                   "#2563eb",
