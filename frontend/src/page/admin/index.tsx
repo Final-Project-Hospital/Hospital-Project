@@ -175,8 +175,8 @@ const BASE_CHART_STYLE: ApexOptions = {
     padding: { left: 12, right: 12, top: 0, bottom: 0 },
   },
   dataLabels: { enabled: false },
-  stroke: { width: 2, curve: "smooth" },
-  markers: { size: 4.5, strokeWidth: 2, hover: { sizeOffset: 3 } },
+  stroke: { width: 3, curve: "smooth" },
+  markers: { size: 5, strokeWidth: 2, hover: { sizeOffset: 3 } },
 
   // ✅ บังคับเป็น category + บังคับเอียงเสมอ
   xaxis: {
@@ -946,6 +946,7 @@ const buildOpts = useCallback(
     yMaxHint?: number,
     categoriesOverride?: string[],
     currentType: ChartKind = "line",
+     wantTriangles = false,  
   ): ApexOptions => {
     const isEfficiency =
       /efficiency/i.test(title) || title.includes("ประสิทธิภาพ");
@@ -961,7 +962,7 @@ const buildOpts = useCallback(
     const unitClean = cleanUnit(selectedParamUnit);
     const unitLabel = unitClean ? " " + unitClean : "";
 
-    // ✅ helper แปลงข้อความบนเส้นมาตรฐาน: ถ้า = 0 ให้แสดง "ไม่พบ"
+    // helper แปลงข้อความบนเส้นมาตรฐาน: ถ้า = 0 ให้แสดง "ไม่พบ"
     const stdLabelText = (v: number, kind: "มาตรฐาน" | "มาตรฐานต่ำสุด" | "มาตรฐานสูงสุด") =>
       Number(v) === 0
         ? "ไม่พบ"
@@ -1046,7 +1047,7 @@ const buildOpts = useCallback(
     ...BASE_CHART_STYLE.xaxis,
     categories: cats,
     tickAmount: Math.min(cats.length, 6),
-    // ⬇️ ให้ลากเมาส์ตามแกน X แล้วขึ้น Tooltip ได้เลย
+    // ให้ลากเมาส์ตามแกน X แล้วขึ้น Tooltip ได้เลย
     crosshairs: {
       show: true,
       position: "back",
@@ -1067,7 +1068,12 @@ const buildOpts = useCallback(
         ? `หน่วย: ${unitClean}`
         : "",
     },
-  },
+  }, markers: {
+      ...(BASE_CHART_STYLE.markers || {}),
+      size: currentType === "line" ? 5 : 0,             // เส้นมีจุด / แท่งไม่มีจุด
+      hover: { sizeOffset: 3 },
+      shape: wantTriangles ? ["circle","triangle"] : "circle", // ก่อน=วงกลม หลัง=สามเหลี่ยม
+    },
   annotations: ann,
   tooltip: {
     ...(BASE_CHART_STYLE.tooltip || {}),
@@ -1320,6 +1326,12 @@ const buildOpts = useCallback(
       },
     },
   },
+  markers: {
+    ...(BASE_CHART_STYLE.markers || {}),
+    size: garbageNormChartType === "line" ? 5 : 0,  // เส้นมีจุด / แท่งไม่มีจุด
+    hover: { sizeOffset: 3 },
+    shape: ["circle","triangle"],                   // ขยะ=วงกลม, คน=สามเหลี่ยม
+  },
 }), [garbageNormChartType, compareMonthlyGarbageQuantity]);
 
   const effSeriesData = useMemo(() => {
@@ -1566,18 +1578,9 @@ const buildOpts = useCallback(
       stroke: { show: false },
       tooltip: { y: { formatter: (val: number) => `${fmt2(val)} บาท` } },
       colors: [
-        "#99d4fdff",
-        "#fcf080ff",
-        "#8ae98dff",
-        "#fd8591ff",
-        "#f8ae89ff",
-        "#b497ecff",
-        "#80CBC4",
-        "#CE93D8",
-        "#FFCC80",
-        "#A5D6A7",
-        "#EF9A9A",
-        "#90CAF9",
+        "#a3faffff", "#fff4a3ff", "#a3ffb2ff", "#ffa3a3ff", "#f9a3ffff",
+  "#aba3ffff", "#26a69a", "#D10CE8", "#FF9800", "#A569BD",
+  "#CD6155", "#5DADE2"
       ],
       // ★ CHANGED: ป้องกันชนบนมือถือ – ย้าย legend ลงล่าง + ลด donut size
       responsive: [
@@ -1613,18 +1616,9 @@ const buildOpts = useCallback(
       stroke: { show: false },
       tooltip: { y: { formatter: (val: number) => `${fmt0(val)} คน` } },
       colors: [
-        "#A3F7BF",
-        "#A3E0FF",
-        "#FFE29A",
-        "#FFADB0",
-        "#D5B8FF",
-        "#9AD1B9",
-        "#FFCC80",
-        "#90CAF9",
-        "#CE93D8",
-        "#A5D6A7",
-        "#EF9A9A",
-        "#80CBC4",
+        "#a3faffff", "#fff4a3ff", "#a3ffb2ff", "#ffa3a3ff", "#f9a3ffff",
+  "#aba3ffff", "#26a69a", "#D10CE8", "#FF9800", "#A569BD",
+  "#CD6155", "#5DADE2"
       ],
       // ★ CHANGED: แบบเดียวกับยอดขาย – บนมือถือ
       responsive: [
@@ -1688,7 +1682,7 @@ const buildOpts = useCallback(
             <div className="controls-teal compact">
               <div className="controls-row">
                 <div className="controls-field">
-                  <label>สภาพแวดล้อม</label>
+                  <label>สิ่งแวดล้อม</label>
                   <Select
                     size="small"
                     style={{ width: 120 }}
@@ -1728,7 +1722,7 @@ const buildOpts = useCallback(
 
                 {!isGarbage && !isSingleEnv && (
                   <div className="controls-field">
-                    <label>มุมมอง</label>
+                    <label>ค่าก่อน/หลัง/เปรียบเทียบ</label>
                     <Select
                       size="small"
                       style={{ width: 150, marginLeft: 4 }}
@@ -1950,7 +1944,14 @@ const buildOpts = useCallback(
                         view +
                         chartType
                       }
-                      options={buildOpts("", true, mainYMaxHint)}
+                      options={buildOpts(
+                          "",
+                          true,
+                          mainYMaxHint,
+                          undefined,
+                          chartType,
+                          !isGarbage && !isSingleEnv && view === "compare" // << ให้หลังเป็นสามเหลี่ยม
+                        )}
                       series={
                         isGarbage
                           ? [
@@ -2334,7 +2335,14 @@ const buildOpts = useCallback(
           >
             <ApexChart
               key={"modal" + view + chartType}
-              options={buildOpts("Zoom Chart", true, mainYMaxHint)}
+              options={buildOpts(
+                "Zoom Chart",
+                true,
+                mainYMaxHint,
+                undefined,
+                chartType,
+                !isGarbage && !isSingleEnv && view === "compare"
+              )}
               series={
                 isGarbage
                   ? [
