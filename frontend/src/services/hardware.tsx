@@ -1036,6 +1036,36 @@ export const UpdateLineMasterByID = async (
   }
 };
 
+// services/hardware.ts
+export const AttachColorToHardwareParameter = async (
+  parameter_id: number,
+  code: string,
+  employee_id?: number
+): Promise<{ parameter_id: number; color_id: number; code: string } | null> => {
+  try {
+    const payload: any = { code };
+    if (typeof employee_id !== "undefined") payload.employee_id = employee_id;
+
+    const res = await axios.patch(
+      `${apiUrl}/hardware-parameters/${parameter_id}/color`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
+      }
+    );
+    if (res.status === 200) return res.data;
+    console.warn("AttachColorToHardwareParameter unexpected status:", res.status);
+    return null;
+  } catch (err: any) {
+    console.error("AttachColorToHardwareParameter error:", err?.response?.data || err);
+    return null;
+  }
+};
+
+
 export const UpdateHardwareParameterColorByID = async (
   id: number,
   code?: string,

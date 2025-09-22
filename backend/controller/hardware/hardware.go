@@ -1,8 +1,11 @@
 package hardware
 
 import (
+	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Tawunchai/hospital-project/config"
@@ -774,63 +777,122 @@ func CreateNoteBySensorDataParameterID(c *gin.Context) {
 	})
 }
 
-func UpdateHardwareParameterColorByID(c *gin.Context) {
-	idParam := c.Param("id")
-	idUint64, err := strconv.ParseUint(idParam, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+// normalize #RRGGBB → เป็นรูปแบบเดียวกัน เช่น "lowercase" และเติม # ถ้าขาด
+func normalizeHexCode(s string) (string, error) {
+	code := strings.TrimSpace(s)
+	if code == "" {
+		return "", fmt.Errorf("code is empty")
+	}
+	if !strings.HasPrefix(code, "#") {
+		code = "#" + code
+	}
+	code = strings.ToLower(code)
+
+	// ตรวจรูปแบบ #rrggbb
+	re := regexp.MustCompile(`^#[0-9a-f]{6}$`)
+	if !re.MatchString(code) {
+		return "", fmt.Errorf("invalid hex color code (expect #RRGGBB)")
+	}
+	return code, nil
+}
+
+func AttachColorToHardwareParameter(c *gin.Context) {
+	paramIDStr := c.Param("id")
+	paramID64, err := strconv.ParseUint(paramIDStr, 10, 64)
+	if err != nil || paramID64 == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid param_id"})
 		return
 	}
-	id := uint(idUint64)
+	paramID := uint(paramID64)
 
 	var req struct {
-		Code       *string `json:"code"`
-		EmployeeID *uint   `json:"employee_id"`
+		Code       string `json:"code"`
+		EmployeeID *uint  `json:"employee_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
 		return
 	}
 
-	// 3) หา record สีเดิม
-	var color entity.HardwareParameterColor
-	if err := config.DB().First(&color, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "HardwareParameterColor not found"})
-		return
-	}
-
-	// 4) อัปเดตค่าใหม่
-	if req.Code != nil {
-		color.Code = *req.Code
-	}
-
-	// ✅ Validate struct หลัง merge
-	ok, err := govalidator.ValidateStruct(color)
-	if !ok {
+	code, err := normalizeHexCode(req.Code)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 5) Save
-	if err := config.DB().Save(&color).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update HardwareParameterColor: " + err.Error()})
+	db := config.DB()
+
+	// ตรวจว่ามีพารามิเตอร์นี้จริงไหม
+	var hp entity.HardwareParameter
+	if err := db.First(&hp, paramID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "HardwareParameter not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
-	// 6) ถ้ามี employee_id ให้ไปอัปเดต HardwareParameter.EmployeeID
-	if req.EmployeeID != nil {
-		tx := config.DB().Model(&entity.HardwareParameter{}).
-			Where("hardware_parameter_color_id = ?", color.ID).
-			Update("employee_id", *req.EmployeeID)
-		if tx.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": tx.Error.Error()})
+	// ใช้ transaction ปลอดภัยกว่า
+	tx := db.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": tx.Error.Error()})
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "panic"})
+		}
+	}()
+
+	// หา/สร้าง สีตาม code (unique)
+	var color entity.HardwareParameterColor
+	if err := tx.Where("LOWER(code) = ?", strings.ToLower(code)).
+		First(&color).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			color = entity.HardwareParameterColor{Code: code}
+			if err := tx.Create(&color).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "create color failed: " + err.Error()})
+				return
+			}
+		} else {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	}
 
-	// 7) ตอบกลับ
-	c.JSON(http.StatusOK, color)
+	// อัปเดต HardwareParameter → ผูก color.ID และ employee_id (ถ้ามี)
+	upd := map[string]interface{}{
+		"hardware_parameter_color_id": color.ID,
+	}
+	if req.EmployeeID != nil {
+		upd["employee_id"] = *req.EmployeeID
+	}
+
+	if err := tx.Model(&entity.HardwareParameter{}).
+		Where("id = ?", paramID).
+		Updates(upd).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "update parameter failed: " + err.Error()})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// ส่งกลับข้อมูลยืนยัน
+	c.JSON(http.StatusOK, gin.H{
+		"parameter_id": paramID,
+		"color_id":     color.ID,
+		"code":         color.Code,
+	})
 }
+
 
 
 type checkPasswordRequest struct {
