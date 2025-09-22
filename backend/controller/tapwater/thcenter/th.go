@@ -113,11 +113,19 @@ func CreateTH(c *gin.Context) {
 	}
 
 	// หา record ของวันเดียวกัน
-	startOfDay := time.Date(input.Date.Year(), input.Date.Month(), input.Date.Day(), 0, 0, 0, 0, input.Date.Location())
-	endOfDay := startOfDay.Add(24 * time.Hour)
+	var records []entity.EnvironmentalRecord
+	if err := db.Where("DATE(date) = DATE(?) AND parameter_id = ? AND environment_id = ?",
+		input.Date, parameter.ID, environment.ID).Find(&records).Error; err != nil {
+		fmt.Println("Error fetching records:", err)
+	} else {
+		fmt.Println("Records found before delete:")
+		for _, r := range records {
+			fmt.Printf("ID: %d, Date: %v, Timezone: %v\n", r.ID, r.Date, r.Date.Location())
+		}
+	}
 
-	if err := db.Where("date >= ? AND date < ? AND parameter_id = ? AND environment_id = ?", startOfDay, endOfDay, parameter.ID, environment.ID).
-		Delete(&entity.EnvironmentalRecord{}).Error; err != nil {
+	if err := db.Where("DATE(date) = DATE(?) AND parameter_id = ? AND environment_id = ?",
+		input.Date, parameter.ID, environment.ID).Delete(&entity.EnvironmentalRecord{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบไม่สำเร็จ"})
 		return
 	}

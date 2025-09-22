@@ -286,10 +286,11 @@ const UpdateFOGCentralForm: React.FC<UpdateFOGCentralFormProps> = ({
             >
                 {/* วันที่และเวลา */}
                 <div className="up-form-group-tds">
-                    <Form.Item label="วันที่บันทึกข้อมูล" name="date">
+                    <Form.Item label="วันที่บันทึกข้อมูล" name="date" rules={[{ required: true, message: 'กรุณาเลือกวันที่' }]}>
                         <DatePicker format="DD/MM/YYYY" className="full-width-tds" />
                     </Form.Item>
-                    <Form.Item label="เวลาที่บันทึกข้อมูล" name="time">
+
+                    <Form.Item label="เวลาที่บันทึกข้อมูล" name="time" rules={[{ required: true, message: 'กรุณากรอกเวลา' }]}>
                         <TimePicker format="HH:mm" className="full-width-tds" />
                     </Form.Item>
                 </div>

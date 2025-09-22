@@ -1,6 +1,6 @@
 //ใช้ทั้งกราฟและตาราง
 import React, { useEffect, useRef, useState } from "react";
-import { Select, DatePicker, Modal, message, Tooltip } from "antd";
+import { Select, DatePicker, Modal, message, Tooltip, Button } from "antd";
 import isBetween from "dayjs/plugin/isBetween";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { LeftOutlined, EditOutlined, DeleteOutlined, ExclamationCircleFilled, CheckCircleFilled, QuestionCircleFilled, CloseCircleFilled } from "@ant-design/icons";
@@ -20,7 +20,7 @@ import ApexChart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { ColorPicker } from "antd";
 import type { Color } from "antd/es/color-picker";
-import { BarChart3, LineChart } from "lucide-react";
+import { BarChart3, LineChart, Maximize2 } from "lucide-react";
 
 //ใช้กับตาราง
 import Table, { ColumnsType } from "antd/es/table";
@@ -36,7 +36,6 @@ const normalizeString = (str: any) =>
 
 //ใช้ตั้งค่าวันที่ให้เป็นภาษาไทย
 import 'dayjs/locale/th';
-import th_TH from 'antd/es/date-picker/locale/th_TH';
 dayjs.locale('th');
 dayjs.extend(customParseFormat);
 dayjs.extend(isBetween);
@@ -74,6 +73,9 @@ const InfectiousWaste: React.FC = () => {
   const [unit, setUnit] = useState<string>("-");
   const [totalQuantity, setTotalQuantity] = useState<number>(0);
   const [monthlyQuantityLatestYear, setMonthlyQuantityLatestYear] = useState<{ month: string; value: number; unit: string }[]>([]);
+  const [modalGraphType, setModalGraphType] = useState<"garbage" | "garbageperpeople" | "aadc" | null>(null);//modalGraphType
+  const [modalVisible, setModalVisible] = useState(false);
+
 
   //ใช้กับตาราง
   const [search] = useState(""); //setSearch
@@ -650,6 +652,16 @@ const InfectiousWaste: React.FC = () => {
     return `${monthShortNames[monthIndex]} ${thaiYear}`;
   };
 
+  const openModal = (type: "garbage" | "garbageperpeople" | "aadc") => {
+    setModalGraphType(type);
+    setModalVisible(true);
+  };
+  //ใช้กับกราฟ
+  const closeModal = () => {
+    setModalVisible(false);
+    setModalGraphType(null);
+  };
+
   //ใช้กับตาราง
   const columns: ColumnsType<any> = [
     {
@@ -848,7 +860,7 @@ const InfectiousWaste: React.FC = () => {
               <span>
                 {lastDayInfectious !== null ? (
                   <>
-                    <span className="infectious-value">{lastDayInfectious.MonthlyGarbage.toLocaleString()}</span>{" "}
+                    <span className="infectious-value">{lastDayInfectious.MonthlyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayInfectious.UnitName || ""}
                   </>
                 ) : (
@@ -865,7 +877,7 @@ const InfectiousWaste: React.FC = () => {
               <span>
                 {lastDayInfectious !== null ? (
                   <>
-                    <span className="infectious-value">{lastDayInfectious.AverageDailyGarbage.toLocaleString()}</span>{" "}
+                    <span className="infectious-value">{lastDayInfectious.AverageDailyGarbage.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayInfectious.UnitName || ""}
                   </>
                 ) : (
@@ -882,7 +894,7 @@ const InfectiousWaste: React.FC = () => {
               <span>
                 {lastDayInfectious !== null ? (
                   <>
-                    <span className="infectious-value">{lastDayInfectious.AADC}</span>{" "}
+                    <span className="infectious-value">{lastDayInfectious.AADC.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>{" "}
                     {lastDayInfectious.UnitName || ""}
                   </>
                 ) : (
@@ -949,7 +961,7 @@ const InfectiousWaste: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
@@ -969,7 +981,7 @@ const InfectiousWaste: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={true}
@@ -989,7 +1001,7 @@ const InfectiousWaste: React.FC = () => {
                       setDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
                   allowClear={true}
@@ -1006,7 +1018,7 @@ const InfectiousWaste: React.FC = () => {
             <div className="infectious-graph-card">
               <div className="infectious-head-graph-card">
                 <div className="infectious-width25">
-                  <h2 className="infectious-head-graph-card-text" >กราฟขยะ</h2>
+                  <h2 className="infectious-head-graph-card-text" >ขยะติดเชื้อ</h2>
                 </div>
                 <div>
                   <ColorPicker
@@ -1017,6 +1029,7 @@ const InfectiousWaste: React.FC = () => {
                       localStorage.setItem('colorGarbage', hex);
                     }}
                   />
+                   <Button className="infectious-expand-chat" onClick={() => openModal("garbage")}><Maximize2 /></Button>
                 </div>
               </div>
               <div className="infectious-right-select-graph">
@@ -1056,8 +1069,8 @@ const InfectiousWaste: React.FC = () => {
             </div>
             <div className="infectious-graph-card">
               <div className="infectious-head-graph-card">
-                <div className="infectious-width40">
-                  <h2 className="infectious-head-graph-card-text" >กราฟขยะต่อคน</h2>
+                <div className="infectious-width50">
+                  <h2 className="infectious-head-graph-card-text" >ขยะติดเชื้อต่อคนที่เข้าใช้บริการ</h2>
                 </div>
                 <div>
                   <ColorPicker
@@ -1076,6 +1089,7 @@ const InfectiousWaste: React.FC = () => {
                       localStorage.setItem('colorCompareQuantity', hex);
                     }}
                   />
+                   <Button className="infectious-expand-chat" onClick={() => openModal("garbageperpeople")}><Maximize2 /></Button>
                 </div>
               </div>
               <div className="infectious-right-select-graph">
@@ -1130,6 +1144,7 @@ const InfectiousWaste: React.FC = () => {
                       localStorage.setItem('colorAadc', hex);
                     }}
                   />
+                   <Button className="infectious-expand-chat" onClick={() => openModal("aadc")}><Maximize2 /></Button>
                 </div>
               </div>
               <div className="infectious-right-select-graph">
@@ -1173,7 +1188,7 @@ const InfectiousWaste: React.FC = () => {
                 <div className="infectious-box-number">
                   <div>
                     <div >
-                      {totalMonthlyGarbage.toLocaleString()} Kg
+                      {new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2, }).format(totalMonthlyGarbage)} Kg
                     </div >
                     <div>
                       <Chart
@@ -1186,7 +1201,7 @@ const InfectiousWaste: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <span className="recycled-box-date">{lastDayInfectious && lastDayInfectious.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayInfectious.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
+                <span className="infectious-box-date">{lastDayInfectious && lastDayInfectious.Date ? `ข้อมูลล่าสุด: ${dayjs(lastDayInfectious.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
               </div>
               <div className="infectious-box">
                 <div className="infectious-box-title">จำนวนคนรวมปี {latestYear}</div>
@@ -1206,7 +1221,7 @@ const InfectiousWaste: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <span className="recycled-box-date">{lastDayInfectious && lastDayInfectious.Date? `ข้อมูลล่าสุด: ${dayjs(lastDayInfectious.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}`: "ไม่มีข้อมูล"}</span>
+                <span className="infectious-box-date">{lastDayInfectious && lastDayInfectious.Date ? `ข้อมูลล่าสุด: ${dayjs(lastDayInfectious.Date).locale('th').add(543, 'year').format("D MMMM YYYY")}` : "ไม่มีข้อมูล"}</span>
               </div>
             </div>
           </div>
@@ -1259,7 +1274,7 @@ const InfectiousWaste: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   allowClear={true}
                   format={(value) => value ? `${value.date()} ${value.locale('th').format('MMMM')} ${value.year() + 543}` : ''}
                   style={{ width: 300 }}
@@ -1279,7 +1294,7 @@ const InfectiousWaste: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder="เลือกเดือน"
                   style={{ width: 150 }}
                   allowClear={true}
@@ -1300,7 +1315,7 @@ const InfectiousWaste: React.FC = () => {
                       setTableDateRange(null);
                     }
                   }}
-                  locale={th_TH}
+
                   placeholder={["ปีเริ่มต้น", "ปีสิ้นสุด"]}
                   style={{ width: 300 }}
                   allowClear={true}
@@ -1414,6 +1429,152 @@ const InfectiousWaste: React.FC = () => {
                 }}
                 onCancel={handleEditModalCancel}
               />
+            </div>
+          )}
+        </Modal>
+
+        <Modal
+          visible={modalVisible}
+          onCancel={closeModal}
+          footer={null}
+          className="infectious-custom-modal"
+          centered
+          destroyOnClose
+          maskClosable={true}
+        >
+          {modalGraphType === "garbage" && (
+            <div className="infectious-chat-modal">
+              <div className="infectious-head-graph-card">
+                <div className="infectious-width25">
+                  <h2 className="infectious-head-graph-card-text">ขยะติดเชื้อ</h2>
+                </div>
+              </div>
+              <div className="infectious-right-select-graph">
+                <Select
+                  value={chartTypeData}
+                  onChange={val => setChartTypeData(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div className="infectious-chart-containner">
+                <ApexChart
+                  key={chartTypeData}
+                  options={getChartOptions(
+                    listdata.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                    chartTypeData,          // ประเภท chart
+                    filterMode === "year",   // 'day' | 'month' | 'year'
+                    series[0]?.data || [],
+                    true,          // array ของตัวเลข
+                    true,
+                    false,          // isPercentChart (true/false)
+                  )} series={series}
+                  type={chartTypeData}
+                  height="100%"
+                />
+              </div>
+            </div>
+          )}
+          {modalGraphType === "garbageperpeople" && (
+            <div className="infectious-chat-modal">
+              <div className="infectious-head-graph-card" >
+                <div className="infectious-width40">
+                  <h2 className="infectious-head-graph-card-text" >ขยะติดเชื้อต่อคนที่เข้าใช้บริการ</h2>
+                </div>
+              </div>
+              <div className="infectious-right-select-graph">
+                <Select
+                  value={chartTypeCompareMonthlyGarbageQuantity}
+                  onChange={val => setChartTypeCompareMonthlyGarbageQuantity(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div className="infectious-chart-containner">
+                <ApexChart
+                  key={chartTypeCompareMonthlyGarbageQuantity}
+                  options={getChartOptions(
+                    compareMonthlyGarbageQuantity.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                    chartTypeCompareMonthlyGarbageQuantity,          // ประเภท chart
+                    filterMode === "year",   // 'day' | 'month' | 'year'
+                    combinedCompareData,
+                    true,          // array ของตัวเลข
+                    true,
+                    true,           // isPercentChart (true/false)
+                  )} series={seriesMonthlyGarbageQuantityNormalized}
+                  type={chartTypeCompareMonthlyGarbageQuantity}
+                  height="100%"
+                />
+              </div>
+            </div>
+          )}
+          {modalGraphType === "aadc" && (
+            <div className="infectious-chat-modal">
+              <div className="infectious-head-graph-card" >
+                <div className="infectious-width40">
+                  <h2 className="infectious-head-graph-card-text" >AADC</h2>
+                </div>
+              </div>
+              <div className="infectious-right-select-graph">
+                <Select
+                  value={chartTypeAadc}
+                  onChange={val => setChartTypeAadc(val)}
+                  style={{ marginBottom: 10 }}
+                >
+                  <Select.Option value="line">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <LineChart size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟเส้น</span>
+                    </div>
+                  </Select.Option>
+                  <Select.Option value="bar">
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <BarChart3 size={16} style={{ marginRight: 6 }} />
+                      <span>กราฟแท่ง</span>
+                    </div>
+                  </Select.Option>
+                </Select>
+              </div>
+              <div className="infectious-chart-containner">
+                <ApexChart
+                  key={chartTypeAadc}
+                  options={getChartOptions(
+                    aadcData.map(item => item.date),      // array ของวันที่/เดือน/ปี
+                    chartTypeAadc,          // ประเภท chart
+                    filterMode === "year",   // 'day' | 'month' | 'year'
+                    seriesAADC[0]?.data || [],
+                    true,          // array ของตัวเลข
+                    false,
+                    false,        // isPercentChart (true/false)
+                  )} series={seriesAADC}
+                  type={chartTypeAadc}
+                  height="100%"
+                />
+              </div>
             </div>
           )}
         </Modal>

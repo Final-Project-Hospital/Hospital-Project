@@ -269,13 +269,22 @@ const PHCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                         time: dayjs(),
                     }}
                 >
-                    <div className="ph-form-group">
+                    {/* <div className="ph-form-group">
                         <Form.Item label="วันที่บันทึกข้อมูล" name="date">
                             <DatePicker defaultValue={dayjs()} format="DD/MM/YYYY" className="ph-full-width" />
                         </Form.Item>
 
                         <Form.Item label="เวลาที่บันทึกข้อมูล" name="time">
                             <TimePicker defaultValue={dayjs()} format={"HH:mm"} className="ph-full-width" />
+                        </Form.Item>
+                    </div> */}
+                    <div className="ph-form-group">
+                        <Form.Item label="วันที่บันทึกข้อมูล" name="date" rules={[{ required: true, message: 'กรุณาเลือกวันที่' }]}>
+                            <DatePicker defaultValue={dayjs()} format="DD/MM/YYYY" className="ph-full-width" />
+                        </Form.Item>
+
+                        <Form.Item label="เวลาที่บันทึกข้อมูล" name="time" rules={[{ required: true, message: 'กรุณากรอกเวลา' }]}>
+                            <TimePicker defaultValue={dayjs()} format="HH:mm" className="ph-full-width" />
                         </Form.Item>
                     </div>
 

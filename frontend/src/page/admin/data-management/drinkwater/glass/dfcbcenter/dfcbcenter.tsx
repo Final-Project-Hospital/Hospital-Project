@@ -203,12 +203,12 @@ const DFCBCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     }}
                 >
                     <div className="dfcb-form-group">
-                        <Form.Item label="วันที่บันทึกข้อมูล" name="date">
+                        <Form.Item label="วันที่บันทึกข้อมูล" name="date" rules={[{ required: true, message: 'กรุณาเลือกวันที่' }]}>
                             <DatePicker defaultValue={dayjs()} format="DD/MM/YYYY" className="dfcb-full-width" />
                         </Form.Item>
 
-                        <Form.Item label="เวลาที่บันทึกข้อมูล" name="time">
-                            <TimePicker defaultValue={dayjs()} format={"HH:mm"} className="dfcb-full-width" />
+                        <Form.Item label="เวลาที่บันทึกข้อมูล" name="time" rules={[{ required: true, message: 'กรุณากรอกเวลา' }]}>
+                            <TimePicker defaultValue={dayjs()} format="HH:mm" className="dfcb-full-width" />
                         </Form.Item>
                     </div>
 
