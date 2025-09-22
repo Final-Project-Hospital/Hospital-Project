@@ -914,4 +914,24 @@
   .infectious-box-number {
     font-size: 20px;
   }
+    .ant-picker-dropdown {
+    max-width: 95vw !important;
+    /* กว้างไม่เกิน 95% ของหน้าจอ */
+    left: 50% !important;
+    /* จัดกึ่งกลาง */
+    transform: translateX(-50%) !important;
+  }
+
+  .ant-picker-panel-container {
+    width: 100% !important;
+    overflow-x: auto !important;
+    /* เลื่อนในแนวนอนได้ */
+    display: flex !important;
+    justify-content: flex-start;
+  }
+
+  .ant-picker-panel {
+    min-width: 280px !important;
+    /* ปรับขนาดขั้นต่ำให้อ่านง่าย */
+  }
 }

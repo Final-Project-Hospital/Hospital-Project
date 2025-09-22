@@ -202,13 +202,22 @@ const ALCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                         time: dayjs(),
                     }}
                 >
-                    <div className="al-form-group">
+                    {/* <div className="al-form-group">
                         <Form.Item label="วันที่บันทึกข้อมูล" name="date">
                             <DatePicker defaultValue={dayjs()} format="DD/MM/YYYY" className="al-full-width" />
                         </Form.Item>
 
                         <Form.Item label="เวลาที่บันทึกข้อมูล" name="time">
                             <TimePicker defaultValue={dayjs()} format={"HH:mm"} className="al-full-width" />
+                        </Form.Item>
+                    </div> */}
+                    <div className="al-form-group">
+                        <Form.Item label="วันที่บันทึกข้อมูล" name="date" rules={[{ required: true, message: 'กรุณาเลือกวันที่' }]}>
+                            <DatePicker defaultValue={dayjs()} format="DD/MM/YYYY" className="al-full-width" />
+                        </Form.Item>
+
+                        <Form.Item label="เวลาที่บันทึกข้อมูล" name="time" rules={[{ required: true, message: 'กรุณากรอกเวลา' }]}>
+                            <TimePicker defaultValue={dayjs()} format="HH:mm" className="al-full-width" />
                         </Form.Item>
                     </div>
 

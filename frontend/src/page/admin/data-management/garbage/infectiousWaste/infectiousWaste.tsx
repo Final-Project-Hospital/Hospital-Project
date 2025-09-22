@@ -231,14 +231,14 @@ const InfectiousWasteForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
           form={form}
           layout="vertical"
           onFinish={handleFinish}
+          initialValues={{ date: dayjs(), time: dayjs() }}
         >
           <div className="inf-form-group">
-            <Form.Item label="วันที่บันทึกข้อมูล" name="date">
-              <DatePicker defaultValue={dayjs()} format="DD/MM/YYYY" className="inf-full-width" />
+            <Form.Item label="วันที่บันทึกข้อมูล" name="date" rules={[{ required: true, message: 'กรุณาเลือกวันที่' }]}>
+              <DatePicker format="DD/MM/YYYY" className="inf-full-width" />
             </Form.Item>
-
-            <Form.Item label="เวลาที่บันทึกข้อมูล" name="time">
-              <TimePicker defaultValue={dayjs()} format={"HH:mm"} className="inf-full-width" />
+            <Form.Item label="เวลาที่บันทึกข้อมูล" name="time" rules={[{ required: true, message: 'กรุณากรอกเวลา' }]}>
+              <TimePicker format="HH:mm" className="inf-full-width" />
             </Form.Item>
           </div>
 

@@ -203,12 +203,12 @@ const IRONCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                     }}
                 >
                     <div className="iron-form-group">
-                        <Form.Item label="วันที่บันทึกข้อมูล" name="date">
+                        <Form.Item label="วันที่บันทึกข้อมูล" name="date" rules={[{ required: true, message: 'กรุณาเลือกวันที่' }]}>
                             <DatePicker defaultValue={dayjs()} format="DD/MM/YYYY" className="iron-full-width" />
                         </Form.Item>
 
-                        <Form.Item label="เวลาที่บันทึกข้อมูล" name="time">
-                            <TimePicker defaultValue={dayjs()} format={"HH:mm"} className="iron-full-width" />
+                        <Form.Item label="เวลาที่บันทึกข้อมูล" name="time" rules={[{ required: true, message: 'กรุณากรอกเวลา' }]}>
+                            <TimePicker defaultValue={dayjs()} format="HH:mm" className="iron-full-width" />
                         </Form.Item>
                     </div>
 
@@ -381,7 +381,7 @@ const IRONCentralForm: React.FC<Props> = ({ onCancel, onSuccess }) => {
                                             ({ getFieldValue }) => ({
                                                 validator: async (_, value) => {
                                                     const min = getFieldValue("customMin");
-                                                     // เช็คค่าติดลบ
+                                                    // เช็คค่าติดลบ
                                                     if (value !== undefined && value < 0) {
                                                         return Promise.reject("กรุณาไม่กรอกค่าติดลบ");
                                                     }
