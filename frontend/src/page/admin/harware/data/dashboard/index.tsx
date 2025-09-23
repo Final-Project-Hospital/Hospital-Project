@@ -92,7 +92,8 @@ const Index: React.FC = () => {
   const location = useLocation();
   const { hardwareID } = (location.state as { hardwareID?: number }) || {};
 
-  const { activeMenu } = useStateContext();
+  const { activeMenu, reloadKey } = useStateContext();
+  
 
   const [rows, setRows] = useState<RowBlocks[]>([]);
   const [showEdit, setShowEdit] = useState(false);
@@ -553,7 +554,7 @@ const Index: React.FC = () => {
     setTableLoaded(false);
     setAverageLoaded(false);
     fetchSensorDataAndParameters().finally(() => {});
-  }, [hardwareID, fetchSensorDataAndParameters]);
+  }, [hardwareID, fetchSensorDataAndParameters,reloadKey]);
 
   useEffect(() => {
     if (boxLoaded && tableLoaded && averageLoaded) setLoadingAll(false);
@@ -570,7 +571,7 @@ const Index: React.FC = () => {
     setReloadBoxes((prev) => prev + 1);
     setReloadTable((prev) => prev + 1);
     setReloadAverage((prev) => prev + 1);
-  }, [fetchSensorDataAndParameters]);
+  }, [fetchSensorDataAndParameters,reloadKey]);
 
   const onBoxLoaded = () => setBoxLoaded(true);
   const onTableLoaded = () => setTableLoaded(true);

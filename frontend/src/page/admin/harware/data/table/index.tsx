@@ -29,6 +29,7 @@ import {
   DeleteAllSensorDataParametersBySensorDataID,
   IsEmployeePasswordValid,
 } from "../../../../../services/hardware";
+import { useStateContext } from "../../../../../contexts/ContextProvider";
 import type { ColumnsType } from "antd/es/table";
 import { FileTextOutlined } from "@ant-design/icons";
 
@@ -86,7 +87,7 @@ type RangeFilter = {
 const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
   const isMobile = useIsMobile();
   const isTablet = useIsTabletView(768, 1300);
-
+  const { bumpReload } = useStateContext();
   const [tableData, setTableData] = useState<any[]>([]);
   const [filteredData, setFilteredData] = useState<any[]>([]);
   const [uniqueColumns, setUniqueColumns] = useState<string[]>(["วันที่", "เวลา", "หมายเหตุ"]);
@@ -432,6 +433,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
         message.success(res.message || `ลบสำเร็จ ${res.deleted_ids.length} รายการ`);
         setSelectedRowKeys([]);
         await fetchData();
+        bumpReload()
       } else {
         message.error("ลบข้อมูลไม่สำเร็จ");
       }
@@ -495,6 +497,7 @@ const TableData: React.FC<TableDataProps> = ({ hardwareID, onLoaded }) => {
 
       setSelectedRowKeys([]);
       await fetchData();
+      bumpReload();
     } catch (e: any) {
       message.error(e?.message || "ลบข้อมูลทั้งหมดไม่สำเร็จ");
     } finally {

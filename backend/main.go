@@ -85,7 +85,7 @@ func main() {
 	r.GET("/check-email", employee.CheckEmail)
 	r.POST("/reset-password", employee.ResetPassword)
 	r.POST("/hardware/receive", hardware.ReceiveSensorData)
-	r.POST("/webhook/notification", hardware.WebhookNotification) 
+	r.POST("/webhook/notification", hardware.WebhookNotification)
 	r.POST("/hardware/read", hardware.ReadDataForHardware) // encryption
 
 	authorized := r.Group("")
@@ -94,6 +94,8 @@ func main() {
 		authorized.PATCH("/api/employees/:id/role", employee.UpdateRole)
 		authorized.PUT("/api/employees/:id", employee.UpdateEmployeeInfo)
 		authorized.DELETE("/api/employees/:id", employee.DeleteEmployee)
+		authorized.GET("/api/employees", employee.GetEmployees)
+		authorized.POST("/api/employees", employee.CreateEmployee)
 		// Dashboard (สิ่งแวดล้อม)
 		authorized.GET("/dashboard/environmental", dashboard.GetEnvironmentalDashboard)
 		authorized.GET("/dashboard/environmental/efficiency", dashboard.GetEnvironmentalEfficiency)
@@ -160,32 +162,32 @@ func main() {
 		})
 
 		//User
-		authorized.GET("/users", user.ListUsers)                            
-		authorized.GET("/user-data/:EmployeeID", user.GetDataByUserID)      
-		authorized.PATCH("/employees/:EmployeeID", user.UpdateEmployeeByID) 
-		authorized.GET("/roles", employee.ListRole)                         
+		authorized.GET("/users", user.ListUsers)
+		authorized.GET("/user-data/:EmployeeID", user.GetDataByUserID)
+		authorized.PATCH("/employees/:EmployeeID", user.UpdateEmployeeByID)
+		authorized.GET("/roles", employee.ListRole)
 
 		//Room
-		authorized.GET("/rooms", room.ListRoom)                    
-		authorized.POST("/create-rooms", room.CreateRoom)          
-		authorized.PATCH("/update-room/:id", room.UpdateRoom)      
-		authorized.DELETE("/delete-room/:id", room.DeleteRoomById) 
+		authorized.GET("/rooms", room.ListRoom)
+		authorized.POST("/create-rooms", room.CreateRoom)
+		authorized.PATCH("/update-room/:id", room.UpdateRoom)
+		authorized.DELETE("/delete-room/:id", room.DeleteRoomById)
 
 		//Hardware
-		authorized.GET("/hardwares", hardware.ListHardware)                                               
-		authorized.GET("/hardware-colors", hardware.ListColors)                                           
-		authorized.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID) 
-		authorized.PATCH("/update-hardware-parameter/:id", hardware.UpdateHardwareParameterByID)          
-		authorized.GET("/hardware-parameter-ids", hardware.GetHardwareParametersWithGraph)               
-		authorized.PATCH("/hardware-parameters/:id/icon", hardware.UpdateIconByHardwareParameterID)      
-		authorized.PUT("/hardware-parameter/:id/group-display", hardware.UpdateGroupDisplayByID)         
-		authorized.PATCH("/sensor-data-parameter/:id/note", hardware.CreateNoteBySensorDataParameterID) 
-		authorized.PATCH("/hardware-parameters/:id/layout-display", hardware.UpdateLayoutDisplayByID)      
+		authorized.GET("/hardwares", hardware.ListHardware)
+		authorized.GET("/hardware-colors", hardware.ListColors)
+		authorized.GET("/hardware-parameter/by-hardware/:id", hardware.ListHardwareParameterByHardwareID)
+		authorized.PATCH("/update-hardware-parameter/:id", hardware.UpdateHardwareParameterByID)
+		authorized.GET("/hardware-parameter-ids", hardware.GetHardwareParametersWithGraph)
+		authorized.PATCH("/hardware-parameters/:id/icon", hardware.UpdateIconByHardwareParameterID)
+		authorized.PUT("/hardware-parameter/:id/group-display", hardware.UpdateGroupDisplayByID)
+		authorized.PATCH("/sensor-data-parameter/:id/note", hardware.CreateNoteBySensorDataParameterID)
+		authorized.PATCH("/hardware-parameters/:id/layout-display", hardware.UpdateLayoutDisplayByID)
 		authorized.PATCH("/hardware-parameters/:id/color", hardware.AttachColorToHardwareParameter)
-		authorized.POST("/employees/:id/check-password", hardware.CheckPasswordByID)                       
+		authorized.POST("/employees/:id/check-password", hardware.CheckPasswordByID)
 		authorized.GET("/report-hardware", report.ListReportHardware)
-		authorized.PUT("/update-hardware/:id", hardware.UpdateHardwareByID) 
-		authorized.DELETE("/delete-hardware/:id", hardware.DeleteHardwareByID) 
+		authorized.PUT("/update-hardware/:id", hardware.UpdateHardwareByID)
+		authorized.DELETE("/delete-hardware/:id", hardware.DeleteHardwareByID)
 
 		//Standard and Unit
 		authorized.PUT("/update-unit-hardware/:id", hardware.UpdateUnitHardwareByID)
@@ -206,7 +208,7 @@ func main() {
 
 		// Sensorparameter
 		authorized.GET("/sensor-data-parameters/:id", sensordata.GetSensorDataParametersBySensorDataID)
-		authorized.GET("/sensor-data-by-hardware/:id", sensordata.GetSensorDataIDByHardwareID) 
+		authorized.GET("/sensor-data-by-hardware/:id", sensordata.GetSensorDataIDByHardwareID)
 		authorized.GET("/data-sensorparameter", sensordata.ListDataSensorParameter)
 		authorized.GET("/hardware-parameters-by-parameter", sensordata.ListDataHardwareParameterByParameter)
 		authorized.DELETE("/sensor-data-parameters", hardware.DeleteSensorDataParametersByIds)
@@ -599,10 +601,6 @@ func main() {
 	public := r.Group("")
 	{
 		public.POST("/api/predict", predict.Predict)
-
-		public.GET("/api/employees", employee.GetEmployees)
-		public.POST("/api/employees", employee.CreateEmployee)
-
 	}
 
 	r.GET("/", func(c *gin.Context) {
