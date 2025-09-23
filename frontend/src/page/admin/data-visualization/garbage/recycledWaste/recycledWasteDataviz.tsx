@@ -697,37 +697,6 @@ const Recycleddataviz: React.FC = () => {
       }
     }
   ];
-
-  //ใช้กับตาราง
-  // const handleEdit = async (ids: (number | undefined)[]) => {
-  //   console.log("IDs:", ids);
-
-  //   // กรองเอาเฉพาะ id ที่ไม่ undefined และไม่ null
-  //   const filteredIds = ids.filter((id): id is number => typeof id === 'number');
-
-  //   if (filteredIds.length === 0) {
-  //     message.error("ไม่พบ ID สำหรับแก้ไข");
-  //     return;
-  //   }
-
-  //   try {
-  //     const responses = await Promise.all(filteredIds.map((id) => GetRecycledbyID(id)));
-  //     const validData = responses
-  //       .filter((res) => res && res.status === 200)
-  //       .map((res) => res.data);
-
-  //     if (validData.length === 0) {
-  //       message.error("ไม่พบข้อมูลสำหรับแก้ไข");
-  //       return;
-  //     }
-
-  //     setEditRecord(validData);
-  //     setIsEditModalVisible(true);
-  //   } catch (error) {
-  //     console.error("Error fetching Recycled data:", error);
-  //     message.error("เกิดข้อผิดพลาดในการดึงข้อมูล");
-  //   }
-  // };
   const handleEdit = async (ID?: number) => {
     console.log("ID:", ID);
 

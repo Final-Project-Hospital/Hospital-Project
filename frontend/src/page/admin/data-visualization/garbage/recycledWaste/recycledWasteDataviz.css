@@ -920,7 +920,7 @@
     font-size: 15px;
   }
 
-    .ant-picker-dropdown {
+  .ant-picker-dropdown {
     max-width: 95vw !important;
     /* กว้างไม่เกิน 95% ของหน้าจอ */
     left: 50% !important;
@@ -940,10 +940,14 @@
     min-width: 280px !important;
     /* ปรับขนาดขั้นต่ำให้อ่านง่าย */
   }
+
+  .recycled-box-number .apexcharts-canvas {
+    min-width: 180px;
+  }
 }
 
 /* ไม่ใช้กรอบที่มีเงาจากหน้าบันทึก ที่ import มา*/
-.recy-container {
+.modal-create .recy-container {
   all: unset !important;
   padding: 0px !important;
   margin: 0px 0px 0px 0px !important;

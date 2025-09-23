@@ -32,6 +32,7 @@
   font-weight: bold;
   margin: 0;
 }
+
 .wqc-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -51,12 +52,15 @@
   align-items: center;
   padding: 2rem 2rem;
   box-shadow: 0 4px 8px rgba(133, 129, 154, 0.35);
-  transition: transform 0.2s ease, box-shadow 0.2s ease; /* ✅ smooth effect */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  /* ✅ smooth effect */
 }
 
 .wqc-card:hover {
-  transform: translateY(-5px); /* ✅ ขยับขึ้นเล็กน้อย */
-  box-shadow: 0 8px 16px rgba(121, 119, 134, 0.35); /* ✅ เพิ่มเงา */
+  transform: translateY(-5px);
+  /* ✅ ขยับขึ้นเล็กน้อย */
+  box-shadow: 0 8px 16px rgba(121, 119, 134, 0.35);
+  /* ✅ เพิ่มเงา */
 }
 
 .wqc-info {
@@ -75,8 +79,8 @@
   font-size: 1.2rem;
   font-weight: bold;
   color: #5D5D5D;
-   text-align: left;
-   margin-left: 5px;
+  text-align: left;
+  margin-left: 5px;
 }
 
 .wqc-info p {
@@ -84,7 +88,7 @@
   font-size: 0.95rem;
   color: #5D5D5D;
   text-align: left;
-   margin-left: 5px;
+  margin-left: 5px;
 }
 
 .wqc-info span {
@@ -140,13 +144,12 @@
   text-align: center;
 }
 
-/* @media (max-width: 992px) {
-  .wqc-grid {
-    grid-template-columns: repeat(2, 1fr);
-    padding: 2rem;
-    gap: 2rem;
-  }
-} */
+.custom-footer {
+  text-align: center;
+  padding: 10px;
+  font-size: 12px;
+  color: #666;
+}
 
 @media (max-width: 600px) {
   .wqc-grid {
@@ -154,18 +157,6 @@
     padding: 1.5rem;
     gap: 1.5rem;
   }
-
-  /* .wqc-card {
-    flex-direction: column;
-    text-align: center;
-    gap: 1rem;
-  } */
-
-  /* .wqc-divider {
-    width: 60%;
-    height: 2px;
-    margin: 1rem 0;
-  } */
 
   .wqc-icon {
     width: 60px;

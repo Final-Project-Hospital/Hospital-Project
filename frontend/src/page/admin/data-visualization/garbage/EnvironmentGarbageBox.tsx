@@ -142,7 +142,7 @@ const EnvironmentBlock = () => {
         <Outlet />
       </div>
       <Layout>
-        <Footer style={{ textAlign: "center", padding: "10px" }} >Icons made by
+        <Footer className="custom-footer" >Icons made by
           <a href="https://www.flaticon.com/authors/iconjam" title="Iconjam"> Iconjam</a>,
           <a href="https://www.flaticon.com/authors/freepik" title="Freepik"> Freepik</a>,
           <a href="https://www.flaticon.com/authors/paul-j" title="Andinur"> Paul J.</a>,
@@ -151,6 +151,9 @@ const EnvironmentBlock = () => {
           <a href="https://www.flaticon.com/authors/pikepicture" title="Pikepicture"> Pikepicture</a>,
           <a href="https://www.flaticon.com/authors/ranukumbololab" title="RanuKumbolo.lab"> RanuKumbolo.lab</a>,
           <a href="https://www.flaticon.com/authors/aficons-studio" title="Aficons studio"> Aficons studio</a>,
+          <a href="https://www.flaticon.com/authors/saifali496" title="Aficons studio"> Saifali496</a>,
+          <a href="https://www.flaticon.com/authors/roundicons-premium" title="Aficons studio"> Roundicons Premium</a>,
+          <a href="https://www.flaticon.com/authors/cah-nggunung" title="Aficons studio"> cah nggunung</a>,
           <a href="https://www.flaticon.com/authors/meaicon" title="Aficons studio"> Meaicon</a>,
           <a href="https://www.flaticon.com/authors/kliwir-art" title="Aficons studio"> Kliwir art </a>
           from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
