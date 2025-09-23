@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log"
+
 	//"os"
 
 	"github.com/Tawunchai/hospital-project/entity"
@@ -20,19 +21,19 @@ func DB() *gorm.DB {
 }
 
 func ConnectionDB() {
-    //dsn := os.Getenv("DATABASE_URL") // ← ต้องเป็นชื่อ ENV VAR
+	//dsn := os.Getenv("DATABASE_URL") // ← ต้องเป็นชื่อ ENV VAR
 	dsn := "host=localhost user=postgres password=1234 dbname=hospital port=5432 sslmode=disable TimeZone=Asia/Bangkok"
-    if dsn == "" {
-        log.Fatal("DATABASE_URL is not set")
-    }
+	if dsn == "" {
+		log.Fatal("DATABASE_URL is not set")
+	}
 
-    database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-    if err != nil {
-        log.Fatalf("failed to connect to PostgreSQL: %v", err)
-    }
+	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("failed to connect to PostgreSQL: %v", err)
+	}
 
-    db = database // ← assign ให้ตัวแปร db ไม่ใช่ DB()
-    fmt.Println("✅ Database connected successfully")
+	db = database // ← assign ให้ตัวแปร db ไม่ใช่ DB()
+	fmt.Println("✅ Database connected successfully")
 }
 
 func SetupDatabase() {
@@ -177,7 +178,6 @@ func SetupDatabase() {
 	db.FirstOrCreate(&Position2, &entity.Position{Position: "Doctor"})
 	db.FirstOrCreate(&Position3, &entity.Position{Position: "unknown"})
 
-
 	hashedPassword, err := HashPassword("123")
 	if err != nil {
 		panic("Failed to hash password: " + err.Error())
@@ -272,7 +272,7 @@ func SetupDatabase() {
 		db.FirstOrCreate(&unitPercent, entity.UnitHardware{Unit: "%"})
 
 		//Token Line Master
-		lineMaster := entity.LineMaster{Token: "qNf5S5s+Rkqr0gFDW++ObPJzfhUbCbWwbEdCeDzVIzhsSqe3R1HyycZOtY2+NSuBCZ8NIWO9jhx/a2cmUA+kbuL3GNfyp5Ze+4sj5lBY403ndhyoEqlpI90eaV/Kp0sc92opJl5uAYH9QSIKIWpq1wdB04t89/1O/w1cDnyilFU=",EmployeeID: &adminid}
+		lineMaster := entity.LineMaster{Token: "qNf5S5s+Rkqr0gFDW++ObPJzfhUbCbWwbEdCeDzVIzhsSqe3R1HyycZOtY2+NSuBCZ8NIWO9jhx/a2cmUA+kbuL3GNfyp5Ze+4sj5lBY403ndhyoEqlpI90eaV/Kp0sc92opJl5uAYH9QSIKIWpq1wdB04t89/1O/w1cDnyilFU=", EmployeeID: &adminid}
 		db.FirstOrCreate(&lineMaster, entity.LineMaster{Token: "qNf5S5s+Rkqr0gFDW++ObPJzfhUbCbWwbEdCeDzVIzhsSqe3R1HyycZOtY2+NSuBCZ8NIWO9jhx/a2cmUA+kbuL3GNfyp5Ze+4sj5lBY403ndhyoEqlpI90eaV/Kp0sc92opJl5uAYH9QSIKIWpq1wdB04t89/1O/w1cDnyilFU="})
 
 		// ----- สร้าง Parameter พร้อมผูก StandardHardwareID และ UnitHardwareID -----

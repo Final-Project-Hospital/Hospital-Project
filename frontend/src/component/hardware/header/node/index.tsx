@@ -242,25 +242,25 @@ const Node = () => {
         style={{ top: 60 }}
       >
         <Table
-  rowKey="ID"
-  rowSelection={rowSelection}
-  dataSource={hardwares}
-  columns={columns}
-  loading={loading}
-  pagination={{ pageSize: 5 }}
-  className="rounded-xl shadow-sm overflow-x-auto"
-  scroll={{ x: "max-content" }} // ✅ ให้ Scroll แนวนอนเมื่อคอลัมน์เกิน
-  components={{
-    header: {
-      cell: (props: any) => (
-        <th
-          {...props}
-          className="!bg-gray-50 !text-teal-600 !font-semibold"
+          rowKey="ID"
+          rowSelection={rowSelection}
+          dataSource={hardwares}
+          columns={columns}
+          loading={loading}
+          pagination={{ pageSize: 5 }}
+          className="rounded-xl shadow-sm overflow-x-auto"
+          scroll={{ x: "max-content" }} // ✅ ให้ Scroll แนวนอนเมื่อคอลัมน์เกิน
+          components={{
+            header: {
+              cell: (props: any) => (
+                <th
+                  {...props}
+                  className="!bg-gray-50 !text-teal-600 !font-semibold"
+                />
+              ),
+            },
+          }}
         />
-      ),
-    },
-  }}
-/>
       </Modal>
 
       {/* ✅ Modal ยืนยันการลบ (Responsive) */}
@@ -287,15 +287,15 @@ const Node = () => {
           </p>
 
           {/* ปุ่ม Responsive */}
-          <div className="flex flex-col sm:flex-row w-full gap-3 mt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-2 w-full">
             <Button
-              className="rounded-full px-4 w-full sm:w-auto"
+              className="rounded-full px-6 min-w-[120px]"
               onClick={() => setDeleteModalOpen(false)}
             >
               ยกเลิก
             </Button>
             <Button
-              className="bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full px-4 shadow-md hover:from-red-600 hover:to-pink-600 w-full sm:w-auto"
+              className="bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full px-6 shadow-md hover:from-red-600 hover:to-pink-600 min-w-[120px]"
               onClick={handleBulkDelete}
             >
               ลบข้อมูล
