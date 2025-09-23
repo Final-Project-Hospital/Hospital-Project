@@ -803,7 +803,7 @@
 }
 
 /* ไม่ใช้กรอบที่มีเงาจากหน้าบันทึก ที่ import มา*/
-.iron-container {
+.modal-create .iron-container {
   all: unset !important;
   padding: 0px !important;
   margin: 0px 0px 0px 0px !important;

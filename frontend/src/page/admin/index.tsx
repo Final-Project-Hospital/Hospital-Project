@@ -120,13 +120,18 @@ const fmt2 = (n: any) =>
 const fmt0 = (n: any) =>
   Number(n ?? 0).toLocaleString("th-TH", { maximumFractionDigits: 0 });
 const norm = (s: string) => (s || "").replace(/\s+/g, " ").trim().toLowerCase();
-const normalizeMinMax = (arr: number[]) => {
-  if (!arr.length) return [];
-  const min = Math.min(...arr),
-    max = Math.max(...arr);
-  return min === max
-    ? arr.map(() => (min === 0 ? 0 : 0.5))
-    : arr.map((v) => (v - min) / (max - min));
+const normalizeMinMax = (arr: Array<number | null>) => {
+  const vals = arr.filter((v): v is number => typeof v === "number");
+  if (vals.length === 0) return arr.map(() => null);
+
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+
+  if (min === max) {
+    if (min === 0) return arr.map((v) => (v === null ? null : 0));
+    return arr.map((v) => (v === null ? null : 0.5));
+  }
+  return arr.map((v) => (v === null ? null : (v - min) / (max - min)));
 };
 type ChartKind = "line" | "bar";
 
@@ -267,7 +272,7 @@ const AdminDashboard: React.FC = () => {
   const [wasteMonth, setWasteMonth] = useState<Dayjs | null>(null);
 
   const [garbageSeries, setGarbageSeries] = useState<
-    Array<{ x: string; y: number }>
+  Array<{ x: string; y: number | null; missing?: boolean }>
   >([]);
   const [garbageLoading, setGarbageLoading] = useState(false);
   const [garbageError, setGarbageError] = useState<string | null>(null);
@@ -814,7 +819,7 @@ const AdminDashboard: React.FC = () => {
     };
   }, [filteredData, selectedParamName, filterMode, dateRange, envName]);
 
-  // ⬇️ แทนที่ของเดิมทั้งหมด
+ 
 const makeSeries = useCallback(
   (treatment: "ก่อน" | "หลัง") => {
     const tdata = filteredData.filter(
@@ -830,7 +835,7 @@ const makeSeries = useCallback(
       const vals = buckets[k];
       const has = !!(vals && vals.length);
       const avg = has ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-      // ✅ ถ้าไม่มีข้อมูล: y = 0 แต่ติดธง _missing ไว้
+      // ถ้าไม่มีข้อมูล: y = 0 แต่ติดธง _missing ไว้
       return { x: labels[i], y: +dFix(avg), _missing: !has };
     });
   },
@@ -839,7 +844,6 @@ const makeSeries = useCallback(
 
   const isGarbageEnv = envName === "ขยะ";
   const chartsLoading = metaLoading || dataLoading || (isGarbageEnv && garbageLoading) || isParamPending;
-  // ⬇️ แทนที่ของเดิมทั้งหมด
 const singleSeriesPoints = useMemo(() => {
   if (!SINGLE_ENV_NAMES.has(envName)) return [];
   const tdata = filteredData.filter((d) => d.parameter === selectedParamName);
@@ -856,96 +860,71 @@ const singleSeriesPoints = useMemo(() => {
   });
 }, [envName, filteredData, selectedParamName, filterMode, labelsKeys, labels]);
 
-  const { tapMinMaxPoints, tapAggLabels } = useMemo(() => {
-    if (!SINGLE_ENV_NAMES.has(envName)) {
-      return {
-        tapMinMaxPoints: [] as Array<{
-          x: string;
-          min: number;
-          max: number;
-          avg: number;
-        }>,
-        tapAggLabels: [] as string[],
-      };
+ const { tapMinMaxPoints, tapAggLabels } = useMemo(() => {
+  if (!SINGLE_ENV_NAMES.has(envName)) {
+    return { tapMinMaxPoints: [], tapAggLabels: [] as string[] };
+  }
+
+  const tdata = filteredData.filter((d) => d.parameter === selectedParamName);
+  const buckets: Record<string, Array<{ v:number; date:string }>> = {};
+
+  const bucketKey = (iso: string) => (filterMode === "year" ? String(dayjs(iso).year()) : keyFromDate(iso, filterMode));
+
+  tdata.forEach((d) => {
+    const k = bucketKey(d.date);
+    (buckets[k] ||= []).push({ v: Number(dFix(d.value)), date: d.date });
+  });
+
+  let keys: string[] = [];
+  let labelsLocal: string[] = [];
+  if (filterMode === "year") {
+    const y0 = dateRange?.[0]?.year() ?? dayjs().year();
+    const y1 = dateRange?.[1]?.year() ?? dayjs().year();
+    for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) keys.push(String(y));
+    labelsLocal = keys.map((y) => String(Number(y) + 543));
+  } else {
+    keys = labelsKeys;
+    labelsLocal = labels;
+  }
+
+  const points = keys.map((k, i) => {
+    const arr = buckets[k] || [];
+    const has = arr.length > 0;
+
+    let min = 0, max = 0, avg = 0, minDate: string | null = null, maxDate: string | null = null;
+    if (has) {
+      const vals = arr.map((a) => a.v);
+      min = Math.min(...vals);
+      max = Math.max(...vals);
+      avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+
+      const idxMin = vals.indexOf(min);
+      const idxMax = vals.indexOf(max);
+      minDate = arr[idxMin]?.date ?? null;
+      maxDate = arr[idxMax]?.date ?? null;
     }
+    return { x: labelsLocal[i], min, max, avg, minDate, maxDate, missing: !has };
+  });
 
-    const tdata = filteredData.filter((d) => d.parameter === selectedParamName);
-    const buckets: Record<string, number[]> = {};
-
-    const bucketKey = (iso: string) => {
-      if (filterMode === "year") return String(dayjs(iso).year());
-      return keyFromDate(iso, filterMode);
-    };
-
-    tdata.forEach((d) => {
-      const k = bucketKey(d.date);
-      (buckets[k] ||= []).push(Number(dFix(d.value)));
-    });
-
-    let keys: string[] = [];
-    let labelsLocal: string[] = [];
-
-    if (filterMode === "year") {
-      const y0 = dateRange?.[0]?.year() ?? dayjs().year();
-      const y1 = dateRange?.[1]?.year() ?? dayjs().year();
-      for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++)
-        keys.push(String(y));
-      labelsLocal = keys.map((y) => String(Number(y) + 543));
-    } else {
-      keys = labelsKeys;
-      labelsLocal = labels;
-    }
-
-    const points = keys.map((k, i) => {
-  const arr = buckets[k] || [];
-  const min = arr.length ? Math.min(...arr) : null; // ⟵ null
-  const max = arr.length ? Math.max(...arr) : null; // ⟵ null
-  const avg = arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : null; // ⟵ null
-  return { x: labelsLocal[i], min, max, avg };
-});
-
-    return { tapMinMaxPoints: points, tapAggLabels: labelsLocal };
-  }, [
-    envName,
-    filteredData,
-    selectedParamName,
-    filterMode,
-    labelsKeys,
-    labels,
-    dateRange,
-  ]);
+  return { tapMinMaxPoints: points, tapAggLabels: labelsLocal };
+}, [envName, filteredData, selectedParamName, filterMode, labelsKeys, labels, dateRange]);
 
   const tapMinMaxYMax = useMemo(
-    () =>
-      tapMinMaxPoints.reduce(
-        (m, p) => Math.max(m, Number(p.max || 0), Number(p.avg || 0)),
-        0
-      ),
-    [tapMinMaxPoints]
-  );
+  () =>
+    tapMinMaxPoints.reduce(
+      (m, p) => Math.max(m, Number(p.max ?? 0), Number(p.avg ?? 0)),
+      0
+    ),
+  [tapMinMaxPoints]
+);
 
-  const tapMinMaxSeries = useMemo(
-    () => [
-      {
-        name: "ค่าสูงสุด",
-        data: tapMinMaxPoints.map((p) => ({ x: p.x, y: p.max })),
-        color: chartColor.tapMax,
-      },
-      {
-        name: "ค่าต่ำสุด",
-        data: tapMinMaxPoints.map((p) => ({ x: p.x, y: p.min })),
-        color: chartColor.tapMin,
-      },
-      {
-        name: "ค่าเฉลี่ย",
-        data: tapMinMaxPoints.map((p) => ({ x: p.x, y: +dFix(p.avg) })),
-        color: chartColor.tapAvg,
-      },
-    ],
-    [tapMinMaxPoints, chartColor.tapMax, chartColor.tapMin, chartColor.tapAvg]
-  );
+  const tapMinMaxSeries = useMemo(() => [
+  { name: "ค่าสูงสุด", data: tapMinMaxPoints.map(p => ({ x: p.x, y: p.max,  missing: p.missing })), color: chartColor.tapMax },
+  { name: "ค่าต่ำสุด", data: tapMinMaxPoints.map(p => ({ x: p.x, y: p.min,  missing: p.missing })), color: chartColor.tapMin },
+  { name: "ค่าเฉลี่ย", data: tapMinMaxPoints.map(p => ({ x: p.x, y: p.avg,  missing: p.missing })), color: chartColor.tapAvg },
+], [tapMinMaxPoints, chartColor.tapMax, chartColor.tapMin, chartColor.tapAvg]);
 
-  // ✨ helper สำหรับล้าง unit
+  // helper สำหรับล้าง unit
   const cleanUnit = (u?: string | null) => {
     const s = (u ?? "").toString().trim().toLowerCase();
     if (!s) return "";
@@ -1177,8 +1156,8 @@ const buildOpts = useCallback(
   const beforeSeriesPoints = useMemo(() => makeSeries("ก่อน"), [makeSeries]);
   const afterSeriesPoints = useMemo(() => makeSeries("หลัง"), [makeSeries]);
 
-  const getMaxY = (pts: Array<{ x: any; y: number }>) =>
-    pts.reduce((m, p) => Math.max(m, Number(p?.y || 0)), 0);
+  const getMaxY = (pts: Array<{ x: any; y: number | null }>) =>
+  pts.reduce((m, p) => Math.max(m, Number(p?.y ?? 0)), 0);
 
   const monthKeysForGarbage = useMemo(() => {
     const [start, end] =
@@ -1209,17 +1188,22 @@ const buildOpts = useCallback(
         );
         if (cancelled) return;
 
-        const pts: Array<{ x: string; y: number }> = [];
-        results.forEach((items, idx) => {
-          const month = keys[idx];
-          const label = dayjs(month + "-01").format("MMM YYYY");
-          const rec = (items || []).find(
-            (it: any) => norm(it.parameter) === norm(selectedParamName)
-          );
-          const y = rec ? Number(dFix(rec.total || 0)) : 0;
-          pts.push({ x: label, y });
-        });
-        setGarbageSeries(pts);
+        const pts: Array<{ x: string; y: number | null; missing?: boolean }> = [];
+
+results.forEach((items, idx) => {
+  const month = keys[idx];
+  const label = dayjs(month + "-01").format("MMM YYYY");
+  const rec = (items || []).find(
+    (it: any) => norm(it.parameter) === norm(selectedParamName)
+  );
+  if (rec) {
+    pts.push({ x: label, y: Number(dFix(rec.total || 0)), missing: false });
+  } else {
+    pts.push({ x: label, y: 0, missing: true });
+  }
+});
+
+setGarbageSeries(pts);
       } catch (e: any) {
         if (!cancelled) {
           setGarbageSeries([]);
@@ -1280,38 +1264,51 @@ const buildOpts = useCallback(
           (it: any) => norm(it.parameter) === norm(selectedParamName)
         );
         rows.push({
-          label,
-          monthKey,
-          waste: rec ? Number(dFix(rec.total || 0)) : 0,
-          people: peopleByMonth[monthKey] || 0,
-          unit: rec?.unit || "kg",
-        });
+  label,
+  monthKey,
+  waste: rec ? Number(dFix(rec.total || 0)) : null,   // ← null หากไม่มี
+  people: peopleByMonth[monthKey] ?? null,            // ← null หากไม่มี
+  unit: rec?.unit || "kg",
+});
       });
       setCompareMonthlyGarbageQuantity(rows);
     })();
   }, [isGarbageEnv, selectedParamName, monthKeysForGarbage, recycledRowsAll]);
 
   const garbageNormSeries = useMemo(() => {
-    const wasteArr = compareMonthlyGarbageQuantity.map((d) => d.waste);
-    const peopleArr = compareMonthlyGarbageQuantity.map((d) => d.people);
-    return [
-      {
-        name: `${selectedParamName || "ค่าขยะ"} (Normalize)`,
-        data: normalizeMinMax(wasteArr),
-        color: chartColor.garbageNormWaste,
-      },
-      {
-        name: "จำนวนคน (Normalize)",
-        data: normalizeMinMax(peopleArr),
-        color: chartColor.garbageNormPeople,
-      },
-    ];
-  }, [
-    compareMonthlyGarbageQuantity,
-    chartColor.garbageNormWaste,
-    chartColor.garbageNormPeople,
-    selectedParamName,
-  ]);
+  const labels = compareMonthlyGarbageQuantity.map(d => d.label);
+  const wasteRaw = compareMonthlyGarbageQuantity.map(d => d.waste);
+  const peopleRaw = compareMonthlyGarbageQuantity.map(d => d.people);
+
+  const normWaste = normalizeMinMax(wasteRaw).map((v, i) => ({
+    x: labels[i],
+    y: v == null ? 0 : v,               
+    missing: wasteRaw[i] == null,       // ใช้ธงบอกว่าไม่มีการตรวจวัด
+  }));
+  const normPeople = normalizeMinMax(peopleRaw).map((v, i) => ({
+    x: labels[i],
+    y: v == null ? 0 : v,
+    missing: peopleRaw[i] == null,
+  }));
+
+  return [
+    {
+      name: `${selectedParamName || "ค่าขยะ"} (Normalize)`,
+      data: normWaste,
+      color: chartColor.garbageNormWaste,
+    },
+    {
+      name: "จำนวนคน (Normalize)",
+      data: normPeople,
+      color: chartColor.garbageNormPeople,
+    },
+  ];
+}, [
+  compareMonthlyGarbageQuantity,
+  chartColor.garbageNormWaste,
+  chartColor.garbageNormPeople,
+  selectedParamName,
+]);
 
   const garbageNormOptions: ApexOptions = useMemo(() => ({
   ...BASE_CHART_STYLE,
@@ -1327,21 +1324,29 @@ const buildOpts = useCallback(
     labels: { formatter: (v) => (+v).toFixed(2) },
   }],
   tooltip: {
-    ...(BASE_CHART_STYLE.tooltip || {}),
-    y: {
-      formatter: (_n: number, opts) => {
-        const i = opts.dataPointIndex;
-        const sName = opts.w.config.series[opts.seriesIndex]?.name ?? "";
-        const row = compareMonthlyGarbageQuantity[i];
-        if (!row) return "-";
-        if (sName.includes("ขยะ"))
-          return `${row.waste.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${row.unit}`;
-        if (sName.includes("จำนวนคน"))
-          return `${row.people.toLocaleString()} คน`;
-        return _n.toFixed(2);
-      },
+  ...(BASE_CHART_STYLE.tooltip || {}),
+  y: {
+    formatter: (_n: number, opts) => {
+      const i = opts.dataPointIndex;
+      const sName = opts.w.config.series[opts.seriesIndex]?.name ?? "";
+      const row = compareMonthlyGarbageQuantity[i];
+      if (!row) return "-";
+
+      // ถ้าค่าดิบเป็น null => ไม่มีการตรวจวัด
+      if (sName.includes("ขยะ")) {
+        return row.waste == null
+          ? "ไม่มีการตรวจวัด"
+          : `${row.waste.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${row.unit}`;
+      }
+      if (sName.includes("จำนวนคน")) {
+        return row.people == null
+          ? "ไม่มีการตรวจวัด"
+          : `${row.people.toLocaleString()} คน`;
+      }
+      return _n?.toFixed?.(2) ?? "-";
     },
   },
+},
   markers: {
     ...(BASE_CHART_STYLE.markers || {}),
     size: garbageNormChartType === "line" ? 5 : 0,  // เส้นมีจุด / แท่งไม่มีจุด

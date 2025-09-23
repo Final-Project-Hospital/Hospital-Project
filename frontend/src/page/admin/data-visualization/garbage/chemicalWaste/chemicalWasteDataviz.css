@@ -795,7 +795,7 @@
 }
 
 /* ไม่ใช้กรอบที่มีเงาจากหน้าบันทึก ที่ import มา*/
-.chem-container {
+.modal-create .chem-container {
   all: unset !important;
   padding: 0px !important;
   margin: 0px 0px 0px 0px !important;

@@ -799,7 +799,7 @@
 }
 
 /* ไม่ใช้กรอบที่มีเงาจากหน้าบันทึก ที่ import มา*/
-.haz-container {
+.modal-create .haz-container {
   all: unset !important;
   padding: 0px !important;
   margin: 0px 0px 0px 0px !important;

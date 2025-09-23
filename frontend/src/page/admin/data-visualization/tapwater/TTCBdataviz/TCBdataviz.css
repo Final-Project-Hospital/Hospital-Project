@@ -801,7 +801,7 @@
 }
 
 /* ไม่ใช้กรอบที่มีเงาจากหน้าบันทึก ที่ import มา*/
-.ttcb-container {
+.modal-create .ttcb-container {
   all: unset !important;
   padding: 0px !important;
   margin: 0px 0px 0px 0px !important;

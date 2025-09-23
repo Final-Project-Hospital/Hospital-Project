@@ -639,7 +639,7 @@
 }
 
 /* ไม่ใช้กรอบที่มีเงาจากหน้าบันทึก ที่ import มา*/
-.inf-container {
+.modal-create .inf-container {
   all: unset !important;
   padding: 0px !important;
   margin: 0px 0px 0px 0px !important;
@@ -914,7 +914,8 @@
   .infectious-box-number {
     font-size: 20px;
   }
-    .ant-picker-dropdown {
+
+  .ant-picker-dropdown {
     max-width: 95vw !important;
     /* กว้างไม่เกิน 95% ของหน้าจอ */
     left: 50% !important;
@@ -933,5 +934,9 @@
   .ant-picker-panel {
     min-width: 280px !important;
     /* ปรับขนาดขั้นต่ำให้อ่านง่าย */
+  }
+
+  .infectious-box-number .apexcharts-canvas {
+    min-width: 180px;
   }
 }

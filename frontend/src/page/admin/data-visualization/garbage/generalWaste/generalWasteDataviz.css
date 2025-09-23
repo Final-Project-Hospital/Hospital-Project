@@ -639,7 +639,7 @@
 }
 
 /* ไม่ใช้กรอบที่มีเงาจากหน้าบันทึก ที่ import มา*/
-.gen-container {
+.modal-create .gen-container {
   all: unset !important;
   padding: 0px !important;
   margin: 0px 0px 0px 0px !important;
@@ -934,6 +934,10 @@
   .ant-picker-panel {
     min-width: 280px !important;
     /* ปรับขนาดขั้นต่ำให้อ่านง่าย */
+  }
+
+  .general-box-number .apexcharts-canvas {
+    min-width: 180px;
   }
 
 }

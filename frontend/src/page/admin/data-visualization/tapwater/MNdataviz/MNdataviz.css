@@ -807,7 +807,7 @@
 }
 
 /* ไม่ใช้กรอบที่มีเงาจากหน้าบันทึก ที่ import มา*/
-.mn-container {
+.modal-create .mn-container {
   all: unset !important;
   padding: 0px !important;
   margin: 0px 0px 0px 0px !important;
